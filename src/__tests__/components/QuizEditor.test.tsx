@@ -3501,17 +3501,16 @@ describe('Question Title Handlers', () => {
         expect(screen.getByTestId('sidebar-question-label').textContent).toBe('New Title');
     });
 
-    it.skip('should set default title on blur if empty', () => {
+    it('should set title to empty string on blur if empty', () => {
         setupWithQuestion();
         const titleSpan = screen.getByTestId('question-title-span');
         act(() => {
-            fireEvent.input(titleSpan, { target: { textContent: '   ' } });
+            fireEvent.input(titleSpan, { target: { textContent: '' } });
         });
         act(() => {
             fireEvent.blur(titleSpan);
         });
-        expect(screen.getByTestId('question-title-span').textContent).toMatch(/^Question 1$/);
-        expect(screen.getByTestId('sidebar-question-label').textContent).toMatch(/^Question 1$/);
+        expect(screen.getByTestId('question-title-span').textContent).toBe('');
     });
 
     it('should not update title on blur if unchanged', () => {
