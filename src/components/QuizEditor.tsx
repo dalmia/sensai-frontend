@@ -665,7 +665,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         for (let i = 0; i < questions.length; i++) {
             const question = questions[i];
 
-            // Check if question has a title
+            // Check if question title is missing or empty
             if (!question.config.title || question.config.title.trim() === '') {
                 // Navigate to the question with missing title
                 setCurrentQuestionIndex(i);
