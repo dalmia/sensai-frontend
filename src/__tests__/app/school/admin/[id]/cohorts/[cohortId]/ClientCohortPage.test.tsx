@@ -112,7 +112,7 @@ jest.mock('@/components/CohortMemberManagement', () => {
                 <button onClick={onInviteDialogClose} data-testid="close-invite-dialog">Close Dialog</button>
                 <button
                     onClick={() => {
-                        updateCohort({ ...cohort, name: 'Updated Name' });
+                        updateCohort(cohort.members);
                     }}
                     data-testid="update-cohort"
                 >
