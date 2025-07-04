@@ -1709,6 +1709,36 @@ describe('QuizEditor Component', () => {
                 );
             });
         });
+
+        it('should validate and fail for empty question title', async () => {
+            const mockOnValidationError = jest.fn();
+            render(<QuizEditor {...defaultProps} ref={quizEditorRef} status="draft" onValidationError={mockOnValidationError} />);
+
+            // Add a question
+            const addButton = screen.getByText('Add question');
+            await act(async () => {
+                fireEvent.click(addButton);
+            });
+
+            // Set the question title to empty
+            const titleSpan = screen.getByTestId('question-title-span');
+            act(() => {
+                fireEvent.input(titleSpan, { target: { textContent: '' } });
+            });
+            act(() => {
+                fireEvent.blur(titleSpan);
+            });
+
+            await waitFor(() => {
+                // Should fail validation due to empty title
+                const isValid = quizEditorRef.current?.validateBeforePublish();
+                expect(isValid).toBe(false);
+                expect(mockOnValidationError).toHaveBeenCalledWith(
+                    "Empty Question",
+                    "Question 1 is empty. Please add a title to the question"
+                );
+            });
+        });
     });
 
     describe('API Operations', () => {
