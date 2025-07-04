@@ -135,7 +135,7 @@ export default function CreateBatchDialog({
             const user_ids = allSelectedMembers.map(member => member.id);
             const roles = allSelectedMembers.map(member => member.role);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -494,7 +494,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const fetchBatches = async () => {
         setIsLoadingBatches(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches?cohort_id=${cohortId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/?cohort_id=${cohortId}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch batches: ${response.status}`);
             }
