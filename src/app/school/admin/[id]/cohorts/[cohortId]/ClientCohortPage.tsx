@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil, ExternalLink, Settings } from "lucide-react";
+import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil, ExternalLink, Settings, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -14,6 +14,7 @@ import CohortMemberManagement from "@/components/CohortMemberManagement";
 import CohortDashboard from "@/components/CohortDashboard";
 import CohortCoursesLinkerDropdown from "@/components/CohortCoursesLinkerDropdown";
 import SettingsDialog from "@/components/SettingsDialog";
+import CreateBatchDialog from "@/components/CreateBatchDialog";
 import { CohortWithDetails as Cohort } from "@/types";
 import { DripConfig } from "@/types/course";
 
@@ -25,7 +26,7 @@ interface Course {
     drip_config?: DripConfig;
 }
 
-type TabType = 'dashboard' | 'learners' | 'mentors';
+type TabType = 'dashboard' | 'learners' | 'mentors' | 'batches';
 
 interface ClientCohortPageProps {
     schoolId: string;
@@ -60,6 +61,17 @@ interface CourseMetrics {
             count: number;
         };
     };
+}
+
+interface Batch {
+    id: number;
+    name: string;
+    cohort_id: number;
+    members: {
+        id: number;
+        email: string;
+        role: string;
+    }[];
 }
 
 export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPageProps) {
@@ -105,6 +117,23 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const [schoolSlug, setSchoolSlug] = useState<string>('');
 
     const [selectedCourseForSettings, setSelectedCourseForSettings] = useState<any | null>(null);
+
+    // Add state for batch creation dialog
+    const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
+
+    // Add state for batches
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
+    const [isLoadingBatches, setIsLoadingBatches] = useState(false);
+
+    // Add state for batch search
+    const [batchSearchQuery, setBatchSearchQuery] = useState("");
+
+    // Add state for delete dialog
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [batchToDelete, setBatchToDelete] = useState<Batch | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     // Function to switch to learners tab and open invite dialog
     const handleOpenLearnerInviteDialog = () => {
@@ -461,6 +490,60 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         setSelectedCourseForSettings(null);
     };
 
+    // Function to fetch batches
+    const fetchBatches = async () => {
+        setIsLoadingBatches(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches?cohort_id=${cohortId}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch batches: ${response.status}`);
+            }
+            const batchesData = await response.json();
+            setBatches(batchesData);
+        } catch (error) {
+            console.error("Error fetching batches:", error);
+        } finally {
+            setIsLoadingBatches(false);
+        }
+    };
+
+    // Function to handle batch creation
+    const handleCreateBatch = async (batchName: string, selectedLearners: any[], selectedMentors: any[]) => {
+        // Close the dialog immediately
+        setIsBatchDialogOpen(false);
+
+        // Refresh the batches list
+        await fetchBatches();
+
+        // Show success toast
+        setToastTitle('Success');
+        setToastDescription(`${batchName} has been created successfully`);
+        setToastEmoji('✅');
+        setShowToast(true);
+    };
+
+    // Function to open batch creation dialog
+    const handleOpenBatchDialog = () => {
+        setIsBatchDialogOpen(true);
+    };
+
+    // Function to close batch creation dialog
+    const handleCloseBatchDialog = () => {
+        setIsBatchDialogOpen(false);
+    };
+
+    // Get learners and mentors from cohort
+    const learners = cohort?.members?.filter(member => member.role === 'learner') || [];
+    const mentors = cohort?.members?.filter(member => member.role === 'mentor') || [];
+
+    // Effect to fetch batches when batch tab is selected
+    useEffect(() => {
+        if (tab === 'batches') {
+            fetchBatches();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tab, cohortId]);
+
     useEffect(() => {
         const fetchCohort = async () => {
             if (!cohortId || cohortId === 'undefined') {
@@ -558,6 +641,32 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
         fetchCohort();
     }, [cohortId, schoolId]);
+
+    const handleRequestDelete = (batch: Batch) => {
+        setBatchToDelete(batch);
+        setShowDeleteDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!batchToDelete) return;
+        setIsDeleting(true);
+        setDeleteError(null);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/${batchToDelete.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to delete batch: ${response.status}`);
+            }
+            setBatches(prev => prev.filter(b => b.id !== batchToDelete.id));
+            setSelectedBatch(null);
+            setShowDeleteDialog(false);
+            setIsDeleting(false);
+        } catch (error) {
+            setIsDeleting(false);
+            setDeleteError(error instanceof Error ? error.message : 'Failed to delete batch');
+        }
+    };
 
     if (loading) {
         return (
@@ -773,6 +882,15 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                         Mentors
                                     </div>
                                 </button>
+                                <button
+                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'batches' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    onClick={() => setTab('batches')}
+                                >
+                                    <div className="flex items-center justify-center">
+                                        <UsersRound size={16} className="mr-2" />
+                                        Batches
+                                    </div>
+                                </button>
                             </div>
                         </div>
 
@@ -830,6 +948,114 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                             />
                         )}
 
+                        {tab === 'batches' && (
+                            <>
+                                {isLoadingBatches ? (
+                                    <div className="flex justify-center items-center py-8">
+                                        <div className="w-8 h-8 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                                    </div>
+                                ) : batches.length === 0 ? (
+                                    // Single placeholder when no batches
+                                    <div className="flex flex-col items-center justify-center py-20">
+                                        <h4 className="text-2xl font-light mb-4">Organize into batches</h4>
+                                        <p className="text-gray-400 text-center mb-8">Create your first batch to organize learners into small groups with mentors</p>
+                                        <button
+                                            onClick={handleOpenBatchDialog}
+                                            className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                        >
+                                            Create batch
+                                        </button>
+                                    </div>
+                                ) : (
+                                    // Split screen when batches exist
+                                    <div className="flex h-[600px]">
+                                        {/* Left side - Batch list (30%) */}
+                                        <div className="w-[30%] border-r border-gray-800 pr-6">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <button
+                                                    onClick={handleOpenBatchDialog}
+                                                    className="px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                                >
+                                                    Create batch
+                                                </button>
+                                            </div>
+
+                                            {/* Search bar */}
+                                            <div className="relative mb-4">
+                                                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                                    <Search size={16} className="text-gray-500" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={batchSearchQuery}
+                                                    onChange={(e) => setBatchSearchQuery(e.target.value)}
+                                                    placeholder="Search batches"
+                                                    className="w-full pl-10 pr-4 py-2 bg-[#0D0D0D] text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border-none"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {batches
+                                                    .filter(batch =>
+                                                        batch.name.toLowerCase().includes(batchSearchQuery.toLowerCase())
+                                                    )
+                                                    .map(batch => {
+                                                        const learnerCount = batch.members.filter(member => member.role === 'learner').length;
+                                                        const mentorCount = batch.members.filter(member => member.role === 'mentor').length;
+
+                                                        return (
+                                                            <button
+                                                                key={batch.id}
+                                                                onClick={() => setSelectedBatch(batch)}
+                                                                className={`w-full text-left p-4 rounded-lg transition-colors cursor-pointer ${selectedBatch?.id === batch.id
+                                                                    ? 'bg-white text-gray-900'
+                                                                    : 'bg-[#222] text-gray-300 hover:bg-[#333]'
+                                                                    }`}
+                                                            >
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium mb-1">{batch.name}</span>
+                                                                    <span className="text-sm opacity-70">
+                                                                        {learnerCount} learner{learnerCount !== 1 ? 's' : ''}, {mentorCount} mentor{mentorCount !== 1 ? 's' : ''}
+                                                                    </span>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                            </div>
+                                        </div>
+
+                                        {/* Right side - Batch details placeholder (70%) */}
+                                        <div className="w-[70%] pl-6">
+                                            {selectedBatch ? (
+                                                <CreateBatchDialog
+                                                    inline
+                                                    isOpen={true}
+                                                    onClose={() => setSelectedBatch(null)}
+                                                    mode="view"
+                                                    batch={selectedBatch}
+                                                    learners={learners}
+                                                    mentors={mentors}
+                                                    cohortId={cohortId}
+                                                    onRequestDelete={handleRequestDelete}
+                                                    onBatchUpdated={(updatedBatch) => {
+                                                        setBatches(prev => prev.map(b => b.id === updatedBatch.id ? updatedBatch : b));
+                                                        setSelectedBatch(updatedBatch);
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center mt-10 h-full">
+                                                    <h4 className="text-2xl font-light mb-2">No batch selected yet</h4>
+                                                    <p className="text-gray-400 text-center">
+                                                        Select a batch to manage it
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                     </main>
                 </div>
             </div>
@@ -882,6 +1108,29 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 schoolId={schoolId}
                 courseId={selectedCourseForSettings?.id}
                 cohortId={undefined}
+            />
+
+            {/* Add CreateBatchDialog component */}
+            <CreateBatchDialog
+                isOpen={isBatchDialogOpen}
+                onClose={handleCloseBatchDialog}
+                learners={learners}
+                mentors={mentors}
+                onCreateBatch={handleCreateBatch}
+                cohortId={cohortId}
+            />
+
+            {/* ConfirmationDialog for batch delete */}
+            <ConfirmationDialog
+                open={showDeleteDialog}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setShowDeleteDialog(false)}
+                title="Delete batch"
+                message={`Are you sure you want to delete the batch? This action cannot be undone`}
+                confirmButtonText="Delete"
+                isLoading={isDeleting}
+                errorMessage={deleteError}
+                type="delete"
             />
         </>
     );

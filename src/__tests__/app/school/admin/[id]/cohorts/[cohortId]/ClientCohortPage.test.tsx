@@ -112,7 +112,7 @@ jest.mock('@/components/CohortMemberManagement', () => {
                 <button onClick={onInviteDialogClose} data-testid="close-invite-dialog">Close Dialog</button>
                 <button
                     onClick={() => {
-                        updateCohort({ ...cohort, name: 'Updated Name' });
+                        updateCohort(cohort.members);
                     }}
                     data-testid="update-cohort"
                 >
@@ -178,6 +178,24 @@ jest.mock('@/components/SettingsDialog', () => {
     };
 });
 
+jest.mock('@/components/CreateBatchDialog', () => {
+    return function MockCreateBatchDialog({ inline, isOpen, onClose, batch, onRequestDelete }: any) {
+        // Inline dialogs are always visible, modal dialogs respect isOpen flag
+        if (!inline && !isOpen) return null;
+        return (
+            <div data-testid={inline ? 'create-batch-dialog-inline' : 'create-batch-dialog-modal'}>
+                {batch && <span data-testid="inline-batch-name">{batch.name}</span>}
+                {onClose && (
+                    <button onClick={onClose} data-testid="close-create-batch">Close</button>
+                )}
+                {onRequestDelete && (
+                    <button onClick={() => onRequestDelete(batch)} data-testid="delete-batch">Delete Batch</button>
+                )}
+            </div>
+        );
+    };
+});
+
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 
@@ -207,6 +225,27 @@ const mockSchoolData = {
 const mockAvailableCoursesData = [
     { id: 3, name: 'Available Course 1', description: 'Available course description' },
     { id: 4, name: 'Available Course 2', description: 'Another available course' }
+];
+
+// Helper data for batches
+const mockBatchesData = [
+    {
+        id: 1,
+        name: 'Batch A',
+        cohort_id: 1,
+        members: [
+            { id: 1, email: 'learner1@example.com', role: 'learner' },
+            { id: 2, email: 'mentor1@example.com', role: 'mentor' },
+        ],
+    },
+    {
+        id: 2,
+        name: 'Batch B',
+        cohort_id: 1,
+        members: [
+            { id: 3, email: 'learner2@example.com', role: 'learner' },
+        ],
+    },
 ];
 
 describe('ClientCohortPage', () => {
@@ -1418,4 +1457,183 @@ describe('ClientCohortPage', () => {
             expect(screen.queryByTestId('cohort-courses-linker-dropdown')).not.toBeInTheDocument();
         });
     });
-}); 
+
+    describe('Batches Functionality', () => {
+        it('should show placeholder and open create batch dialog when no batches exist', async () => {
+            setupFetchesWithoutBatches();
+
+            render(<ClientCohortPage schoolId="1" cohortId="1" />);
+
+            // Wait for main UI to load
+            await waitFor(() => {
+                expect(screen.getByText('Batches')).toBeInTheDocument();
+            });
+
+            // Switch to Batches tab
+            fireEvent.click(screen.getByText('Batches'));
+
+            // Wait for placeholder UI
+            await waitFor(() => {
+                expect(screen.getByText('Organize into batches')).toBeInTheDocument();
+            });
+
+            // Click Create batch button
+            fireEvent.click(screen.getByText('Create batch'));
+
+            // Modal dialog should appear
+            await waitFor(() => {
+                expect(screen.getByTestId('create-batch-dialog-modal')).toBeInTheDocument();
+            });
+        });
+
+        it('should render batch list and show inline batch details when a batch is selected', async () => {
+            setupFetchesWithBatches(mockBatchesData);
+
+            render(<ClientCohortPage schoolId="1" cohortId="1" />);
+
+            // Navigate to batches tab
+            await waitFor(() => {
+                expect(screen.getByText('Batches')).toBeInTheDocument();
+            });
+            fireEvent.click(screen.getByText('Batches'));
+
+            // Wait for list to render
+            await waitFor(() => {
+                expect(screen.getByText('Batch A')).toBeInTheDocument();
+                expect(screen.getByText('Batch B')).toBeInTheDocument();
+            });
+
+            // Select Batch A
+            fireEvent.click(screen.getByText('Batch A'));
+
+            // Inline dialog should appear with correct batch name
+            await waitFor(() => {
+                expect(screen.getByTestId('create-batch-dialog-inline')).toBeInTheDocument();
+                expect(screen.getByTestId('inline-batch-name')).toHaveTextContent('Batch A');
+            });
+        });
+
+        it('should filter batches based on search input', async () => {
+            setupFetchesWithBatches(mockBatchesData);
+
+            render(<ClientCohortPage schoolId="1" cohortId="1" />);
+
+            // Go to Batches tab
+            await waitFor(() => {
+                expect(screen.getByText('Batches')).toBeInTheDocument();
+            });
+            fireEvent.click(screen.getByText('Batches'));
+
+            // Wait for search input
+            const searchInput = await screen.findByPlaceholderText('Search batches');
+
+            // Type search query
+            fireEvent.change(searchInput, { target: { value: 'Batch B' } });
+
+            // Batch A should be filtered out
+            await waitFor(() => {
+                expect(screen.queryByText('Batch A')).not.toBeInTheDocument();
+                expect(screen.getByText('Batch B')).toBeInTheDocument();
+            });
+        });
+
+        it('should open confirmation dialog and delete batch', async () => {
+            // Start with a single batch so list becomes empty after deletion
+            const singleBatch = [mockBatchesData[0]];
+            setupFetchesWithBatches(singleBatch);
+
+            // Additional fetch mock for DELETE request
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({}),
+            });
+
+            render(<ClientCohortPage schoolId="1" cohortId="1" />);
+
+            // Go to Batches tab
+            await waitFor(() => {
+                expect(screen.getByText('Batches')).toBeInTheDocument();
+            });
+            fireEvent.click(screen.getByText('Batches'));
+
+            // Wait for batch list then select batch
+            await waitFor(() => {
+                expect(screen.getByText('Batch A')).toBeInTheDocument();
+            });
+            fireEvent.click(screen.getByText('Batch A'));
+
+            // Inline dialog present
+            await waitFor(() => {
+                expect(screen.getByTestId('create-batch-dialog-inline')).toBeInTheDocument();
+            });
+
+            // Click delete inside inline dialog
+            fireEvent.click(screen.getByTestId('delete-batch'));
+
+            // Confirmation dialog should open
+            await waitFor(() => {
+                expect(screen.getByTestId('confirmation-dialog')).toBeInTheDocument();
+            });
+
+            // Confirm deletion
+            fireEvent.click(screen.getByTestId('confirm-button'));
+
+            // Wait for deletion to complete and placeholder to reappear
+            await waitFor(() => {
+                expect(screen.queryByTestId('confirmation-dialog')).not.toBeInTheDocument();
+                expect(screen.getByText('Organize into batches')).toBeInTheDocument();
+            });
+
+            // Ensure DELETE was called with correct endpoint
+            expect(global.fetch).toHaveBeenCalledWith(
+                'http://localhost:3001/batches/1',
+                expect.objectContaining({ method: 'DELETE' })
+            );
+        });
+    });
+});
+
+// Utility to setup fetch mocks when batches data is needed
+function setupFetchesWithBatches(batches: any[]) {
+    (global.fetch as jest.Mock)
+        // Cohort
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockCohortData),
+        })
+        // School
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockSchoolData),
+        })
+        // Cohort courses
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockCohortData.courses),
+        })
+        // All courses in org
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve([...mockCohortData.courses, ...mockAvailableCoursesData]),
+        })
+        // Cohort courses (second call inside fetchAvailableCourses)
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockCohortData.courses),
+        })
+        // Batches fetch when tab selected
+        .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(batches),
+        })
+        // Fallback for any additional fetches
+        .mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({}),
+        });
+}
+
+// Utility to setup fetch mocks when there are NO batches
+function setupFetchesWithoutBatches() {
+    setupFetchesWithBatches([]);
+} 
