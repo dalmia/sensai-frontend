@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import React from 'react';
 import CreateBatchDialog from '../../components/CreateBatchDialog';
@@ -531,5 +531,151 @@ describe('CreateBatchDialog', () => {
 
         // Back to view mode, original name rendered
         expect(screen.getByText(batch.name)).toBeInTheDocument();
+    });
+
+    it('should select all mentors when select-all is clicked after a partial selection', async () => {
+        // Provide two mentors so the select-all logic is meaningful
+        const multipleMentors = [
+            { id: 3, email: 'mentor1@example.com', role: 'mentor' as const },
+            { id: 4, email: 'mentor2@example.com', role: 'mentor' as const },
+        ];
+
+        render(
+            <CreateBatchDialog
+                isOpen={true}
+                onClose={mockOnClose}
+                learners={learners}
+                mentors={multipleMentors}
+                cohortId="5"
+            />
+        );
+
+        // Select the first mentor — this reveals the mentor select-all checkbox (unchecked)
+        const mentorCheckboxes = screen.getAllByRole('checkbox').slice(2, 4);
+        fireEvent.click(mentorCheckboxes[0]);
+
+        // Grab the select-all checkbox that appears next to the "1 selected" label
+        const mentorSelectedSpan = screen.getByText('1 selected');
+        const mentorSelectAll = (mentorSelectedSpan.previousElementSibling as HTMLElement).querySelector('input') as HTMLInputElement;
+        expect(mentorSelectAll).not.toBeChecked();
+
+        // Click select-all to select all mentors
+        fireEvent.click(mentorSelectAll);
+
+        await waitFor(() => {
+            const refreshedMentorCheckboxes = screen.getAllByRole('checkbox').slice(2, 4);
+            refreshedMentorCheckboxes.forEach(cb => expect(cb).toBeChecked());
+            // select-all now checked too
+            expect((mentorSelectedSpan.previousElementSibling as HTMLElement).querySelector('input')).toBeChecked();
+        });
+    });
+
+    it('should show learnerSelectionError then clear it after timeout', async () => {
+        jest.useFakeTimers();
+
+        render(
+            <CreateBatchDialog
+                isOpen={true}
+                onClose={mockOnClose}
+                learners={learners}
+                mentors={mentors}
+                cohortId="5"
+                mode="view"
+                batch={batch}
+            />
+        );
+
+        // Enter edit mode
+        fireEvent.click(screen.getByText('Edit'));
+
+        // Deselect all learner checkboxes so zero learners remain selected
+        const learnerCheckboxes = screen.getAllByRole('checkbox').slice(0, 2);
+        learnerCheckboxes.forEach(cb => {
+            if ((cb as HTMLInputElement).checked) {
+                fireEvent.click(cb);
+            }
+        });
+
+        // Click Save
+        fireEvent.click(screen.getByText('Save').closest('button') as HTMLButtonElement);
+
+        // Error paragraph should switch to red
+        const errorPara = screen.getByText(/Select learners/);
+        await waitFor(() => expect(errorPara).toHaveClass('text-red-500'));
+
+        // Advance timers to clear the error state
+        await act(async () => {
+            jest.advanceTimersByTime(3100);
+        });
+        await waitFor(() => expect(screen.getByText(/Select learners/)).not.toHaveClass('text-red-500'));
+        jest.useRealTimers();
+    });
+
+    it('should clear batchNameError once user enters a valid name', async () => {
+        render(
+            <CreateBatchDialog
+                isOpen={true}
+                onClose={mockOnClose}
+                learners={learners}
+                mentors={mentors}
+                cohortId="5"
+                mode="view"
+                batch={batch}
+            />
+        );
+
+        // Enter edit mode
+        fireEvent.click(screen.getByText('Edit'));
+
+        // Clear name to trigger error
+        const nameInput = screen.getByPlaceholderText('Enter batch name');
+        fireEvent.change(nameInput, { target: { value: ' ' } });
+        fireEvent.click(screen.getByText('Save').closest('button') as HTMLButtonElement);
+        await waitFor(() => expect(nameInput).toHaveClass('border-red-500'));
+
+        // Type a valid name to clear error
+        fireEvent.change(nameInput, { target: { value: 'Valid Name' } });
+        await waitFor(() => expect(nameInput).not.toHaveClass('border-red-500'));
+    });
+
+    it('should fallback to local batch update when API returns no JSON body', async () => {
+        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
+        const updatedName = 'Local Updated';
+
+        const mockFetchResponse = {
+            ok: true,
+            json: jest.fn().mockRejectedValue(new Error('No JSON')),
+        } as any;
+        (global.fetch as jest.Mock).mockResolvedValueOnce(mockFetchResponse);
+
+        const onBatchUpdated = jest.fn();
+
+        render(
+            <CreateBatchDialog
+                isOpen={true}
+                onClose={mockOnClose}
+                learners={learners}
+                mentors={mentors}
+                cohortId="5"
+                mode="view"
+                batch={batch}
+                onBatchUpdated={onBatchUpdated}
+            />
+        );
+
+        // Enter edit mode
+        fireEvent.click(screen.getByText('Edit'));
+
+        // Change name
+        const nameInput = screen.getByPlaceholderText('Enter batch name');
+        fireEvent.change(nameInput, { target: { value: updatedName } });
+
+        // Click Save
+        fireEvent.click(screen.getByText('Save').closest('button') as HTMLButtonElement);
+
+        await waitFor(() => {
+            expect(mockFetchResponse.json).toHaveBeenCalled();
+            expect(onBatchUpdated).toHaveBeenCalledWith(expect.objectContaining({ name: updatedName }));
+        });
     });
 }); 

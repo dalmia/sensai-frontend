@@ -82,6 +82,7 @@ export default function LearnerQuizView({
                     id: `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     content: [],
                     config: {
+                        title: '',
                         inputType: 'text',
                         responseType: 'chat',
                         questionType: 'objective',
@@ -98,6 +99,7 @@ export default function LearnerQuizView({
                 // Ensure config has all required properties with defaults
                 const completeConfig = {
                     ...q.config,
+                    title: q.config?.title,
                     inputType: q.config?.inputType || 'text',
                     responseType: q.config?.responseType,
                     questionType: q.config?.questionType,
@@ -777,6 +779,7 @@ export default function LearnerQuizView({
                         "blocks": validQuestions[currentQuestionIndex].content,
                         "response_type": validQuestions[currentQuestionIndex].config.responseType,
                         "answer": validQuestions[currentQuestionIndex].config.correctAnswer,
+                        "title": validQuestions[currentQuestionIndex].config.title,
                         "type": validQuestions[currentQuestionIndex].config.questionType,
                         "input_type": validQuestions[currentQuestionIndex].config.inputType,
                         "scorecard_id": scorecardId,
