@@ -1083,7 +1083,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         "Would you like to save your progress before leaving? If you don't save, all your progress will be lost." : "All your unsaved changes will be lost if you leave without saving. Are you sure you want to leave?"
                 }
                 confirmButtonText={isClosingDraft ? "Save" : "Discard changes"}
-                cancelButtonText={isClosingDraft ? "Discard" : "Continue Editing"}
+                cancelButtonText={isClosingDraft ? "Discard" : "Continue editing"}
                 onConfirm={isClosingDraft ? handleConfirmSaveDraft : handleConfirmDiscardChanges}
                 onCancel={isClosingDraft ? handleConfirmDiscardChanges : handleCancelClosingDialog}
                 onClickOutside={isClosingDraft ? () => setShowCloseConfirmation(false) : handleCancelClosingDialog}
@@ -1098,7 +1098,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 title="Ready to save changes"
                 message="These changes will be reflected to learners immediately after saving. Are you sure you want to proceed?"
                 confirmButtonText="Save"
-                cancelButtonText="Continue Editing"
+                cancelButtonText="Continue editing"
                 onConfirm={handleConfirmSavePublished}
                 onCancel={handleCancelSave}
                 type="publish"

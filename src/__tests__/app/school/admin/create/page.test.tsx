@@ -332,7 +332,7 @@ describe('CreateSchool Page', () => {
             await waitFor(() => {
                 expect(screen.getByText('Your School is Ready!')).toBeInTheDocument();
                 expect(screen.getByText('An epic journey begins now')).toBeInTheDocument();
-                expect(screen.getByRole('button', { name: 'Open My School' })).toBeInTheDocument();
+                expect(screen.getByRole('button', { name: 'Open my school' })).toBeInTheDocument();
             });
         });
 
@@ -462,7 +462,7 @@ describe('CreateSchool Page', () => {
             });
 
             // Click success button
-            const openSchoolButton = screen.getByRole('button', { name: 'Open My School' });
+            const openSchoolButton = screen.getByRole('button', { name: 'Open my school' });
             fireEvent.click(openSchoolButton);
 
             // Should navigate using window.location for full page navigation

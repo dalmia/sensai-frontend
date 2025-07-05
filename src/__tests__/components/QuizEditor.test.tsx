@@ -340,6 +340,7 @@ describe('QuizEditor Component', () => {
         describe('getKnowledgeBaseContent', () => {
             it('should return null for empty config', () => {
                 const config: QuizQuestionConfig = {
+                    title: 'Test Question',
                     inputType: 'text',
                     responseType: 'chat',
                     questionType: 'objective',
@@ -351,6 +352,7 @@ describe('QuizEditor Component', () => {
 
             it('should return content when blocks have text', () => {
                 const config: QuizQuestionConfig = {
+                    title: 'Test Question',
                     inputType: 'text',
                     responseType: 'chat',
                     questionType: 'objective',
@@ -366,6 +368,7 @@ describe('QuizEditor Component', () => {
 
             it('should return content when linkedMaterialIds exist', () => {
                 const config: QuizQuestionConfig = {
+                    title: 'Test Question',
                     inputType: 'text',
                     responseType: 'chat',
                     questionType: 'objective',
@@ -1105,7 +1108,7 @@ describe('QuizEditor Component', () => {
                 // Should fail validation with no questions
                 expect(quizEditorRef.current?.validateBeforePublish()).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "No Questions",
+                    "No questions",
                     "Please add at least one question before publishing"
                 );
             });
@@ -1624,7 +1627,7 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "No Questions",
+                    "No questions",
                     "Please add at least one question before publishing"
                 );
             });
@@ -1652,7 +1655,7 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Missing Coding Languages",
+                    "Missing coding languages",
                     "Question 1 does not have any programming language selected"
                 );
             });
@@ -1679,7 +1682,7 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Missing Scorecard",
+                    "Missing scorecard",
                     "Question 1 has no scorecard. Please add a scorecard for evaluating the answer"
                 );
             });
@@ -1701,7 +1704,7 @@ describe('QuizEditor Component', () => {
                 // Should fail because objective questions need correct answers
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Empty Correct Answer",
+                    "Empty correct answer",
                     "Question 1 has no correct answer. Please add a correct answer"
                 );
             });

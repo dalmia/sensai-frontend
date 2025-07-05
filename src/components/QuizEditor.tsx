@@ -654,7 +654,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         if (questions.length === 0) {
             if (onValidationError) {
                 onValidationError(
-                    "No Questions",
+                    "No questions",
                     "Please add at least one question before publishing"
                 );
             }
@@ -677,7 +677,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 // Notify parent about validation error
                 if (onValidationError) {
                     onValidationError(
-                        "Empty Question",
+                        "Empty question",
                         `Question ${i + 1} is empty. Please add details to the question`
                     );
                 }
@@ -697,7 +697,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
-                            "Missing Coding Languages",
+                            "Missing coding languages",
                             `Question ${i + 1} does not have any programming language selected`
                         );
                     }
@@ -720,7 +720,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
-                            "Empty Correct Answer",
+                            "Empty correct answer",
                             `Question ${i + 1} has no correct answer. Please add a correct answer`
                         );
                     }
@@ -738,7 +738,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
-                            "Missing Scorecard",
+                            "Missing scorecard",
                             `Question ${i + 1} has no scorecard. Please add a scorecard for evaluating the answer`
                         );
                     }

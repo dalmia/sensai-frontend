@@ -399,7 +399,7 @@ export default function CreateSchool() {
                                 onClick={navigateToSchool}
                                 className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                             >
-                                Open My School
+                                Open my school
                             </button>
                         </div>
                     </motion.div>
