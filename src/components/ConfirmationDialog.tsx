@@ -80,7 +80,7 @@ export default function ConfirmationDialog({
         : type === 'save'
             ? "Do you want to save your changes?"
             : "Are you sure you want to delete? This action cannot be undone.";
-    const defaultButtonText = type === 'publish' ? "Publish Now"
+    const defaultButtonText = type === 'publish' ? "Publish"
         : type === 'save' ? "Save"
             : "Delete";
 

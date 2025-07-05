@@ -53,7 +53,7 @@ describe('ConfirmationDialog Component', () => {
 
         expect(screen.getByText('Ready to publish?')).toBeInTheDocument();
         expect(screen.getByText('Make sure your content is complete and reviewed for errors before publishing')).toBeInTheDocument();
-        expect(screen.getByText('Publish Now')).toBeInTheDocument();
+        expect(screen.getByText('Publish')).toBeInTheDocument();
     });
 
     it('should render with default save props when type is save', () => {
@@ -300,7 +300,7 @@ describe('ConfirmationDialog Component', () => {
             />
         );
 
-        confirmButton = screen.getByText('Publish Now').closest('button');
+        confirmButton = screen.getByText('Publish').closest('button');
         expect(confirmButton).toHaveClass('bg-green-800');
         unmountPublish();
 

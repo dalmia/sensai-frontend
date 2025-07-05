@@ -1709,6 +1709,36 @@ describe('QuizEditor Component', () => {
                 );
             });
         });
+
+        it('should validate and fail for empty question title', async () => {
+            const mockOnValidationError = jest.fn();
+            render(<QuizEditor {...defaultProps} ref={quizEditorRef} status="draft" onValidationError={mockOnValidationError} />);
+
+            // Add a question
+            const addButton = screen.getByText('Add question');
+            await act(async () => {
+                fireEvent.click(addButton);
+            });
+
+            // Set the question title to empty
+            const titleSpan = screen.getByTestId('question-title-span');
+            act(() => {
+                fireEvent.input(titleSpan, { target: { textContent: '' } });
+            });
+            act(() => {
+                fireEvent.blur(titleSpan);
+            });
+
+            await waitFor(() => {
+                // Should fail validation due to empty title
+                const isValid = quizEditorRef.current?.validateBeforePublish();
+                expect(isValid).toBe(false);
+                expect(mockOnValidationError).toHaveBeenCalledWith(
+                    "Empty title",
+                    "Question 1 has no title. Please add a title to the question"
+                );
+            });
+        });
     });
 
     describe('API Operations', () => {
@@ -3501,17 +3531,16 @@ describe('Question Title Handlers', () => {
         expect(screen.getByTestId('sidebar-question-label').textContent).toBe('New Title');
     });
 
-    it.skip('should set default title on blur if empty', () => {
+    it('should set title to empty string on blur if empty', () => {
         setupWithQuestion();
         const titleSpan = screen.getByTestId('question-title-span');
         act(() => {
-            fireEvent.input(titleSpan, { target: { textContent: '   ' } });
+            fireEvent.input(titleSpan, { target: { textContent: '' } });
         });
         act(() => {
             fireEvent.blur(titleSpan);
         });
-        expect(screen.getByTestId('question-title-span').textContent).toMatch(/^Question 1$/);
-        expect(screen.getByTestId('sidebar-question-label').textContent).toMatch(/^Question 1$/);
+        expect(screen.getByTestId('question-title-span').textContent).toBe('');
     });
 
     it('should not update title on blur if unchanged', () => {

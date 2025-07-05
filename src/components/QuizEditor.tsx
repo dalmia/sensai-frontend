@@ -478,7 +478,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard' | 'knowledge'>('question');
 
     // State to track which field is being highlighted for validation errors
-    const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | 'codingLanguage' | null>(null);
+    const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | 'codingLanguage' | 'title' | null>(null);
 
     // State to track if the question count should be highlighted (after adding a new question)
     const [questionCountHighlighted, setQuestionCountHighlighted] = useState(false);
@@ -490,7 +490,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
      * Highlights a field (question or answer) to draw attention to a validation error
      * @param field The field to highlight
      */
-    const highlightField = useCallback((field: 'question' | 'answer' | 'codingLanguage') => {
+    const highlightField = useCallback((field: 'question' | 'answer' | 'codingLanguage' | 'title') => {
         // Set the highlighted field
         setHighlightedField(field);
 
@@ -664,6 +664,23 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         // Validate all questions
         for (let i = 0; i < questions.length; i++) {
             const question = questions[i];
+
+            // Check if question title is missing or empty
+            if (!question.config.title || question.config.title.trim() === '') {
+                // Navigate to the question with missing title
+                setCurrentQuestionIndex(i);
+                setActiveEditorTab('question');
+                highlightField('title');
+
+                // Notify parent about validation error
+                if (onValidationError) {
+                    onValidationError(
+                        "Empty title",
+                        `Question ${i + 1} has no title. Please add a title to the question`
+                    );
+                }
+                return false;
+            }
 
             // Check if question has content
             if (!validateQuestionContent(question.content)) {
@@ -2106,7 +2123,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return questionPurposeOptions.find(option => option.value === purpose) || questionPurposeOptions[0];
     }, []);
 
-    // Handle title change
+    // Handle question title change
     const handleQuestionTitleChange = useCallback((newTitle: string) => {
         // Update the question config with the new question title
         handleConfigChange({
@@ -2130,11 +2147,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Handle question title blur
     const handleQuestionTitleBlur = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
-        const newValue = e.currentTarget.textContent?.trim();
+        const newValue: string = e.currentTarget.textContent?.trim() || '';
         if (newValue !== currentQuestionConfig.title) {
-            handleQuestionTitleChange(newValue || 'Question ' + (currentQuestionIndex + 1));
+            handleQuestionTitleChange(newValue);
         }
-    }, [currentQuestionConfig.title, handleQuestionTitleChange, currentQuestionIndex]);
+    }, [currentQuestionConfig.title, handleQuestionTitleChange]);
 
     // Handle question title key down
     const handleQuestionTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLSpanElement>) => {
@@ -2625,7 +2642,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             className={`text-sm ${index === currentQuestionIndex ? "text-white" : "text-gray-300"} break-words whitespace-normal`}
                                                             data-testid="sidebar-question-label"
                                                         >
-                                                            {question.config.title}
+                                                            {question.config.title || `Question ${index + 1}`}
                                                         </div>
                                                         <div className={`text-xs truncate ${index === currentQuestionIndex ? "text-gray-300" : "text-gray-500"
                                                             }`}>
@@ -2656,7 +2673,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 <div className="flex-1 flex flex-col">
                                     {/* Question Configuration Header */}
                                     <div className="flex flex-col space-y-2 p-4 border-b bg-[#111111]">
-                                        <div className="flex items-center w-full">
+                                        <div className={`flex items-center w-full rounded-md ${highlightedField === 'title' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                             <span className="text-gray-500 text-sm flex-shrink-0 w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
                                                 <span className="mr-2"><Tag size={16} /></span>
                                                 Title
