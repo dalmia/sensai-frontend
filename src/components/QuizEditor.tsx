@@ -2147,9 +2147,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Handle question title blur
     const handleQuestionTitleBlur = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
-        const newValue = e.currentTarget.textContent?.trim();
+        const newValue: string = e.currentTarget.textContent?.trim() || '';
         if (newValue !== currentQuestionConfig.title) {
-            handleQuestionTitleChange(newValue || '');
+            handleQuestionTitleChange(newValue);
         }
     }, [currentQuestionConfig.title, handleQuestionTitleChange]);
 

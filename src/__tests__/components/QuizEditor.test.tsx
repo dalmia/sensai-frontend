@@ -1734,8 +1734,8 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Empty Question",
-                    "Question 1 is empty. Please add a title to the question"
+                    "Empty title",
+                    "Question 1 has no title. Please add a title to the question"
                 );
             });
         });
