@@ -108,7 +108,7 @@ const PublishConfirmationDialog = ({
             isLoading={isLoading}
             errorMessage={errorMessage}
             type="publish"
-            confirmButtonText={scheduleForLater ? "Schedule" : "Publish Now"}
+            confirmButtonText={scheduleForLater ? "Schedule" : "Publish"}
         >
             {renderScheduleOptions()}
         </ConfirmationDialog>

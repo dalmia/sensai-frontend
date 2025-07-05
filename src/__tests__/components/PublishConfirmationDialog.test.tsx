@@ -127,7 +127,7 @@ describe('PublishConfirmationDialog Component', () => {
         expect(mockOnConfirm).toHaveBeenCalledWith(null);
     });
 
-    it('should have "Publish Now" text on button by default', () => {
+    it('should have "Publish" text on button by default', () => {
         render(
             <PublishConfirmationDialog
                 show={true}
@@ -138,7 +138,7 @@ describe('PublishConfirmationDialog Component', () => {
             />
         );
 
-        expect(screen.getByTestId('confirm-button')).toHaveTextContent('Publish Now');
+        expect(screen.getByTestId('confirm-button')).toHaveTextContent('Publish');
     });
 
     it('should show schedule checkbox', () => {
@@ -297,8 +297,8 @@ describe('PublishConfirmationDialog Component', () => {
             />
         );
 
-        // State should be reset - button should be "Publish Now" again
-        expect(screen.getByTestId('confirm-button')).toHaveTextContent('Publish Now');
+        // State should be reset - button should be "Publish" again
+        expect(screen.getByTestId('confirm-button')).toHaveTextContent('Publish');
         expect(screen.queryByTestId('date-picker')).not.toBeInTheDocument();
     });
 
