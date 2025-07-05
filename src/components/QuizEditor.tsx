@@ -675,8 +675,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 // Notify parent about validation error
                 if (onValidationError) {
                     onValidationError(
-                        "Empty Question",
-                        `Question ${i + 1} is empty. Please add a title to the question`
+                        "Empty title",
+                        `Question ${i + 1} has no title. Please add a title to the question`
                     );
                 }
                 return false;
