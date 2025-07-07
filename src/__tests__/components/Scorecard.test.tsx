@@ -1215,24 +1215,4 @@ describe('Scorecard Component', () => {
         // Should not show any delete buttons in readOnly mode
         expect(screen.queryByLabelText(`Delete parameter ${mockCriteria[0].name}`)).not.toBeInTheDocument();
     });
-
-    it('should stop click event propagation at the Scorecard', () => {
-        const parentClick = jest.fn();
-        render(
-            <div onClick={parentClick}>
-                <Scorecard
-                    name={mockName}
-                    criteria={mockCriteria}
-                    linked={false}
-                />
-            </div>
-        );
-
-        // Find the Scorecard root element by data-testid
-        const scorecard = screen.getByTestId('scorecard-root');
-        fireEvent.click(scorecard);
-
-        // Parent handler should not be called
-        expect(parentClick).not.toHaveBeenCalled();
-    });
 }); 

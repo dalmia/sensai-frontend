@@ -606,7 +606,6 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     className="bg-[#333] rounded w-full text-sm p-2 pr-10 outline-none min-h-[60px] resize-y"
                                                     style={{ caretColor: 'white', resize: 'none' }}
                                                     placeholder="Enter description"
-                                                    onClick={(e) => e.stopPropagation()}
                                                 />
                                                 <button
                                                     onClick={saveChanges}
