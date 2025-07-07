@@ -402,7 +402,6 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
             <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2"
                 onClick={(e) => e.stopPropagation()}
-                data-testid="scorecard-root"
             >
                 {/* Header with name */}
                 <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
