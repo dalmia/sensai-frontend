@@ -400,7 +400,9 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 onClose={closeToast}
             />
 
-            <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2">
+            <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header with name */}
                 <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
                     {/* NEW pill */}
@@ -603,6 +605,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     className="bg-[#333] rounded w-full text-sm p-2 pr-10 outline-none min-h-[60px] resize-y"
                                                     style={{ caretColor: 'white', resize: 'none' }}
                                                     placeholder="Enter description"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 />
                                                 <button
                                                     onClick={saveChanges}
