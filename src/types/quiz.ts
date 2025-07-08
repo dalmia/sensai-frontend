@@ -32,7 +32,6 @@ export interface QuizQuestionConfig {
     responseType: 'chat' | 'exam';
     correctAnswer?: any[];
     codingLanguages?: string[]; // For multiple coding languages
-    audioMaxDuration?: number; // For audio input type in seconds
     questionType: 'objective' | 'subjective';
     scorecardData?: ScorecardTemplate;
     knowledgeBaseBlocks: any[]; // Add knowledge base content blocks

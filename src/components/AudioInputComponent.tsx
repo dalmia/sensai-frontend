@@ -6,7 +6,6 @@ import { Mic, Play, Send, Pause, Trash2 } from 'lucide-react';
 interface AudioInputComponentProps {
     onAudioSubmit: (audioBlob: Blob) => void;
     isSubmitting: boolean;
-    maxDuration?: number;
     isDisabled?: boolean;
 }
 
@@ -87,7 +86,6 @@ const getSupportedMimeType = () => {
 export default function AudioInputComponent({
     onAudioSubmit,
     isSubmitting,
-    maxDuration = 120,
     isDisabled = false
 }: AudioInputComponentProps) {
     // Basic states
@@ -97,6 +95,7 @@ export default function AudioInputComponent({
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackProgress, setPlaybackProgress] = useState(0);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [showMaxDurationError, setShowMaxDurationError] = useState(false);
 
     // Separate waveform data states for live recording and snapshot
     const [liveWaveformData, setLiveWaveformData] = useState<number[]>([]);
@@ -137,6 +136,7 @@ export default function AudioInputComponent({
             setLiveWaveformData([]);
             setSnapshotWaveformData([]);
             setAudioBlob(null);
+            setShowMaxDurationError(false);
             audioChunksRef.current = [];
 
             // Create audio context
@@ -215,11 +215,13 @@ export default function AudioInputComponent({
             setRecordingDuration(0);
 
             // Set timer for recording duration
+            const MAX_DURATION = 3600; // 1 hour in seconds
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => {
-                    if (prev >= maxDuration - 1) {
+                    if (prev >= MAX_DURATION) {
                         stopRecording();
-                        return maxDuration;
+                        setShowMaxDurationError(true);
+                        return MAX_DURATION;
                     }
                     return prev + 1;
                 });
@@ -277,7 +279,7 @@ export default function AudioInputComponent({
 
     // Stop recording
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
 
@@ -393,6 +395,8 @@ export default function AudioInputComponent({
             setSnapshotWaveformData([]);
             // Close the delete confirmation dialog if it's open
             setShowDeleteConfirmation(false);
+            // Reset max duration error if it's shown
+            setShowMaxDurationError(false);
         }
     };
 
@@ -424,6 +428,7 @@ export default function AudioInputComponent({
 
         // Close confirmation dialog
         setShowDeleteConfirmation(false);
+        setShowMaxDurationError(false);
 
         // Clear audio player source if it exists
         if (audioPlayerRef.current) {
@@ -444,6 +449,15 @@ export default function AudioInputComponent({
                     <div className="bg-black/80 rounded-full px-4 py-2 shadow-md flex items-center">
                         <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
                         <span className="text-red-500 font-light text-sm">Recording {formatTime(recordingDuration)}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Max duration reached error message */}
+            {showMaxDurationError && (
+                <div className="absolute -top-10 left-0 right-0 text-center flex items-center justify-center z-20">
+                    <div className="bg-red-500/90 rounded-full px-4 py-2 shadow-md flex items-center">
+                        <span className="text-white font-light text-sm">Maximum recording duration reached</span>
                     </div>
                 </div>
             )}

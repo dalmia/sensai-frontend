@@ -208,14 +208,14 @@ describe('AudioInputComponent', () => {
         });
 
         it('stops recording at max duration', async () => {
-            render(<AudioInputComponent onAudioSubmit={mockOnAudioSubmit} isSubmitting={false} maxDuration={2} />);
+            render(<AudioInputComponent onAudioSubmit={mockOnAudioSubmit} isSubmitting={false} />);
 
             fireEvent.click(screen.getByTestId('mic-icon').closest('button')!);
             await waitFor(() => expect(mockMediaRecorder.start).toHaveBeenCalled());
 
             // Fast-forward timers to exceed the maxDuration and flush any pending intervals
             act(() => {
-                jest.advanceTimersByTime(3000); // 3 seconds to be safe
+                jest.advanceTimersByTime(3600000); // 1 hour to be safe
                 jest.runOnlyPendingTimers();
                 // Fallback: if the component hasn't invoked stop yet (due to fake timers quirks), trigger it manually so subsequent assertions reflect expected state
                 if (mockMediaRecorder.stop.mock.calls.length === 0) {
@@ -225,6 +225,7 @@ describe('AudioInputComponent', () => {
 
             await waitFor(() => {
                 expect(mockMediaRecorder.stop).toHaveBeenCalled();
+                expect(screen.getByText('Maximum recording duration reached')).toBeInTheDocument();
             });
         });
 
@@ -233,7 +234,8 @@ describe('AudioInputComponent', () => {
 
             fireEvent.click(screen.getByTestId('mic-icon').closest('button')!);
             await waitFor(() => expect(mockMediaRecorder.start).toHaveBeenCalled());
-
+            // Set state to 'recording' so stopRecording will call stop
+            mockMediaRecorder.state = 'recording';
             fireEvent.click(screen.getByRole('button')); // Click stop button
             expect(mockMediaRecorder.stop).toHaveBeenCalled();
         });
@@ -302,7 +304,7 @@ describe('AudioInputComponent', () => {
             render(<AudioInputComponent onAudioSubmit={mockOnAudioSubmit} isSubmitting={false} />);
             fireEvent.click(screen.getByTestId('mic-icon').closest('button')!);
             await waitFor(() => expect(mockMediaRecorder.start).toHaveBeenCalled());
-
+            mockMediaRecorder.state = 'recording';
             const testBlob = new Blob(['test-audio'], { type: 'audio/webm' });
 
             // Simulate recording data
