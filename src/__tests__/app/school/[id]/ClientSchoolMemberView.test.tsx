@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ClientSchoolLearnerView from '@/app/school/[id]/ClientSchoolLearnerView';
+import ClientSchoolMemberView from '@/app/school/[id]/ClientSchoolMemberView';
 import { useAuth } from '@/lib/auth';
 import { useSchools, getCompletionData } from '@/lib/api';
 import { transformCourseToModules } from '@/lib/course';
@@ -51,8 +51,8 @@ jest.mock('@/components/CohortCard', () => {
     };
 });
 
-jest.mock('@/components/LearnerCohortView', () => {
-    return function MockLearnerCohortView({
+jest.mock('@/components/MemberCohortView', () => {
+    return function MockMemberCohortView({
         courseTitle,
         modules,
         courses,
@@ -111,7 +111,7 @@ const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockSearchParams = new URLSearchParams();
 
-describe('ClientSchoolLearnerView', () => {
+describe('ClientSchoolMemberView', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
@@ -157,7 +157,7 @@ describe('ClientSchoolLearnerView', () => {
                 schools: []
             });
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             expect(screen.getByTestId('header')).toBeInTheDocument();
             expect(document.querySelector('.animate-spin')).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe('ClientSchoolLearnerView', () => {
                 schools: []
             });
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             expect(mockPush).toHaveBeenCalledWith('/login');
         });
@@ -199,7 +199,7 @@ describe('ClientSchoolLearnerView', () => {
                 new Promise(() => { }) // Never resolves to simulate loading
             );
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             expect(document.querySelector('.animate-spin')).toBeInTheDocument();
         });
@@ -238,7 +238,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(fetch).toHaveBeenCalledWith(
@@ -274,7 +274,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(fetch).toHaveBeenCalledWith(
@@ -294,7 +294,7 @@ describe('ClientSchoolLearnerView', () => {
                 status: 404
             } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByText('School not found')).toBeInTheDocument();
@@ -333,7 +333,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByText(/You are viewing all the cohorts/)).toBeInTheDocument();
@@ -362,7 +362,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.queryByText(/You are viewing all the cohorts/)).not.toBeInTheDocument();
@@ -400,7 +400,7 @@ describe('ClientSchoolLearnerView', () => {
                     json: () => Promise.resolve([])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByText('No cohorts available')).toBeInTheDocument();
@@ -434,7 +434,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByTestId('active-cohort')).toHaveTextContent('Cohort 1');
@@ -491,7 +491,7 @@ describe('ClientSchoolLearnerView', () => {
                 json: () => Promise.resolve([])
             } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByText('No courses available')).toBeInTheDocument();
@@ -509,7 +509,7 @@ describe('ClientSchoolLearnerView', () => {
                 ])
             } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
@@ -527,7 +527,7 @@ describe('ClientSchoolLearnerView', () => {
                 ])
             } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByTestId('active-course-index')).toHaveTextContent('0');
@@ -553,7 +553,7 @@ describe('ClientSchoolLearnerView', () => {
                 status: 500
             } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByText('Failed to load courses. Please try again.')).toBeInTheDocument();
@@ -625,7 +625,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByTestId('active-cohort')).toHaveTextContent('Cohort 2');
@@ -665,7 +665,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(screen.getByTestId('active-course-index')).toHaveTextContent('1');
@@ -686,7 +686,7 @@ describe('ClientSchoolLearnerView', () => {
             });
         });
 
-        it('should load and pass completion data to LearnerCohortView', async () => {
+        it('should load and pass completion data to MemberCohortView', async () => {
             // Mock successful API responses
             (fetch as jest.MockedFunction<typeof fetch>)
                 .mockResolvedValueOnce({
@@ -710,7 +710,7 @@ describe('ClientSchoolLearnerView', () => {
                     ])
                 } as Response);
 
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 expect(getCompletionData).toHaveBeenCalledWith(1, 'user-1');
@@ -758,7 +758,7 @@ describe('ClientSchoolLearnerView', () => {
         });
 
         it('should handle back button click', async () => {
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 // Find the back button by its class and icon presence
@@ -770,7 +770,7 @@ describe('ClientSchoolLearnerView', () => {
         });
 
         it('should open mobile dropdown when switch button is clicked', async () => {
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 const switchButton = screen.getByText('Switch');
@@ -781,7 +781,7 @@ describe('ClientSchoolLearnerView', () => {
         });
 
         it('should handle cohort selection from mobile dropdown', async () => {
-            render(<ClientSchoolLearnerView slug="test-school" />);
+            render(<ClientSchoolMemberView slug="test-school" />);
 
             await waitFor(() => {
                 const switchButton = screen.getByText('Switch');

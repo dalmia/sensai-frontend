@@ -29,6 +29,7 @@ export interface Cohort {
     id: number;
     name: string;
     joined_at: string | undefined;
+    role?: string;
 }
 
 export interface CohortWithDetails extends Cohort {

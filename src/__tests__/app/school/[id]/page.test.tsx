@@ -7,14 +7,14 @@ jest.mock('next/navigation', () => ({
     useParams: jest.fn()
 }));
 
-// Mock the ClientSchoolLearnerView component
-jest.mock('@/app/school/[id]/ClientSchoolLearnerView', () => {
+// Mock the ClientSchoolMemberView component
+jest.mock('@/app/school/[id]/ClientSchoolMemberView', () => {
     return jest.fn(() => <div data-testid="client-school-learner-view">Client School Learner View</div>);
 });
 
 // Import the mocked functions to access them in tests
 const { useParams } = require('next/navigation');
-const mockClientSchoolLearnerView = require('@/app/school/[id]/ClientSchoolLearnerView');
+const mockClientSchoolMemberView = require('@/app/school/[id]/ClientSchoolMemberView');
 
 describe('SchoolPage', () => {
     beforeEach(() => {
@@ -22,40 +22,40 @@ describe('SchoolPage', () => {
     });
 
     describe('Parameter handling', () => {
-        it('should render ClientSchoolLearnerView with correct slug when id is provided', () => {
+        it('should render ClientSchoolMemberView with correct slug when id is provided', () => {
             useParams.mockReturnValue({ id: 'test-school' });
 
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: 'test-school' },
                 undefined
             );
         });
 
-        it('should render ClientSchoolLearnerView with numeric school id', () => {
+        it('should render ClientSchoolMemberView with numeric school id', () => {
             useParams.mockReturnValue({ id: '12345' });
 
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: '12345' },
                 undefined
             );
         });
 
-        it('should render ClientSchoolLearnerView with complex school id', () => {
+        it('should render ClientSchoolMemberView with complex school id', () => {
             useParams.mockReturnValue({ id: 'school-test_123-abc' });
 
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: 'school-test_123-abc' },
                 undefined
             );
@@ -67,8 +67,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: undefined },
                 undefined
             );
@@ -80,8 +80,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: null },
                 undefined
             );
@@ -93,8 +93,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: '' },
                 undefined
             );
@@ -108,8 +108,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: undefined },
                 undefined
             );
@@ -121,8 +121,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: undefined },
                 undefined
             );
@@ -134,8 +134,8 @@ describe('SchoolPage', () => {
             const { getByTestId } = render(<SchoolPage />);
 
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: undefined },
                 undefined
             );
@@ -143,7 +143,7 @@ describe('SchoolPage', () => {
     });
 
     describe('Component rendering', () => {
-        it('should render only ClientSchoolLearnerView component', () => {
+        it('should render only ClientSchoolMemberView component', () => {
             useParams.mockReturnValue({ id: 'test-school' });
 
             const { container } = render(<SchoolPage />);
@@ -161,13 +161,13 @@ describe('SchoolPage', () => {
             expect(useParams).toHaveBeenCalledWith();
         });
 
-        it('should call ClientSchoolLearnerView with only slug prop', () => {
+        it('should call ClientSchoolMemberView with only slug prop', () => {
             useParams.mockReturnValue({ id: 'test-school' });
 
             render(<SchoolPage />);
 
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
-            const [props] = mockClientSchoolLearnerView.mock.calls[0];
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
+            const [props] = mockClientSchoolMemberView.mock.calls[0];
             expect(Object.keys(props)).toEqual(['slug']);
         });
     });
@@ -178,7 +178,7 @@ describe('SchoolPage', () => {
 
             render(<SchoolPage />);
 
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: 123 },
                 undefined
             );
@@ -189,7 +189,7 @@ describe('SchoolPage', () => {
 
             render(<SchoolPage />);
 
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: true },
                 undefined
             );
@@ -200,27 +200,27 @@ describe('SchoolPage', () => {
 
             render(<SchoolPage />);
 
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: ['test', 'school'] },
                 undefined
             );
         });
     });
 
-    describe('Integration with ClientSchoolLearnerView', () => {
-        it('should pass correct slug prop to ClientSchoolLearnerView', () => {
+    describe('Integration with ClientSchoolMemberView', () => {
+        it('should pass correct slug prop to ClientSchoolMemberView', () => {
             const schoolSlug = 'integration-test-school';
             useParams.mockReturnValue({ id: schoolSlug });
 
             render(<SchoolPage />);
 
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenCalledWith(
                 { slug: schoolSlug },
                 undefined
             );
         });
 
-        it('should render ClientSchoolLearnerView component successfully', () => {
+        it('should render ClientSchoolMemberView component successfully', () => {
             useParams.mockReturnValue({ id: 'test' });
 
             const { getByTestId } = render(<SchoolPage />);
@@ -236,25 +236,25 @@ describe('SchoolPage', () => {
 
             const { rerender, getByTestId } = render(<SchoolPage />);
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(1);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(1);
 
             rerender(<SchoolPage />);
             expect(getByTestId('client-school-learner-view')).toBeInTheDocument();
-            expect(mockClientSchoolLearnerView).toHaveBeenCalledTimes(2);
+            expect(mockClientSchoolMemberView).toHaveBeenCalledTimes(2);
         });
 
         it('should handle parameter changes between renders', () => {
             useParams.mockReturnValue({ id: 'school-1' });
 
             const { rerender } = render(<SchoolPage />);
-            expect(mockClientSchoolLearnerView).toHaveBeenLastCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenLastCalledWith(
                 { slug: 'school-1' },
                 undefined
             );
 
             useParams.mockReturnValue({ id: 'school-2' });
             rerender(<SchoolPage />);
-            expect(mockClientSchoolLearnerView).toHaveBeenLastCalledWith(
+            expect(mockClientSchoolMemberView).toHaveBeenLastCalledWith(
                 { slug: 'school-2' },
                 undefined
             );

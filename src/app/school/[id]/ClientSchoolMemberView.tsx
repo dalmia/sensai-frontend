@@ -9,9 +9,10 @@ import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
 import { getCompletionData, useSchools } from "@/lib/api";
-import { Cohort, Task, Milestone } from "@/types";
+import { Cohort, Task, Milestone, CohortWithDetails } from "@/types";
 import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
+import MentorCohortView from "@/components/MentorCohortView";
 
 interface School {
     id: number;
@@ -26,7 +27,7 @@ interface Course {
     course_generation_status?: string | null;
 }
 
-export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
+export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     // Get course_id and cohort_id from query parameters
@@ -107,7 +108,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                 const transformedCohorts: Cohort[] = cohortsData.map((cohort: any) => ({
                     id: cohort.id,
                     name: cohort.name,
-                    joined_at: cohort.joined_at
+                    joined_at: cohort.joined_at,
+                    role: cohort.role
                 }));
 
                 setCohorts(transformedCohorts);
@@ -217,11 +219,13 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             const courseIndex = courses.findIndex(
                 course => course.id.toString() === defaultCourseId
             );
-
-            if (courseIndex !== -1) {
-                // Set the active course to the one from query params
-                handleCourseSelect(courseIndex);
+            if (courseIndex !== -1 && courseIndex !== activeCourseIndex) {
+                setActiveCourseIndex(courseIndex);
             }
+        }
+        // If no course_id param, reset to 0
+        if (courses.length > 0 && !defaultCourseId && activeCourseIndex !== 0) {
+            setActiveCourseIndex(0);
         }
     }, [courses, defaultCourseId]);
 
@@ -231,7 +235,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             return;
         }
         setActiveCourseIndex(index);
-        const modules = transformCourseToModules(courses[index], activeCohort?.joined_at);
+        const modules = transformCourseToModules(courses[index]);
         setCourseModules(modules);
 
         // Update URL with course ID
@@ -431,23 +435,37 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                                 <p className="text-gray-400">There are no courses in this cohort yet</p>
                                             </div>
                                         ) : (
-                                            // Course Content using LearnerCohortView
+                                            // Course Content using LearnerCohortView or MentorCohortView
                                             <div className="w-full px-4 py-4 md:py-8">
                                                 {courses.length > 0 && (
                                                     <div className="w-full">
-                                                        <LearnerCohortView
-                                                            courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
-                                                            modules={courseModules}
-                                                            schoolId={school.id.toString()}
-                                                            cohortId={activeCohort?.id.toString()}
-                                                            streakDays={2}
-                                                            activeDays={["M", "T"]}
-                                                            completedTaskIds={completedTaskIds}
-                                                            completedQuestionIds={completedQuestionIds}
-                                                            courses={courses}
-                                                            onCourseSelect={handleCourseSelect}
-                                                            activeCourseIndex={activeCourseIndex}
-                                                        />
+                                                        {activeCohort?.role === "mentor" ? (
+                                                            <MentorCohortView
+                                                                cohort={{
+                                                                    ...activeCohort,
+                                                                    org_id: school.id,
+                                                                    groups: (activeCohort as any).groups || [],
+                                                                    courses: courses
+                                                                } as CohortWithDetails}
+                                                                activeCourseIndex={activeCourseIndex}
+                                                                schoolId={school.id.toString()}
+                                                                onActiveCourseChange={handleCourseSelect}
+                                                            />
+                                                        ) : (
+                                                            <LearnerCohortView
+                                                                courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
+                                                                modules={courseModules}
+                                                                schoolId={school.id.toString()}
+                                                                cohortId={activeCohort?.id.toString()}
+                                                                streakDays={2}
+                                                                activeDays={["M", "T"]}
+                                                                completedTaskIds={completedTaskIds}
+                                                                completedQuestionIds={completedQuestionIds}
+                                                                courses={courses}
+                                                                onCourseSelect={handleCourseSelect}
+                                                                activeCourseIndex={activeCourseIndex}
+                                                            />
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
