@@ -41,8 +41,8 @@ export default function MentorCohortView({
     if (batchId === null) {
         return (
             <div className="flex flex-col items-center justify-center py-20 flex-1">
-                <h2 className="text-4xl font-light mb-4">You have not been assigned any learners yet</h2>
-                <p className="text-gray-400 mb-8">Once added you will see progress metrics here</p>
+                <h2 className="text-4xl font-light mb-4">No learners assigned yet</h2>
+                <p className="text-gray-400 mb-8">You will see their progress here once they are assigned to you</p>
             </div>
         );
     }
@@ -57,7 +57,7 @@ export default function MentorCohortView({
             setIsLoadingMembers(true);
             setMembersError(null);
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohort.id}`);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohort.id}?batch_id=${batchId}`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch cohort members: ${response.status}`);
                 }
@@ -96,6 +96,7 @@ export default function MentorCohortView({
             view="mentor"
             activeCourseIndex={activeCourseIndex}
             onActiveCourseChange={onActiveCourseChange}
+            batchId={batchId}
         />
     );
 } 

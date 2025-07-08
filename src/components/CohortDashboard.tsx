@@ -32,11 +32,12 @@ interface CohortDashboardProps {
     schoolId: string;
     onAddLearners?: () => void;
     view?: 'admin' | 'mentor';
-    activeCourseIndex?: number; // NEW
-    onActiveCourseChange?: (index: number) => void; // NEW
+    activeCourseIndex?: number;
+    onActiveCourseChange?: (index: number) => void;
+    batchId?: number | null;
 }
 
-export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange }: CohortDashboardProps) {
+export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId }: CohortDashboardProps) {
     // State for course metrics
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -44,7 +45,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
 
     // State for active course
     const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
-    // NEW: Track local index for dropdown
+    // Track local index for dropdown
     const [localCourseIndex, setLocalCourseIndex] = useState<number>(0);
 
     // State for sorting the student metrics table
@@ -440,12 +441,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                         cohortName={cohort?.name}
                         view='admin'
                         topN={5}
+                        batchId={batchId}
                     />
                     {/* View All Leaderboard Button */}
                     {cohort?.members?.filter(m => m.role === 'learner').length > 5 &&
                         <div className="flex justify-center mt-2">
                             <Link
-                                href={`/school/${schoolId}/cohort/${cohortId}/leaderboard`}
+                                href={`/school/${schoolId}/cohort/${cohortId}/leaderboard${batchId != null ? `?batchId=${batchId}` : ''}`}
                                 className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
                             bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
                             >

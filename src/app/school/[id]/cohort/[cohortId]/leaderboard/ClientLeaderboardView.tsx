@@ -12,12 +12,14 @@ export default function ClientLeaderboardView({
     cohortId,
     cohortName: initialCohortName,
     view,
-    topN
+    topN,
+    batchId
 }: {
     cohortId: string;
     cohortName?: string;
     view: 'learner' | 'admin'
     topN?: number;
+    batchId?: number | null;
 }) {
     const router = useRouter();
     const { user } = useAuth();
@@ -34,7 +36,11 @@ export default function ClientLeaderboardView({
             setLoading(true);
 
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`);
+                const url = batchId != null
+                    ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard?batch_id=${batchId}`
+                    : `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`;
+
+                const response = await fetch(url);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch leaderboard data: ${response.status}`);
@@ -66,7 +72,7 @@ export default function ClientLeaderboardView({
         };
 
         fetchLeaderboardData();
-    }, [cohortId, user?.id]);
+    }, [cohortId, user?.id, batchId]);
 
     // Function to get the appropriate badge SVG based on position
     const getPositionBadge = (position: number) => {
