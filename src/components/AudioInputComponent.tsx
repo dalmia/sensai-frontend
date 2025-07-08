@@ -6,7 +6,6 @@ import { Mic, Play, Send, Pause, Trash2 } from 'lucide-react';
 interface AudioInputComponentProps {
     onAudioSubmit: (audioBlob: Blob) => void;
     isSubmitting: boolean;
-    maxDuration?: number;
     isDisabled?: boolean;
 }
 
@@ -87,7 +86,6 @@ const getSupportedMimeType = () => {
 export default function AudioInputComponent({
     onAudioSubmit,
     isSubmitting,
-    maxDuration = 3600,
     isDisabled = false
 }: AudioInputComponentProps) {
     // Basic states
@@ -217,12 +215,13 @@ export default function AudioInputComponent({
             setRecordingDuration(0);
 
             // Set timer for recording duration
+            const MAX_DURATION = 3600; // 1 hour in seconds
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => {
-                    if (prev >= maxDuration - 1) {
+                    if (prev >= MAX_DURATION) {
                         stopRecording();
                         setShowMaxDurationError(true);
-                        return maxDuration;
+                        return MAX_DURATION;
                     }
                     return prev + 1;
                 });
@@ -429,6 +428,7 @@ export default function AudioInputComponent({
 
         // Close confirmation dialog
         setShowDeleteConfirmation(false);
+        setShowMaxDurationError(false);
 
         // Clear audio player source if it exists
         if (audioPlayerRef.current) {
@@ -452,7 +452,7 @@ export default function AudioInputComponent({
                     </div>
                 </div>
             )}
-            
+
             {/* Max duration reached error message */}
             {showMaxDurationError && (
                 <div className="absolute -top-10 left-0 right-0 text-center flex items-center justify-center z-20">

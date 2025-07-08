@@ -87,7 +87,6 @@ export default function LearnerQuizView({
                         responseType: 'chat',
                         questionType: 'objective',
                         correctAnswer: [],
-                        audioMaxDuration: 3600, // Default to 1 hour
                         scorecardData: undefined,
                         codingLanguages: [] // Default code language
                     }
@@ -104,7 +103,6 @@ export default function LearnerQuizView({
                     responseType: q.config?.responseType,
                     questionType: q.config?.questionType,
                     correctAnswer: q.config?.correctAnswer || [],
-                    audioMaxDuration: q.config?.audioMaxDuration || 3600,
                     scorecardData: q.config?.scorecardData,
                     codingLanguages: q.config?.codingLanguages || [] // Ensure code language is set
                 };
@@ -126,7 +124,6 @@ export default function LearnerQuizView({
                         responseType: config.responseType,
                         questionType: config.questionType,
                         correctAnswer: config.correctAnswer || [],
-                        audioMaxDuration: config.audioMaxDuration || 3600,
                         scorecardData: config.scorecardData,
                         codingLanguages: config.codingLanguages || [] // Ensure code language is set
                     }
@@ -144,7 +141,6 @@ export default function LearnerQuizView({
                     responseType: config.responseType,
                     questionType: config.questionType,
                     correctAnswer: config.correctAnswer || [],
-                    audioMaxDuration: config.audioMaxDuration || 3600,
                     scorecardData: config.scorecardData,
                     codingLanguages: config.codingLanguages || [] // Ensure code language is set
                 }
