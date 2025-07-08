@@ -187,49 +187,84 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                         <h2 className="text-2xl font-light mb-4">{activeCourse.name}</h2>
                     )}
 
-                    {/* Course selector dropdown */}
+                    {/* Course selector: Tabs for mentor, Dropdown for others */}
                     {cohort?.courses && cohort.courses.length > 1 && (
                         <div className="mb-6">
-                            <label className="block text-sm text-gray-400 mb-2">
-                                Select Course
-                            </label>
-                            <div className="relative inline-block">
-                                <button
-                                    id="course-dropdown-button"
-                                    data-testid="course-dropdown-button"
-                                    className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
-                                    onClick={() => {
-                                        const dropdown = document.getElementById('course-dropdown');
-                                        if (dropdown) {
-                                            dropdown.classList.toggle('hidden');
-                                        }
-                                    }}
-                                >
-                                    <span>{cohort.courses[localCourseIndex]?.name}</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                                <div
-                                    id="course-dropdown"
-                                    className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
-                                >
-                                    {cohort.courses.map((course, idx) => (
+                            {view === 'mentor' ? (
+                                // Tabs for mentor view
+                                <div className="w-full">
+                                    <div className="flex items-center border-b border-gray-900 overflow-x-auto scrollbar-hide">
+                                        {cohort.courses.map((course, index) => (
+                                            <button
+                                                key={course.id}
+                                                className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === localCourseIndex
+                                                    ? 'text-white font-light'
+                                                    : 'text-gray-500 hover:text-gray-300 font-light'
+                                                    }`}
+                                                onClick={() => {
+                                                    setActiveCourseId(course.id);
+                                                    setLocalCourseIndex(index);
+                                                    if (onActiveCourseChange) onActiveCourseChange(index);
+                                                }}
+                                            >
+                                                <span className="relative z-10">{course.name}</span>
+                                                {/* Active indicator */}
+                                                {index === localCourseIndex && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white" />
+                                                )}
+                                                {/* Hover indicator */}
+                                                {index !== localCourseIndex && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                // Dropdown for admin/other views
+                                <>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Select Course
+                                    </label>
+                                    <div className="relative inline-block">
                                         <button
-                                            key={course.id}
-                                            className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''}`}
+                                            id="course-dropdown-button"
+                                            data-testid="course-dropdown-button"
+                                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
                                             onClick={() => {
-                                                setActiveCourseId(course.id);
-                                                setLocalCourseIndex(idx);
-                                                if (onActiveCourseChange) onActiveCourseChange(idx);
-                                                document.getElementById('course-dropdown')?.classList.add('hidden');
+                                                const dropdown = document.getElementById('course-dropdown');
+                                                if (dropdown) {
+                                                    dropdown.classList.toggle('hidden');
+                                                }
                                             }}
                                         >
-                                            {course.name}
+                                            <span>{cohort.courses[localCourseIndex]?.name}</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div
+                                            id="course-dropdown"
+                                            className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
+                                        >
+                                            {cohort.courses.map((course, idx) => (
+                                                <button
+                                                    key={course.id}
+                                                    className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''}`}
+                                                    onClick={() => {
+                                                        setActiveCourseId(course.id);
+                                                        setLocalCourseIndex(idx);
+                                                        if (onActiveCourseChange) onActiveCourseChange(idx);
+                                                        document.getElementById('course-dropdown')?.classList.add('hidden');
+                                                    }}
+                                                >
+                                                    {course.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
