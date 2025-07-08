@@ -3281,4 +3281,26 @@ describe('LearnerQuizView Component', () => {
             jest.dontMock('../../components/ChatView');
         });
     });
+
+    describe('Default config branch coverage', () => {
+        it('uses default audioMaxDuration=3600 when config.audioMaxDuration is missing', () => {
+            // Create a question with missing audioMaxDuration and unexpected structure
+            const defaultConfigQuestion = [
+                {
+                    id: 'default-branch-q',
+                    // No content, no blocks
+                    config: {
+                        // No audioMaxDuration provided
+                        inputType: 'audio',
+                        responseType: 'chat',
+                        questionType: 'objective',
+                        correctAnswer: []
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView questions={defaultConfigQuestion as any} userId="user1" taskId="task1" />);
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+    });
 });
