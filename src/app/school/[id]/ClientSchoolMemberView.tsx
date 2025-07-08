@@ -52,6 +52,11 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
     const [completedQuestionIds, setCompletedQuestionIds] = useState<Record<string, Record<string, boolean>>>({});
 
+    // Add after isAdminOrOwner state
+    const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
+    const [availableBatches, setAvailableBatches] = useState<{ id: number, name: string }[]>([]);
+    const [showBatchSelector, setShowBatchSelector] = useState<boolean>(false);
+
     // Fetch school data
     useEffect(() => {
         const fetchSchool = async () => {
@@ -109,7 +114,8 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                     id: cohort.id,
                     name: cohort.name,
                     joined_at: cohort.joined_at,
-                    role: cohort.role
+                    role: cohort.role,
+                    batches: cohort.batches || undefined // add batches if present
                 }));
 
                 setCohorts(transformedCohorts);
@@ -143,6 +149,24 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
 
         fetchSchool();
     }, [slug, router, user?.id, isAuthenticated, authLoading, schools, defaultCohortId]);
+
+    // Add useEffect to update batch state when activeCohort changes
+    useEffect(() => {
+        if (activeCohort && (activeCohort as any).batches) {
+            const batches = (activeCohort as any).batches;
+            setAvailableBatches(batches);
+            if (batches.length > 1) {
+                setSelectedBatchId(batches[0].id);
+            } else if (batches.length === 1) {
+                setSelectedBatchId(batches[0].id);
+            } else {
+                setSelectedBatchId(null);
+            }
+        } else {
+            setAvailableBatches([]);
+            setSelectedBatchId(null);
+        }
+    }, [activeCohort]);
 
     // Function to fetch cohort courses
     const fetchCohortCourses = async (cohortId: number) => {
@@ -415,6 +439,25 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                             Switch
                                                         </button>
                                                     )}
+                                                    {activeCohort?.role === "mentor" && availableBatches.length > 1 && (
+                                                        <>
+                                                            <button
+                                                                className="ml-2 bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"
+                                                                onClick={() => setShowBatchSelector(true)}
+                                                            >
+                                                                {availableBatches.find(b => b.id === selectedBatchId)?.name || "Select Batch"}
+                                                                <ChevronDown className="inline ml-1 w-4 h-4" />
+                                                            </button>
+                                                            <MobileDropdown
+                                                                isOpen={showBatchSelector}
+                                                                onClose={() => setShowBatchSelector(false)}
+                                                                title="Switch Batch"
+                                                                options={availableBatches.map(b => ({ id: b.id, label: <span className="text-white font-light">{b.name}</span>, value: b }))}
+                                                                selectedId={selectedBatchId === null ? undefined : selectedBatchId}
+                                                                onSelect={option => setSelectedBatchId(option.id as number)}
+                                                            />
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -450,6 +493,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 activeCourseIndex={activeCourseIndex}
                                                                 schoolId={school.id.toString()}
                                                                 onActiveCourseChange={handleCourseSelect}
+                                                                batchId={selectedBatchId}
                                                             />
                                                         ) : (
                                                             <LearnerCohortView

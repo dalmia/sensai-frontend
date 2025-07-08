@@ -540,7 +540,10 @@ export default function CreateBatchDialog({
         // If no mentors, show learners in grid (2 columns)
         if (selectedMentors.length === 0) {
             return (
-                <div className="flex-1 flex px-6 pb-6 overflow-y-auto">
+                <div className="flex-1 flex flex-col px-6 pb-6 overflow-y-auto">
+                    <h3 className="text-gray-400 text-sm mb-4">
+                        {selectedLearners.length} {selectedLearners.length === 1 ? "learner" : "learners"}
+                    </h3>
                     <div className="grid grid-cols-2 gap-6 items-start flex-1">
                         {selectedLearners.map(learner => (
                             <div key={learner.id} className="p-4 rounded-lg bg-purple-600 text-white text-sm truncate">
@@ -555,7 +558,9 @@ export default function CreateBatchDialog({
         return (
             <div className="flex-1 grid grid-cols-2 gap-6 px-6 pb-6 overflow-y-auto">
                 <div className="space-y-4 flex-1">
-                    <h3 className="text-gray-400 text-sm">Learners ({selectedLearners.length})</h3>
+                    <h3 className="text-gray-400 text-sm">
+                        {selectedLearners.length} {selectedLearners.length === 1 ? "learner" : "learners"}
+                    </h3>
                     <div className="space-y-3 max-h-[calc(100%-40px)] overflow-y-auto pr-2">
                         {selectedLearners.map(learner => (
                             <div key={learner.id} className="p-4 rounded-lg bg-purple-600 text-white text-sm truncate">
@@ -565,7 +570,9 @@ export default function CreateBatchDialog({
                     </div>
                 </div>
                 <div className="space-y-4 flex-1">
-                    <h3 className="text-gray-400 text-sm">Mentors ({selectedMentors.length})</h3>
+                    <h3 className="text-gray-400 text-sm">
+                        {selectedMentors.length} {selectedMentors.length === 1 ? "mentor" : "mentors"}
+                    </h3>
                     <div className="space-y-3 max-h-[calc(100%-40px)] overflow-y-auto pr-2">
                         {selectedMentors.map(mentor => (
                             <div key={mentor.id} className="p-4 rounded-lg bg-blue-600 text-white text-sm truncate">

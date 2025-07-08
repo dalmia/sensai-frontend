@@ -27,14 +27,25 @@ interface MentorCohortViewProps {
     activeCourseIndex?: number; // now optional
     schoolId: string;
     onActiveCourseChange?: (index: number) => void; // new
+    batchId?: number | null; // new
 }
 
 export default function MentorCohortView({
     cohort,
     activeCourseIndex = 0, // default to 0
     schoolId,
-    onActiveCourseChange
+    onActiveCourseChange,
+    batchId // new
 }: MentorCohortViewProps) {
+    // Show placeholder if batchId is null
+    if (batchId === null) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 flex-1">
+                <h2 className="text-4xl font-light mb-4">You have not been assigned any learners yet</h2>
+                <p className="text-gray-400 mb-8">Once added you will see progress metrics here</p>
+            </div>
+        );
+    }
     // State for cohort members
     const [cohortMembers, setCohortMembers] = useState<CohortMember[]>([]);
     const [isLoadingMembers, setIsLoadingMembers] = useState(true);
