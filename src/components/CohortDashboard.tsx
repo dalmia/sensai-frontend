@@ -78,13 +78,24 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
             return;
         }
 
-        // Use the active course or default to the first course if none is selected
-        const courseId = activeCourseId || cohort.courses[0].id;
+        // Use activeCourseIndex prop if provided, otherwise use localCourseIndex, defaulting to 0
+        let courseIndex = 0;
+        if (typeof activeCourseIndex === 'number' && activeCourseIndex >= 0 && activeCourseIndex < cohort.courses.length) {
+            courseIndex = activeCourseIndex;
+        } else if (localCourseIndex >= 0 && localCourseIndex < cohort.courses.length) {
+            courseIndex = localCourseIndex;
+        }
+        const courseId = cohort.courses[courseIndex].id;
+
         setIsLoadingMetrics(true);
         setMetricsError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`);
+            const url = batchId != null
+                ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics?batch_id=${batchId}`
+                : `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`;
+
+            const response = await fetch(url);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch metrics: ${response.status}`);
@@ -131,10 +142,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         };
     }, []);
 
-    // Fetch metrics when the component mounts, when cohort courses change, or when active course changes
+    // Fetch metrics when the component mounts, when cohort courses change, or when active course or batch changes
     useEffect(() => {
         fetchCourseMetrics();
-    }, [cohort?.courses, cohortId, activeCourseId]);
+    }, [cohort?.courses, cohortId, activeCourseIndex, localCourseIndex, batchId]);
 
     // Check if there are any learners in the cohort
     const learnerCount = cohort?.members?.filter(m => m.role === 'learner').length || 0;

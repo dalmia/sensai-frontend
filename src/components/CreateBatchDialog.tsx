@@ -544,7 +544,7 @@ export default function CreateBatchDialog({
                     <h3 className="text-gray-400 text-sm mb-4">
                         {selectedLearners.length} {selectedLearners.length === 1 ? "learner" : "learners"}
                     </h3>
-                    <div className="grid grid-cols-2 gap-6 items-start flex-1">
+                    <div className="grid grid-cols-2 gap-3">
                         {selectedLearners.map(learner => (
                             <div key={learner.id} className="p-4 rounded-lg bg-purple-600 text-white text-sm truncate">
                                 {learner.email}

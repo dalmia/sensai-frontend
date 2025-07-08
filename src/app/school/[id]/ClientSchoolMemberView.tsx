@@ -13,6 +13,7 @@ import { Cohort, Task, Milestone, CohortWithDetails } from "@/types";
 import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
 import MentorCohortView from "@/components/MentorCohortView";
+import MemberSchoolViewHeader from '@/components/MemberSchoolViewHeader';
 
 interface School {
     id: number;
@@ -154,6 +155,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     useEffect(() => {
         if (activeCohort && (activeCohort as any).batches) {
             const batches = (activeCohort as any).batches;
+            console.log(batches);
             setAvailableBatches(batches);
             if (batches.length > 1) {
                 setSelectedBatchId(batches[0].id);
@@ -377,9 +379,16 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
             <div className="hidden sm:block">
                 <Header
                     showCreateCourseButton={false}
-                    cohorts={cohorts}
-                    activeCohort={activeCohort}
-                    onCohortSelect={handleCohortSelect}
+                    centerSlot={
+                        <MemberSchoolViewHeader
+                            cohorts={cohorts}
+                            activeCohort={activeCohort}
+                            onCohortSelect={handleCohortSelect}
+                            batches={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? availableBatches : []}
+                            activeBatchId={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? selectedBatchId : null}
+                            onBatchSelect={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? (batchId => setSelectedBatchId(batchId)) : undefined}
+                        />
+                    }
                 />
             </div>
             <div className="min-h-screen bg-black text-white">
@@ -439,7 +448,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                             Switch
                                                         </button>
                                                     )}
-                                                    {activeCohort?.role === "mentor" && availableBatches.length > 1 && (
+                                                    {activeCohort?.role === "mentor" && availableBatches && availableBatches.length > 1 && (
                                                         <>
                                                             <button
                                                                 className="ml-2 bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"

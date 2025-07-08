@@ -70,7 +70,7 @@ export default function MentorCohortView({
             }
         };
         fetchCohortMembers();
-    }, [cohort?.id]);
+    }, [cohort?.id, batchId]);
 
     if (isLoadingMembers) {
         return (

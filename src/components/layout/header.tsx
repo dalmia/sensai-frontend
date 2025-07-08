@@ -13,28 +13,22 @@ import { Cohort } from "@/types";
 
 interface HeaderProps {
     showCreateCourseButton?: boolean;
-    cohorts?: Cohort[];
-    activeCohort?: Cohort | null;
-    onCohortSelect?: (cohort: Cohort) => void;
     showTryDemoButton?: boolean;
+    centerSlot?: React.ReactNode;
 }
 
 export function Header({
     showCreateCourseButton = true,
-    cohorts = [],
-    activeCohort = null,
-    onCohortSelect,
-    showTryDemoButton = false
+    showTryDemoButton = false,
+    centerSlot
 }: HeaderProps) {
     const router = useRouter();
     const { data: session } = useSession();
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-    const [cohortDropdownOpen, setCohortDropdownOpen] = useState(false);
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
     const [isSchoolPickerOpen, setIsSchoolPickerOpen] = useState(false);
     const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
-    const cohortDropdownRef = useRef<HTMLDivElement>(null);
     const mobileActionsRef = useRef<HTMLDivElement>(null);
     const { schools, isLoading } = useSchools();
 
@@ -52,9 +46,6 @@ export function Header({
             if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
                 setProfileMenuOpen(false);
             }
-            if (cohortDropdownRef.current && !cohortDropdownRef.current.contains(event.target as Node)) {
-                setCohortDropdownOpen(false);
-            }
             if (mobileActionsRef.current && !mobileActionsRef.current.contains(event.target as Node)) {
                 setMobileActionsOpen(false);
             }
@@ -64,7 +55,7 @@ export function Header({
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [profileMenuRef, cohortDropdownRef, mobileActionsRef]);
+    }, [profileMenuRef, mobileActionsRef]);
 
     // Handle logout
     const handleLogout = () => {
@@ -77,25 +68,12 @@ export function Header({
         setProfileMenuOpen(!profileMenuOpen);
     };
 
-    // Toggle cohort dropdown
-    const toggleCohortDropdown = () => {
-        if (cohorts.length > 1) {
-            setCohortDropdownOpen(!cohortDropdownOpen);
-        }
-    };
 
     // Toggle mobile actions menu
     const toggleMobileActions = () => {
         setMobileActionsOpen(!mobileActionsOpen);
     };
 
-    // Handle cohort selection
-    const handleCohortSelect = (cohort: Cohort) => {
-        if (onCohortSelect) {
-            onCohortSelect(cohort);
-        }
-        setCohortDropdownOpen(false);
-    };
 
     // Handle button click based on school ownership
     const handleButtonClick = (e: React.MouseEvent) => {
@@ -192,39 +170,10 @@ export function Header({
                     </div>
                 </Link>
 
-                {/* Center - Cohort Selector or Active Cohort Name */}
-                {cohorts.length > 0 && activeCohort && (
-                    <div className="hidden sm:flex flex-1 justify-center mx-1 sm:mx-2">
-                        {cohorts.length > 1 ? (
-                            <div className="relative" ref={cohortDropdownRef}>
-                                <button
-                                    className="flex items-center text-xl font-light bg-transparent hover:bg-[#0f0f0f] rounded-full px-4 py-2 cursor-pointer truncate max-w-none"
-                                    onClick={toggleCohortDropdown}
-                                >
-                                    <span className="truncate">{activeCohort.name}</span>
-                                    <ChevronDown className="ml-1 sm:ml-2 h-5 w-5 flex-shrink-0" />
-                                </button>
-
-                                {cohortDropdownOpen && (
-                                    <div className="absolute left-1/2 transform -translate-x-1/2 z-10 mt-1 w-full min-w-[200px] bg-[#0f0f0f] rounded-lg shadow-lg">
-                                        <ul className="py-2">
-                                            {cohorts.map(cohort => (
-                                                <li
-                                                    key={cohort.id}
-                                                    className={`px-4 py-3 hover:bg-gray-900 cursor-pointer truncate ${activeCohort.id === cohort.id ? 'text-white font-light' : 'text-gray-300'
-                                                        }`}
-                                                    onClick={() => handleCohortSelect(cohort)}
-                                                >
-                                                    {cohort.name}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <h2 className="text-xl font-light truncate max-w-none">{activeCohort.name}</h2>
-                        )}
+                {/* Center Slot (custom content) */}
+                {centerSlot && (
+                    <div className="hidden sm:flex flex-1 justify-center mx-1 sm:mx-2 items-center gap-4">
+                        {centerSlot}
                     </div>
                 )}
 
