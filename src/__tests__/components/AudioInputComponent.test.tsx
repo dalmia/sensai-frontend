@@ -95,8 +95,15 @@ const setupMocks = () => {
     };
 
     mockMediaRecorder = {
-        start: jest.fn(),
-        stop: jest.fn(),
+        start: jest.fn(() => {
+            mockMediaRecorder.state = 'recording';
+        }),
+        stop: jest.fn(() => {
+            mockMediaRecorder.state = 'inactive';
+            if (mockMediaRecorder.onstop) {
+                mockMediaRecorder.onstop();
+            }
+        }),
         ondataavailable: null,
         onstop: null,
         state: 'inactive'
@@ -316,11 +323,9 @@ describe('AudioInputComponent', () => {
             const stopButton = screen.getByRole('button');
             fireEvent.click(stopButton);
 
-            // The onstop handler should be triggered as a result of stopping
-            act(() => {
-                if (mockMediaRecorder.onstop) {
-                    mockMediaRecorder.onstop();
-                }
+            // Wait for the recording to stop and state to transition
+            await waitFor(() => {
+                expect(mockMediaRecorder.stop).toHaveBeenCalled();
             });
 
             // Wait for the component to process the recording and transition states

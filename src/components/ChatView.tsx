@@ -557,7 +557,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                             <AudioInputComponent
                                                 onAudioSubmit={handleAudioSubmit}
                                                 isSubmitting={isSubmitting || isAiResponding}
-                                                maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
+                                                maxDuration={currentQuestionConfig?.audioMaxDuration || 3600}
                                             />
                                         </div>
                                     ) : (
@@ -821,4 +821,5 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     );
 });
 
+ChatView.displayName = 'ChatView';
 export default ChatView; 
