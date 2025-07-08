@@ -225,6 +225,7 @@ describe('AudioInputComponent', () => {
 
             await waitFor(() => {
                 expect(mockMediaRecorder.stop).toHaveBeenCalled();
+                expect(screen.getByText('Maximum recording duration reached')).toBeInTheDocument();
             });
         });
 
@@ -233,7 +234,8 @@ describe('AudioInputComponent', () => {
 
             fireEvent.click(screen.getByTestId('mic-icon').closest('button')!);
             await waitFor(() => expect(mockMediaRecorder.start).toHaveBeenCalled());
-
+            // Set state to 'recording' so stopRecording will call stop
+            mockMediaRecorder.state = 'recording';
             fireEvent.click(screen.getByRole('button')); // Click stop button
             expect(mockMediaRecorder.stop).toHaveBeenCalled();
         });
@@ -302,7 +304,7 @@ describe('AudioInputComponent', () => {
             render(<AudioInputComponent onAudioSubmit={mockOnAudioSubmit} isSubmitting={false} />);
             fireEvent.click(screen.getByTestId('mic-icon').closest('button')!);
             await waitFor(() => expect(mockMediaRecorder.start).toHaveBeenCalled());
-
+            mockMediaRecorder.state = 'recording';
             const testBlob = new Blob(['test-audio'], { type: 'audio/webm' });
 
             // Simulate recording data
