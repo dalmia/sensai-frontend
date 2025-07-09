@@ -155,7 +155,6 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     useEffect(() => {
         if (activeCohort && (activeCohort as any).batches) {
             const batches = (activeCohort as any).batches;
-            console.log(batches);
             setAvailableBatches(batches);
             if (batches.length > 1) {
                 setSelectedBatchId(batches[0].id);
