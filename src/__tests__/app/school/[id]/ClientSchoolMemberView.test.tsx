@@ -838,4 +838,308 @@ describe('ClientSchoolMemberView', () => {
             });
         });
     });
+});
+
+describe('Mentor and Batch Logic', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        // Mock useRouter
+        (useRouter as jest.Mock).mockReturnValue({
+            push: mockPush,
+            replace: mockReplace,
+            prefetch: jest.fn(),
+            back: jest.fn(),
+            forward: jest.fn(),
+            refresh: jest.fn(),
+        });
+
+        (useAuth as jest.Mock).mockReturnValue({
+            user: { id: 'user-1' },
+            isAuthenticated: true,
+            isLoading: false
+        });
+        (useSchools as jest.Mock).mockReturnValue({
+            schools: []
+        });
+
+        // Mock useSearchParams
+        (useSearchParams as jest.Mock).mockReturnValue({
+            get: jest.fn(() => null)
+        });
+
+        // Mock transformCourseToModules
+        (transformCourseToModules as jest.Mock).mockReturnValue([
+            { id: 'module-1', title: 'Module 1', items: [] }
+        ]);
+
+        // Mock getCompletionData
+        (getCompletionData as jest.Mock).mockResolvedValue({
+            taskCompletions: { 'task-1': true },
+            questionCompletions: { 'question-1': { 'q1': true } }
+        });
+
+        // Reset fetch mock
+        (fetch as jest.MockedFunction<typeof fetch>).mockClear();
+    });
+
+    it('sets availableBatches and selectedBatchId when activeCohort has multiple batches', async () => {
+        // Mock school and cohort with batches
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'mentor', batches: [
+                            { id: 10, name: 'Batch 1' },
+                            { id: 20, name: 'Batch 2' }
+                        ]
+                    }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            // Batch selector should be present in header (desktop) when multiple batches
+            expect(screen.getByTestId('member-school-view-header')).toBeInTheDocument();
+            expect(screen.getByTestId('batches-count')).toHaveTextContent('2');
+        });
+    });
+
+    it('sets availableBatches and selectedBatchId when activeCohort has a single batch', async () => {
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'mentor', batches: [
+                            { id: 10, name: 'Batch 1' }
+                        ]
+                    }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            // Header shows 0 batches for single batch (only shows when > 1)
+            expect(screen.getByTestId('batches-count')).toHaveTextContent('0');
+            // But MentorCohortView should be rendered with batchId
+            expect(screen.getByTestId('mentor-cohort-view')).toBeInTheDocument();
+            expect(screen.getByTestId('batch-id')).toHaveTextContent('10');
+        });
+    });
+
+    it('sets availableBatches to [] when activeCohort has no batches', async () => {
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'mentor' }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('batches-count')).toHaveTextContent('0');
+            // MentorCohortView should be rendered with null batchId
+            expect(screen.getByTestId('mentor-cohort-view')).toBeInTheDocument();
+        });
+    });
+
+    it('resets activeCourseIndex to 0 if no defaultCourseId and activeCourseIndex is not 0', async () => {
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Cohort 1', joined_at: '2024-01-01' }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }, { id: 2, name: 'Course 2', milestones: [] }
+                ])
+            } as Response);
+
+        // Set up search params to NOT include course_id
+        (useSearchParams as jest.Mock).mockReturnValue({
+            get: jest.fn(() => null)
+        });
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            // Should default to course index 0
+            expect(screen.getByTestId('active-course-index')).toHaveTextContent('0');
+        });
+    });
+
+    it('early returns when handleCourseSelect is called with same index', async () => {
+        // Mock search params to set initial course index to 1
+        (useSearchParams as jest.Mock).mockReturnValue({
+            get: jest.fn((key: string) => {
+                if (key === 'course_id') return '2'; // This will set activeCourseIndex to 1
+                return null;
+            })
+        });
+
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Cohort 1', joined_at: '2024-01-01' }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }, { id: 2, name: 'Course 2', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            // Should start with course index 1 (from URL param)
+            expect(screen.getByTestId('active-course-index')).toHaveTextContent('1');
+        });
+
+        // Clear mock calls to test early return
+        mockReplace.mockClear();
+
+        // Mock LearnerCohortView to simulate clicking to select the same course index (1)
+        const MockLearnerCohortViewWithSameIndex = jest.fn(({ onCourseSelect }: any) => (
+            <div data-testid="learner-cohort-view">
+                <button
+                    data-testid="same-course-select"
+                    onClick={() => onCourseSelect(1)} // Same index as current
+                >
+                    Select Same Course
+                </button>
+            </div>
+        ));
+
+        // Re-render with updated mock to test the early return
+        jest.doMock('@/components/LearnerCohortView', () => ({
+            __esModule: true,
+            default: MockLearnerCohortViewWithSameIndex
+        }));
+
+        // Trigger onCourseSelect with same index (1)
+        const sameButton = screen.getByTestId('course-select-trigger');
+        fireEvent.click(sameButton);
+
+        // Wait a bit and check that router.replace was NOT called due to early return
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(mockReplace).toHaveBeenCalledTimes(0);
+    });
+
+    it('renders MentorCohortView with correct props for mentor role', async () => {
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'mentor', groups: [{ id: 99 }], batches: [
+                            { id: 10, name: 'Batch 1' },
+                            { id: 20, name: 'Batch 2' }
+                        ]
+                    }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            // MentorCohortView rendered
+            expect(screen.getByTestId('mentor-cohort-view')).toBeInTheDocument();
+            // MentorCohortView receives correct props
+            expect(screen.getByTestId('cohort-name')).toHaveTextContent('Cohort 1');
+            expect(screen.getByTestId('batch-id')).toHaveTextContent('10');
+        });
+    });
+
+    it('renders LearnerCohortView for non-mentor role', async () => {
+        (fetch as jest.MockedFunction<typeof fetch>)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ id: '1', name: 'Test School', slug: 'test-school' })
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'learner', batches: [
+                            { id: 10, name: 'Batch 1' },
+                            { id: 20, name: 'Batch 2' }
+                        ]
+                    }
+                ])
+            } as Response)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    { id: 1, name: 'Course 1', milestones: [] }
+                ])
+            } as Response);
+
+        render(<ClientSchoolMemberView slug="test-school" />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            // Should not render MentorCohortView
+            expect(screen.queryByTestId('mentor-cohort-view')).not.toBeInTheDocument();
+        });
+    });
 }); 
