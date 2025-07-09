@@ -137,7 +137,9 @@ describe('AudioInputComponent', () => {
     });
 
     afterEach(() => {
-        jest.runOnlyPendingTimers();
+        act(() => {
+            jest.runOnlyPendingTimers();
+        });
         jest.useRealTimers();
     });
 

@@ -30,10 +30,15 @@ interface CohortDashboardProps {
     cohort: Cohort;
     cohortId: string;
     schoolId: string;
+    schoolSlug: string;
     onAddLearners?: () => void;
+    view?: 'admin' | 'mentor';
+    activeCourseIndex?: number;
+    onActiveCourseChange?: (index: number) => void;
+    batchId?: number | null;
 }
 
-export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearners }: CohortDashboardProps) {
+export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId }: CohortDashboardProps) {
     // State for course metrics
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -41,6 +46,8 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
 
     // State for active course
     const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
+    // Track local index for dropdown
+    const [localCourseIndex, setLocalCourseIndex] = useState<number>(0);
 
     // State for sorting the student metrics table
     const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -72,13 +79,24 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
             return;
         }
 
-        // Use the active course or default to the first course if none is selected
-        const courseId = activeCourseId || cohort.courses[0].id;
+        // Use activeCourseIndex prop if provided, otherwise use localCourseIndex, defaulting to 0
+        let courseIndex = 0;
+        if (typeof activeCourseIndex === 'number' && activeCourseIndex >= 0 && activeCourseIndex < cohort.courses.length) {
+            courseIndex = activeCourseIndex;
+        } else if (localCourseIndex >= 0 && localCourseIndex < cohort.courses.length) {
+            courseIndex = localCourseIndex;
+        }
+        const courseId = cohort.courses[courseIndex].id;
+
         setIsLoadingMetrics(true);
         setMetricsError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`);
+            const url = batchId != null
+                ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics?batch_id=${batchId}`
+                : `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`;
+
+            const response = await fetch(url);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch metrics: ${response.status}`);
@@ -94,12 +112,17 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         }
     };
 
-    // Set initial active course when courses change
+    // Set initial active course when courses change or activeCourseIndex changes
     useEffect(() => {
         if (cohort?.courses && cohort.courses.length > 0) {
-            setActiveCourseId(cohort.courses[0].id);
+            let index = 0;
+            if (typeof activeCourseIndex === 'number' && activeCourseIndex >= 0 && activeCourseIndex < cohort.courses.length) {
+                index = activeCourseIndex;
+            }
+            setActiveCourseId(cohort.courses[index].id);
+            setLocalCourseIndex(index);
         }
-    }, [cohort?.courses]);
+    }, [cohort?.courses, activeCourseIndex]);
 
     // Add click outside handler for dropdown
     useEffect(() => {
@@ -120,10 +143,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         };
     }, []);
 
-    // Fetch metrics when the component mounts, when cohort courses change, or when active course changes
+    // Fetch metrics when the component mounts, when cohort courses change, or when active course or batch changes
     useEffect(() => {
         fetchCourseMetrics();
-    }, [cohort?.courses, cohortId, activeCourseId]);
+    }, [cohort?.courses, cohortId, activeCourseIndex, localCourseIndex, batchId]);
 
     // Check if there are any learners in the cohort
     const learnerCount = cohort?.members?.filter(m => m.role === 'learner').length || 0;
@@ -133,25 +156,34 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         return (
             <div className="flex flex-col items-center justify-center py-20 rounded-lg">
                 <h2 className="text-4xl font-light mb-4">No learners in this cohort yet</h2>
-                <p className="text-gray-400 mb-8">Add learners to this cohort to view usage data and metrics</p>
-                <button
-                    onClick={() => {
-                        // Switch to learners tab and open invite dialog if callbacks are provided
-                        if (onAddLearners) onAddLearners();
-                    }}
-                    className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
-                >
-                    Add learners
-                </button>
+                <p className="text-gray-400 mb-8">
+                    {view === 'mentor'
+                        ? "No learners have joined this cohort yet. Once learners join, you'll be able to view their progress and metrics."
+                        : "Add learners to this cohort to view usage data and metrics"}
+                </p>
+                {view !== 'mentor' && (
+                    <button
+                        onClick={() => {
+                            if (onAddLearners) onAddLearners();
+                        }}
+                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                        Add learners
+                    </button>
+                )}
             </div>
         );
     }
 
-    if (!isLoadingMetrics && (courseMetrics === null || !courseMetrics || Object.keys(courseMetrics).length === 0)) {
+    if (!isLoadingMetrics && !metricsError && (courseMetrics === null || !courseMetrics || Object.keys(courseMetrics).length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center py-20 rounded-lg" data-testid="empty-course-state">
                 <h2 className="text-4xl font-light mb-4">Empty Course</h2>
-                <p className="text-gray-400 mb-8">Add tasks to this course to view usage data and metrics</p>
+                <p className="text-gray-400 mb-8">
+                    {view === 'mentor'
+                        ? "No tasks have been added to this course yet. Once tasks are available, you'll be able to view progress and metrics."
+                        : "Add tasks to this course to view usage data and metrics"}
+                </p>
             </div>
         );
     }
@@ -168,48 +200,84 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                         <h2 className="text-2xl font-light mb-4">{activeCourse.name}</h2>
                     )}
 
-                    {/* Course selector dropdown */}
+                    {/* Course selector: Tabs for mentor, Dropdown for others */}
                     {cohort?.courses && cohort.courses.length > 1 && (
                         <div className="mb-6">
-                            <label className="block text-sm text-gray-400 mb-2">
-                                Select Course
-                            </label>
-                            <div className="relative inline-block">
-                                <button
-                                    id="course-dropdown-button"
-                                    data-testid="course-dropdown-button"
-                                    className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
-                                    onClick={() => {
-                                        const dropdown = document.getElementById('course-dropdown');
-                                        if (dropdown) {
-                                            dropdown.classList.toggle('hidden');
-                                        }
-                                    }}
-                                >
-                                    <span>{activeCourse?.name || 'Select course'}</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                                <div
-                                    id="course-dropdown"
-                                    className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
-                                >
-                                    {cohort.courses.map(course => (
+                            {view === 'mentor' ? (
+                                // Tabs for mentor view
+                                <div className="w-full">
+                                    <div className="flex items-center border-b border-gray-900 overflow-x-auto scrollbar-hide">
+                                        {cohort.courses.map((course, index) => (
+                                            <button
+                                                key={course.id}
+                                                className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === localCourseIndex
+                                                    ? 'text-white font-light'
+                                                    : 'text-gray-500 hover:text-gray-300 font-light'
+                                                    }`}
+                                                onClick={() => {
+                                                    setActiveCourseId(course.id);
+                                                    setLocalCourseIndex(index);
+                                                    if (onActiveCourseChange) onActiveCourseChange(index);
+                                                }}
+                                            >
+                                                <span className="relative z-10">{course.name}</span>
+                                                {/* Active indicator */}
+                                                {index === localCourseIndex && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white" />
+                                                )}
+                                                {/* Hover indicator */}
+                                                {index !== localCourseIndex && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                // Dropdown for admin/other views
+                                <>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Select Course
+                                    </label>
+                                    <div className="relative inline-block">
                                         <button
-                                            key={course.id}
-                                            className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''
-                                                }`}
+                                            id="course-dropdown-button"
+                                            data-testid="course-dropdown-button"
+                                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
                                             onClick={() => {
-                                                setActiveCourseId(course.id);
-                                                document.getElementById('course-dropdown')?.classList.add('hidden');
+                                                const dropdown = document.getElementById('course-dropdown');
+                                                if (dropdown) {
+                                                    dropdown.classList.toggle('hidden');
+                                                }
                                             }}
                                         >
-                                            {course.name}
+                                            <span>{cohort.courses[localCourseIndex]?.name}</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div
+                                            id="course-dropdown"
+                                            className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
+                                        >
+                                            {cohort.courses.map((course, idx) => (
+                                                <button
+                                                    key={course.id}
+                                                    className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''}`}
+                                                    onClick={() => {
+                                                        setActiveCourseId(course.id);
+                                                        setLocalCourseIndex(idx);
+                                                        if (onActiveCourseChange) onActiveCourseChange(idx);
+                                                        document.getElementById('course-dropdown')?.classList.add('hidden');
+                                                    }}
+                                                >
+                                                    {course.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -385,12 +453,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                         cohortName={cohort?.name}
                         view='admin'
                         topN={5}
+                        batchId={batchId}
                     />
                     {/* View All Leaderboard Button */}
                     {cohort?.members?.filter(m => m.role === 'learner').length > 5 &&
                         <div className="flex justify-center mt-2">
                             <Link
-                                href={`/school/${schoolId}/cohort/${cohortId}/leaderboard`}
+                                href={`/school/${schoolId}/cohort/${cohortId}/leaderboard${batchId != null ? `?batchId=${batchId}` : ''}`}
                                 className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
                             bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
                             >
@@ -617,7 +686,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     )}
                                                     <td className="p-4 text-right">
                                                         <Link
-                                                            href={`/school/admin/${schoolId}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
+                                                            href={`/school/${schoolSlug}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
                                                             target="_blank"
                                                             className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm text-white rounded-md transition-colors cursor-pointer"
                                                         >

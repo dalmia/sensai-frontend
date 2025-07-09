@@ -73,7 +73,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school123', cohortId: 'cohort456' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/cohort456',
@@ -88,7 +88,8 @@ describe('LeaderboardPage', () => {
                 {
                     cohortId: 'cohort456',
                     cohortName: 'Test Cohort',
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -101,7 +102,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school123', cohortId: 'invalid-cohort' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/invalid-cohort',
@@ -116,7 +117,8 @@ describe('LeaderboardPage', () => {
                 {
                     cohortId: 'invalid-cohort',
                     cohortName: null,
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -127,7 +129,7 @@ describe('LeaderboardPage', () => {
             mockFetch.mockRejectedValueOnce(networkError);
 
             const params = { id: 'school123', cohortId: 'cohort456' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(console.error).toHaveBeenCalledWith('Error fetching cohort name:', networkError);
             expect(getByTestId('client-leaderboard-view')).toBeInTheDocument();
@@ -135,7 +137,8 @@ describe('LeaderboardPage', () => {
                 {
                     cohortId: 'cohort456',
                     cohortName: null,
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -149,7 +152,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school123', cohortId: 'cohort456' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(console.error).toHaveBeenCalledWith('Error fetching cohort name:', jsonError);
             expect(getByTestId('client-leaderboard-view')).toBeInTheDocument();
@@ -157,7 +160,8 @@ describe('LeaderboardPage', () => {
                 {
                     cohortId: 'cohort456',
                     cohortName: null,
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -173,7 +177,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school789', cohortId: 'cohort123' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(getByTestId('client-leaderboard-view')).toBeInTheDocument();
             expect(mockClientLeaderboardView).toHaveBeenCalledTimes(1);
@@ -181,7 +185,8 @@ describe('LeaderboardPage', () => {
                 {
                     cohortId: 'cohort123',
                     cohortName: 'Advanced React Cohort',
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -194,14 +199,15 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school789', cohortId: 'cohort123' };
-            const { getByTestId } = render(await LeaderboardPage({ params }));
+            const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(getByTestId('client-leaderboard-view')).toBeInTheDocument();
             expect(mockClientLeaderboardView).toHaveBeenCalledWith(
                 {
                     cohortId: 'cohort123',
                     cohortName: null,
-                    view: 'learner'
+                    view: 'learner',
+                    batchId: null
                 },
                 undefined
             );
@@ -214,7 +220,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'any-school', cohortId: 'any-cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockClientLeaderboardView).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -233,7 +239,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: '123', cohortId: '456' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/456',
@@ -254,7 +260,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school-abc', cohortId: 'cohort-uuid-123-456' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/cohort-uuid-123-456',
@@ -275,11 +281,47 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school-test', cohortId: 'cohort_123-abc' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/cohort_123-abc',
                 expect.any(Object)
+            );
+        });
+
+        it('should parse batchId from searchParams', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ name: 'Test Cohort' })
+            });
+
+            const params = { id: 'school123', cohortId: 'cohort456' };
+            const searchParams = { batchId: '789' };
+            render(await LeaderboardPage({ params, searchParams }));
+
+            expect(mockClientLeaderboardView).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    batchId: 789
+                }),
+                undefined
+            );
+        });
+
+        it('should handle invalid batchId in searchParams', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ name: 'Test Cohort' })
+            });
+
+            const params = { id: 'school123', cohortId: 'cohort456' };
+            const searchParams = { batchId: 'invalid' };
+            render(await LeaderboardPage({ params, searchParams }));
+
+            expect(mockClientLeaderboardView).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    batchId: null
+                }),
+                undefined
             );
         });
     });
@@ -297,7 +339,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school123', cohortId: 'cohort456' };
-            await LeaderboardPage({ params });
+            await LeaderboardPage({ params, searchParams: {} });
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://test-backend.com/cohorts/cohort456',
@@ -321,7 +363,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school', cohortId: 'cohort' };
-            await LeaderboardPage({ params });
+            await LeaderboardPage({ params, searchParams: {} });
 
             expect(cookies).toHaveBeenCalledTimes(1);
             expect(mockToString).toHaveBeenCalledTimes(1);
@@ -336,24 +378,24 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school', cohortId: 'cohort' };
-            const { container } = render(await LeaderboardPage({ params }));
+            const { container } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(container.children).toHaveLength(1);
             expect(container.querySelector('[data-testid="client-leaderboard-view"]')).toBeInTheDocument();
         });
 
-        it('should pass exactly three props to ClientLeaderboardView', async () => {
+        it('should pass exactly four props to ClientLeaderboardView', async () => {
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: jest.fn().mockResolvedValue({ name: 'Test Cohort' })
             });
 
             const params = { id: 'school', cohortId: 'cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockClientLeaderboardView).toHaveBeenCalledTimes(1);
             const [props] = mockClientLeaderboardView.mock.calls[0];
-            expect(Object.keys(props)).toEqual(['cohortId', 'cohortName', 'view']);
+            expect(Object.keys(props)).toEqual(['cohortId', 'cohortName', 'view', 'batchId']);
         });
 
         it('should have correct prop types passed to ClientLeaderboardView', async () => {
@@ -363,13 +405,14 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school', cohortId: 'cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             const [props] = mockClientLeaderboardView.mock.calls[0];
             expect(typeof props.cohortId).toBe('string');
             expect(typeof props.cohortName).toBe('string');
             expect(typeof props.view).toBe('string');
             expect(props.view).toBe('learner');
+            expect(props.batchId === null || typeof props.batchId === 'number').toBe(true);
         });
     });
 
@@ -383,7 +426,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school', cohortId: 'test-cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'https://custom-backend.example.com/cohorts/test-cohort',
@@ -398,7 +441,7 @@ describe('LeaderboardPage', () => {
             mockFetch.mockRejectedValueOnce(fetchError);
 
             const params = { id: 'school', cohortId: 'cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(console.error).toHaveBeenCalledWith('Error fetching cohort name:', fetchError);
         });
@@ -410,7 +453,7 @@ describe('LeaderboardPage', () => {
             });
 
             const params = { id: 'school', cohortId: 'cohort' };
-            render(await LeaderboardPage({ params }));
+            render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(console.error).not.toHaveBeenCalled();
         });

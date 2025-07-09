@@ -900,6 +900,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                 cohort={cohort}
                                 cohortId={cohortId}
                                 schoolId={schoolId}
+                                schoolSlug={schoolSlug}
                                 onAddLearners={handleOpenLearnerInviteDialog}
                             />
                         )}

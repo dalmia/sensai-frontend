@@ -9,9 +9,11 @@ import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
 import { getCompletionData, useSchools } from "@/lib/api";
-import { Cohort, Task, Milestone } from "@/types";
+import { Cohort, Task, Milestone, CohortWithDetails } from "@/types";
 import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
+import MentorCohortView from "@/components/MentorCohortView";
+import MemberSchoolViewHeader from '@/components/MemberSchoolViewHeader';
 
 interface School {
     id: number;
@@ -26,7 +28,7 @@ interface Course {
     course_generation_status?: string | null;
 }
 
-export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
+export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     // Get course_id and cohort_id from query parameters
@@ -50,6 +52,11 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     // Add state for completion data
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
     const [completedQuestionIds, setCompletedQuestionIds] = useState<Record<string, Record<string, boolean>>>({});
+
+    // Add after isAdminOrOwner state
+    const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
+    const [availableBatches, setAvailableBatches] = useState<{ id: number, name: string }[]>([]);
+    const [showBatchSelector, setShowBatchSelector] = useState<boolean>(false);
 
     // Fetch school data
     useEffect(() => {
@@ -107,7 +114,9 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                 const transformedCohorts: Cohort[] = cohortsData.map((cohort: any) => ({
                     id: cohort.id,
                     name: cohort.name,
-                    joined_at: cohort.joined_at
+                    joined_at: cohort.joined_at,
+                    role: cohort.role,
+                    batches: cohort.batches || undefined // add batches if present
                 }));
 
                 setCohorts(transformedCohorts);
@@ -141,6 +150,24 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
         fetchSchool();
     }, [slug, router, user?.id, isAuthenticated, authLoading, schools, defaultCohortId]);
+
+    // Add useEffect to update batch state when activeCohort changes
+    useEffect(() => {
+        if (activeCohort && (activeCohort as any).batches) {
+            const batches = (activeCohort as any).batches;
+            setAvailableBatches(batches);
+            if (batches.length > 1) {
+                setSelectedBatchId(batches[0].id);
+            } else if (batches.length === 1) {
+                setSelectedBatchId(batches[0].id);
+            } else {
+                setSelectedBatchId(null);
+            }
+        } else {
+            setAvailableBatches([]);
+            setSelectedBatchId(null);
+        }
+    }, [activeCohort]);
 
     // Function to fetch cohort courses
     const fetchCohortCourses = async (cohortId: number) => {
@@ -217,11 +244,13 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             const courseIndex = courses.findIndex(
                 course => course.id.toString() === defaultCourseId
             );
-
-            if (courseIndex !== -1) {
-                // Set the active course to the one from query params
-                handleCourseSelect(courseIndex);
+            if (courseIndex !== -1 && courseIndex !== activeCourseIndex) {
+                setActiveCourseIndex(courseIndex);
             }
+        }
+        // If no course_id param, reset to 0
+        if (courses.length > 0 && !defaultCourseId && activeCourseIndex !== 0) {
+            setActiveCourseIndex(0);
         }
     }, [courses, defaultCourseId]);
 
@@ -231,7 +260,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             return;
         }
         setActiveCourseIndex(index);
-        const modules = transformCourseToModules(courses[index], activeCohort?.joined_at);
+        const modules = transformCourseToModules(courses[index]);
         setCourseModules(modules);
 
         // Update URL with course ID
@@ -349,9 +378,16 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             <div className="hidden sm:block">
                 <Header
                     showCreateCourseButton={false}
-                    cohorts={cohorts}
-                    activeCohort={activeCohort}
-                    onCohortSelect={handleCohortSelect}
+                    centerSlot={
+                        <MemberSchoolViewHeader
+                            cohorts={cohorts}
+                            activeCohort={activeCohort}
+                            onCohortSelect={handleCohortSelect}
+                            batches={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? availableBatches : []}
+                            activeBatchId={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? selectedBatchId : null}
+                            onBatchSelect={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? (batchId => setSelectedBatchId(batchId)) : undefined}
+                        />
+                    }
                 />
             </div>
             <div className="min-h-screen bg-black text-white">
@@ -411,6 +447,25 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                                             Switch
                                                         </button>
                                                     )}
+                                                    {activeCohort?.role === "mentor" && availableBatches && availableBatches.length > 1 && (
+                                                        <>
+                                                            <button
+                                                                className="ml-2 bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"
+                                                                onClick={() => setShowBatchSelector(true)}
+                                                            >
+                                                                {availableBatches.find(b => b.id === selectedBatchId)?.name || "Select Batch"}
+                                                                <ChevronDown className="inline ml-1 w-4 h-4" />
+                                                            </button>
+                                                            <MobileDropdown
+                                                                isOpen={showBatchSelector}
+                                                                onClose={() => setShowBatchSelector(false)}
+                                                                title="Switch Batch"
+                                                                options={availableBatches.map(b => ({ id: b.id, label: <span className="text-white font-light">{b.name}</span>, value: b }))}
+                                                                selectedId={selectedBatchId === null ? undefined : selectedBatchId}
+                                                                onSelect={option => setSelectedBatchId(option.id as number)}
+                                                            />
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -431,23 +486,38 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                                 <p className="text-gray-400">There are no courses in this cohort yet</p>
                                             </div>
                                         ) : (
-                                            // Course Content using LearnerCohortView
+                                            // Course Content using LearnerCohortView or MentorCohortView
                                             <div className="w-full px-4 py-4 md:py-8">
                                                 {courses.length > 0 && (
                                                     <div className="w-full">
-                                                        <LearnerCohortView
-                                                            courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
-                                                            modules={courseModules}
-                                                            schoolId={school.id.toString()}
-                                                            cohortId={activeCohort?.id.toString()}
-                                                            streakDays={2}
-                                                            activeDays={["M", "T"]}
-                                                            completedTaskIds={completedTaskIds}
-                                                            completedQuestionIds={completedQuestionIds}
-                                                            courses={courses}
-                                                            onCourseSelect={handleCourseSelect}
-                                                            activeCourseIndex={activeCourseIndex}
-                                                        />
+                                                        {activeCohort?.role === "mentor" ? (
+                                                            <MentorCohortView
+                                                                cohort={{
+                                                                    ...activeCohort,
+                                                                    org_id: school.id,
+                                                                    groups: (activeCohort as any).groups || [],
+                                                                    courses: courses
+                                                                } as CohortWithDetails}
+                                                                activeCourseIndex={activeCourseIndex}
+                                                                schoolId={school.id.toString()}
+                                                                onActiveCourseChange={handleCourseSelect}
+                                                                batchId={selectedBatchId}
+                                                            />
+                                                        ) : (
+                                                            <LearnerCohortView
+                                                                courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
+                                                                modules={courseModules}
+                                                                schoolId={school.id.toString()}
+                                                                cohortId={activeCohort?.id.toString()}
+                                                                streakDays={2}
+                                                                activeDays={["M", "T"]}
+                                                                completedTaskIds={completedTaskIds}
+                                                                completedQuestionIds={completedQuestionIds}
+                                                                courses={courses}
+                                                                onCourseSelect={handleCourseSelect}
+                                                                activeCourseIndex={activeCourseIndex}
+                                                            />
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

@@ -445,6 +445,94 @@ describe('ClientLeaderboardView', () => {
             });
         });
 
+        it('should make correct API call with batchId when provided', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-123"
+                    cohortName="Test Cohort"
+                    view="learner"
+                    batchId={456}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-123/leaderboard?batch_id=456'
+                );
+            });
+        });
+
+        it('should make correct API call with batchId 0 when provided', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-123"
+                    cohortName="Test Cohort"
+                    view="learner"
+                    batchId={0}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-123/leaderboard?batch_id=0'
+                );
+            });
+        });
+
+        it('should make correct API call without batch_id when batchId is null', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-123"
+                    cohortName="Test Cohort"
+                    view="learner"
+                    batchId={null}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-123/leaderboard'
+                );
+            });
+        });
+
+        it('should make correct API call without batch_id when batchId is undefined', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-123"
+                    cohortName="Test Cohort"
+                    view="learner"
+                    batchId={undefined}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-123/leaderboard'
+                );
+            });
+        });
+
         it('should not make API call without cohortId or user', async () => {
             (useAuth as jest.Mock).mockReturnValue({
                 user: null
@@ -555,6 +643,194 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(screen.getByText('Introduction to Programming')).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('Batch ID Integration', () => {
+        const mockBatchPerformersData = {
+            stats: [
+                {
+                    user: { id: 1, first_name: 'Alice', last_name: 'Johnson', email: 'alice@example.com' },
+                    streak_count: 7,
+                    tasks_completed: 15
+                },
+                {
+                    user: { id: 2, first_name: 'Bob', last_name: 'Wilson', email: 'bob@example.com' },
+                    streak_count: 2,
+                    tasks_completed: 8
+                }
+            ]
+        };
+
+        it('should display batch-specific leaderboard data when batchId is provided', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockBatchPerformersData)
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="learner"
+                    batchId={123}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=123'
+                );
+                expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
+                expect(screen.getByText('Bob Wilson')).toBeInTheDocument();
+                expect(screen.getByText('15')).toBeInTheDocument(); // tasks completed
+                expect(screen.getByText('8')).toBeInTheDocument(); // tasks completed
+            });
+        });
+
+        it('should handle error state correctly when batchId is provided', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('Batch API Error'));
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={456}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=456'
+                );
+                expect(screen.getByText('Failed to load leaderboard data. Please try again.')).toBeInTheDocument();
+            });
+        });
+
+        it('should handle empty batch data correctly', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={789}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=789'
+                );
+                expect(screen.getByText('No learners in the cohort yet')).toBeInTheDocument();
+            });
+        });
+
+        it('should limit batch performers when topN is specified', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockBatchPerformersData)
+            });
+
+            render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={123}
+                    topN={1}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
+                expect(screen.queryByText('Bob Wilson')).not.toBeInTheDocument();
+            });
+        });
+
+        it('should refetch data when batchId changes', async () => {
+            const { rerender } = render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={123}
+                />
+            );
+
+            // First call with batch 123
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=123'
+                );
+            });
+
+            mockFetch.mockClear();
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            // Change batchId and verify new call is made
+            rerender(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={456}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=456'
+                );
+            });
+        });
+
+        it('should refetch data when batchId changes from null to a value', async () => {
+            const { rerender } = render(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={null}
+                />
+            );
+
+            // First call without batch
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard'
+                );
+            });
+
+            mockFetch.mockClear();
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stats: [] })
+            });
+
+            // Change to specific batchId
+            rerender(
+                <ClientLeaderboardView
+                    cohortId="cohort-1"
+                    cohortName="Test Cohort"
+                    view="admin"
+                    batchId={789}
+                />
+            );
+
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=789'
+                );
             });
         });
     });
