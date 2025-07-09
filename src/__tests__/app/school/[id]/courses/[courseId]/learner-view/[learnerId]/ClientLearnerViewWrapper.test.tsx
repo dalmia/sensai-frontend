@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import ClientLearnerViewWrapper from '@/app/school/admin/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper';
+import ClientLearnerViewWrapper from '@/app/school/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper';
 import { Module } from '@/types/course';
 
 // Mock LearnerCourseView component

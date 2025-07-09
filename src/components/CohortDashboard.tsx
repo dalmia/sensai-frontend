@@ -30,6 +30,7 @@ interface CohortDashboardProps {
     cohort: Cohort;
     cohortId: string;
     schoolId: string;
+    schoolSlug: string;
     onAddLearners?: () => void;
     view?: 'admin' | 'mentor';
     activeCourseIndex?: number;
@@ -37,7 +38,7 @@ interface CohortDashboardProps {
     batchId?: number | null;
 }
 
-export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId }: CohortDashboardProps) {
+export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId }: CohortDashboardProps) {
     // State for course metrics
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -685,7 +686,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     )}
                                                     <td className="p-4 text-right">
                                                         <Link
-                                                            href={`/school/admin/${schoolId}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
+                                                            href={`/school/${schoolSlug}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
                                                             target="_blank"
                                                             className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm text-white rounded-md transition-colors cursor-pointer"
                                                         >

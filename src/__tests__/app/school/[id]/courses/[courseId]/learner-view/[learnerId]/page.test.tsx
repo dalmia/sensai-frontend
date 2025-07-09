@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
-import AdminLearnerViewPage, { generateMetadata } from '@/app/school/admin/[id]/courses/[courseId]/learner-view/[learnerId]/page';
+import AdminLearnerViewPage, { generateMetadata } from '@/app/school/[id]/courses/[courseId]/learner-view/[learnerId]/page';
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({

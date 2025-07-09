@@ -50,6 +50,7 @@ export default function MentorCohortView({
     const [cohortMembers, setCohortMembers] = useState<CohortMember[]>([]);
     const [isLoadingMembers, setIsLoadingMembers] = useState(true);
     const [membersError, setMembersError] = useState<string | null>(null);
+    const [schoolSlug, setSchoolSlug] = useState<string>('');
 
     useEffect(() => {
         const fetchCohortMembers = async () => {
@@ -69,7 +70,16 @@ export default function MentorCohortView({
                 setIsLoadingMembers(false);
             }
         };
+        const fetchSchoolSlug = async () => {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${schoolId}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch school details: ${response.status}`);
+            }
+            const data = await response.json();
+            setSchoolSlug(data.slug);
+        };
         fetchCohortMembers();
+        fetchSchoolSlug();
     }, [cohort?.id, batchId]);
 
     if (isLoadingMembers) {
@@ -93,6 +103,7 @@ export default function MentorCohortView({
             cohort={cohortWithMembers}
             cohortId={cohort.id.toString()}
             schoolId={schoolId}
+            schoolSlug={schoolSlug}
             view="mentor"
             activeCourseIndex={activeCourseIndex}
             onActiveCourseChange={onActiveCourseChange}
