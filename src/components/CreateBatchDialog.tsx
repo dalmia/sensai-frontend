@@ -245,11 +245,11 @@ export default function CreateBatchDialog({
 
     // Reusable learner column component
     const LearnerColumn = ({ useGridLayout = false }: { useGridLayout?: boolean }) => (
-        <div className="space-y-4 flex-1">
-            <div className="space-y-2">
+        <div className="space-y-4 flex-1 min-h-0 flex flex-col">
+            <div className="flex-shrink-0">
                 <p className={`text-sm ${learnerSelectionError ? 'text-red-500' : 'text-gray-400'}`}>Select learners to be added to the batch</p>
                 {selectedLearners.length > 0 && (
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 mt-2">
                         <Tooltip content={selectedLearners.length === filteredLearners.length ? "Deselect all" : "Select all"} position="right">
                             <input
                                 type="checkbox"
@@ -261,22 +261,22 @@ export default function CreateBatchDialog({
                         <span className="text-gray-400 text-sm leading-4">{selectedLearners.length} selected</span>
                     </div>
                 )}
-                <div className={`gap-3 max-h-[calc(100%-120px)] overflow-y-auto ${useGridLayout ? 'grid grid-cols-2' : 'grid grid-cols-1'}`}>
-                    {filteredLearners.map(learner => (
-                        <LearnerCard key={learner.id} learner={learner} />
-                    ))}
-                </div>
+            </div>
+            <div className={`gap-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent ${useGridLayout ? 'grid grid-cols-2' : 'grid grid-cols-1'}`} style={{ maxHeight: 'calc(100vh - 300px)' }}>
+                {filteredLearners.map(learner => (
+                    <LearnerCard key={learner.id} learner={learner} />
+                ))}
             </div>
         </div>
     );
 
     // Reusable mentor column component
     const MentorColumn = () => (
-        <div className="space-y-4 flex-1">
-            <div className="space-y-2">
+        <div className="space-y-4 flex-1 min-h-0 flex flex-col">
+            <div className="flex-shrink-0">
                 <p className="text-gray-400 text-sm">Select mentors to guide the batch (optional)</p>
                 {selectedMentors.length > 0 && (
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 mt-2">
                         <Tooltip content={selectedMentors.length === filteredMentors.length ? "Deselect all" : "Select all"} position="right">
                             <input
                                 type="checkbox"
@@ -288,11 +288,11 @@ export default function CreateBatchDialog({
                         <span className="text-gray-400 text-sm leading-4">{selectedMentors.length} selected</span>
                     </div>
                 )}
-                <div className="grid grid-cols-1 gap-3 max-h-[calc(100%-120px)] overflow-y-auto">
-                    {filteredMentors.map(mentor => (
-                        <MentorCard key={mentor.id} mentor={mentor} />
-                    ))}
-                </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+                {filteredMentors.map(mentor => (
+                    <MentorCard key={mentor.id} mentor={mentor} />
+                ))}
             </div>
         </div>
     );
@@ -484,7 +484,7 @@ export default function CreateBatchDialog({
     };
 
     const renderCreateEditContent = () => (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {learners.length === 0 ? (
                 /* Show placeholder when no learners */
                 <div className="flex flex-col items-center justify-center py-20 flex-1">
@@ -494,7 +494,7 @@ export default function CreateBatchDialog({
             ) : (
                 <>
                     {/* Single search bar for both layouts */}
-                    <div className="px-6 pb-4">
+                    <div className="px-6 pb-4 flex-shrink-0">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                                 <Search size={16} className="text-gray-500" />
@@ -510,13 +510,13 @@ export default function CreateBatchDialog({
                     </div>
 
                     {/* Content area using reusable components */}
-                    <div className="flex-1 flex px-6 pb-6">
+                    <div className="flex-1 flex px-6 pb-6 min-h-0 overflow-hidden">
                         {showLearnersInBothColumns ? (
                             /* Show learners in grid layout when no mentors */
                             <LearnerColumn useGridLayout={true} />
                         ) : (
                             /* Normal two-column layout */
-                            <div className="flex-1 grid grid-cols-2 gap-6">
+                            <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
                                 <LearnerColumn useGridLayout={false} />
                                 <MentorColumn />
                             </div>
@@ -540,11 +540,11 @@ export default function CreateBatchDialog({
         // If no mentors, show learners in grid (2 columns)
         if (selectedMentors.length === 0) {
             return (
-                <div className="flex-1 flex flex-col px-6 pb-6 overflow-y-auto">
-                    <h3 className="text-gray-400 text-sm mb-4">
+                <div className="flex-1 flex flex-col px-6 pb-6 overflow-hidden min-h-0">
+                    <h3 className="text-gray-400 text-sm mb-4 flex-shrink-0">
                         {selectedLearners.length} {selectedLearners.length === 1 ? "learner" : "learners"}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                         {selectedLearners.map(learner => (
                             <div key={learner.id} className="p-4 rounded-lg bg-purple-600 text-white text-sm truncate">
                                 {learner.email}
@@ -556,12 +556,12 @@ export default function CreateBatchDialog({
         }
         // Normal two-column layout
         return (
-            <div className="flex-1 grid grid-cols-2 gap-6 px-6 pb-6 overflow-y-auto">
-                <div className="space-y-4 flex-1">
-                    <h3 className="text-gray-400 text-sm">
+            <div className="flex-1 grid grid-cols-2 gap-6 px-6 pb-6 overflow-hidden min-h-0">
+                <div className="space-y-4 flex-1 min-h-0 flex flex-col">
+                    <h3 className="text-gray-400 text-sm flex-shrink-0">
                         {selectedLearners.length} {selectedLearners.length === 1 ? "learner" : "learners"}
                     </h3>
-                    <div className="space-y-3 max-h-[calc(100%-40px)] overflow-y-auto pr-2">
+                    <div className="space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                         {selectedLearners.map(learner => (
                             <div key={learner.id} className="p-4 rounded-lg bg-purple-600 text-white text-sm truncate">
                                 {learner.email}
@@ -569,11 +569,11 @@ export default function CreateBatchDialog({
                         ))}
                     </div>
                 </div>
-                <div className="space-y-4 flex-1">
-                    <h3 className="text-gray-400 text-sm">
+                <div className="space-y-4 flex-1 min-h-0 flex flex-col">
+                    <h3 className="text-gray-400 text-sm flex-shrink-0">
                         {selectedMentors.length} {selectedMentors.length === 1 ? "mentor" : "mentors"}
                     </h3>
-                    <div className="space-y-3 max-h-[calc(100%-40px)] overflow-y-auto pr-2">
+                    <div className="space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                         {selectedMentors.map(mentor => (
                             <div key={mentor.id} className="p-4 rounded-lg bg-blue-600 text-white text-sm truncate">
                                 {mentor.email}
@@ -590,7 +590,7 @@ export default function CreateBatchDialog({
     // ---------------- Main Render ----------------
     if (inline) {
         return (
-            <div className={`w-full h-full text-white flex flex-col rounded-lg ${currentMode == 'edit' ? 'bg-[#1A1A1A]' : ''}`}>
+            <div className={`w-full h-full text-white flex flex-col rounded-lg min-h-0 ${currentMode == 'edit' ? 'bg-[#1A1A1A]' : ''}`}>
                 {renderHeader()}
                 {renderContent()}
             </div>
@@ -599,7 +599,7 @@ export default function CreateBatchDialog({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="w-2/3 h-3/4 bg-[#1A1A1A] text-white flex flex-col rounded-lg">
+            <div className="w-2/3 h-3/4 bg-[#1A1A1A] text-white flex flex-col rounded-lg min-h-0">
                 {renderHeader()}
                 {renderContent()}
             </div>
