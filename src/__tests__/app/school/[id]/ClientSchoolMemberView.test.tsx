@@ -26,20 +26,11 @@ jest.mock('@/lib/course', () => ({
 }));
 
 jest.mock('@/components/layout/header', () => ({
-    Header: function MockHeader({ showCreateCourseButton, cohorts, activeCohort, onCohortSelect }: any) {
+    Header: function MockHeader({ showCreateCourseButton, centerSlot }: any) {
         return (
             <header data-testid="header">
                 <div data-testid="show-create-course-button">{showCreateCourseButton.toString()}</div>
-                <div data-testid="cohorts-count">{cohorts?.length || 0}</div>
-                <div data-testid="active-cohort">{activeCohort?.name || 'none'}</div>
-                {onCohortSelect && (
-                    <button
-                        data-testid="cohort-select-trigger"
-                        onClick={() => onCohortSelect({ id: 2, name: 'Test Cohort 2' })}
-                    >
-                        Select Cohort
-                    </button>
-                )}
+                <div data-testid="center-slot">{centerSlot}</div>
             </header>
         );
     }
@@ -51,8 +42,8 @@ jest.mock('@/components/CohortCard', () => {
     };
 });
 
-jest.mock('@/components/MemberCohortView', () => {
-    return function MockMemberCohortView({
+jest.mock('@/components/LearnerCohortView', () => {
+    return function MockLearnerCohortView({
         courseTitle,
         modules,
         courses,
@@ -75,6 +66,54 @@ jest.mock('@/components/MemberCohortView', () => {
                         onClick={() => onCourseSelect(1)}
                     >
                         Select Course 1
+                    </button>
+                )}
+            </div>
+        );
+    };
+});
+
+jest.mock('@/components/MentorCohortView', () => {
+    return function MockMentorCohortView({ cohort, activeCourseIndex, onActiveCourseChange, batchId }: any) {
+        return (
+            <div data-testid="mentor-cohort-view">
+                <div data-testid="cohort-name">{cohort?.name}</div>
+                <div data-testid="active-course-index">{activeCourseIndex}</div>
+                <div data-testid="batch-id">{batchId}</div>
+                {onActiveCourseChange && (
+                    <button
+                        data-testid="course-change-trigger"
+                        onClick={() => onActiveCourseChange(1)}
+                    >
+                        Change Course
+                    </button>
+                )}
+            </div>
+        );
+    };
+});
+
+jest.mock('@/components/MemberSchoolViewHeader', () => {
+    return function MockMemberSchoolViewHeader({ cohorts, activeCohort, onCohortSelect, batches, onBatchSelect }: any) {
+        return (
+            <div data-testid="member-school-view-header">
+                <div data-testid="cohorts-count">{cohorts?.length || 0}</div>
+                <div data-testid="active-cohort">{activeCohort?.name || 'none'}</div>
+                <div data-testid="batches-count">{batches?.length || 0}</div>
+                {onCohortSelect && (
+                    <button
+                        data-testid="cohort-select-trigger"
+                        onClick={() => onCohortSelect({ id: 2, name: 'Test Cohort 2' })}
+                    >
+                        Select Cohort
+                    </button>
+                )}
+                {onBatchSelect && (
+                    <button
+                        data-testid="batch-select-trigger"
+                        onClick={() => onBatchSelect(123)}
+                    >
+                        Select Batch
                     </button>
                 )}
             </div>
@@ -686,7 +725,7 @@ describe('ClientSchoolMemberView', () => {
             });
         });
 
-        it('should load and pass completion data to MemberCohortView', async () => {
+        it('should load and pass completion data to LearnerCohortView', async () => {
             // Mock successful API responses
             (fetch as jest.MockedFunction<typeof fetch>)
                 .mockResolvedValueOnce({

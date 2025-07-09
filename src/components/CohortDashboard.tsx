@@ -158,7 +158,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                 <h2 className="text-4xl font-light mb-4">No learners in this cohort yet</h2>
                 <p className="text-gray-400 mb-8">
                     {view === 'mentor'
-                        ? "No learners have joined this cohort yet. Once learners join, you’ll be able to view their progress and metrics."
+                        ? "No learners have joined this cohort yet. Once learners join, you'll be able to view their progress and metrics."
                         : "Add learners to this cohort to view usage data and metrics"}
                 </p>
                 {view !== 'mentor' && (
@@ -175,13 +175,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
         );
     }
 
-    if (!isLoadingMetrics && (courseMetrics === null || !courseMetrics || Object.keys(courseMetrics).length === 0)) {
+    if (!isLoadingMetrics && !metricsError && (courseMetrics === null || !courseMetrics || Object.keys(courseMetrics).length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center py-20 rounded-lg" data-testid="empty-course-state">
                 <h2 className="text-4xl font-light mb-4">Empty Course</h2>
                 <p className="text-gray-400 mb-8">
                     {view === 'mentor'
-                        ? "No tasks have been added to this course yet. Once tasks are available, you’ll be able to view progress and metrics."
+                        ? "No tasks have been added to this course yet. Once tasks are available, you'll be able to view progress and metrics."
                         : "Add tasks to this course to view usage data and metrics"}
                 </p>
             </div>

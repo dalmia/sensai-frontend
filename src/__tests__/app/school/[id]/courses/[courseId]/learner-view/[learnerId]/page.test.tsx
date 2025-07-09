@@ -9,22 +9,22 @@ jest.mock('next/navigation', () => ({
     })
 }));
 
-// Mock the ClientLearnerViewWrapper component
-jest.mock('@/app/school/admin/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper', () => {
-    return jest.fn(() => <div data-testid="client-learner-view-wrapper">Client Learner View Wrapper</div>);
-});
-
-// Mock the server API function
+// Mock the server API
 jest.mock('@/lib/server-api', () => ({
     getPublishedCourseModules: jest.fn()
 }));
 
+// Mock the ClientLearnerViewWrapper component
+jest.mock('@/app/school/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper', () => {
+    return jest.fn(() => <div data-testid="client-learner-view-wrapper">Client Learner View Wrapper</div>);
+});
+
 // Import the mocked functions to access them in tests
 const { notFound } = require('next/navigation');
-const mockClientLearnerViewWrapper = require('@/app/school/admin/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper');
 const { getPublishedCourseModules } = require('@/lib/server-api');
+const mockClientLearnerViewWrapper = require('@/app/school/[id]/courses/[courseId]/learner-view/[learnerId]/ClientLearnerViewWrapper');
 
-// Mock global fetch for metadata generation and learner data
+// Mock global fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
@@ -329,70 +329,6 @@ describe('AdminLearnerViewPage', () => {
         });
     });
 
-    describe('Component structure and styling', () => {
-        it('should render correct HTML structure with styling classes', async () => {
-            const mockCourseData = { name: 'Styled Course' };
-            const mockModules = [{ id: 1, name: 'Module 1', items: [] }];
-
-            getPublishedCourseModules.mockResolvedValueOnce({
-                courseData: mockCourseData,
-                modules: mockModules
-            });
-
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: jest.fn().mockResolvedValue({ email: 'student@example.com' })
-            });
-
-            const params = { id: 'school123', courseId: 'course456', learnerId: 'learner789' };
-            const searchParams = { cohortId: 'cohort101' };
-            const { container } = render(await AdminLearnerViewPage({ params, searchParams }));
-
-            // Check main container styling
-            const mainDiv = container.querySelector('.min-h-screen.bg-black');
-            expect(mainDiv).toBeInTheDocument();
-
-            // Check banner styling
-            const banner = container.querySelector('.bg-\\[\\#111111\\].border-b.border-gray-800');
-            expect(banner).toBeInTheDocument();
-
-            // Check content container styling
-            const contentContainer = container.querySelector('.px-4.sm\\:px-8.py-8.sm\\:py-12');
-            expect(contentContainer).toBeInTheDocument();
-
-            // Check max-width container
-            const maxWidthContainer = container.querySelector('.max-w-5xl.mx-auto');
-            expect(maxWidthContainer).toBeInTheDocument();
-        });
-
-        it('should render banner with correct text and styling', async () => {
-            const mockCourseData = { name: 'Test Course' };
-            const mockModules = [{ id: 1, name: 'Module 1', items: [] }];
-
-            getPublishedCourseModules.mockResolvedValueOnce({
-                courseData: mockCourseData,
-                modules: mockModules
-            });
-
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: jest.fn().mockResolvedValue({ email: 'admin@example.com' })
-            });
-
-            const params = { id: 'school123', courseId: 'course456', learnerId: 'learner789' };
-            const searchParams = { cohortId: 'cohort101' };
-            const { container } = render(await AdminLearnerViewPage({ params, searchParams }));
-
-            const bannerText = container.querySelector('p.font-light.text-sm');
-            expect(bannerText).toBeInTheDocument();
-            expect(bannerText).toHaveTextContent('You are viewing this course as admin@example.com');
-
-            const bannerSpan = container.querySelector('span.font-medium');
-            expect(bannerSpan).toBeInTheDocument();
-            expect(bannerSpan).toHaveTextContent('admin@example.com');
-        });
-    });
-
     describe('Parameter handling', () => {
         it('should handle different parameter formats', async () => {
             const mockCourseData = { name: 'Param Test Course' };
@@ -453,14 +389,17 @@ describe('AdminLearnerViewPage', () => {
         it('should use BACKEND_URL environment variable', async () => {
             process.env.BACKEND_URL = 'https://custom-backend.example.com';
 
+            const mockCourseData = { name: 'Env Test Course' };
+            const mockModules = [{ id: 1, name: 'Module 1', items: [] }];
+
             getPublishedCourseModules.mockResolvedValueOnce({
-                courseData: { name: 'Test' },
-                modules: []
+                courseData: mockCourseData,
+                modules: mockModules
             });
 
             mockFetch.mockResolvedValueOnce({
                 ok: true,
-                json: jest.fn().mockResolvedValue({ email: 'test@example.com' })
+                json: jest.fn().mockResolvedValue({ email: 'env@example.com' })
             });
 
             const params = { id: 'school', courseId: 'course', learnerId: 'test-learner' };
@@ -474,9 +413,9 @@ describe('AdminLearnerViewPage', () => {
         });
     });
 
-    describe('Error logging', () => {
-        it('should log errors when data fetching fails', async () => {
-            const fetchError = new Error('Data fetch failed');
+    describe('Error handling', () => {
+        it('should log errors and call notFound when getPublishedCourseModules fails', async () => {
+            const fetchError = new Error('Fetch failed');
             getPublishedCourseModules.mockRejectedValueOnce(fetchError);
 
             const params = { id: 'school', courseId: 'course', learnerId: 'learner' };
@@ -485,12 +424,16 @@ describe('AdminLearnerViewPage', () => {
             await expect(AdminLearnerViewPage({ params, searchParams })).rejects.toThrow('NEXT_NOT_FOUND');
 
             expect(console.error).toHaveBeenCalledWith('Error fetching data:', fetchError);
+            expect(notFound).toHaveBeenCalled();
         });
 
-        it('should not log errors when data fetching succeeds', async () => {
+        it('should not log errors when fetch succeeds', async () => {
+            const mockCourseData = { name: 'Success Course' };
+            const mockModules = [{ id: 1, name: 'Module 1', items: [] }];
+
             getPublishedCourseModules.mockResolvedValueOnce({
-                courseData: { name: 'Success Course' },
-                modules: []
+                courseData: mockCourseData,
+                modules: mockModules
             });
 
             mockFetch.mockResolvedValueOnce({
@@ -503,45 +446,7 @@ describe('AdminLearnerViewPage', () => {
             await AdminLearnerViewPage({ params, searchParams });
 
             expect(console.error).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('Empty state rendering', () => {
-        it('should render empty state with correct styling and text', async () => {
-            const mockCourseData = { name: 'Empty Course' };
-            const mockModules: any[] = [];
-
-            getPublishedCourseModules.mockResolvedValueOnce({
-                courseData: mockCourseData,
-                modules: mockModules
-            });
-
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: jest.fn().mockResolvedValue({ email: 'empty@example.com' })
-            });
-
-            const params = { id: 'school123', courseId: 'course456', learnerId: 'learner789' };
-            const searchParams = { cohortId: 'cohort101' };
-            const { container } = render(await AdminLearnerViewPage({ params, searchParams }));
-
-            // Check empty state container styling
-            const emptyStateContainer = container.querySelector('.flex.items-center.justify-center.flex-1');
-            expect(emptyStateContainer).toBeInTheDocument();
-
-            // Check inner container styling
-            const innerContainer = container.querySelector('.flex.flex-col.items-center.justify-center.text-center.max-w-md');
-            expect(innerContainer).toBeInTheDocument();
-
-            // Check title styling
-            const title = container.querySelector('h1.text-4xl.font-light.text-white.mb-6');
-            expect(title).toBeInTheDocument();
-            expect(title).toHaveTextContent('No content available');
-
-            // Check description styling
-            const description = container.querySelector('p.text-gray-400.text-lg');
-            expect(description).toBeInTheDocument();
-            expect(description).toHaveTextContent('This course doesn\'t have any content yet.');
+            expect(notFound).not.toHaveBeenCalled();
         });
     });
 }); 

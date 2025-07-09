@@ -92,6 +92,7 @@ describe('CohortDashboard Component', () => {
                 cohort={cohortWithNoLearners}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -118,6 +119,7 @@ describe('CohortDashboard Component', () => {
                 cohort={cohortWithNoLearners}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
                 onAddLearners={mockOnAddLearners}
             />
         );
@@ -138,6 +140,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -159,6 +162,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -187,6 +191,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -208,6 +213,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -233,6 +239,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -254,11 +261,12 @@ describe('CohortDashboard Component', () => {
     });
 
     it('handles API errors gracefully', async () => {
-        // Mock an API error
+        // Mock an API error - response object needs json method even though it won't be called
         (global.fetch as jest.Mock).mockImplementationOnce(() =>
             Promise.resolve({
                 ok: false,
-                status: 500
+                status: 500,
+                json: () => Promise.resolve({}) // Add json method to prevent additional errors
             })
         );
 
@@ -267,6 +275,7 @@ describe('CohortDashboard Component', () => {
                 cohort={mockCohort}
                 cohortId="1"
                 schoolId="school1"
+                schoolSlug="school1"
             />
         );
 
@@ -274,5 +283,35 @@ describe('CohortDashboard Component', () => {
         await waitFor(() => {
             expect(screen.getByText('There was an error while fetching the metrics. Please try again.')).toBeInTheDocument();
         });
+
+        // Check for the try again button
+        expect(screen.getByText('Try again')).toBeInTheDocument();
+    });
+
+    it('renders empty course state when metrics are empty', async () => {
+        // Mock empty metrics response
+        (global.fetch as jest.Mock).mockImplementationOnce(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({})
+            })
+        );
+
+        render(
+            <CohortDashboard
+                cohort={mockCohort}
+                cohortId="1"
+                schoolId="school1"
+                schoolSlug="school1"
+            />
+        );
+
+        // Wait for empty course state to appear
+        await waitFor(() => {
+            expect(screen.getByTestId('empty-course-state')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('Empty Course')).toBeInTheDocument();
+        expect(screen.getByText('Add tasks to this course to view usage data and metrics')).toBeInTheDocument();
     });
 }); 
