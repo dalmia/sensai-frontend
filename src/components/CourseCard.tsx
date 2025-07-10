@@ -70,11 +70,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
             return `/school/admin/${course.org_id}/courses/${course.id}`;
         }
         // If we're in a school context, use the school-specific course path
-        else if (schoolId) {
-            return `/school/admin/${schoolId}/courses/${course.id}`;
-        }
-        // Otherwise use the general course path
-        return `/courses/${course.id}`;
+        return `/school/admin/${schoolId}/courses/${course.id}`;
     };
 
     // Check if this is an admin view
