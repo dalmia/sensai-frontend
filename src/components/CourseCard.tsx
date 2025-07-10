@@ -10,17 +10,16 @@ interface CourseCardProps {
         id: string | number;
         title: string;
         role?: string;
-        org_id?: number;
+        org_id: number;
         cohort_id?: number;
         org?: {
             slug: string;
         };
     };
     onDelete?: (courseId: string | number) => void;
-    onDuplicate?: (courseId: string | number) => Promise<void>;
 }
 
-export default function CourseCard({ course, onDelete, onDuplicate }: CourseCardProps) {
+export default function CourseCard({ course, onDelete }: CourseCardProps) {
     const params = useParams();
     const router = useRouter();
     const schoolId = params?.id;
@@ -90,12 +89,6 @@ export default function CourseCard({ course, onDelete, onDuplicate }: CourseCard
     const handleDuplicateClick = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-
-        // If external onDuplicate is provided, use it
-        if (onDuplicate) {
-            await onDuplicate(course.id);
-            return;
-        }
 
         // Otherwise, handle internally
         if (!isDuplicating) {
