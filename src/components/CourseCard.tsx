@@ -108,12 +108,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                 const newCourseData = await response.json();
 
                 // Navigate to the new course page
-                if (schoolId) {
-                    router.push(`/school/admin/${schoolId}/courses/${newCourseData.id}`);
-                } else {
-                    router.push(`/courses/${newCourseData.id}`);
-                }
-
+                router.push(`/school/admin/${schoolId}/courses/${newCourseData.id}`);
             } catch (error) {
                 console.error('Error duplicating course:', error);
                 // You could add a toast notification here if needed
