@@ -169,7 +169,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                             disabled={isDuplicating}
                         >
                             {isDuplicating ? (
-                                <div className="w-4 h-4 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <Copy size={18} />
                             )}
