@@ -268,4 +268,89 @@ describe('CourseCard Component', () => {
         // And the link shouldn't have been navigated to
         // We know this because the test doesn't throw an error about navigation
     });
+
+    it('should render the duplicate button in admin view', () => {
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        expect(duplicateButton).toBeInTheDocument();
+        expect(duplicateButton).toHaveClass('opacity-0'); // initially hidden
+    });
+
+    it('should not render the duplicate button outside admin view', () => {
+        require('next/navigation').useParams.mockReturnValue({});
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.queryByLabelText('Duplicate course');
+        expect(duplicateButton).not.toBeInTheDocument();
+    });
+
+    it('should show loading spinner and disable button while duplicating', async () => {
+        // Simulate slow fetch
+        let resolveFetch: any;
+        mockFetch.mockImplementation(() => new Promise(res => { resolveFetch = res; }));
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        // Button should be disabled and show spinner
+        expect(duplicateButton).toBeDisabled();
+        expect(duplicateButton.querySelector('.animate-spin')).toBeInTheDocument();
+        // Finish fetch
+        resolveFetch({ ok: true, json: async () => ({ id: 999 }) });
+        // Wait for spinner to disappear
+        await waitFor(() => expect(duplicateButton.querySelector('.animate-spin')).not.toBeInTheDocument());
+    });
+
+    it('should call the duplicate API with correct params', async () => {
+        mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 999 }) });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+                'https://api.example.com/courses/123/duplicate',
+                expect.objectContaining({
+                    method: 'POST',
+                    headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ org_id: 1 })
+                })
+            );
+        });
+    });
+
+    it('should navigate to the new course after duplication', async () => {
+        const mockPush = jest.fn();
+        require('next/navigation').useRouter.mockReturnValue({ push: mockPush });
+        mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 999 }) });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(mockPush).toHaveBeenCalledWith('/school/admin/school-123/courses/999');
+        });
+    });
+
+    it('should handle error during duplication gracefully', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        mockFetch.mockResolvedValue({ ok: false });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error duplicating course:'), expect.any(Error));
+            expect(duplicateButton).not.toBeDisabled();
+        });
+        errorSpy.mockRestore();
+    });
+
+    it('should not trigger duplicate API call if already duplicating', async () => {
+        let resolveFetch: any;
+        mockFetch.mockImplementation(() => new Promise(res => { resolveFetch = res; }));
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        // Try clicking again while still duplicating
+        fireEvent.click(duplicateButton);
+        // Only one API call should be made
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        resolveFetch({ ok: true, json: async () => ({ id: 999 }) });
+    });
 }); 
