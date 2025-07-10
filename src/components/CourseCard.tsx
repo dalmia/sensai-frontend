@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Trash2, Copy } from "lucide-react";
 import { useState } from "react";
 import ConfirmationDialog from "./ConfirmationDialog";
+import Tooltip from "./Tooltip";
 
 interface CourseCardProps {
     course: {
         id: string | number;
         title: string;
         role?: string;
-        org_id?: number;
+        org_id: number;
         cohort_id?: number;
         org?: {
             slug: string;
@@ -20,10 +21,13 @@ interface CourseCardProps {
 
 export default function CourseCard({ course, onDelete }: CourseCardProps) {
     const params = useParams();
+    const router = useRouter();
     const schoolId = params?.id;
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    // Add state for duplicate functionality
+    const [isDuplicating, setIsDuplicating] = useState(false);
 
     // Generate a unique border color based on the course id
     const getBorderColor = () => {
@@ -66,11 +70,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
             return `/school/admin/${course.org_id}/courses/${course.id}`;
         }
         // If we're in a school context, use the school-specific course path
-        else if (schoolId) {
-            return `/school/admin/${schoolId}/courses/${course.id}`;
-        }
-        // Otherwise use the general course path
-        return `/courses/${course.id}`;
+        return `/school/admin/${schoolId}/courses/${course.id}`;
     };
 
     // Check if this is an admin view
@@ -80,6 +80,42 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
         e.preventDefault();
         e.stopPropagation();
         setIsDeleteConfirmOpen(true);
+    };
+
+    const handleDuplicateClick = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Otherwise, handle internally
+        if (!isDuplicating) {
+            setIsDuplicating(true);
+
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${course.id}/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        org_id: course.org_id,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to duplicate course');
+                }
+
+                const newCourseData = await response.json();
+
+                // Navigate to the new course page
+                router.push(`/school/admin/${schoolId}/courses/${newCourseData.id}`);
+            } catch (error) {
+                console.error('Error duplicating course:', error);
+                // You could add a toast notification here if needed
+            } finally {
+                setIsDuplicating(false);
+            }
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -114,6 +150,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
         }
     };
 
+
     return (
         <div className="group relative">
             <Link href={getLinkPath()} className="block h-full">
@@ -122,13 +159,32 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                 </div>
             </Link>
             {isAdminView && (
-                <button
-                    className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
-                    aria-label="Delete course"
-                    onClick={handleDeleteClick}
-                >
-                    <Trash2 size={18} />
-                </button>
+                <div className="absolute top-3 right-3 flex gap-2">
+                    {/* Duplicate Button */}
+                    <Tooltip content="Duplicate course">
+                        <button
+                            className={`p-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800 ${isDuplicating ? 'opacity-100 cursor-not-allowed' : ''}`}
+                            aria-label="Duplicate course"
+                            onClick={handleDuplicateClick}
+                            disabled={isDuplicating}
+                        >
+                            {isDuplicating ? (
+                                <div className="w-4 h-4 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                            ) : (
+                                <Copy size={18} />
+                            )}
+                        </button>
+                    </Tooltip>
+
+                    {/* Delete Button */}
+                    <button
+                        className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
+                        aria-label="Delete course"
+                        onClick={handleDeleteClick}
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
             )}
 
             {/* Confirmation Dialog */}

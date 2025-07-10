@@ -6,6 +6,7 @@ import React from 'react';
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
     useParams: jest.fn(),
+    useRouter: jest.fn(() => ({ push: jest.fn() })), // Add this line to mock useRouter
 }));
 
 // Mock next/link
@@ -23,27 +24,41 @@ jest.mock('next/link', () => {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Patch: Make org_id optional for test purposes
+interface TestCourse {
+    id: string | number;
+    title: string;
+    role?: string;
+    org_id: number;
+    cohort_id?: number;
+    org?: {
+        slug: string;
+    };
+}
+
 describe('CourseCard Component', () => {
     // Test data
-    const basicCourse = {
+    const basicCourse: TestCourse = {
         id: 123,
-        title: 'Test Course'
+        title: 'Test Course',
+        org_id: 1
     };
 
-    const courseWithOrgId = {
+    const courseWithOrgId: TestCourse = {
         id: 456,
         title: 'Test Course with Org ID',
         org_id: 789
     };
 
-    const courseWithRole = {
+    const courseWithRole: TestCourse = {
         id: 789,
         title: 'Learner Course',
         role: 'learner',
         org: {
             slug: 'test-org'
         },
-        cohort_id: 123
+        cohort_id: 123,
+        org_id: 1
     };
 
     beforeEach(() => {
@@ -69,9 +84,9 @@ describe('CourseCard Component', () => {
     });
 
     it('should generate a link to school-specific course path when schoolId is available', () => {
-        render(<CourseCard course={basicCourse} />);
+        render(<CourseCard course={{ ...basicCourse, org_id: 123 }} />);
         const link = screen.getByRole('link');
-        expect(link).toHaveAttribute('href', '/school/admin/school-123/courses/123');
+        expect(link).toHaveAttribute('href', '/school/admin/123/courses/123');
     });
 
     it('should generate a link to org-specific course path when org_id is available', () => {
@@ -84,15 +99,6 @@ describe('CourseCard Component', () => {
         render(<CourseCard course={courseWithRole} />);
         const link = screen.getByRole('link');
         expect(link).toHaveAttribute('href', '/school/test-org?course_id=789&cohort_id=123');
-    });
-
-    it('should generate a link to general course path when no school or org context is available', () => {
-        // Override useParams to return no school ID
-        require('next/navigation').useParams.mockReturnValue({});
-
-        render(<CourseCard course={basicCourse} />);
-        const link = screen.getByRole('link');
-        expect(link).toHaveAttribute('href', '/courses/123');
     });
 
     it('should apply a border color based on course ID', () => {
@@ -125,14 +131,15 @@ describe('CourseCard Component', () => {
     });
 
     it('should handle string IDs for course correctly', () => {
-        const courseWithStringId = {
+        const courseWithStringId: TestCourse = {
             id: 'course-abc',
-            title: 'Course with String ID'
+            title: 'Course with String ID',
+            org_id: 123
         };
 
         render(<CourseCard course={courseWithStringId} />);
         const link = screen.getByRole('link');
-        expect(link).toHaveAttribute('href', '/school/admin/school-123/courses/course-abc');
+        expect(link).toHaveAttribute('href', '/school/admin/123/courses/course-abc');
     });
 
     it('should show delete button when in admin view', () => {
@@ -260,5 +267,90 @@ describe('CourseCard Component', () => {
 
         // And the link shouldn't have been navigated to
         // We know this because the test doesn't throw an error about navigation
+    });
+
+    it('should render the duplicate button in admin view', () => {
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        expect(duplicateButton).toBeInTheDocument();
+        expect(duplicateButton).toHaveClass('opacity-0'); // initially hidden
+    });
+
+    it('should not render the duplicate button outside admin view', () => {
+        require('next/navigation').useParams.mockReturnValue({});
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.queryByLabelText('Duplicate course');
+        expect(duplicateButton).not.toBeInTheDocument();
+    });
+
+    it('should show loading spinner and disable button while duplicating', async () => {
+        // Simulate slow fetch
+        let resolveFetch: any;
+        mockFetch.mockImplementation(() => new Promise(res => { resolveFetch = res; }));
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        // Button should be disabled and show spinner
+        expect(duplicateButton).toBeDisabled();
+        expect(duplicateButton.querySelector('.animate-spin')).toBeInTheDocument();
+        // Finish fetch
+        resolveFetch({ ok: true, json: async () => ({ id: 999 }) });
+        // Wait for spinner to disappear
+        await waitFor(() => expect(duplicateButton.querySelector('.animate-spin')).not.toBeInTheDocument());
+    });
+
+    it('should call the duplicate API with correct params', async () => {
+        mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 999 }) });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+                'https://api.example.com/courses/123/duplicate',
+                expect.objectContaining({
+                    method: 'POST',
+                    headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ org_id: 1 })
+                })
+            );
+        });
+    });
+
+    it('should navigate to the new course after duplication', async () => {
+        const mockPush = jest.fn();
+        require('next/navigation').useRouter.mockReturnValue({ push: mockPush });
+        mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 999 }) });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(mockPush).toHaveBeenCalledWith('/school/admin/school-123/courses/999');
+        });
+    });
+
+    it('should handle error during duplication gracefully', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        mockFetch.mockResolvedValue({ ok: false });
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        await waitFor(() => {
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error duplicating course:'), expect.any(Error));
+            expect(duplicateButton).not.toBeDisabled();
+        });
+        errorSpy.mockRestore();
+    });
+
+    it('should not trigger duplicate API call if already duplicating', async () => {
+        let resolveFetch: any;
+        mockFetch.mockImplementation(() => new Promise(res => { resolveFetch = res; }));
+        render(<CourseCard course={basicCourse} />);
+        const duplicateButton = screen.getByLabelText('Duplicate course');
+        fireEvent.click(duplicateButton);
+        // Try clicking again while still duplicating
+        fireEvent.click(duplicateButton);
+        // Only one API call should be made
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        resolveFetch({ ok: true, json: async () => ({ id: 999 }) });
     });
 }); 

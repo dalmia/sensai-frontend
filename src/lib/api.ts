@@ -21,7 +21,7 @@ export interface Course {
     name: string;
     slug: string;
   };
-  org_id?: number;
+  org_id: number;
   // Add other fields as needed
 }
 
@@ -71,7 +71,7 @@ export function useCourses() {
           role: course.role,
           cohort_id: course.cohort_id,
           org: course.org,
-          org_id: course.org?.id,
+          org_id: course.org.id,
           coverImage: course.coverImage,
           createdAt: course.createdAt,
           updatedAt: course.updatedAt
