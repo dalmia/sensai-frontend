@@ -13,6 +13,19 @@ jest.mock('../../components/editor-styles.css', () => ({}));
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock useAuth hook
+jest.mock('@/lib/auth', () => ({
+    useAuth: jest.fn(() => ({
+        user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            name: 'Test User'
+        },
+        isLoading: false,
+        isAuthenticated: true
+    }))
+}));
+
 // Mock all component dependencies
 jest.mock('../../components/BlockNoteEditor', () => {
     return function MockBlockNoteEditor({ onChange, onEditorReady, initialContent, placeholder }: any) {
@@ -2913,7 +2926,6 @@ describe('Additional Coverage Tests', () => {
                 courseId="course-123"
                 schoolId="school-123"
                 taskId="task-123"
-                userId="user-123"
                 currentQuestionId="question-123"
                 onSaveSuccess={jest.fn()}
                 onValidationError={jest.fn()}

@@ -20,6 +20,19 @@ jest.mock('@/lib/utils/localStorage', () => ({
     safeLocalStorage: mockLocalStorage
 }));
 
+// Mock useAuth hook
+jest.mock('@/lib/auth', () => ({
+    useAuth: jest.fn(() => ({
+        user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            name: 'Test User'
+        },
+        isAuthenticated: true,
+        isLoading: false
+    }))
+}));
+
 // Import component after CSS mocks
 import LearningMaterialViewer from '../../components/LearningMaterialViewer';
 
