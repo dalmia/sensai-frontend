@@ -64,7 +64,6 @@ export interface QuizEditorProps {
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
     onSubmitAnswer?: (questionId: string, answer: string) => void;
-    userId?: string;
     schoolId?: string; // ID of the school for fetching school-specific scorecards
     onValidationError?: (message: string, description: string) => void; // Function to handle validation errors
     courseId?: string; // ID of the course for fetching learning materials

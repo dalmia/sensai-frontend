@@ -16,6 +16,7 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 // Add import for ChatView
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
+import { useAuth } from "@/lib/auth";
 
 interface LearningMaterialViewerProps {
     taskId?: string;
@@ -36,6 +37,8 @@ export default function LearningMaterialViewer({
     viewOnly = false,
     onMarkComplete,
 }: LearningMaterialViewerProps) {
+    const { user } = useAuth();
+
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -253,7 +256,8 @@ export default function LearningMaterialViewer({
                 task_id: parseInt(taskId),
                 chat_history: formattedChatHistory,
                 task_type: 'learning_material',
-                user_id: userId
+                user_id: userId,
+                user_email: user?.email,
             };
 
             let receivedAnyResponse = false;

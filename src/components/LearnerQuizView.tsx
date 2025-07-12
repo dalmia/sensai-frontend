@@ -12,6 +12,7 @@ import { getKnowledgeBaseContent } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
+import { useAuth } from "@/lib/auth";
 
 // Add interface for mobile view mode
 export interface MobileViewMode {
@@ -51,6 +52,8 @@ export default function LearnerQuizView({
     onMobileViewChange,
     isAdminView = false,
 }: LearnerQuizViewProps) {
+    const { user } = useAuth();
+
     // Constant message for exam submission confirmation
     const EXAM_CONFIRMATION_MESSAGE = "Thank you for your submission. We will review it shortly";
 
@@ -783,6 +786,7 @@ export default function LearnerQuizView({
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     },
                     user_id: userId,
+                    user_email: user?.email,
                     task_id: taskId,
                     task_type: 'quiz'
                 };
@@ -793,6 +797,7 @@ export default function LearnerQuizView({
                     response_type: responseType,
                     question_id: currentQuestionId,
                     user_id: userId,
+                    user_email: user?.email,
                     task_id: taskId,
                     task_type: 'quiz'
                 };

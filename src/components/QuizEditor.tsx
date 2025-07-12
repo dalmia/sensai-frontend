@@ -32,6 +32,7 @@ import Tooltip from "./Tooltip";
 // Import the PublishConfirmationDialog component
 import PublishConfirmationDialog from './PublishConfirmationDialog';
 import { useEditorContentOrSelectionChange } from "@blocknote/react";
+import { useAuth } from "@/lib/auth";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -134,13 +135,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     currentQuestionId,
     onQuestionChange,
     onSubmitAnswer,
-    userId,
     schoolId, // Add schoolId prop to access school scorecards
     onValidationError,
     courseId,
     scheduledPublishAt = null,
     onQuestionChangeWithUnsavedScorecardChanges,
 }, ref) => {
+    // Get authenticated user ID
+    const { user } = useAuth();
+
     // For published quizzes: data is always fetched from the API
     // For draft quizzes: always start with empty questions
     // initialQuestions prop is no longer used
@@ -2100,12 +2103,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         setCurrentQuestionIndex(index);
                     }
                 }}
-                userId={userId}
                 taskId={taskId}
+                userId={user?.id}
                 isTestMode={true}
             />
         );
-    }, [questions, isDarkMode, readOnly, onSubmitAnswer, taskType, activeQuestionId, userId, currentQuestionIndex]);
+    }, [questions, isDarkMode, readOnly, onSubmitAnswer, taskType, activeQuestionId, currentQuestionIndex, user?.id]);
 
     // Define dropdown options
     // Now removed and imported from dropdownOptions.ts
