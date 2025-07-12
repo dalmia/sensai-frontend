@@ -1,4 +1,4 @@
-name: Deploy to Staging
+name: Deploy to Production
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Preview
+    environment: Production
     
     steps:
       - name: Checkout code
@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: adalmia/sensai-frontend:dev
+          tags: adalmia/sensai-frontend:latest
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -42,7 +42,7 @@ jobs:
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
 
-      - name: Deploy to staging server
+      - name: Deploy to production server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -50,4 +50,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            bash -l -c "refresh_new_dev"
+            refresh_new_prod

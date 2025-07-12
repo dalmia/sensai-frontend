@@ -1204,6 +1204,7 @@ export default function LearnerQuizView({
                 });
         },
         [
+            user,
             validQuestions,
             currentQuestionIndex,
             onSubmitAnswer,
