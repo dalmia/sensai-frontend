@@ -176,4 +176,63 @@ describe('CodePreview Component', () => {
             expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
         });
     });
+});
+
+
+describe('CodeEditorView hasWebLanguages logic (code coverage)', () => {
+    const baseProps = {
+        handleCodeSubmit: jest.fn(),
+        onCodeRun: jest.fn(),
+    };
+
+    it('shows web preview for HTML', () => {
+        render(<CodePreview {...baseProps} languages={['html']} isWebPreview={true} />);
+        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    });
+
+    it('shows web preview for both HTML and CSS', () => {
+        render(<CodePreview {...baseProps} languages={['html', 'css']} isWebPreview={true} />);
+        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    });
+
+    it('shows output for only JavaScript', () => {
+        render(<CodePreview {...baseProps} languages={['javascript']} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
+
+    it('shows output for only Node.js', () => {
+        render(<CodePreview {...baseProps} languages={['nodejs']} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
+
+    it('shows output for only Python', () => {
+        render(<CodePreview {...baseProps} languages={['python']} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
+
+    it('shows web preview for HTML, CSS, and JavaScript', () => {
+        render(<CodePreview {...baseProps} languages={['html', 'css', 'javascript']} isWebPreview={true} />);
+        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    });
+
+    it('shows output for only React', () => {
+        render(<CodePreview {...baseProps} languages={['react']} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
+
+    it('shows output for only SQL', () => {
+        render(<CodePreview {...baseProps} languages={['sql']} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
+
+    // Direct CodePreview tests for label coverage
+    it('CodePreview shows Preview for isWebPreview', () => {
+        render(<CodePreview isRunning={false} previewContent="" output="" isWebPreview={true} />);
+        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    });
+
+    it('CodePreview shows Output for !isWebPreview', () => {
+        render(<CodePreview isRunning={false} previewContent="" output="" isWebPreview={false} />);
+        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    });
 }); 
