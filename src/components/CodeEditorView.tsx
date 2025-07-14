@@ -480,7 +480,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     // Mobile preview state
     const [showMobilePreview, setShowMobilePreview] = useState<boolean>(false);
 
-    // Check if web preview is available (HTML, CSS, JS)
+    // Check if web preview is available (HTML, CSS)
     const hasWebLanguages = normalizedLanguages.some(lang =>
         ['html', 'css'].includes(lang)
     );
