@@ -994,8 +994,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                     className="w-full pl-10 pr-4 py-2 bg-[#0D0D0D] text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border-none"
                                                 />
                                             </div>
-
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 h-[calc(600px-110px)] overflow-y-auto pb-1">
                                                 {batches
                                                     .filter(batch =>
                                                         batch.name.toLowerCase().includes(batchSearchQuery.toLowerCase())

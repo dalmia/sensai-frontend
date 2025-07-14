@@ -151,7 +151,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                             <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <p>Run your code to see the preview here</p>
-                        <p className="text-xs mt-2 text-center px-4">For HTML/CSS/JavaScript/React, you will see a live preview. For other languages, you will see the console output.</p>
+                        <p className="text-xs mt-2 text-center px-4">For HTML/CSS/React, you will see a live preview. For other languages, you will see the console output.</p>
                     </div>
                 ) : isWebPreview ? (
                     <div className="relative w-full h-full">
@@ -480,9 +480,9 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     // Mobile preview state
     const [showMobilePreview, setShowMobilePreview] = useState<boolean>(false);
 
-    // Check if web preview is available (HTML, CSS, JS)
+    // Check if web preview is available (HTML, CSS)
     const hasWebLanguages = normalizedLanguages.some(lang =>
-        ['html', 'css', 'javascript'].includes(lang)
+        ['html', 'css'].includes(lang)
     );
 
     // Add state for input validation and toast

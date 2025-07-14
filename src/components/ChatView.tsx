@@ -99,7 +99,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = codingLanguages.some((lang: string) =>
-        ['html', 'css', 'javascript', 'js', 'sql', 'react'].includes(lang?.toLowerCase())
+        ['html', 'css', 'js', 'sql', 'react'].includes(lang?.toLowerCase())
     );
 
     // Determine if this question is completed

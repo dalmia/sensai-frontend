@@ -176,4 +176,4 @@ describe('CodePreview Component', () => {
             expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
         });
     });
-}); 
+});
