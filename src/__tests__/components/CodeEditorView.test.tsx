@@ -178,61 +178,70 @@ describe('CodePreview Component', () => {
     });
 });
 
+// --- Real hasWebLanguages logic tests ---
+describe('hasWebLanguages logic (integration)', () => {
+    // Unmock the real component for these tests
+    beforeAll(() => {
+        jest.unmock('../../components/CodeEditorView');
+    });
+    afterAll(() => {
+        jest.resetModules();
+    });
 
-describe('CodeEditorView hasWebLanguages logic (code coverage)', () => {
-    const baseProps = {
-        handleCodeSubmit: jest.fn(),
-        onCodeRun: jest.fn(),
+    // Dynamically import the real component after unmocking
+    let RealCodeEditorView: any;
+    beforeEach(async () => {
+        RealCodeEditorView = (await import('../../components/CodeEditorView')).default;
+    });
+
+    const runAndCheckIframe = async (languages: string[], shouldShowIframe: boolean, label: string) => {
+        const handleCodeSubmit = jest.fn();
+        // Use a ref to access imperative methods if needed
+        render(<RealCodeEditorView languages={languages} handleCodeSubmit={handleCodeSubmit} />);
+        // Click the Run button
+        const runButton = screen.getByText('Run');
+        fireEvent.click(runButton);
+        // Wait for preview to appear
+        if (shouldShowIframe) {
+            // Wait for iframe to appear (web preview)
+            await screen.findByTitle('Code Preview');
+        } else {
+            // Wait for output area (console output)
+            await screen.findByText(/output|preview updated|run your code/i);
+        }
     };
 
-    it('shows web preview for HTML', () => {
-        render(<CodePreview {...baseProps} languages={['html']} isWebPreview={true} />);
-        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    it('shows web preview for ["html"]', async () => {
+        await runAndCheckIframe(['html'], true, 'html');
     });
-
-    it('shows web preview for both HTML and CSS', () => {
-        render(<CodePreview {...baseProps} languages={['html', 'css']} isWebPreview={true} />);
-        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    it('shows web preview for ["html", "css"]', async () => {
+        await runAndCheckIframe(['html', 'css'], true, 'html+css');
     });
-
-    it('shows output for only JavaScript', () => {
-        render(<CodePreview {...baseProps} languages={['javascript']} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows web preview for ["html", "css", "javascript"]', async () => {
+        await runAndCheckIframe(['html', 'css', 'javascript'], true, 'html+css+js');
     });
-
-    it('shows output for only Node.js', () => {
-        render(<CodePreview {...baseProps} languages={['nodejs']} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows web preview for ["react"]', async () => {
+        await runAndCheckIframe(['react'], true, 'react');
     });
-
-    it('shows output for only Python', () => {
-        render(<CodePreview {...baseProps} languages={['python']} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows web preview for ["sql"]', async () => {
+        await runAndCheckIframe(['sql'], true, 'sql');
     });
-
-    it('shows web preview for HTML, CSS, and JavaScript', () => {
-        render(<CodePreview {...baseProps} languages={['html', 'css', 'javascript']} isWebPreview={true} />);
-        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    it('shows console output for ["javascript"]', async () => {
+        await runAndCheckIframe(['javascript'], false, 'js');
     });
-
-    it('shows output for only React', () => {
-        render(<CodePreview {...baseProps} languages={['react']} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows console output for ["nodejs"]', async () => {
+        await runAndCheckIframe(['nodejs'], false, 'nodejs');
     });
-
-    it('shows output for only SQL', () => {
-        render(<CodePreview {...baseProps} languages={['sql']} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows console output for ["python"]', async () => {
+        await runAndCheckIframe(['python'], false, 'python');
     });
-
-    // Direct CodePreview tests for label coverage
-    it('CodePreview shows Preview for isWebPreview', () => {
-        render(<CodePreview isRunning={false} previewContent="" output="" isWebPreview={true} />);
-        expect(screen.getByTitle('Code Preview')).toBeInTheDocument();
+    it('shows web preview for ["HTML"] (case insensitivity)', async () => {
+        await runAndCheckIframe(['HTML'], true, 'HTML');
     });
-
-    it('CodePreview shows Output for !isWebPreview', () => {
-        render(<CodePreview isRunning={false} previewContent="" output="" isWebPreview={false} />);
-        expect(screen.getByText(/output/i)).toBeInTheDocument();
+    it('shows web preview for ["CSS"] (case insensitivity)', async () => {
+        await runAndCheckIframe(['CSS'], true, 'CSS');
     });
-}); 
+    it('shows console output for ["typescript"]', async () => {
+        await runAndCheckIframe(['typescript'], false, 'typescript');
+    });
+});
