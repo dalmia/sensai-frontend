@@ -1005,7 +1005,7 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Task List */}
-                            <div className="overflow-y-auto">
+                            <div className="overflow-y-auto h-[calc(100vh-120px)]">
                                 {activeModuleId && filteredModules.find(m => m.id === activeModuleId)?.items.map((item) => (
                                     <div key={item.id}>
                                         <div
