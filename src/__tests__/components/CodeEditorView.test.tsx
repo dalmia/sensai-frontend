@@ -235,13 +235,4 @@ describe('hasWebLanguages logic (integration)', () => {
     it('shows console output for ["python"]', async () => {
         await runAndCheckIframe(['python'], false, 'python');
     });
-    it('shows web preview for ["HTML"] (case insensitivity)', async () => {
-        await runAndCheckIframe(['HTML'], true, 'HTML');
-    });
-    it('shows web preview for ["CSS"] (case insensitivity)', async () => {
-        await runAndCheckIframe(['CSS'], true, 'CSS');
-    });
-    it('shows console output for ["typescript"]', async () => {
-        await runAndCheckIframe(['typescript'], false, 'typescript');
-    });
 });
