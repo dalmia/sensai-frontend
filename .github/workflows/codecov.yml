@@ -36,3 +36,12 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: true 
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Notify Slack on Failure (main branch only)
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "<!channel> ❌ *frontend*: Code coverage workflow failed on main branch! Please check the GitHub Actions logs for details.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
