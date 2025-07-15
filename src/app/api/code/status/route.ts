@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to Judge0
     const response = await fetch(
-      `${process.env.JUDGE0_API_URL}/submissions/${token}?base64_encoded=false&fields=status_id,stdout,stderr,compile_output,message,time`
+      `${process.env.JUDGE0_API_URL}/submissions/${token}?base64_encoded=true&fields=status_id,stdout,stderr,compile_output,message,time`
     );
 
     // If the response wasn't successful, throw an error
@@ -34,8 +34,30 @@ export async function GET(request: NextRequest) {
     // Get the JSON response
     const data = await response.json();
 
-    // Return the data from Judge0
-    return NextResponse.json(data);
+    // Helper to decode base64 fields
+    function decodeBase64Field(field: any) {
+      if (typeof field === 'string') {
+        try {
+          return Buffer.from(field, 'base64').toString('utf-8');
+        } catch (e) {
+          // If decoding fails, return the original value
+          return field;
+        }
+      }
+      return field;
+    }
+
+    // Decode relevant fields
+    const judge0DecodedResponse = {
+      ...data,
+      stdout: decodeBase64Field(data.stdout),
+      stderr: decodeBase64Field(data.stderr),
+      compile_output: decodeBase64Field(data.compile_output),
+      message: decodeBase64Field(data.message),
+    };
+
+    // Return the decoded data from Judge0
+    return NextResponse.json(judge0DecodedResponse);
   } catch (error) {
     console.error('Error in code status API route:', error);
     return NextResponse.json(
