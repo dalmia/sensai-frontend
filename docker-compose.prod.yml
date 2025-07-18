@@ -36,6 +36,16 @@ services:
     ports:
       - "8004:8001"
 
+  cron-prod:
+    image: adalmia/sensai-ai:latest
+    working_dir: /src
+    command: sh -c "apt-get update && apt-get install -y cron && echo '33 11 * * * cd /src && /usr/local/bin/python -c \"from api.cron import send_usage_summary_stats; import asyncio; asyncio.run(send_usage_summary_stats())\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && echo '41 11 * * * cd /src && /usr/local/bin/python -c \"from api.utils.phoenix import save_daily_traces; save_daily_traces()\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && crontab /src/sensai-cron && cron -f"
+    volumes:
+      - /appdata_prod:/appdata
+    environment:
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
+
   phoenix:
     image: arizephoenix/phoenix:latest # Must be greater than 4.0 version to work
     ports:
