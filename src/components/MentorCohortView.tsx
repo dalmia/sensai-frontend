@@ -3,6 +3,10 @@
 import { useState, useEffect } from "react";
 import { Course, CohortWithDetails, CohortMember } from "@/types";
 import CohortDashboard from "@/components/CohortDashboard";
+import LearnerCohortView from "@/components/LearnerCohortView";
+import { Module } from "@/types/course";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, Users } from "lucide-react";
 
 interface TaskTypeMetrics {
     completion_rate: number;
@@ -28,6 +32,11 @@ interface MentorCohortViewProps {
     schoolId: string;
     onActiveCourseChange?: (index: number) => void; // new
     batchId?: number | null; // new
+    // Props for LearnerCohortView
+    courseModules?: Module[];
+    completedTaskIds?: Record<string, boolean>;
+    completedQuestionIds?: Record<string, Record<string, boolean>>;
+    courses?: Course[];
 }
 
 export default function MentorCohortView({
@@ -35,8 +44,44 @@ export default function MentorCohortView({
     activeCourseIndex = 0, // default to 0
     schoolId,
     onActiveCourseChange,
-    batchId // new
+    batchId, // new
+    courseModules = [],
+    completedTaskIds = {},
+    completedQuestionIds = {},
+    courses = []
 }: MentorCohortViewProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Get view mode from URL params, default to 'mentor'
+    const urlView = searchParams.get('view');
+    const isValidViewMode = (view: string | null): view is 'mentor' | 'learner' => {
+        return view === 'mentor' || view === 'learner';
+    };
+    const defaultView = isValidViewMode(urlView) ? urlView : 'mentor';
+    const [viewMode, setViewMode] = useState<'mentor' | 'learner'>(defaultView);
+
+    // Sync viewMode with URL changes
+    useEffect(() => {
+        const urlView = searchParams.get('view');
+        if (isValidViewMode(urlView) && urlView !== viewMode) {
+            setViewMode(urlView);
+        }
+    }, [searchParams, viewMode]);
+
+    // Update URL when view mode changes
+    const updateUrlWithViewMode = (mode: 'mentor' | 'learner') => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('view', mode);
+        router.replace(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Handle view mode toggle
+    const handleViewModeToggle = (mode: 'mentor' | 'learner') => {
+        setViewMode(mode);
+        updateUrlWithViewMode(mode);
+    };
+
     // Show placeholder if batchId is null
     if (batchId === null) {
         return (
@@ -46,6 +91,7 @@ export default function MentorCohortView({
             </div>
         );
     }
+
     // State for cohort members
     const [cohortMembers, setCohortMembers] = useState<CohortMember[]>([]);
     const [isLoadingMembers, setIsLoadingMembers] = useState(true);
@@ -96,18 +142,65 @@ export default function MentorCohortView({
             </div>
         );
     }
+
     // Merge members into cohort object, preserving all CohortWithDetails properties
     const cohortWithMembers = { ...cohort, members: cohortMembers };
+
     return (
-        <CohortDashboard
-            cohort={cohortWithMembers}
-            cohortId={cohort.id.toString()}
-            schoolId={schoolId}
-            schoolSlug={schoolSlug}
-            view="mentor"
-            activeCourseIndex={activeCourseIndex}
-            onActiveCourseChange={onActiveCourseChange}
-            batchId={batchId}
-        />
+        <div className="w-full">
+            {/* View Mode Toggle */}
+            <div className="flex justify-center mb-8">
+                <div className="bg-[#333333] rounded-full p-1 flex items-center">
+                    <button
+                        onClick={() => handleViewModeToggle('mentor')}
+                        className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'mentor'
+                            ? 'bg-white text-black'
+                            : 'text-white hover:bg-black'
+                            }`}
+                    >
+                        <Users size={16} className="mr-2" />
+                        Mentor View
+                    </button>
+                    <button
+                        onClick={() => handleViewModeToggle('learner')}
+                        className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'learner'
+                            ? 'bg-white text-black'
+                            : 'text-white hover:bg-black'
+                            }`}
+                    >
+                        <Eye size={16} className="mr-2" />
+                        Learner View
+                    </button>
+                </div>
+            </div>
+
+            {/* Render appropriate view */}
+            {viewMode === 'mentor' ? (
+                <CohortDashboard
+                    cohort={cohortWithMembers}
+                    cohortId={cohort.id.toString()}
+                    schoolId={schoolId}
+                    schoolSlug={schoolSlug}
+                    view="mentor"
+                    activeCourseIndex={activeCourseIndex}
+                    onActiveCourseChange={onActiveCourseChange}
+                    batchId={batchId}
+                />
+            ) : (
+                <LearnerCohortView
+                    courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex]?.name || ""}
+                    modules={courseModules}
+                    schoolId={schoolId}
+                    cohortId={cohort.id.toString()}
+                    streakDays={2}
+                    activeDays={["M", "T"]}
+                    completedTaskIds={completedTaskIds}
+                    completedQuestionIds={completedQuestionIds}
+                    courses={courses}
+                    onCourseSelect={onActiveCourseChange}
+                    activeCourseIndex={activeCourseIndex}
+                />
+            )}
+        </div>
     );
 } 

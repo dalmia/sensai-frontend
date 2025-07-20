@@ -502,6 +502,10 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 schoolId={school.id.toString()}
                                                                 onActiveCourseChange={handleCourseSelect}
                                                                 batchId={selectedBatchId}
+                                                                courseModules={courseModules}
+                                                                completedTaskIds={completedTaskIds}
+                                                                completedQuestionIds={completedQuestionIds}
+                                                                courses={courses}
                                                             />
                                                         ) : (
                                                             <LearnerCohortView

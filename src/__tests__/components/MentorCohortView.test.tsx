@@ -7,6 +7,37 @@ import { CohortWithDetails, CohortMember } from '@/types';
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock Next.js router and search params
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockGet = jest.fn();
+
+// Track the current URL state for the mock
+let currentUrlParams = 'view=mentor&other=param';
+
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: mockPush,
+        replace: (url: string, options?: any) => {
+            mockReplace(url, options);
+            // Update the current URL params when replace is called
+            if (url.startsWith('?')) {
+                currentUrlParams = url.substring(1);
+            }
+        },
+    }),
+    useSearchParams: () => ({
+        get: (key: string) => {
+            if (key === 'view') {
+                const params = new URLSearchParams(currentUrlParams);
+                return params.get('view');
+            }
+            return null;
+        },
+        toString: () => currentUrlParams,
+    }),
+}));
+
 // Mock the CohortDashboard component
 jest.mock('../../components/CohortDashboard', () => {
     return function MockCohortDashboard(props: any) {
@@ -17,6 +48,20 @@ jest.mock('../../components/CohortDashboard', () => {
                 onActiveCourseChange: props.onActiveCourseChange ? 'function' : undefined
             })}>
                 CohortDashboard Mock
+            </div>
+        );
+    };
+});
+
+// Mock the LearnerCohortView component
+jest.mock('../../components/LearnerCohortView', () => {
+    return function MockLearnerCohortView(props: any) {
+        return (
+            <div data-testid="learner-cohort-view" data-props={JSON.stringify({
+                ...props,
+                onCourseSelect: props.onCourseSelect ? 'function' : undefined
+            })}>
+                LearnerCohortView Mock
             </div>
         );
     };
@@ -50,11 +95,18 @@ describe('MentorCohortView Component', () => {
         activeCourseIndex: 0,
         schoolId: '123',
         onActiveCourseChange: jest.fn(),
-        batchId: 456
+        batchId: 456,
+        courseModules: [],
+        completedTaskIds: {},
+        completedQuestionIds: {},
+        courses: []
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // Reset URL state
+        currentUrlParams = 'view=mentor&other=param';
+
         // Default successful fetch mock
         (global.fetch as jest.Mock).mockImplementation((url: string) => {
             if (url.includes('/cohorts/')) {
@@ -75,6 +127,9 @@ describe('MentorCohortView Component', () => {
             }
             return Promise.reject(new Error('Unhandled URL in mock'));
         });
+
+        // Default search params mock
+        mockGet.mockReturnValue('mentor');
     });
 
     describe('Rendering', () => {
@@ -426,6 +481,332 @@ describe('MentorCohortView Component', () => {
 
             // Component should handle this gracefully
             expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+        });
+    });
+
+    describe('View Mode Toggle', () => {
+        it('renders view mode toggle buttons', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText('Mentor View')).toBeInTheDocument();
+                expect(screen.getByText('Learner View')).toBeInTheDocument();
+            });
+        });
+
+        it('initializes with mentor view by default when no URL param', async () => {
+            mockGet.mockReturnValue(null);
+
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+                expect(screen.queryByTestId('learner-cohort-view')).not.toBeInTheDocument();
+            });
+        });
+
+        it('initializes with learner view when URL param is learner', async () => {
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            });
+        });
+
+        it('switches to learner view when learner button is clicked', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+
+            // Click the learner view button
+            const learnerButton = screen.getByText('Learner View');
+            await act(async () => {
+                fireEvent.click(learnerButton);
+            });
+
+            // Wait for the component to re-render with learner view
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            }, { timeout: 3000 });
+
+            expect(screen.queryByTestId('cohort-dashboard')).not.toBeInTheDocument();
+        });
+
+        it('switches to mentor view when mentor button is clicked', async () => {
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            });
+
+            // Click the mentor view button
+            const mentorButton = screen.getByText('Mentor View');
+            await act(async () => {
+                fireEvent.click(mentorButton);
+            });
+
+            // Wait for the component to re-render with mentor view
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            }, { timeout: 3000 });
+
+            expect(screen.queryByTestId('learner-cohort-view')).not.toBeInTheDocument();
+        });
+
+        it('updates URL when view mode changes', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+
+            await act(async () => {
+                fireEvent.click(screen.getByText('Learner View'));
+            });
+
+            expect(mockReplace).toHaveBeenCalledWith('?view=learner&other=param', { scroll: false });
+        });
+
+        it('syncs with URL changes when search params change', async () => {
+            const { rerender } = await act(async () => {
+                return render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+
+            // Simulate URL change to learner
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                rerender(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            });
+        });
+
+        it('handles invalid URL view parameter gracefully', async () => {
+            currentUrlParams = 'view=invalid&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            // Should default to mentor view when invalid parameter
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+        });
+
+        it('applies correct styling to active mentor button', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                const mentorButton = screen.getByText('Mentor View').closest('button');
+                expect(mentorButton).toHaveClass('bg-white', 'text-black');
+            });
+        });
+
+        it('applies correct styling to active learner button', async () => {
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                const learnerButton = screen.getByText('Learner View').closest('button');
+                expect(learnerButton).toHaveClass('bg-white', 'text-black');
+            });
+        });
+
+        it('applies correct styling to inactive buttons', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                const learnerButton = screen.getByText('Learner View').closest('button');
+                expect(learnerButton).toHaveClass('text-white');
+                expect(learnerButton).not.toHaveClass('bg-white', 'text-black');
+            });
+        });
+
+        it('passes correct props to LearnerCohortView', async () => {
+            const propsWithData = {
+                ...defaultProps,
+                courseModules: [{ id: '1', title: 'Module 1', position: 1, items: [] }],
+                completedTaskIds: { 'task1': true },
+                completedQuestionIds: { 'quiz1': { 'q1': true } },
+                courses: [{ id: 1, name: 'Course 1' }]
+            };
+
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...propsWithData} />);
+            });
+
+            await waitFor(() => {
+                const learnerView = screen.getByTestId('learner-cohort-view');
+                const props = JSON.parse(learnerView.getAttribute('data-props') || '{}');
+
+                expect(props.courseTitle).toBe('Course 1');
+                expect(props.modules).toEqual([{ id: '1', title: 'Module 1', position: 1, items: [] }]);
+                expect(props.schoolId).toBe('123');
+                expect(props.cohortId).toBe('1');
+                expect(props.streakDays).toBe(2);
+                expect(props.activeDays).toEqual(['M', 'T']);
+                expect(props.completedTaskIds).toEqual({ 'task1': true });
+                expect(props.completedQuestionIds).toEqual({ 'quiz1': { 'q1': true } });
+                expect(props.courses).toEqual([{ id: 1, name: 'Course 1' }]);
+                expect(props.activeCourseIndex).toBe(0);
+            });
+        });
+
+        it('handles empty course title when multiple courses exist', async () => {
+            const propsWithMultipleCourses = {
+                ...defaultProps,
+                courses: [
+                    { id: 1, name: 'Course 1' },
+                    { id: 2, name: 'Course 2' }
+                ]
+            };
+
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...propsWithMultipleCourses} />);
+            });
+
+            await waitFor(() => {
+                const learnerView = screen.getByTestId('learner-cohort-view');
+                const props = JSON.parse(learnerView.getAttribute('data-props') || '{}');
+                expect(props.courseTitle).toBe('');
+            });
+        });
+
+        it('handles undefined course name gracefully', async () => {
+            const propsWithUndefinedCourse = {
+                ...defaultProps,
+                courses: [{ id: 1, name: '' }]
+            };
+
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...propsWithUndefinedCourse} />);
+            });
+
+            await waitFor(() => {
+                const learnerView = screen.getByTestId('learner-cohort-view');
+                const props = JSON.parse(learnerView.getAttribute('data-props') || '{}');
+                expect(props.courseTitle).toBe('');
+            });
+        });
+
+        it('handles empty courses array', async () => {
+            const propsWithEmptyCourses = {
+                ...defaultProps,
+                courses: []
+            };
+
+            currentUrlParams = 'view=learner&other=param';
+
+            await act(async () => {
+                render(<MentorCohortView {...propsWithEmptyCourses} />);
+            });
+
+            await waitFor(() => {
+                const learnerView = screen.getByTestId('learner-cohort-view');
+                const props = JSON.parse(learnerView.getAttribute('data-props') || '{}');
+                expect(props.courseTitle).toBe('');
+            });
+        });
+
+        it('maintains view mode state during data refetch', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+
+            // Switch to learner view
+            const learnerButton = screen.getByText('Learner View');
+            await act(async () => {
+                fireEvent.click(learnerButton);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            });
+
+            // Simulate data refetch by changing cohort
+            const newCohort = { ...mockCohort, id: 2 };
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} cohort={newCohort} />);
+            });
+
+            // Should still be in learner view (check for the latest one)
+            await waitFor(() => {
+                const learnerViews = screen.getAllByTestId('learner-cohort-view');
+                expect(learnerViews.length).toBeGreaterThan(0);
+                // Check that the latest one has the new cohort ID
+                const latestProps = JSON.parse(learnerViews[learnerViews.length - 1].getAttribute('data-props') || '{}');
+                expect(latestProps.cohortId).toBe('2');
+            });
+        });
+
+        it('handles rapid view mode toggles correctly', async () => {
+            await act(async () => {
+                render(<MentorCohortView {...defaultProps} />);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('cohort-dashboard')).toBeInTheDocument();
+            });
+
+            // Rapidly toggle between views
+            const learnerButton = screen.getByText('Learner View');
+            const mentorButton = screen.getByText('Mentor View');
+
+            await act(async () => {
+                fireEvent.click(learnerButton);
+                fireEvent.click(mentorButton);
+                fireEvent.click(learnerButton);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
+            }, { timeout: 3000 });
+
+            // Should have called router.replace multiple times
+            expect(mockReplace).toHaveBeenCalledTimes(3);
         });
     });
 }); 
