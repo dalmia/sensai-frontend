@@ -54,13 +54,17 @@ export default function MentorCohortView({
     const searchParams = useSearchParams();
 
     // Get view mode from URL params, default to 'mentor'
-    const defaultView = searchParams.get('view') as 'mentor' | 'learner' | null;
-    const [viewMode, setViewMode] = useState<'mentor' | 'learner'>(defaultView || 'mentor');
+    const urlView = searchParams.get('view');
+    const isValidViewMode = (view: string | null): view is 'mentor' | 'learner' => {
+        return view === 'mentor' || view === 'learner';
+    };
+    const defaultView = isValidViewMode(urlView) ? urlView : 'mentor';
+    const [viewMode, setViewMode] = useState<'mentor' | 'learner'>(defaultView);
 
     // Sync viewMode with URL changes
     useEffect(() => {
-        const urlView = searchParams.get('view') as 'mentor' | 'learner' | null;
-        if (urlView && urlView !== viewMode) {
+        const urlView = searchParams.get('view');
+        if (isValidViewMode(urlView) && urlView !== viewMode) {
             setViewMode(urlView);
         }
     }, [searchParams, viewMode]);
