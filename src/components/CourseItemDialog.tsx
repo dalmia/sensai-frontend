@@ -460,7 +460,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             if (!hasContent) {
                 // Show toast notification
-                displayToast("Empty Question", "Please add details to the question before previewing", "🚫");
+                displayToast("Empty question", "Please add details to the question before previewing", "🚫");
                 return; // Prevent entering preview mode
             }
 
@@ -482,7 +482,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
                 if (!hasCorrectAnswer) {
                     // Show toast notification for empty correct answer
-                    displayToast("Empty Correct Answer", "Please set a correct answer for this question before previewing", "🚫");
+                    displayToast("Empty correct answer", "Please set a correct answer for this question before previewing", "🚫");
                     // Switch to answer tab
                     quizEditorRef.current.setActiveTab('answer');
                     return; // Prevent entering preview mode
@@ -492,7 +492,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 const hasScorecard = quizEditorRef.current.hasScorecard();
                 if (!hasScorecard) {
                     // Show toast notification for missing scorecard
-                    displayToast("Missing Scorecard", "Please set a scorecard for evaluating this question before previewing", "🚫");
+                    displayToast("Missing scorecard", "Please set a scorecard for evaluating this question before previewing", "🚫");
                     // Switch to scorecard tab
                     quizEditorRef.current.setActiveTab('scorecard');
                     return; // Prevent entering preview mode
@@ -724,7 +724,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     {quizPreviewMode ? (
                                         <>
                                             <Edit2 size={16} className="mr-2" />
-                                            Exit Preview
+                                            Exit preview
                                         </>
                                     ) : (
                                         <>
