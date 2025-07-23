@@ -26,7 +26,6 @@ interface NotionDatabase {
 }
 
 export default function NotionTestPage() {
-    const [pageId, setPageId] = useState('2397e7c237cb80bfb622d6294a627566');
     const [token, setToken] = useState<string | null>(null);
     const [blocks, setBlocks] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -36,7 +35,6 @@ export default function NotionTestPage() {
     const [pages, setPages] = useState<NotionPage[]>([]);
     const [databases, setDatabases] = useState<NotionDatabase[]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string>('');
-    const [useOAuth, setUseOAuth] = useState(false);
 
     const searchParams = useSearchParams();
 
@@ -56,13 +54,12 @@ export default function NotionTestPage() {
         }
         if (t) {
             setToken(t);
-            setUseOAuth(true);
         }
     }, [searchParams]);
 
     // Fetch pages/databases if token is present
     useEffect(() => {
-        if (!token || !useOAuth) return;
+        if (!token) return;
         fetch(`/api/notion/list?token=${encodeURIComponent(token)}`)
             .then(res => res.json())
             .then(data => {
@@ -73,25 +70,16 @@ export default function NotionTestPage() {
                 console.error('Error fetching pages/databases:', err);
                 setError('Failed to fetch pages and databases');
             });
-    }, [token, useOAuth]);
+    }, [token]);
 
     const handleFetchBlocks = async () => {
-        const currentPageId = useOAuth ? selectedPageId : pageId;
-        const currentToken = useOAuth ? token : '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';
-
-        if (!currentPageId.trim()) {
-            setError('Please enter or select a page ID');
+        if (!selectedPageId.trim()) {
+            setError('Please select a page');
             return;
         }
 
-        if (useOAuth && !currentToken) {
+        if (!token) {
             setError('Please authenticate with Notion first');
-            return;
-        }
-
-        // Ensure we have a token before proceeding
-        if (!currentToken) {
-            setError('No authentication token available');
             return;
         }
 
@@ -99,7 +87,7 @@ export default function NotionTestPage() {
         setError('');
 
         try {
-            console.log('pageId', currentPageId);
+            console.log('pageId', selectedPageId);
 
             // Call our API route instead of making direct Notion API calls
             const response = await fetch('/api/notion/fetchPage', {
@@ -108,8 +96,8 @@ export default function NotionTestPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    pageId: currentPageId.trim(),
-                    token: currentToken.trim()
+                    pageId: selectedPageId.trim(),
+                    token: token.trim()
                 }),
             });
 
@@ -157,7 +145,6 @@ export default function NotionTestPage() {
         setPages([]);
         setDatabases([]);
         setSelectedPageId('');
-        setUseOAuth(false);
         setBlocks(null);
         setError('');
     };
@@ -166,125 +153,100 @@ export default function NotionTestPage() {
         <div className="container mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Notion Components Test</h1>
 
-            {/* Mode Toggle */}
-            <div className="mb-6 p-4 border border-gray-300 rounded-md">
-                <h2 className="text-xl font-semibold mb-4">Authentication Mode</h2>
-                <div className="flex gap-4 mb-4">
+            {!token ? (
+                <div className="mb-8 p-6 border border-gray-300 rounded-md text-center">
+                    <h2 className="text-xl font-semibold mb-4">Connect to Notion</h2>
+                    <p className="text-gray-600 mb-6">
+                        To test Notion page rendering, you need to authenticate with Notion and grant access to your pages.
+                    </p>
                     <button
-                        onClick={() => setUseOAuth(false)}
-                        className={`px-4 py-2 rounded-md cursor-pointer ${!useOAuth
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
+                        onClick={handleConnect}
+                        className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
                     >
-                        Direct Token
-                    </button>
-                    <button
-                        onClick={() => setUseOAuth(true)}
-                        className={`px-4 py-2 rounded-md cursor-pointer ${useOAuth
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                    >
-                        OAuth Flow
+                        Connect to Notion
                     </button>
                 </div>
-
-                {useOAuth && (
-                    <div className="mt-4">
-                        {!token ? (
-                            <button
-                                onClick={handleConnect}
-                                className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 cursor-pointer"
-                            >
-                                Connect to Notion
-                            </button>
-                        ) : (
+            ) : (
+                <>
+                    <div className="mb-6 p-4 border border-gray-300 rounded-md">
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <span className="text-green-600 font-medium">✓ Connected to Notion</span>
-                                <button
-                                    onClick={handleDisconnect}
-                                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 cursor-pointer"
+                                <span className="text-sm text-gray-500">
+                                    Found {pages.length} pages and {databases.length} databases
+                                </span>
+                            </div>
+                            <button
+                                onClick={handleDisconnect}
+                                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 cursor-pointer"
+                            >
+                                Disconnect
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <div className="flex flex-col gap-4 mb-4">
+                            <div>
+                                <label className="block text-gray-700 mb-2">Select a Notion Page</label>
+                                <select
+                                    value={selectedPageId}
+                                    onChange={(e) => setSelectedPageId(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
-                                    Disconnect
-                                </button>
+                                    <option value="">-- Select a Page --</option>
+                                    <optgroup label="Pages">
+                                        {pages.map((p) => {
+                                            let title = "";
+                                            if (p.properties && p.properties.title && p.properties.title.title && p.properties.title.title.length > 0) {
+                                                title = p.properties.title.title[0].plain_text;
+                                            } else if (p.object === "page" && p.id) {
+                                                title = p.id;
+                                            }
+                                            return (
+                                                <option key={p.id} value={p.id}>{title || p.id}</option>
+                                            );
+                                        })}
+                                    </optgroup>
+                                    <optgroup label="Databases">
+                                        {databases.map((d) => {
+                                            let title = "";
+                                            if (d.title && d.title.length > 0) {
+                                                title = d.title[0].plain_text;
+                                            } else if (d.object === "database" && d.id) {
+                                                title = d.id;
+                                            }
+                                            return (
+                                                <option key={d.id} value={d.id}>{title || d.id}</option>
+                                            );
+                                        })}
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <button
+                                onClick={handleFetchBlocks}
+                                disabled={loading || !selectedPageId}
+                                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                {loading ? 'Loading...' : 'Fetch Blocks'}
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="text-red-500 mb-4">
+                                Error: {error}
                             </div>
                         )}
                     </div>
-                )}
-            </div>
 
-            <div className="mb-8">
-                <div className="flex flex-col gap-4 mb-4">
-                    {useOAuth && token ? (
-                        <div>
-                            <label className="block text-gray-700 mb-2">Select a Notion Page</label>
-                            <select
-                                value={selectedPageId}
-                                onChange={(e) => setSelectedPageId(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="">-- Select a Page --</option>
-                                <optgroup label="Pages">
-                                    {pages.map((p) => {
-                                        let title = "";
-                                        if (p.properties && p.properties.title && p.properties.title.title && p.properties.title.title.length > 0) {
-                                            title = p.properties.title.title[0].plain_text;
-                                        } else if (p.object === "page" && p.id) {
-                                            title = p.id;
-                                        }
-                                        return (
-                                            <option key={p.id} value={p.id}>{title || p.id}</option>
-                                        );
-                                    })}
-                                </optgroup>
-                                <optgroup label="Databases">
-                                    {databases.map((d) => {
-                                        let title = "";
-                                        if (d.title && d.title.length > 0) {
-                                            title = d.title[0].plain_text;
-                                        } else if (d.object === "database" && d.id) {
-                                            title = d.id;
-                                        }
-                                        return (
-                                            <option key={d.id} value={d.id}>{title || d.id}</option>
-                                        );
-                                    })}
-                                </optgroup>
-                            </select>
+                    {blocks && (
+                        <div className="border-t pt-8">
+                            <h2 className="text-2xl font-semibold mb-4">Rendered Notion Content:</h2>
+                            <BlockList blocks={blocks} />
                         </div>
-                    ) : (
-                        <input
-                            type="text"
-                            value={pageId}
-                            onChange={(e) => setPageId(e.target.value)}
-                            placeholder="Enter Notion Page ID"
-                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={useOAuth}
-                        />
                     )}
-
-                    <button
-                        onClick={handleFetchBlocks}
-                        disabled={loading || (useOAuth && !token) || (useOAuth && !selectedPageId)}
-                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                        {loading ? 'Loading...' : 'Fetch Blocks'}
-                    </button>
-                </div>
-
-                {error && (
-                    <div className="text-red-500 mb-4">
-                        Error: {error}
-                    </div>
-                )}
-            </div>
-
-            {blocks && (
-                <div className="border-t pt-8">
-                    <h2 className="text-2xl font-semibold mb-4">Rendered Notion Content:</h2>
-                    <BlockList blocks={blocks} />
-                </div>
+                </>
             )}
         </div>
     );
