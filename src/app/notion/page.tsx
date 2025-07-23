@@ -1,20 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import dynamic from 'next/dynamic';
-import 'react-notion-x/src/styles.css';
-import 'prismjs/themes/prism-tomorrow.css';
-import 'katex/dist/katex.min.css';
-
-const NotionRenderer = dynamic(
-  () => import('react-notion-x').then((m) => m.NotionRenderer),
-  { ssr: false }
-);
-const Code = dynamic(() => import('react-notion-x/build/third-party/code').then((m) => m.Code), { ssr: false });
-const Collection = dynamic(() => import('react-notion-x/build/third-party/collection').then((m) => m.Collection), { ssr: false });
-const Equation = dynamic(() => import('react-notion-x/build/third-party/equation').then((m) => m.Equation), { ssr: false });
-const Pdf = dynamic(() => import('react-notion-x/build/third-party/pdf').then((m) => m.Pdf), { ssr: false });
-const Modal = dynamic(() => import('react-notion-x/build/third-party/modal').then((m) => m.Modal), { ssr: false });
+import { BlockList, RenderConfig } from "@udus/notion-components";
+// import "@udus/notion-components/dist/globals.css";
+import "katex/dist/katex.min.css";
 
 const NOTION_CLIENT_ID = process.env.NEXT_PUBLIC_NOTION_CLIENT_ID || "";
 const NOTION_REDIRECT_URI = process.env.NEXT_PUBLIC_NOTION_REDIRECT_URI || "http://localhost:3000/api/notion/auth/callback";
@@ -37,6 +26,20 @@ interface NotionDatabase {
   title?: NotionTitle[];
 }
 
+interface NotionBlock {
+  object: string;
+  id: string;
+  type: string;
+  has_children: boolean;
+  [key: string]: any;
+}
+
+interface NotionPageData {
+  page: NotionPage;
+  blocks: NotionBlock[];
+  totalBlocks: number;
+}
+
 type NotionItem = NotionPage | NotionDatabase;
 
 export default function NotionPage() {
@@ -44,10 +47,11 @@ export default function NotionPage() {
   const [pages, setPages] = useState<NotionPage[]>([]);
   const [databases, setDatabases] = useState<NotionDatabase[]>([]);
   const [selected, setSelected] = useState<string>("");
-  const [block, setBlocks] = useState<NotionItem | null>(null);
-  const [recordMap, setRecordMap] = useState<any>(null);
-  const [loadingRecordMap, setLoadingRecordMap] = useState(false);
-  const [recordMapError, setRecordMapError] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<NotionItem | null>(null);
+  const [pageData, setPageData] = useState<NotionPageData | null>(null);
+  const [loadingBlocks, setLoadingBlocks] = useState(false);
+  const [blocksError, setBlocksError] = useState<string | null>(null);
+  const [showJson, setShowJson] = useState(false);
   const searchParams = useSearchParams();
 
   // On mount, check for token in localStorage or URL (for demo)
@@ -81,16 +85,19 @@ export default function NotionPage() {
   // Handle selection change
   const handleSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelected(e.target.value);
-    setRecordMap(null);
-    setRecordMapError(null);
-    setLoadingRecordMap(false);
+    setPageData(null);
+    setBlocksError(null);
+    setLoadingBlocks(false);
+
     const [type, id] = e.target.value.split(":");
     let item: NotionItem | null = null;
+
     if (type === "page") {
       item = pages.find((p) => p.id === id) || null;
-      setBlocks(item);
+      setSelectedItem(item);
+
       if (item) {
-        setLoadingRecordMap(true);
+        setLoadingBlocks(true);
         try {
           const res = await fetch("/api/notion/recordMap", {
             method: "POST",
@@ -98,21 +105,22 @@ export default function NotionPage() {
             body: JSON.stringify({ pageId: id, token }),
           });
           const data = await res.json();
-          if (res.ok && data.recordMap) {
-            setRecordMap(data.recordMap);
+          if (res.ok && data.page && data.blocks) {
+            console.log("data", data);
+            setPageData(data);
           } else {
-            setRecordMapError(data.error || 'Failed to fetch Notion content');
+            setBlocksError(data.error || 'Failed to fetch Notion content');
           }
         } catch (err: any) {
-          setRecordMapError(err.message || 'Unknown error');
+          setBlocksError(err.message || 'Unknown error');
         } finally {
-          setLoadingRecordMap(false);
+          setLoadingBlocks(false);
         }
       }
     } else if (type === "db") {
       item = databases.find((d) => d.id === id) || null;
-      setBlocks(item);
-      setRecordMap(null);
+      setSelectedItem(item);
+      setPageData(null);
     }
   };
 
@@ -136,7 +144,8 @@ export default function NotionPage() {
     setPages([]);
     setDatabases([]);
     setSelected("");
-    setBlocks(null);
+    setSelectedItem(null);
+    setPageData(null);
   };
 
   return (
@@ -157,8 +166,8 @@ export default function NotionPage() {
           >
             Disconnect
           </button>
-          <div className="w-full max-w-md flex flex-col gap-6 items-center">
-            <div className="w-full">
+          <div className="w-full max-w-6xl flex flex-col gap-6 items-center">
+            <div className="w-full max-w-md">
               <label className="block text-gray-300 mb-2">Select a Notion Page or Database</label>
               <select
                 className="w-full p-3 rounded-md bg-[#181818] text-white border border-gray-700 focus:outline-none"
@@ -194,29 +203,63 @@ export default function NotionPage() {
                 </optgroup>
               </select>
             </div>
-            <div className="w-full bg-[#111] rounded-md p-4 min-h-[120px] mt-4">
-              {block ? (
-                <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(block, null, 2)}</pre>
-              ) : (
-                <span className="text-gray-500">Select a page or database to preview</span>
-              )}
-            </div>
-            {/* Render Notion content if recordMap is available and block is a page */}
+
+            {/* Selected Item Preview */}
+            {selectedItem && (
+              <div className="w-full bg-[#111] rounded-md p-4 min-h-[120px]">
+                <h3 className="text-lg font-light mb-2">Selected {selectedItem.object === 'page' ? 'Page' : 'Database'} Details:</h3>
+                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(selectedItem, null, 2)}</pre>
+              </div>
+            )}
+
+            {/* Page Blocks Content */}
             {selected.startsWith('page:') && (
-              <div className="w-full bg-[#181818] rounded-md p-4 mt-4">
-                {loadingRecordMap ? (
-                  <div className="text-gray-400">Loading Notion content...</div>
-                ) : recordMapError ? (
-                  <div className="text-red-400">{recordMapError}</div>
-                ) : recordMap ? (
-                  <NotionRenderer
-                    recordMap={recordMap}
-                    fullPage={true}
-                    darkMode={true}
-                    components={{ Code, Collection, Equation, Modal, Pdf }}
-                  />
+              <div className="w-full bg-[#181818] rounded-md p-4">
+                {loadingBlocks ? (
+                  <div className="text-gray-400">Loading all page blocks...</div>
+                ) : blocksError ? (
+                  <div className="text-red-400">Error: {blocksError}</div>
+                ) : pageData ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-light">Page Content</h3>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-400">Total blocks: {pageData.totalBlocks}</span>
+                        <button
+                          onClick={() => setShowJson(!showJson)}
+                          className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:opacity-80 cursor-pointer"
+                        >
+                          {showJson ? 'Show Rendered' : 'Show JSON'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {showJson ? (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-md font-light mb-2 text-gray-300">Page Metadata:</h4>
+                          <div className="bg-[#111] rounded p-3 overflow-auto max-h-60">
+                            <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(pageData.page, null, 2)}</pre>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-md font-light mb-2 text-gray-300">All Blocks ({pageData.blocks.length}):</h4>
+                          <div className="bg-[#111] rounded p-3 overflow-auto max-h-96">
+                            <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(pageData.blocks, null, 2)}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white text-black rounded p-4 overflow-auto max-h-96">
+                        <RenderConfig theme="light">
+                          <BlockList blocks={pageData.blocks} />
+                        </RenderConfig>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div className="text-gray-500">Select a Notion page to render its content</div>
+                  <div className="text-gray-500">Select a Notion page to fetch all its blocks</div>
                 )}
               </div>
             )}

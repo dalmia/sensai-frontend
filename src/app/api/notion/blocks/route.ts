@@ -16,9 +16,9 @@ async function getAllBlocks(pageId: string, token: string): Promise<NotionBlock[
   let nextCursor: string | null = null;
 
   while (hasMore) {
-    const url = `https://api.notion.com/v1/blocks/${pageId}/children${nextCursor ? `?start_cursor=${nextCursor}` : ''}`;
+    const url: string = `https://api.notion.com/v1/blocks/${pageId}/children${nextCursor ? `?start_cursor=${nextCursor}` : ''}`;
     
-    const response = await fetch(url, {
+    const response: Response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -31,7 +31,7 @@ async function getAllBlocks(pageId: string, token: string): Promise<NotionBlock[
       throw new Error(`Failed to fetch blocks: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const blocks = data.results || [];
     allBlocks.push(...blocks);
 
@@ -56,46 +56,37 @@ async function getAllBlocks(pageId: string, token: string): Promise<NotionBlock[
 
 export async function POST(req: NextRequest) {
   try {
-    const { pageId, token } = await req.json();
+    const { pageId } = await req.json();
     
     if (!pageId) {
       return NextResponse.json({ error: 'Missing pageId' }, { status: 400 });
     }
     
+    // Use environment variable instead of user input
+    const token = process.env.NOTION_TOKEN;
+    
     if (!token) {
-      return NextResponse.json({ error: 'Missing token' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Notion integration not configured. Please set NOTION_TOKEN environment variable.' 
+      }, { status: 500 });
     }
 
     console.log("Fetching blocks for pageId:", pageId);
     
-    // First, get the page details
-    const pageResponse = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Notion-Version': NOTION_VERSION,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!pageResponse.ok) {
-      throw new Error(`Failed to fetch page: ${pageResponse.status} ${pageResponse.statusText}`);
-    }
-
-    const pageData = await pageResponse.json();
-    
-    // Then, get all blocks recursively using Notion's official API
+    // Get all blocks recursively using Notion's official API
     const blocks = await getAllBlocks(pageId, token);
     
     console.log(`Fetched ${blocks.length} blocks for page ${pageId}`);
     
     return NextResponse.json({ 
-      page: pageData,
+      success: true,
       blocks: blocks,
       totalBlocks: blocks.length
     });
   } catch (error: any) {
-    console.error('Error fetching Notion data:', error);
-    return NextResponse.json({ error: error.message || 'Unknown error' }, { status: 500 });
+    console.error('Error fetching Notion blocks:', error);
+    return NextResponse.json({ 
+      error: error.message || 'Unknown error' 
+    }, { status: 500 });
   }
 } 
