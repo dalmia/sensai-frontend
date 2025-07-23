@@ -47,5 +47,5 @@ export async function GET(req: NextRequest) {
   const data = await tokenRes.json();
   // For demo: redirect to /notion with token in query (in production, use cookies/session)
   const baseUrl = req.nextUrl.origin;
-  return NextResponse.redirect(`${baseUrl}/notion?token=${encodeURIComponent(data.access_token)}`);
+  return NextResponse.redirect(`${baseUrl}/notion-test?token=${encodeURIComponent(data.access_token)}`);
 }
