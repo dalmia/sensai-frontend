@@ -878,7 +878,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             </div>
                         ) : (
                             <BlockNoteEditor
-                                initialContent={initialContent}
+                                        initialContent={
+                                            Array.isArray(editorContent) && editorContent.length > 0
+                                                ? editorContent.filter(
+                                                    block => block && typeof block === "object" && typeof block.type === "string"
+                                                )
+                                                : undefined
+                                        }
                                 onChange={handleEditorChange}
                                 isDarkMode={isDarkMode}
                                 readOnly={readOnly}

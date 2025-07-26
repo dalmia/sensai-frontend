@@ -134,9 +134,8 @@ export default function NotionIntegration({
     // Check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
     const notionToken = urlParams.get('notion_token');
-    const notionIntegration = urlParams.get('notion_integration');
 
-    if (notionToken && notionIntegration === 'success') {
+    if (notionToken) {
       // Create the integration
       const createIntegration = async () => {
         setIsConnecting(true);
@@ -155,7 +154,6 @@ export default function NotionIntegration({
             // Clear URL parameters and refresh integration status
             const url = new URL(window.location.href);
             url.searchParams.delete('notion_token');
-            url.searchParams.delete('notion_integration');
             window.history.replaceState({}, document.title, url.pathname + url.search);
 
             // Refresh integration status
@@ -316,7 +314,7 @@ export default function NotionIntegration({
   if (!hasIntegration) {
     return (
       <div
-        className={`flex items-center gap-3 ${className}`}
+        className={`flex items-center gap-3 mr-5 ${className}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -334,7 +332,7 @@ export default function NotionIntegration({
 
   return (
     <div
-      className={`flex items-center gap-3 ${className}`}
+      className={`flex items-center gap-3 mr-5 ${className}`}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
