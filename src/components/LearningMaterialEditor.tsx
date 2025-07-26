@@ -24,6 +24,17 @@ import { ChatMessage } from "../types/quiz";
 // Add import for PublishConfirmationDialog
 import PublishConfirmationDialog from "./PublishConfirmationDialog";
 
+// Add import for NotionIntegration
+import NotionIntegration from "./NotionIntegration";
+
+// Add imports for Notion rendering
+import { BlockList } from "@udus/notion-renderer/components";
+import "@udus/notion-renderer/styles/globals.css";
+import "katex/dist/katex.min.css";
+
+// Add import for useAuth
+import { useAuth } from "@/lib/auth";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -42,7 +53,6 @@ interface LearningMaterialEditorProps {
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
     taskId?: string;
-    userId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     scheduledPublishAt?: string | null;
@@ -59,7 +69,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onPublishConfirm,
     onPublishCancel,
     taskId,
-    userId = '',
     onPublishSuccess,
     onSaveSuccess,
     scheduledPublishAt = null,
@@ -70,7 +79,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-
+    const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
+    const [isLoadingNotion, setIsLoadingNotion] = useState(false);
+    const { user } = useAuth();
+    const userId = user?.id;
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
 
@@ -94,6 +106,72 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     };
 
     const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
+
+    // Function to fetch and render Notion blocks
+    const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
+        try {
+            setIsLoadingNotion(true);
+
+            const integrationId = integrationBlock.props.integration_id;
+            if (!integrationId) {
+                console.error('Integration ID not provided')
+                return;
+            }
+
+            // Get the user's integrations to find the Notion access token
+            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
+            if (!integrationRes.ok) return;
+            const integration = await integrationRes.json();
+            const accessToken = integration.access_token;
+
+            if (!accessToken) {
+                console.error('No Notion integration found');
+                return;
+            }
+
+            // Fetch the Notion page content using the access token
+            const notionResponse = await fetch(`/api/notion/fetchPage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pageId: integrationBlock.props.resource_id,
+                    token: accessToken
+                }),
+            });
+
+            if (!notionResponse.ok) {
+                console.error('Failed to fetch Notion page content');
+                return;
+            }
+
+            const notionData = await notionResponse.json();
+
+            // Check if the result is successful
+            if (notionData.ok && notionData.data) {
+                setNotionBlocks(notionData.data);
+            } else {
+                console.error('Failed to get Notion blocks from response');
+            }
+        } catch (error) {
+            console.error('Error fetching Notion blocks:', error);
+        } finally {
+            setIsLoadingNotion(false);
+        }
+    };
+
+    // Check for integration blocks and fetch Notion content
+    useEffect(() => {
+        if (editorContent.length > 0) {
+            const integrationBlock = editorContent.find(block => block.type === 'integration');
+            if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
+                fetchAndRenderNotionBlocks(integrationBlock);
+            } else {
+                setNotionBlocks([]);
+            }
+        } else {
+            setNotionBlocks([]);
+        }
+    }, [editorContent]);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -444,6 +522,172 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
+    // Handle Notion page selection
+    const handleNotionPageSelect = async (pageId: string, pageTitle: string) => {
+        try {
+            if (!userId) {
+                console.error('User ID not provided');
+                return;
+            }
+
+            // Get the user's integrations to find the Notion access token
+            const integrationsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${userId}`);
+            if (!integrationsResponse.ok) {
+                console.error('Failed to fetch integrations');
+                return;
+            }
+
+            const integrations = await integrationsResponse.json();
+            const notionIntegration = integrations.find((integration: any) => integration.integration_type === 'notion');
+
+            if (!notionIntegration) {
+                console.error('No Notion integration found');
+                return;
+            }
+
+            // Fetch the Notion page content using the access token
+            const notionResponse = await fetch(`/api/notion/fetchPage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pageId: pageId,
+                    token: notionIntegration.access_token
+                }),
+            });
+
+            if (!notionResponse.ok) {
+                console.error('Failed to fetch Notion page content');
+                return;
+            }
+
+            const notionData = await notionResponse.json();
+
+            // Check if the Notion page has content
+            if (!notionData.ok || !notionData.data || notionData.data.length === 0) {
+                console.log('Notion page is empty, using default content');
+                // If Notion page is empty, use default content instead
+                const defaultContent = [
+                    {
+                        type: "paragraph",
+                        content: [{ "text": `Content from Notion page: ${pageTitle}`, "type": "text", styles: {} }]
+                    },
+                    {
+                        type: "paragraph",
+                        content: [{ "text": "This page appears to be empty or doesn't have any content to display.", "type": "text", styles: {} }]
+                    }
+                ];
+
+                setEditorContent(defaultContent);
+                setNotionBlocks([]);
+
+                // Update the editor instance if available
+                if (editorRef.current && editorRef.current.replaceBlocks) {
+                    try {
+                        editorRef.current.replaceBlocks(editorRef.current.document, defaultContent);
+                    } catch (error) {
+                        console.error('Error replacing blocks:', error);
+                        if (editorRef.current.setContent) {
+                            editorRef.current.setContent(defaultContent);
+                        }
+                    }
+                }
+
+                if (onChange) {
+                    onChange(defaultContent);
+                }
+                return;
+            }
+
+            // Create the integration block
+            const integrationBlock = {
+                type: "integration",
+                props: {
+                    integration_id: notionIntegration.id,
+                    resource_id: pageId,
+                    resource_type: "page",
+                    integration_type: "notion"
+                },
+                id: `notion-integration-${Date.now()}`,
+                position: 0
+            };
+
+            // Replace all existing content with just the integration block
+            const newContent = [integrationBlock];
+
+            // Update the editor content
+            setEditorContent(newContent);
+
+            console.log('newContent: ', newContent);
+
+            // Update the editor instance if available
+            if (editorRef.current && editorRef.current.replaceBlocks) {
+                try {
+                    editorRef.current.replaceBlocks(editorRef.current.document, newContent);
+                } catch (error) {
+                    console.error('Error replacing blocks:', error);
+                    if (editorRef.current.setContent) {
+                        editorRef.current.setContent(newContent);
+                    }
+                }
+            }
+
+            // Call onChange if provided
+            if (onChange) {
+                onChange(newContent);
+            }
+
+            console.log('Successfully replaced content with Notion integration block:', integrationBlock);
+
+        } catch (error) {
+            console.error('Error handling Notion page selection:', error);
+            // Fallback to default content on error
+            const fallbackContent = [
+                {
+                    type: "paragraph",
+                    content: [{ "text": "Error loading Notion content. Please try again.", "type": "text", styles: {} }]
+                }
+            ];
+            setEditorContent(fallbackContent);
+            setNotionBlocks([]);
+
+            if (onChange) {
+                onChange(fallbackContent);
+            }
+        }
+    };
+
+    // Handle Notion page removal
+    const handleNotionPageRemove = () => {
+        // Set valid default content instead of empty content
+        const defaultContent = [
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            }
+        ];
+
+        setEditorContent(defaultContent);
+        setNotionBlocks([]);
+
+        // Update the editor instance if available
+        if (editorRef.current && editorRef.current.replaceBlocks) {
+            try {
+                editorRef.current.replaceBlocks(editorRef.current.document, defaultContent);
+            } catch (error) {
+                console.error('Error replacing blocks:', error);
+                // Fallback: try to set content directly
+                if (editorRef.current.setContent) {
+                    editorRef.current.setContent(defaultContent);
+                }
+            }
+        }
+
+        // Call onChange if provided
+        if (onChange) {
+            onChange(defaultContent);
+        }
+    };
+
     // Handle saving changes when in edit mode
     const handleSave = async () => {
         if (!taskId) {
@@ -526,7 +770,12 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 // If there's only one block, check if it has actual content
                 if (content.length === 1) {
                     const block = content[0];
-                    // Use stringify to check if there's actual content
+
+                    if (block.type === 'integration') {
+                        return true;
+                    }
+
+                    // Use stringify to check if it has actual content
                     const blockContent = JSON.stringify(block.content);
                     // Check if it's not just an empty paragraph
                     if (blockContent &&
@@ -547,6 +796,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 return true;
             }
 
+            // Check if we have Notion blocks (which means we have content)
+            if (notionBlocks.length > 0) {
+                return true;
+            }
+
             // If editorContent is empty but we have taskData, check that as a fallback
             if (taskData?.blocks) {
                 return checkContent(taskData.blocks);
@@ -564,6 +818,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const originalTitle = originalDataRef.current.title || "";
 
             if (currentTitle !== originalTitle) {
+                return true;
+            }
+
+            if (notionBlocks.length > 0) {
                 return true;
             }
 
@@ -595,15 +853,39 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     return (
         <div className={`w-full h-full ${className}`}>
             <div className="w-full flex flex-col my-4">
+                {/* Notion Integration */}
+                {!readOnly && (
+                    <div className="mb-4">
+                        <NotionIntegration
+                            onPageSelect={handleNotionPageSelect}
+                            onPageRemove={handleNotionPageRemove}
+                            className="justify-end"
+                            isEditMode={!readOnly}
+                            editorContent={editorContent}
+                        />
+                    </div>
+                )}
+
                 <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0`}>
-                    <BlockNoteEditor
-                        initialContent={initialContent}
-                        onChange={handleEditorChange}
-                        isDarkMode={isDarkMode}
-                        readOnly={readOnly}
-                        className="dark-editor min-h-screen"
-                        onEditorReady={setEditorInstance}
-                    />
+                    {isLoadingNotion ? (
+                        <div className="flex items-center justify-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                        </div>
+                    ) : (
+                        (notionBlocks.length > 0) ? (
+                            <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                                <BlockList blocks={notionBlocks} />
+                            </div>
+                        ) : (
+                            <BlockNoteEditor
+                                initialContent={initialContent}
+                                onChange={handleEditorChange}
+                                isDarkMode={isDarkMode}
+                                readOnly={readOnly}
+                                className="dark-editor min-h-screen"
+                                onEditorReady={setEditorInstance}
+                            />
+                        ))}
                 </div>
             </div>
 

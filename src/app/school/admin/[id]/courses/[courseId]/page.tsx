@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share, Settings } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import CourseModuleList from "@/components/CourseModuleList";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
@@ -43,6 +43,7 @@ const defaultQuestionConfig: QuizQuestionConfig = {
 export default function CreateCourse() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const schoolId = params.id as string;
     const courseId = params.courseId as string;
     const [schoolSlug, setSchoolSlug] = useState<string>('');
@@ -370,6 +371,9 @@ export default function CreateCourse() {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
+        const url = new URL(window.location.href);
+        url.searchParams.set('taskId', itemId);
+        router.push(url.pathname + url.search, { scroll: false });
 
         setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
@@ -591,6 +595,10 @@ export default function CreateCourse() {
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
+        const url = new URL(window.location.href);
+        url.searchParams.set('taskId', itemId);
+        router.push(url.pathname + url.search, { scroll: false });
+
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
             const updatedItem = {
@@ -630,9 +638,39 @@ export default function CreateCourse() {
         }
     };
 
+    const taskId = searchParams.get('taskId');
+    useEffect(() => {
+        if (taskId && modules.length > 0) {
+            // Find the module containing this item
+            for (const module of modules) {
+                const item = module.items.find(i => i.id === taskId);
+                if (item) {
+                    openItemDialog(module.id, taskId);
+                    break;
+                }
+            }
+        }
+        // Only run when modules are loaded
+    }, [modules]);
+
+    // Sync dialog open state with taskId in URL
+    useEffect(() => {
+        if (taskId) {
+            setIsDialogOpen(true);
+        } else {
+            setIsDialogOpen(false);
+        }
+    }, [taskId]);
+
+
+
     // Close the dialog
     const closeDialog = () => {
-        // Dialog confirmation is handled by CourseItemDialog component
+        // Clean up the URL (remove itemId)
+        const url = new URL(window.location.href);
+        url.searchParams.delete('taskId');
+        router.replace(url.pathname + url.search, { scroll: false });
+
         setIsDialogOpen(false);
         setActiveItem(null);
         setActiveModuleId(null);
@@ -1832,8 +1870,8 @@ export default function CreateCourse() {
                 </div>
             )}
 
-            {/* Show spinner when loading */}
-            {isLoading ? (
+            {/* Show spinner when loading, or when taskId is present and dialog is not open */}
+            {(isLoading || (taskId && !isDialogOpen)) ? (
                 <div className="flex justify-center items-center h-[calc(100vh-80px)]">
                     <div className="w-16 h-16 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>

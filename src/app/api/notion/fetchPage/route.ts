@@ -25,13 +25,12 @@ export async function POST(req: NextRequest) {
     // Call fetchBlockList with just the pageId - the library handles the rest
     const result = await fetchBlockList(client, { block_id: pageId });
     
-    console.log('fetchPage result:', result);
-    
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching Notion page:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ 
-      error: error.message || 'Unknown error' 
+      error: errorMessage 
     }, { status: 500 });
   }
 } 

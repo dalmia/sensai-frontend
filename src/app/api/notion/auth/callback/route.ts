@@ -3,17 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
+
   if (!code) {
     return NextResponse.json({ error: "Missing code" }, { status: 400 });
   }
-
-  const NOTION_CLIENT_ID = process.env.NOTION_CLIENT_ID;
-  const NOTION_CLIENT_SECRET = process.env.NOTION_CLIENT_SECRET;
-  const NOTION_REDIRECT_URI = process.env.NOTION_REDIRECT_URI;
-
-  console.log("NOTION_CLIENT_ID", NOTION_CLIENT_ID);
-  console.log("NOTION_CLIENT_SECRET", NOTION_CLIENT_SECRET);
-  console.log("NOTION_REDIRECT_URI", NOTION_REDIRECT_URI);
 
   const basicAuth = Buffer.from(
     `${process.env.NOTION_CLIENT_ID}:${process.env.NOTION_CLIENT_SECRET}`
@@ -28,7 +22,6 @@ export async function GET(req: NextRequest) {
     body: JSON.stringify({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.NOTION_REDIRECT_URI,
       external_account: {
         type: 'user',
         key: 'default',
@@ -45,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   const data = await tokenRes.json();
-  // For demo: redirect to /notion with token in query (in production, use cookies/session)
-  const baseUrl = req.nextUrl.origin;
-  return NextResponse.redirect(`${baseUrl}/notion-test?token=${encodeURIComponent(data.access_token)}`);
+  const redirectUrl = `${state}&notion_token=${encodeURIComponent(data.access_token)}`;
+
+  return NextResponse.redirect(redirectUrl);
 }
