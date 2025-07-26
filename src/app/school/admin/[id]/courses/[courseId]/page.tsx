@@ -372,7 +372,7 @@ export default function CreateCourse() {
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
         const url = new URL(window.location.href);
-        url.searchParams.set('taskId', itemId);
+        url.searchParams.set('taskId', newItem.id);
         router.push(url.pathname + url.search, { scroll: false });
 
         setModules(prevModules => prevModules.map(module => {
