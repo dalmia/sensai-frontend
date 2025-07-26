@@ -18,6 +18,11 @@ import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
 
+// Add imports for Notion rendering
+import { BlockList } from "@udus/notion-renderer/components";
+import "@udus/notion-renderer/styles/globals.css";
+import "katex/dist/katex.min.css";
+
 interface LearningMaterialViewerProps {
     taskId?: string;
     userId?: string;
@@ -70,6 +75,9 @@ export default function LearningMaterialViewer({
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
     const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
+
+    const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
+    const [isLoadingNotion, setIsLoadingNotion] = useState(false);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -407,6 +415,56 @@ export default function LearningMaterialViewer({
         }
     };
 
+    // Function to fetch and render Notion blocks
+    const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
+        try {
+            setIsLoadingNotion(true);
+            // Get the integration_id from the block
+            const integrationId = integrationBlock.props.integration_id;
+            if (!integrationId) return;
+            // Fetch the integration to get the access_token
+            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
+            if (!integrationRes.ok) return;
+            const integration = await integrationRes.json();
+            const accessToken = integration.access_token;
+            if (!accessToken) return;
+            // Fetch the Notion page content using the access token
+            const notionResponse = await fetch(`/api/notion/fetchPage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pageId: integrationBlock.props.resource_id,
+                    token: accessToken
+                }),
+            });
+            if (!notionResponse.ok) return;
+            const notionData = await notionResponse.json();
+            if (notionData.ok && notionData.data) {
+                setNotionBlocks(notionData.data);
+            } else {
+                setNotionBlocks([]);
+            }
+        } catch (error) {
+            setNotionBlocks([]);
+        } finally {
+            setIsLoadingNotion(false);
+        }
+    };
+
+    // Check for integration blocks and fetch Notion content
+    useEffect(() => {
+        if (taskData?.blocks && taskData.blocks.length > 0) {
+            const integrationBlock = taskData.blocks.find(block => block.type === 'integration');
+            if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
+                fetchAndRenderNotionBlocks(integrationBlock);
+            } else {
+                setNotionBlocks([]);
+            }
+        } else {
+            setNotionBlocks([]);
+        }
+    }, [taskData?.blocks]);
+
     // Apply CSS classes based on mode
     useEffect(() => {
         const container = document.querySelector('.material-view-container');
@@ -675,13 +733,24 @@ export default function LearningMaterialViewer({
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
-                        <BlockNoteEditor
-                            initialContent={initialContent}
-                            onChange={() => { }} // Read-only, no changes
-                            isDarkMode={isDarkMode}
-                            readOnly={true}
-                            className="dark-editor"
-                        />
+                    {isLoadingNotion ? (
+                        <div className="flex items-center justify-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                        </div>
+                    ) : (
+                        (notionBlocks.length > 0) ? (
+                            <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                                <BlockList blocks={notionBlocks} />
+                            </div>
+                        ) : (
+                                <BlockNoteEditor
+                                    initialContent={initialContent}
+                                    onChange={() => { }} // Read-only, no changes
+                                    isDarkMode={isDarkMode}
+                                    readOnly={true}
+                                    className="dark-editor"
+                                />
+                        ))}
                     </div>
                 </div>
 

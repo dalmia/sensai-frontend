@@ -6,7 +6,7 @@ services:
     depends_on:
       backend-prod:
         condition: service_healthy
-    # restart: unless-stopped
+    restart: unless-stopped
     networks:
       - sensai-network-prod
 
@@ -24,6 +24,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
     networks:
       - sensai-network-prod
 
@@ -33,6 +34,7 @@ services:
     command: bash -c "python /src/startup.py && uvicorn api.public:app --host 0.0.0.0 --port 8001"
     volumes:
       - /appdata_prod:/appdata
+    restart: unless-stopped
     ports:
       - "8004:8001"
 
@@ -55,6 +57,7 @@ services:
       - PHOENIX_WORKING_DIR=/mnt/data
       - PHOENIX_ENABLE_AUTH=True
       - PHOENIX_SECRET=${PHOENIX_SECRET}
+    restart: unless-stopped
     volumes:
       - phoenix_data:/mnt/data # PHOENIX_WORKING_DIR
 
