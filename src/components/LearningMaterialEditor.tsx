@@ -56,6 +56,7 @@ interface LearningMaterialEditorProps {
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     scheduledPublishAt?: string | null;
+    closeDialog?: () => void;
 }
 
 // Use forwardRef to pass the ref from parent to this component
@@ -72,6 +73,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onPublishSuccess,
     onSaveSuccess,
     scheduledPublishAt = null,
+    closeDialog,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -320,6 +322,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     onPublishSuccess(publishedTaskData);
                 }, 0);
             }
+            closeDialog?.();
         } catch (error) {
             console.error("Error publishing learning material:", error);
             setPublishError(error instanceof Error ? error.message : "Failed to publish learning material");

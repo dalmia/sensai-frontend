@@ -683,7 +683,6 @@ export default function CreateCourse() {
     // Close the dialog
     const closeDialog = () => {
         // Clean up the URL (remove taskId)
-        console.log("closeDialog");
         const url = new URL(window.location.href);
         url.searchParams.delete('taskId');
         window.history.replaceState({}, '', url.pathname + url.search);

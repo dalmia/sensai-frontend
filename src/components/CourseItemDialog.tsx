@@ -972,6 +972,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         displayToast("Saved", `Your learning material has been updated`);
                                     }
                                 }}
+                                closeDialog={onClose}
                             />
                         ) : activeItem?.type === 'quiz' ? (
                             <DynamicQuizEditor
