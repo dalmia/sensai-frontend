@@ -14,12 +14,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing token' }, { status: 400 });
     }
 
-    console.log("Fetching page for pageId:", pageId);
-    
-    // Set the token as environment variable temporarily for this request
-    // Note: @udus/notion-renderer expects NOTION_TOKEN as env var
-    process.env.NOTION_TOKEN = token;
-
     const client = new Client({ auth: token });
     
     // Call fetchBlockList with just the pageId - the library handles the rest
@@ -27,7 +21,6 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json(result);
   } catch (error: unknown) {
-    console.error('Error fetching Notion page:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ 
       error: errorMessage 

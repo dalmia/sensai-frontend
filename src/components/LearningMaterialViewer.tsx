@@ -23,6 +23,9 @@ import { BlockList } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
+// Add import for shared Notion utilities
+import { fetchNotionBlocks } from "@/lib/utils/notionUtils";
+
 interface LearningMaterialViewerProps {
     taskId?: string;
     userId?: string;
@@ -74,7 +77,15 @@ export default function LearningMaterialViewer({
     // Mobile view mode for responsive layout
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0
+        ? taskData.blocks.filter(
+            (block) =>
+                block &&
+                typeof block === "object" &&
+                typeof block.type === "string" &&
+                block.type !== "integration"
+        )
+        : undefined;
 
     const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
     const [isLoadingNotion, setIsLoadingNotion] = useState(false);
@@ -421,47 +432,13 @@ export default function LearningMaterialViewer({
         try {
             setIsLoadingNotion(true);
             setIntegrationError(null); // Clear previous errors
-            const integrationId = integrationBlock.props.integration_id;
-            if (!integrationId) {
-                setIntegrationError('User ID not found. Please contact your mentor.');
-                return;
-            }
-            // Fetch the integration to get the access_token
 
-            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
-            if (!integrationRes.ok) {
-                setIntegrationError('Content source not found. Please contact your mentor.');
-                return;
-            }
+            const result = await fetchNotionBlocks(integrationBlock);
 
-            const integrations = await integrationRes.json();
-            const notionIntegration = integrations.find((integration: any) => integration.integration_type === 'notion');
-            const accessToken = notionIntegration?.access_token;
-            if (!accessToken) {
-                setIntegrationError('Content access is not available. Please contact your mentor.');
-                return;
-            }
-
-            // Fetch the Notion page content using the access token
-            const notionResponse = await fetch(`/api/notion/fetchPage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pageId: integrationBlock.props.resource_id,
-                    token: accessToken
-                }),
-            });
-
-            if (!notionResponse.ok) {
-                setIntegrationError('Failed to load content. Please try again later.');
-                return;
-            }
-
-            const notionData = await notionResponse.json();
-            if (notionData.ok && notionData.data) {
-                setNotionBlocks(notionData.data);
+            if (result.error) {
+                setIntegrationError(result.error);
             } else {
-                setIntegrationError('Content could not be loaded. Please contact your mentor.');
+                setNotionBlocks(result.blocks);
             }
         } catch (error) {
             setIntegrationError('Unable to load content. Please try again later.');

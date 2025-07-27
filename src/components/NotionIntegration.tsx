@@ -12,7 +12,7 @@ interface NotionPage {
   };
 }
 
-interface LoadingButtonProps {
+interface ButtonProps {
   onClick: (e?: React.MouseEvent) => void | Promise<void>;
   disabled?: boolean;
   isLoading?: boolean;
@@ -32,7 +32,7 @@ const NotionIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 );
 
 // Reusable loading button component
-const LoadingButton = ({
+const Button = ({
   onClick,
   disabled = false,
   isLoading = false,
@@ -42,7 +42,7 @@ const LoadingButton = ({
   textColor = "text-white",
   className = "",
   showIcon = false
-}: LoadingButtonProps) => {
+}: ButtonProps) => {
   return (
     <button
       onClick={onClick}
@@ -97,13 +97,14 @@ export default function NotionIntegration({
   const [selectedPageId, setSelectedPageId] = useState<string>("");
   const [selectedPageTitle, setSelectedPageTitle] = useState<string>("");
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [noPagesFound, setNoPagesFound] = useState(false);
 
   // Add state for confirmation dialog
   const [showOverwriteConfirmation, setShowOverwriteConfirmation] = useState(false);
   const [pendingPageSelection, setPendingPageSelection] = useState<{ pageId: string; pageTitle: string } | null>(null);
+  const [showUnlinkConfirmation, setShowUnlinkConfirmation] = useState(false);
 
   const checkIntegration = async () => {
     try {
@@ -320,8 +321,12 @@ export default function NotionIntegration({
     setShowOverwriteConfirmation(false);
   };
 
-  const handleRemovePage = async () => {
-    setIsRemoving(true);
+  const handleUnlinkPage = async () => {
+    setShowUnlinkConfirmation(true);
+  };
+
+  const handleConfirmUnlink = async () => {
+    setIsUnlinking(true);
     try {
       // Add a small delay to show loading state if callback is synchronous
       if (onPageRemove) {
@@ -337,10 +342,15 @@ export default function NotionIntegration({
       setSelectedPageTitle("");
       setShowDropdown(true);
     } catch (error) {
-      console.error('Error removing page:', error);
+      console.error('Error unlinking page:', error);
     } finally {
-      setIsRemoving(false);
+      setIsUnlinking(false);
+      setShowUnlinkConfirmation(false);
     }
+  };
+
+  const handleCancelUnlink = () => {
+    setShowUnlinkConfirmation(false);
   };
 
   // Don't show anything if not in edit mode
@@ -356,7 +366,7 @@ export default function NotionIntegration({
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <LoadingButton
+        <Button
           onClick={handleConnectNotion}
           isLoading={isConnecting}
           loadingText="Connecting..."
@@ -393,12 +403,13 @@ export default function NotionIntegration({
             )}
             {/* Show reconnect button if no pages found */}
             {noPagesFound && !selectedPageId && (
-              <LoadingButton
+              <Button
                 onClick={handleReconnectNotion}
                 isLoading={isConnecting}
                 loadingText="Connecting..."
                 normalText="Reconnect Notion"
-                bgColor="bg-yellow-600"
+                  bgColor="bg-white"
+                  textColor="text-black"
                 showIcon={true}
               />
             )}
@@ -410,9 +421,9 @@ export default function NotionIntegration({
                   <select
                     onChange={handlePageSelect}
                     value=""
-                    className="px-3 pr-10 py-2 bg-[#111] text-white rounded-md font-light text-sm focus:outline-none cursor-pointer border border-[#333] hover:bg-[#222] transition-colors appearance-none"
+                      className="px-3 pr-10 py-2 bg-white text-black rounded-md font-light text-sm focus:outline-none cursor-pointer border border-gray-300 hover:bg-gray-50 transition-colors appearance-none"
                   >
-                    <option value="" disabled>Select Notion Page</option>
+                      <option value="" disabled>Select Notion page</option>
                     {pages.map((page) => {
                       const title = page.properties?.title?.title?.[0]?.plain_text || page.id;
                       return (
@@ -423,37 +434,48 @@ export default function NotionIntegration({
                     })}
                   </select>
                   {/* Custom dropdown arrow */}
-                  <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+                    <div className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
                     <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6 8L10 12L14 8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M6 8L10 12L14 8" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
 
-                <LoadingButton
+                <Button
                   onClick={handleAddMorePages}
                   isLoading={isConnecting}
                   loadingText="Connecting..."
-                  normalText="Add More Pages"
-                  bgColor="bg-gray-600"
+                    normalText="Add more pages"
+                    bgColor="bg-white"
+                    textColor="text-black"
                   showIcon={true}
                 />
               </>
             )}
 
-            {/* Show selected page info and remove button */}
             {selectedPageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-base text-white font-light">
-                  {selectedPageTitle}
-                </span>
-                <LoadingButton
-                  onClick={handleRemovePage}
-                  isLoading={isRemoving}
-                  loadingText="Removing..."
-                  normalText="Remove"
-                  bgColor="bg-red-600"
-                />
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-white font-light">
+                    Connected to {selectedPageTitle} Notion page
+                  </div>
+                    <Button
+                      onClick={handleUnlinkPage}
+                      isLoading={isUnlinking}
+                      loadingText="Unlinking..."
+                      normalText="Unlink page"
+                      bgColor="bg-red-600"
+                      showIcon={false}
+                    />
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm text-blue-300 font-light">
+                        This is a read-only Notion page. Make changes in the original Notion document for them to be reflected here.
+                      </span>
+                    </div>
+                  </div>
               </div>
             )}
           </>
@@ -467,12 +489,24 @@ export default function NotionIntegration({
       {/* Overwrite confirmation dialog */}
       <ConfirmationDialog
         open={showOverwriteConfirmation}
-        title="Are you sure you want to proceed?"
-        message="Adding a Notion page will replace all existing content in the editor."
+        title="Connect to Notion page?"
+        message="Connecting to a Notion page will replace all existing content in the editor."
         confirmButtonText="Overwrite"
         cancelButtonText="Cancel"
         onConfirm={handleConfirmOverwrite}
         onCancel={handleCancelOverwrite}
+        type="delete"
+      />
+
+      {/* Unlink confirmation dialog */}
+      <ConfirmationDialog
+        open={showUnlinkConfirmation}
+        title="Unlink Notion page?"
+        message="Unlinking this Notion page will remove its content from the editor."
+        confirmButtonText="Unlink"
+        cancelButtonText="Cancel"
+        onConfirm={handleConfirmUnlink}
+        onCancel={handleCancelUnlink}
         type="delete"
       />
     </>
