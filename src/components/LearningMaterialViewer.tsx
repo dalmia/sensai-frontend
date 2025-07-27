@@ -78,6 +78,7 @@ export default function LearningMaterialViewer({
 
     const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
     const [isLoadingNotion, setIsLoadingNotion] = useState(false);
+    const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -419,15 +420,28 @@ export default function LearningMaterialViewer({
     const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
         try {
             setIsLoadingNotion(true);
-            // Get the integration_id from the block
-            const integrationId = integrationBlock.props.integration_id;
-            if (!integrationId) return;
+            setIntegrationError(null); // Clear previous errors
+            const integration_user_id = integrationBlock.props.user_id;
+            if (!integration_user_id) {
+                setIntegrationError('User ID not found. Please contact your mentor.');
+                return;
+            }
             // Fetch the integration to get the access_token
-            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
-            if (!integrationRes.ok) return;
-            const integration = await integrationRes.json();
-            const accessToken = integration.access_token;
-            if (!accessToken) return;
+
+            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${integration_user_id}`);
+            if (!integrationRes.ok) {
+                setIntegrationError('Content source not found. Please contact your mentor.');
+                return;
+            }
+
+            const integrations = await integrationRes.json();
+            const notionIntegration = integrations.find((integration: any) => integration.integration_type === 'notion');
+            const accessToken = notionIntegration?.access_token;
+            if (!accessToken) {
+                setIntegrationError('Content access is not available. Please contact your mentor.');
+                return;
+            }
+
             // Fetch the Notion page content using the access token
             const notionResponse = await fetch(`/api/notion/fetchPage`, {
                 method: 'POST',
@@ -437,15 +451,20 @@ export default function LearningMaterialViewer({
                     token: accessToken
                 }),
             });
-            if (!notionResponse.ok) return;
+
+            if (!notionResponse.ok) {
+                setIntegrationError('Failed to load content. Please try again later.');
+                return;
+            }
+
             const notionData = await notionResponse.json();
             if (notionData.ok && notionData.data) {
                 setNotionBlocks(notionData.data);
             } else {
-                setNotionBlocks([]);
+                setIntegrationError('Content could not be loaded. Please contact your mentor.');
             }
         } catch (error) {
-            setNotionBlocks([]);
+            setIntegrationError('Unable to load content. Please try again later.');
         } finally {
             setIsLoadingNotion(false);
         }
@@ -459,9 +478,11 @@ export default function LearningMaterialViewer({
                 fetchAndRenderNotionBlocks(integrationBlock);
             } else {
                 setNotionBlocks([]);
+                setIntegrationError(null); // Clear errors when no integration blocks
             }
         } else {
             setNotionBlocks([]);
+            setIntegrationError(null); // Clear errors when no content
         }
     }, [taskData?.blocks]);
 
@@ -737,6 +758,15 @@ export default function LearningMaterialViewer({
                         <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                         </div>
+                        ) : integrationError ? (
+                            <div className="flex flex-col items-center justify-center h-32 text-center">
+                                <div className="text-red-400 text-sm mb-4">
+                                    {integrationError}
+                                </div>
+                                <div className="text-gray-400 text-xs">
+                                    Please contact your mentor if this issue persists.
+                                </div>
+                            </div>
                     ) : (
                         (notionBlocks.length > 0) ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 interface NotionPage {
   id: string;
@@ -62,6 +63,9 @@ interface NotionIntegrationProps {
       integration_type?: string;
       resource_id?: string;
     };
+    content?: Array<{
+      text?: string;
+    }>;
   }>;
 }
 
@@ -83,8 +87,13 @@ export default function NotionIntegration({
   const [selectedPageTitle, setSelectedPageTitle] = useState<string>("");
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isInserting, setIsInserting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [noPagesFound, setNoPagesFound] = useState(false);
+
+  // Add state for confirmation dialog
+  const [showOverwriteConfirmation, setShowOverwriteConfirmation] = useState(false);
+  const [pendingPageSelection, setPendingPageSelection] = useState<{ pageId: string; pageTitle: string } | null>(null);
 
   const checkIntegration = async () => {
     try {
@@ -96,6 +105,8 @@ export default function NotionIntegration({
           setHasIntegration(true);
           setAccessToken(notionIntegration.access_token);
           setIntegrationId(notionIntegration.id);
+          setNoPagesFound(false);
+          setError(null);
         }
       }
     } catch (err) {
@@ -117,15 +128,6 @@ export default function NotionIntegration({
       }
     }
   }, [editorContent, pages]);
-
-  // Check if the currently selected page is already in the database
-  const isPageAlreadyInDatabase = () => {
-    if (!editorContent || editorContent.length === 0) return false;
-    const integrationBlock = editorContent.find(block => block.type === 'integration');
-    return integrationBlock &&
-      integrationBlock.props.integration_type === 'notion' &&
-      integrationBlock.props.resource_id === selectedPageId;
-  };
 
   // Check if user has Notion integration and handle OAuth callback
   useEffect(() => {
@@ -183,6 +185,7 @@ export default function NotionIntegration({
     const fetchPages = async () => {
       setIsLoading(true);
       setError(null);
+      setNoPagesFound(false); // Reset no pages found state
 
       try {
         const response = await fetch(`/api/notion/pages?token=${encodeURIComponent(accessToken)}`);
@@ -190,11 +193,17 @@ export default function NotionIntegration({
 
         if (response.ok) {
           setPages(data.pages || []);
+          setShowDropdown(true);
+          if (data.pages && data.pages.length === 0) {
+            setNoPagesFound(true);
+          }
         } else {
           setError(data.error || 'Failed to fetch pages');
+          setNoPagesFound(true); // Set to true if API returns an error
         }
       } catch (err) {
         setError('Failed to fetch pages');
+        setNoPagesFound(true); // Set to true on network error
         console.error('Error fetching pages:', err);
       } finally {
         setIsLoading(false);
@@ -204,8 +213,9 @@ export default function NotionIntegration({
     fetchPages();
   }, [accessToken]);
 
-  const handleConnectNotion = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleConnectNotion = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
     setIsConnecting(true);
     const NOTION_CLIENT_ID = process.env.NEXT_PUBLIC_NOTION_CLIENT_ID || "";
     const currentUrl = window.location.href;
@@ -213,8 +223,8 @@ export default function NotionIntegration({
     window.location.href = NOTION_AUTH_URL;
   };
 
-  const handleDisconnectNotion = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDisconnectNotion = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!integrationId) return;
 
     setIsDisconnecting(true);
@@ -240,6 +250,15 @@ export default function NotionIntegration({
         setPages([]);
         setSelectedPageId("");
         setSelectedPageTitle("");
+        setShowDropdown(false);
+        setNoPagesFound(false);
+        setError(null);
+
+        // If this was triggered from "Disconnect & Reconnect", automatically start reconnection
+        if (noPagesFound) {
+          // Start reconnection immediately
+          handleConnectNotion();
+        }
       } else {
         console.error('Failed to disconnect Notion');
       }
@@ -250,38 +269,84 @@ export default function NotionIntegration({
     }
   };
 
+
+
+  // Function to check if there are existing blocks that would be overwritten
+  const hasExistingContent = () => {
+    if (!editorContent || editorContent.length === 0) return false;
+
+    // Check if there are any blocks beyond the first default paragraph
+    if (editorContent.length > 1) return true;
+
+    // If there's only one block, check if it has actual content
+    if (editorContent.length === 1) {
+      const block = editorContent[0];
+
+      // If it's already an integration block, don't consider it as "existing content"
+      if (block.type === 'integration') return false;
+
+      // Check if the block has actual content
+      if (block.content && Array.isArray(block.content)) {
+        return block.content.some((item: { text?: string }) =>
+          item.text && item.text.trim() !== ""
+        );
+      }
+    }
+
+    return false;
+  };
+
   const handlePageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation();
     const pageId = e.target.value;
     if (pageId) {
       const selectedPage = pages.find(page => page.id === pageId);
       const pageTitle = selectedPage?.properties?.title?.title?.[0]?.plain_text || pageId;
-      setSelectedPageId(pageId);
-      setSelectedPageTitle(pageTitle);
+
+      // Check if there's existing content that would be overwritten
+      if (hasExistingContent()) {
+        // Store the pending selection and show confirmation dialog
+        setPendingPageSelection({ pageId, pageTitle });
+        setShowOverwriteConfirmation(true);
+        // Reset the select value
+        e.target.value = "";
+      } else {
+      // No existing content, proceed immediately
+        setSelectedPageId(pageId);
+        setSelectedPageTitle(pageTitle);
+
+        // Automatically insert the page when selected
+        if (onPageSelect) {
+          onPageSelect(pageId, pageTitle);
+        }
+      }
     } else {
       setSelectedPageId("");
       setSelectedPageTitle("");
     }
   };
 
-  const handleInsertPage = async () => {
-    if (selectedPageId && selectedPageTitle && onPageSelect) {
-      setIsInserting(true);
-      try {
-        // Add a small delay to show loading state if callback is synchronous
-        const result = onPageSelect(selectedPageId, selectedPageTitle);
-        if (result instanceof Promise) {
-          await result;
-        } else {
-          // If synchronous, add a small delay to show loading state
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (error) {
-        console.error('Error inserting page:', error);
-      } finally {
-        setIsInserting(false);
+  // Handle confirmation to overwrite existing content
+  const handleConfirmOverwrite = () => {
+    if (pendingPageSelection) {
+      setSelectedPageId(pendingPageSelection.pageId);
+      setSelectedPageTitle(pendingPageSelection.pageTitle);
+
+      // Automatically insert the page when confirmed
+      if (onPageSelect) {
+        onPageSelect(pendingPageSelection.pageId, pendingPageSelection.pageTitle);
       }
     }
+
+    // Reset the pending selection and close dialog
+    setPendingPageSelection(null);
+    setShowOverwriteConfirmation(false);
+  };
+
+  // Handle canceling the overwrite confirmation
+  const handleCancelOverwrite = () => {
+    setPendingPageSelection(null);
+    setShowOverwriteConfirmation(false);
   };
 
   const handleRemovePage = async () => {
@@ -299,6 +364,7 @@ export default function NotionIntegration({
       }
       setSelectedPageId("");
       setSelectedPageTitle("");
+      setShowDropdown(true);
     } catch (error) {
       console.error('Error removing page:', error);
     } finally {
@@ -314,7 +380,7 @@ export default function NotionIntegration({
   if (!hasIntegration) {
     return (
       <div
-        className={`flex items-center gap-3 mr-5 ${className}`}
+        className={`flex items-center gap-3 ml-4 ${className}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -331,69 +397,93 @@ export default function NotionIntegration({
   }
 
   return (
-    <div
-      className={`flex items-center gap-3 mr-5 ${className}`}
-      onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      <div className="relative">
-        <select
-          onChange={handlePageSelect}
-          value={selectedPageId}
-          disabled={isLoading}
-          className={`px-3 pr-10 py-2 bg-[#111] text-white rounded-md font-light text-sm focus:outline-none cursor-pointer border border-[#333] hover:bg-[#222] transition-colors appearance-none ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-        >
-          <option value="">Select Notion Page</option>
-          {pages.map((page) => {
-            const title = page.properties?.title?.title?.[0]?.plain_text || page.id;
-            return (
-              <option key={page.id} value={page.id}>
-                {title}
-              </option>
-            );
-          })}
-        </select>
-        {/* Custom dropdown arrow */}
-        <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 8L10 12L14 8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      </div>
+    <>
+      <div
+        className={`flex items-center gap-3 ml-4 ${className}`}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {!isLoading ?
+          <LoadingButton
+            onClick={handleDisconnectNotion}
+            isLoading={isDisconnecting || (noPagesFound && isConnecting)}
+            loadingText="Processing..."
+            normalText={noPagesFound ? "Disconnect & Reconnect" : "Disconnect"}
+            bgColor={noPagesFound ? "bg-yellow-600" : "bg-gray-600"}
+          /> :
+          <div className="flex items-center">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            <span className="text-sm text-white">Checking pages...</span>
+          </div>}
 
-      {selectedPageId && (
-        <>
-          {isPageAlreadyInDatabase() ? (
+        {/* Show dropdown only when pages are loaded and no page is selected */}
+        {showDropdown && !isLoading && !selectedPageId && pages.length > 0 && (
+          <div className="relative">
+            <select
+              onChange={handlePageSelect}
+              value=""
+              className="px-3 pr-10 py-2 bg-[#111] text-white rounded-md font-light text-sm focus:outline-none cursor-pointer border border-[#333] hover:bg-[#222] transition-colors appearance-none"
+            >
+              <option value="" disabled>Select Notion Page</option>
+              {pages.map((page) => {
+                const title = page.properties?.title?.title?.[0]?.plain_text || page.id;
+                return (
+                  <option key={page.id} value={page.id}>
+                    {title}
+                  </option>
+                );
+              })}
+            </select>
+            {/* Custom dropdown arrow */}
+            <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 8L10 12L14 8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Show message when no pages are found */}
+        {noPagesFound && !isLoading && !selectedPageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-yellow-400 font-light">
+              No pages found
+            </span>
+          </div>
+        )}
+
+        {/* Show selected page info and remove button */}
+        {selectedPageId && !isLoading && (
+          <div className="flex items-center gap-2">
+            <span className="text-base text-white font-light">
+              {selectedPageTitle}
+            </span>
             <LoadingButton
               onClick={handleRemovePage}
               isLoading={isRemoving}
               loadingText="Removing..."
-              normalText="Remove Page"
+              normalText="Remove"
               bgColor="bg-red-600"
             />
-          ) : (
-            <LoadingButton
-              onClick={handleInsertPage}
-              isLoading={isInserting}
-              loadingText="Inserting..."
-              normalText="Insert Page"
-              bgColor="bg-green-600"
-            />
-          )}
-        </>
-      )}
+          </div>
+        )}
 
-      <LoadingButton
-        onClick={handleDisconnectNotion}
-        isLoading={isDisconnecting}
-        loadingText="Disconnecting..."
-        normalText="Disconnect"
-        bgColor="bg-gray-600"
+        {error && (
+          <div className="text-xs text-red-400">{error}</div>
+        )}
+      </div>
+
+      {/* Overwrite confirmation dialog */}
+      <ConfirmationDialog
+        open={showOverwriteConfirmation}
+        title="Are you sure you want to proceed?"
+        message="Adding a Notion page will replace all existing content in the editor."
+        confirmButtonText="Overwrite"
+        cancelButtonText="Cancel"
+        onConfirm={handleConfirmOverwrite}
+        onCancel={handleCancelOverwrite}
+        type="delete"
       />
-
-      {error && (
-        <div className="text-xs text-red-400">{error}</div>
-      )}
-    </div>
+    </>
   );
 } 

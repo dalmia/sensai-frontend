@@ -254,6 +254,22 @@ export default function CreateCourse() {
         // };
     }, []);
 
+    // Check for Notion OAuth callback and enable edit mode if coming from published content
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const notionToken = urlParams.get('notion_token');
+
+        if (notionToken) {
+            const hasPublishedContent = modules.some(module =>
+                module.items.some(item => item.status === 'published')
+            );
+
+            if (hasPublishedContent) {
+                setIsEditMode(true);
+            }
+        }
+    }, [modules]);
+
     // Set initial content and focus on newly added modules and items
     useEffect(() => {
         // Focus the newly added module
@@ -666,10 +682,11 @@ export default function CreateCourse() {
 
     // Close the dialog
     const closeDialog = () => {
-        // Clean up the URL (remove itemId)
+        // Clean up the URL (remove taskId)
+        console.log("closeDialog");
         const url = new URL(window.location.href);
         url.searchParams.delete('taskId');
-        router.replace(url.pathname + url.search, { scroll: false });
+        window.history.replaceState({}, '', url.pathname + url.search);
 
         setIsDialogOpen(false);
         setActiveItem(null);
@@ -746,6 +763,7 @@ export default function CreateCourse() {
 
         // Hide the confirmation dialog
         setShowPublishConfirmation(false);
+        closeDialog();
     };
 
     // Add a function to update a module item's status and title
