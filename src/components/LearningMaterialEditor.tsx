@@ -56,7 +56,6 @@ interface LearningMaterialEditorProps {
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     scheduledPublishAt?: string | null;
-    closeDialog?: () => void;
 }
 
 // Use forwardRef to pass the ref from parent to this component
@@ -73,7 +72,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onPublishSuccess,
     onSaveSuccess,
     scheduledPublishAt = null,
-    closeDialog,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -107,6 +105,16 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
         }
     };
+
+    const initialContent = editorContent && editorContent.length > 0
+        ? editorContent.filter(
+            (block) =>
+                block &&
+                typeof block === "object" &&
+                typeof block.type === "string" &&
+                block.type !== "integration"
+        )
+        : undefined;
 
     // Function to fetch and render Notion blocks
     const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
@@ -322,7 +330,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     onPublishSuccess(publishedTaskData);
                 }, 0);
             }
-            closeDialog?.();
         } catch (error) {
             console.error("Error publishing learning material:", error);
             setPublishError(error instanceof Error ? error.message : "Failed to publish learning material");
@@ -423,7 +430,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     resource_id: pageId,
                     resource_type: "page",
                     integration_type: "notion",
-                    user_id: userId
                 },
                 id: `notion-integration-${Date.now()}`,
                 position: 0
@@ -706,13 +712,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             </div>
                         ) : (
                             <BlockNoteEditor
-                                        initialContent={
-                                            Array.isArray(editorContent) && editorContent.length > 0
-                                                ? editorContent.filter(
-                                                    block => block && typeof block === "object" && typeof block.type === "string"
-                                                )
-                                                : undefined
-                                        }
+                                initialContent={initialContent}
                                 onChange={handleEditorChange}
                                 isDarkMode={isDarkMode}
                                 readOnly={readOnly}

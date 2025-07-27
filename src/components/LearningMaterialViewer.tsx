@@ -421,14 +421,14 @@ export default function LearningMaterialViewer({
         try {
             setIsLoadingNotion(true);
             setIntegrationError(null); // Clear previous errors
-            const integration_user_id = integrationBlock.props.user_id;
-            if (!integration_user_id) {
+            const integrationId = integrationBlock.props.integration_id;
+            if (!integrationId) {
                 setIntegrationError('User ID not found. Please contact your mentor.');
                 return;
             }
             // Fetch the integration to get the access_token
 
-            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${integration_user_id}`);
+            const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
             if (!integrationRes.ok) {
                 setIntegrationError('Content source not found. Please contact your mentor.');
                 return;
