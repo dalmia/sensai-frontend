@@ -64,6 +64,10 @@ export default function LearnerCohortView({
     // State for the active mobile tab
     const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>(MobileTab.Course);
 
+    // Refs for course tab scrolling functionality
+    const courseTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const isInitialCourseLoad = useRef(true);
+
     // Add useEffect to update local state when props change
     useEffect(() => {
         setLocalCompletedTaskIds(completedTaskIds);
@@ -72,6 +76,28 @@ export default function LearnerCohortView({
     useEffect(() => {
         setLocalCompletedQuestionIds(completedQuestionIds);
     }, [completedQuestionIds]);
+
+    // Scroll to active course tab on initial load
+    useEffect(() => {
+        if (isInitialCourseLoad.current && courseTabRefs.current[activeCourseIndex] && courses.length > 1) {
+            const activeTab = courseTabRefs.current[activeCourseIndex];
+            if (activeTab) {
+                activeTab.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+                isInitialCourseLoad.current = false;
+            }
+        }
+    }, [activeCourseIndex, courses.length]);
+
+    // Reset scroll flag when courses array changes (like switching cohorts)
+    useEffect(() => {
+        if (courses.length > 0) {
+            isInitialCourseLoad.current = true;
+        }
+    }, [courses]);
 
     // Add state for streak data
     const [streakCount, setStreakCount] = useState<number>(streakDays);
@@ -330,6 +356,7 @@ export default function LearnerCohortView({
                                                 : 'text-gray-500 hover:text-gray-300 font-light'
                                                 }`}
                                             onClick={() => handleCourseSelect(index)}
+                                            ref={el => { courseTabRefs.current[index] = el; }}
                                         >
                                             <span className="relative z-10">{course.name}</span>
 
