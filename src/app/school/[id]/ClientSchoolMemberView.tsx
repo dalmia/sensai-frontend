@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/layout/header";
 import { Building, ChevronDown, ChevronLeft, Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -192,14 +192,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
             // Reset active course index when cohort changes
             setActiveCourseIndex(0);
 
-            // Transform the first course's milestones to modules if available
-            if (coursesData.length > 0) {
-                const modules = transformCourseToModules(coursesData[0]);
-                setCourseModules(modules);
-            } else {
-                setCourseModules([]);
-            }
-
+            // Don't set courseModules here - let the useEffect handle it after activeCourseIndex is determined
             setLoadingCourses(false);
         } catch (error) {
             console.error("Error fetching cohort courses:", error);
@@ -254,14 +247,23 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
         }
     }, [courses, defaultCourseId]);
 
+    // Update courseModules when activeCourseIndex changes or when courses are first loaded
+    useEffect(() => {
+        if (courses.length > 0) {
+            const modules = transformCourseToModules(courses[activeCourseIndex]);
+            setCourseModules(modules);
+        } else {
+            setCourseModules([]);
+        }
+    }, [courses, activeCourseIndex]);
+
     // Handle course tab selection
     const handleCourseSelect = (index: number) => {
         if (index == activeCourseIndex) {
             return;
         }
         setActiveCourseIndex(index);
-        const modules = transformCourseToModules(courses[index]);
-        setCourseModules(modules);
+        // courseModules will be updated automatically by the useEffect
 
         // Update URL with course ID
         if (courses[index]) {
