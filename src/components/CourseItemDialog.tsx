@@ -623,6 +623,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Use the ref to call save directly
             quizEditorRef.current?.savePublished();
         }
+        onClose();
     };
 
     // Handle cancel save action
