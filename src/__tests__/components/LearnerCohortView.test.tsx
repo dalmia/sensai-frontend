@@ -3,6 +3,9 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import LearnerCohortView from '../../components/LearnerCohortView';
 
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = jest.fn();
+
 // Mock localStorage
 const localStorageMock = (() => {
     let store: Record<string, string> = {};

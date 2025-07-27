@@ -416,7 +416,7 @@ describe('CourseItemDialog', () => {
             fireEvent.click(screen.getByRole('button', { name: /preview/i }));
 
             await waitFor(() => {
-                expect(screen.getByRole('alert')).toHaveTextContent('Empty Correct Answer');
+                expect(screen.getByRole('alert')).toHaveTextContent('Empty correct answer');
             });
         });
 
@@ -903,7 +903,7 @@ describe('CourseItemDialog', () => {
             fireEvent.click(screen.getByRole('button', { name: /preview/i }));
 
             await waitFor(() => {
-                expect(screen.getByRole('alert')).toHaveTextContent('Empty Question');
+                expect(screen.getByRole('alert')).toHaveTextContent('Empty question');
             });
         });
 
@@ -952,7 +952,7 @@ describe('CourseItemDialog', () => {
             fireEvent.click(screen.getByRole('button', { name: /preview/i }));
 
             await waitFor(() => {
-                expect(screen.getByRole('alert')).toHaveTextContent('Missing Scorecard');
+                expect(screen.getByRole('alert')).toHaveTextContent('Missing scorecard');
             });
             expect(quizMethods.setActiveTab).toHaveBeenCalledWith('scorecard');
         });
@@ -1999,6 +1999,9 @@ describe('CourseItemDialog', () => {
             await waitFor(() => {
                 expect(screen.getByRole('button', { name: /exit preview/i })).toBeInTheDocument();
             });
+
+            // Verify the specific text "Exit preview" is present
+            expect(screen.getByText('Exit preview')).toBeInTheDocument();
         });
 
         it('covers learning material onPublishSuccess without updatedData', async () => {
@@ -2239,8 +2242,8 @@ describe('CourseItemDialog', () => {
                 expect(screen.getByRole('button', { name: /exit preview/i })).toBeInTheDocument();
             });
 
-            // Verify the specific text "Exit Preview" is present
-            expect(screen.getByText('Exit Preview')).toBeInTheDocument();
+            // Verify the specific text "Exit preview" is present
+            expect(screen.getByText('Exit preview')).toBeInTheDocument();
         });
 
         it('covers learning material onPublishSuccess callback (lines 925-975)', async () => {
