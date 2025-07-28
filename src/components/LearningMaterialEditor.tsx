@@ -86,8 +86,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-    const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
-    const [isLoadingNotion, setIsLoadingNotion] = useState(false);
+    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
     const [integrationError, setIntegrationError] = useState<string | null>(null);
     const { user } = useAuth();
     const userId = user?.id;
@@ -123,10 +123,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         )
         : undefined;
 
-    // Function to fetch and render Notion blocks
-    const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
+    // Function to fetch and render Integration blocks
+    const fetchAndRenderIntegrationBlocks = useCallback(async (integrationBlock: any) => {
         try {
-            setIsLoadingNotion(true);
+            setIsLoadingIntegration(true);
             setIntegrationError(null); // Clear previous errors
 
             const result = await fetchNotionBlocks(integrationBlock);
@@ -134,28 +134,44 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             if (result.error) {
                 setIntegrationError(result.error);
             } else {
-                setNotionBlocks(result.blocks);
+                setIntegrationBlocks(result.blocks);
             }
         } catch (error) {
             setIntegrationError('Error fetching Notion blocks');
         } finally {
-            setIsLoadingNotion(false);
+            setIsLoadingIntegration(false);
         }
-    };
+    }, []);
 
-    // Check for integration blocks and fetch Notion content
+    // handle integration blocks and editor instance clearing
     useEffect(() => {
         if (editorContent.length > 0) {
             const integrationBlock = editorContent.find(block => block.type === 'integration');
             if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
-                fetchAndRenderNotionBlocks(integrationBlock);
+                fetchAndRenderIntegrationBlocks(integrationBlock);
             } else {
-                setNotionBlocks([]);
+                setIntegrationBlocks([]);
                 setIntegrationError(null); // Clear errors when no integration blocks
+                setIsLoadingIntegration(false);
             }
         } else {
-            setNotionBlocks([]);
-            setIntegrationError(null); // Clear errors when no content
+            // Clear Notion blocks when no content
+            setIntegrationBlocks([]);
+            setIntegrationError(null);
+            setIsLoadingIntegration(false);
+        }
+
+        // Ensure editor instance is updated when content is cleared
+        if (editorRef.current && editorContent.length === 0) {
+            try {
+                if (editorRef.current.replaceBlocks) {
+                    editorRef.current.replaceBlocks(editorRef.current.document, []);
+                } else if (editorRef.current.setContent) {
+                    editorRef.current.setContent([]);
+                }
+            } catch (error) {
+                console.error('Error clearing editor content:', error);
+            }
         }
     }, [editorContent]);
 
@@ -317,7 +333,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             return;
         }
 
-        setIsLoadingNotion(true);
+        setIsLoadingIntegration(true);
         setIntegrationError(null);
 
         try {
@@ -344,13 +360,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         onChange(content);
                     }
                 },
-                setNotionBlocks,
+                setIntegrationBlocks,
                 setIntegrationError
             );
         } catch (error) {
             console.error('Error handling Notion page selection:', error);
         } finally {
-            setIsLoadingNotion(false);
+            setIsLoadingIntegration(false);
         }
     };
 
@@ -361,6 +377,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         handleNotionPageRemoval(
             (content) => {
                 setEditorContent(content);
+                setIntegrationBlocks([]);
 
                 // Update the editor instance if available
                 if (editorRef.current && editorRef.current.replaceBlocks) {
@@ -380,7 +397,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     onChange(content);
                 }
             },
-            setNotionBlocks
+            setIntegrationBlocks
         );
     };
 
@@ -460,13 +477,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const checkContent = (content: any[] | undefined) => {
                 if (!content || content.length === 0) return false;
 
-                // Check if there are any blocks beyond the first default paragraph
-                if (content.length > 1) return true;
-
-                // If there's only one block, check if it has actual content
-                if (content.length === 1) {
-                    const block = content[0];
-
+                // Check each block for actual content
+                for (const block of content) {
                     if (block.type === 'integration') {
                         return true;
                     }
@@ -493,14 +505,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
 
             // Check if we have Notion blocks (which means we have content)
-            if (notionBlocks.length > 0) {
+            if (integrationBlocks.length > 0) {
                 return true;
             }
 
-            // If editorContent is empty but we have taskData, check that as a fallback
-            if (taskData?.blocks) {
-                return checkContent(taskData.blocks);
-            }
 
             return false;
         },
@@ -517,7 +525,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 return true;
             }
 
-            if (notionBlocks.length > 0) {
+            if (integrationBlocks.length > 0) {
                 return true;
             }
 
@@ -562,7 +570,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 )}
 
                 <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0`}>
-                    {isLoadingNotion ? (
+                    {isLoadingIntegration ? (
                         <div className="flex items-center justify-center h-32">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                         </div>
@@ -575,21 +583,20 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                                 The Notion integration may have been disconnected. Please reconnect it.
                             </div>
                         </div>
+                    ) : integrationBlocks.length > 0 ? (
+                        <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                            <BlockList blocks={integrationBlocks} />
+                        </div>
                     ) : (
-                        (notionBlocks.length > 0) ? (
-                            <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                <BlockList blocks={notionBlocks} />
-                            </div>
-                        ) : (
-                            <BlockNoteEditor
-                                initialContent={initialContent}
-                                onChange={handleEditorChange}
-                                isDarkMode={isDarkMode}
-                                readOnly={readOnly}
-                                className="dark-editor min-h-screen"
-                                onEditorReady={setEditorInstance}
-                            />
-                        ))}
+                        <BlockNoteEditor
+                            initialContent={initialContent}
+                            onChange={handleEditorChange}
+                            isDarkMode={isDarkMode}
+                            readOnly={readOnly}
+                            className="dark-editor min-h-screen"
+                            onEditorReady={setEditorInstance}
+                        />
+                    )}
                 </div>
             </div>
 

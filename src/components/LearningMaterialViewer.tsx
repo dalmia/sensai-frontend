@@ -77,18 +77,18 @@ export default function LearningMaterialViewer({
     // Mobile view mode for responsive layout
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
+
     const initialContent = taskData?.blocks && taskData.blocks.length > 0
         ? taskData.blocks.filter(
             (block) =>
                 block &&
-                typeof block === "object" &&
                 typeof block.type === "string" &&
                 block.type !== "integration"
         )
         : undefined;
 
-    const [notionBlocks, setNotionBlocks] = useState<any[]>([]);
-    const [isLoadingNotion, setIsLoadingNotion] = useState(false);
+    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
     const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Fetch task data when taskId changes
@@ -428,9 +428,9 @@ export default function LearningMaterialViewer({
     };
 
     // Function to fetch and render Notion blocks
-    const fetchAndRenderNotionBlocks = async (integrationBlock: any) => {
+    const fetchAndRenderIntegrationBlocks = async (integrationBlock: any) => {
         try {
-            setIsLoadingNotion(true);
+            setIsLoadingIntegration(true);
             setIntegrationError(null); // Clear previous errors
 
             const result = await fetchNotionBlocks(integrationBlock);
@@ -438,12 +438,12 @@ export default function LearningMaterialViewer({
             if (result.error) {
                 setIntegrationError(result.error);
             } else {
-                setNotionBlocks(result.blocks);
+                setIntegrationBlocks(result.blocks);
             }
         } catch (error) {
             setIntegrationError('Unable to load content. Please try again later.');
         } finally {
-            setIsLoadingNotion(false);
+            setIsLoadingIntegration(false);
         }
     };
 
@@ -452,14 +452,16 @@ export default function LearningMaterialViewer({
         if (taskData?.blocks && taskData.blocks.length > 0) {
             const integrationBlock = taskData.blocks.find(block => block.type === 'integration');
             if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
-                fetchAndRenderNotionBlocks(integrationBlock);
+                fetchAndRenderIntegrationBlocks(integrationBlock);
             } else {
-                setNotionBlocks([]);
+                setIntegrationBlocks([]);
                 setIntegrationError(null); // Clear errors when no integration blocks
+                setIsLoadingIntegration(false);
             }
         } else {
-            setNotionBlocks([]);
+            setIntegrationBlocks([]);
             setIntegrationError(null); // Clear errors when no content
+            setIsLoadingIntegration(false);
         }
     }, [taskData?.blocks]);
 
@@ -731,10 +733,10 @@ export default function LearningMaterialViewer({
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
-                    {isLoadingNotion ? (
-                        <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                        </div>
+                        {isLoadingIntegration ? (
+                            <div className="flex items-center justify-center h-32">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                            </div>
                         ) : integrationError ? (
                             <div className="flex flex-col items-center justify-center h-32 text-center">
                                 <div className="text-red-400 text-sm mb-4">
@@ -744,20 +746,19 @@ export default function LearningMaterialViewer({
                                     Please contact your mentor if this issue persists.
                                 </div>
                             </div>
-                    ) : (
-                        (notionBlocks.length > 0) ? (
+                        ) : integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                <BlockList blocks={notionBlocks} />
+                                <BlockList blocks={integrationBlocks} />
                             </div>
                         ) : (
-                                <BlockNoteEditor
-                                    initialContent={initialContent}
-                                    onChange={() => { }} // Read-only, no changes
-                                    isDarkMode={isDarkMode}
-                                    readOnly={true}
-                                    className="dark-editor"
-                                />
-                        ))}
+                            <BlockNoteEditor
+                                initialContent={initialContent}
+                                onChange={() => { }} // Read-only, no changes
+                                isDarkMode={isDarkMode}
+                                readOnly={true}
+                                className="dark-editor"
+                            />
+                        )}
                     </div>
                 </div>
 

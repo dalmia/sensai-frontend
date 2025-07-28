@@ -134,6 +134,8 @@ export default function CreateCourse() {
 
     const [selectedCohortForSettings, setSelectedCohortForSettings] = useState<any | null>(null);
 
+    const taskId = searchParams.get('taskId');
+
     // Update the refs whenever the state changes
     useEffect(() => {
         isGeneratingCourseRef.current = isGeneratingCourse;
@@ -146,6 +148,21 @@ export default function CreateCourse() {
     useEffect(() => {
         generatedTasksCountRef.current = generatedTasksCount;
     }, [generatedTasksCount]);
+
+    useEffect(() => {
+        if (taskId && modules.length > 0) {
+            // Find the module containing this item
+            for (const module of modules) {
+                const item = module.items.find(i => i.id === taskId);
+                if (item) {
+                    openItemDialog(module.id, taskId);
+                    break;
+                }
+            }
+        } else if (!taskId) {
+            setIsDialogOpen(false);
+        }
+    }, [taskId, modules.length]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
@@ -654,32 +671,6 @@ export default function CreateCourse() {
         }
     };
 
-    const taskId = searchParams.get('taskId');
-    useEffect(() => {
-        if (taskId && modules.length > 0) {
-            // Find the module containing this item
-            for (const module of modules) {
-                const item = module.items.find(i => i.id === taskId);
-                if (item) {
-                    openItemDialog(module.id, taskId);
-                    break;
-                }
-            }
-        }
-        // Only run when modules are loaded
-    }, [modules]);
-
-    // Sync dialog open state with taskId in URL
-    useEffect(() => {
-        if (taskId) {
-            setIsDialogOpen(true);
-        } else {
-            setIsDialogOpen(false);
-        }
-    }, [taskId]);
-
-
-
     // Close the dialog
     const closeDialog = () => {
         // Clean up the URL (remove taskId)
@@ -762,7 +753,6 @@ export default function CreateCourse() {
 
         // Hide the confirmation dialog
         setShowPublishConfirmation(false);
-        closeDialog();
     };
 
     // Add a function to update a module item's status and title
@@ -1630,7 +1620,6 @@ export default function CreateCourse() {
             console.error('Error setting up WebSocket:', wsError);
         }
     }
-
 
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {

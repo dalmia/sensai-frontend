@@ -150,27 +150,6 @@ export const handleNotionPageSelection = async (
       return;
     }
 
-    const notionData = await notionResponse.json();
-
-    // Check if the Notion page has content
-    if (!notionData.ok || !notionData.data || notionData.data.length === 0) {
-      // If Notion page is empty, use default content
-      const defaultContent = [
-        {
-          type: "paragraph",
-          content: [{ "text": `Content from Notion page: ${pageTitle}`, "type": "text", styles: {} }]
-        },
-        {
-          type: "paragraph",
-          content: [{ "text": "This page appears to be empty or doesn't have any content to display.", "type": "text", styles: {} }]
-        }
-      ];
-
-      onContentUpdate(defaultContent);
-      onBlocksUpdate([]);
-      return;
-    }
-
     // Create the integration block
     const integrationBlock = createNotionIntegrationBlock(
       notionIntegration.id,
@@ -184,14 +163,8 @@ export const handleNotionPageSelection = async (
 
   } catch (error) {
     console.error('Error handling Notion page selection:', error);
-    // Fallback to default content on error
-    const fallbackContent = [
-      {
-        type: "paragraph",
-        content: [{ "text": "Error loading Notion content. Please try again.", "type": "text", styles: {} }]
-      }
-    ];
-    onContentUpdate(fallbackContent);
+    // Don't add any content on error
+    onContentUpdate([]);
     onBlocksUpdate([]);
   }
 };
@@ -201,14 +174,7 @@ export const handleNotionPageRemoval = (
   onContentUpdate: (content: any[]) => void,
   onBlocksUpdate: (blocks: any[]) => void
 ) => {
-  // Set valid default content instead of empty content
-  const defaultContent = [
-    {
-      type: "paragraph",
-      content: [{ "text": "", "type": "text", styles: {} }]
-    }
-  ];
-
-  onContentUpdate(defaultContent);
+  // Clear all content and blocks when unlinking
+  onContentUpdate([]);
   onBlocksUpdate([]);
 }; 
