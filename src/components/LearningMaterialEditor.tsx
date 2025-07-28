@@ -343,19 +343,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 userId,
                 (content) => {
                     setEditorContent(content);
-
-                    // Update the editor instance if available
-                    if (editorRef.current && editorRef.current.replaceBlocks) {
-                        try {
-                            editorRef.current.replaceBlocks(editorRef.current.document, content);
-                        } catch (error) {
-                            console.error('Error replacing blocks:', error);
-                            if (editorRef.current.setContent) {
-                                editorRef.current.setContent(content);
-                            }
-                        }
-                    }
-
+                    // The content will be handled by the integration system
                     if (onChange) {
                         onChange(content);
                     }
