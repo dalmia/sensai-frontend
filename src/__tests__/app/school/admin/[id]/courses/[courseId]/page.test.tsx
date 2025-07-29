@@ -6,6 +6,10 @@ import { useRouter, useParams } from 'next/navigation';
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
     useParams: jest.fn(),
+    useSearchParams: jest.fn(() => ({
+        get: jest.fn(),
+        getAll: jest.fn(),
+    })),
 }));
 
 jest.mock('@/lib/auth', () => ({
