@@ -1,8 +1,9 @@
-// Types for Notion integration
-export interface NotionIntegrationBlock {
+// Types for integration
+export interface IntegrationBlock {
   type: string;
   props: {
     integration_id: string;
+    resource_name: string;
     resource_id: string;
     resource_type: string;
     integration_type: string;
@@ -11,19 +12,19 @@ export interface NotionIntegrationBlock {
   position: number;
 }
 
-export interface NotionBlocksResult {
+export interface IntegrationBlocksResult {
   blocks: any[];
   error: string | null;
 }
 
-// Function to fetch Notion blocks from an integration block
-export const fetchNotionBlocks = async (integrationBlock: NotionIntegrationBlock): Promise<NotionBlocksResult> => {
+// Function to fetch blocks from an integration block
+export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock): Promise<IntegrationBlocksResult> => {
   try {
     const integrationId = integrationBlock.props.integration_id;
     if (!integrationId) {
       return {
         blocks: [],
-        error: 'Notion integration not found. Please try again later.'
+        error: 'Integration not found. Please try again later.'
       };
     }
 
@@ -45,8 +46,8 @@ export const fetchNotionBlocks = async (integrationBlock: NotionIntegrationBlock
       };
     }
 
-    // Fetch the Notion page content using the access token
-    const notionResponse = await fetch(`/api/notion/fetchPage`, {
+    // Fetch the page content using the access token
+    const response = await fetch(`/api/integrations/fetchPageBlocks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -55,17 +56,17 @@ export const fetchNotionBlocks = async (integrationBlock: NotionIntegrationBlock
       }),
     });
 
-    if (!notionResponse.ok) {
+    if (!response.ok) {
       return {
         blocks: [],
         error: 'Failed to load content. Please try again later.'
       };
     }
 
-    const notionData = await notionResponse.json();
-    if (notionData.ok && notionData.data) {
+    const data = await response.json();
+    if (data.ok && data.data) {
       return {
-        blocks: notionData.data,
+        blocks: data.data,
         error: null
       };
     } else {
@@ -82,27 +83,29 @@ export const fetchNotionBlocks = async (integrationBlock: NotionIntegrationBlock
   }
 };
 
-// Function to create a Notion integration block
-export const createNotionIntegrationBlock = (
+// Function to create a integration block
+export const createIntegrationBlock = (
   integrationId: string,
   pageId: string,
-  pageTitle: string
-): NotionIntegrationBlock => {
+  pageTitle: string,
+  integrationType: string
+): IntegrationBlock => {
   return {
     type: "integration",
     props: {
       integration_id: integrationId,
+      resource_name: pageTitle,
       resource_id: pageId,
       resource_type: "page",
-      integration_type: "notion",
+      integration_type: integrationType,
     },
-    id: `notion-integration-${Date.now()}`,
+    id: `${integrationType}-integration-${Date.now()}`,
     position: 0
   };
 };
 
-// Function to get user's Notion integration
-export const getUserNotionIntegration = async (userId: string) => {
+// Function to get user's integration
+export const getUserIntegration = async (userId: string, integrationType: string) => {
   try {
     const integrationsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${userId}`);
     if (!integrationsResponse.ok) {
@@ -110,51 +113,53 @@ export const getUserNotionIntegration = async (userId: string) => {
     }
 
     const integrations = await integrationsResponse.json();
-    const notionIntegration = integrations.find((integration: any) => integration.integration_type === 'notion');
+    const integration = integrations.find((integration: any) => integration.integration_type === integrationType);
 
-    return notionIntegration || null;
+    return integration || null;
   } catch (error) {
-    console.error('Error fetching user Notion integration:', error);
+    console.error('Error fetching user integration:', error);
     return null;
   }
 };
 
-// Function to handle Notion page selection (for editor mode)
-export const handleNotionPageSelection = async (
+// Function to handle page selection (for editor mode)
+export const handleIntegrationPageSelection = async (
   pageId: string,
   pageTitle: string,
   userId: string,
+  integrationType: string,
   onContentUpdate: (content: any[]) => void,
   onBlocksUpdate: (blocks: any[]) => void,
   onError: (error: string) => void
 ) => {
   try {
-    const notionIntegration = await getUserNotionIntegration(userId);
-    if (!notionIntegration) {
-      onError('No Notion integration found');
+    const integration = await getUserIntegration(userId, integrationType);
+    if (!integration) {
+      onError('No integration found');
       return;
     }
 
-    // Fetch the Notion page content
-    const notionResponse = await fetch(`/api/notion/fetchPage`, {
+    // Fetch the page content
+    const response = await fetch(`/api/integrations/fetchPageBlocks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pageId: pageId,
-        token: notionIntegration.access_token
+        token: integration.access_token
       }),
     });
 
-    if (!notionResponse.ok) {
-      onError('Failed to fetch Notion page content');
+    if (!response.ok) {
+      onError('Failed to fetch page content');
       return;
     }
 
     // Create the integration block
-    const integrationBlock = createNotionIntegrationBlock(
-      notionIntegration.id,
+    const integrationBlock = createIntegrationBlock(
+      integration.id,
       pageId,
-      pageTitle
+      pageTitle,
+      integrationType
     );
 
     // Replace all existing content with just the integration block
@@ -162,15 +167,15 @@ export const handleNotionPageSelection = async (
     onContentUpdate(newContent);
 
   } catch (error) {
-    console.error('Error handling Notion page selection:', error);
+    console.error('Error handling page selection:', error);
     // Don't add any content on error
     onContentUpdate([]);
     onBlocksUpdate([]);
   }
 };
 
-// Function to handle Notion page removal
-export const handleNotionPageRemoval = (
+// Function to handle page removal
+export const handleIntegrationPageRemoval = (
   onContentUpdate: (content: any[]) => void,
   onBlocksUpdate: (blocks: any[]) => void
 ) => {

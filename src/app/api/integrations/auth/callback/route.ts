@@ -30,15 +30,13 @@ export async function GET(req: NextRequest) {
     }),
   });
 
-  console.log("tokenRes", tokenRes);
-
   if (!tokenRes.ok) {
     const err = await tokenRes.text();
     return NextResponse.json({ error: err }, { status: 500 });
   }
 
   const data = await tokenRes.json();
-  const redirectUrl = `${state}&notion_token=${encodeURIComponent(data.access_token)}`;
+  const redirectUrl = `${state}&access_token=${encodeURIComponent(data.access_token)}`;
 
   return NextResponse.redirect(redirectUrl);
 }

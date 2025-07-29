@@ -23,8 +23,7 @@ import { BlockList } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
-// Add import for shared Notion utilities
-import { fetchNotionBlocks } from "@/lib/utils/notionUtils";
+import { fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
 
 interface LearningMaterialViewerProps {
     taskId?: string;
@@ -78,14 +77,7 @@ export default function LearningMaterialViewer({
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0
-        ? taskData.blocks.filter(
-            (block) =>
-                block &&
-                typeof block.type === "string" &&
-                block.type !== "integration"
-        )
-        : undefined;
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== "integration") : undefined;
 
     const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
@@ -427,13 +419,13 @@ export default function LearningMaterialViewer({
         }
     };
 
-    // Function to fetch and render Notion blocks
+    // Function to fetch and render integration blocks
     const fetchAndRenderIntegrationBlocks = async (integrationBlock: any) => {
         try {
             setIsLoadingIntegration(true);
-            setIntegrationError(null); // Clear previous errors
+            setIntegrationError(null);
 
-            const result = await fetchNotionBlocks(integrationBlock);
+            const result = await fetchIntegrationBlocks(integrationBlock);
 
             if (result.error) {
                 setIntegrationError(result.error);
@@ -447,7 +439,7 @@ export default function LearningMaterialViewer({
         }
     };
 
-    // Check for integration blocks and fetch Notion content
+    // Check for integration blocks and fetch content
     useEffect(() => {
         if (taskData?.blocks && taskData.blocks.length > 0) {
             const integrationBlock = taskData.blocks.find(block => block.type === 'integration');
@@ -455,12 +447,12 @@ export default function LearningMaterialViewer({
                 fetchAndRenderIntegrationBlocks(integrationBlock);
             } else {
                 setIntegrationBlocks([]);
-                setIntegrationError(null); // Clear errors when no integration blocks
+                setIntegrationError(null);
                 setIsLoadingIntegration(false);
             }
         } else {
             setIntegrationBlocks([]);
-            setIntegrationError(null); // Clear errors when no content
+            setIntegrationError(null);
             setIsLoadingIntegration(false);
         }
     }, [taskData?.blocks]);
@@ -748,7 +740,13 @@ export default function LearningMaterialViewer({
                             </div>
                         ) : integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                                <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === 'integration')?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
+                            </div>
+                        ) : taskData?.blocks?.some(block => block.type === 'integration') ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-center">
+                                <div className="text-white text-lg mb-2">Content not available</div>
+                                <div className="text-white text-sm">Please contact your mentor if this issue persists</div>
                             </div>
                         ) : (
                             <BlockNoteEditor

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
 
-interface NotionPage {
+interface IntegrationPage {
   id: string;
   object: "page";
   properties?: {
@@ -47,7 +47,7 @@ const Button = ({
     <button
       onClick={onClick}
       disabled={disabled || isLoading}
-      className={`px-3 py-2 ${bgColor} ${textColor} rounded-full font-light text-sm hover:opacity-80 transition cursor-pointer ${isLoading ? 'opacity-70' : ''} ${className}`}
+      className={`px-3 py-2 ${bgColor} ${textColor} rounded-full font-light text-sm hover:opacity-80 transition ${isLoading ? 'opacity-70' : ''} ${className} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
     >
       {isLoading ? (
         <div className="flex items-center">
@@ -64,16 +64,18 @@ const Button = ({
   );
 };
 
-interface NotionIntegrationProps {
+interface IntegrationProps {
   onPageSelect?: (pageId: string, pageTitle: string) => void | Promise<void>;
   onPageRemove?: () => void | Promise<void>;
   className?: string;
   isEditMode?: boolean;
+  loading?: boolean;
   editorContent?: Array<{
     type: string;
     props: {
       integration_type?: string;
       resource_id?: string;
+      resource_name?: string;
     };
     content?: Array<{
       text?: string;
@@ -86,16 +88,17 @@ export default function NotionIntegration({
   onPageRemove,
   className = "",
   isEditMode = false,
-  editorContent = []
-}: NotionIntegrationProps) {
+  editorContent = [],
+  loading = false
+}: IntegrationProps) {
   const { user } = useAuth();
-  const [pages, setPages] = useState<NotionPage[]>([]);
+  const [pages, setPages] = useState<IntegrationPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasIntegration, setHasIntegration] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [selectedPageId, setSelectedPageId] = useState<string>("");
-  const [selectedPageTitle, setSelectedPageTitle] = useState<string>("");
+  const [selectedPageId, setSelectedPageId] = useState<string>();
+  const [selectedPageTitle, setSelectedPageTitle] = useState<string>();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -131,25 +134,21 @@ export default function NotionIntegration({
     if (editorContent && editorContent.length > 0) {
       const integrationBlock = editorContent.find(block => block.type === 'integration');
       if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
-        setSelectedPageId(integrationBlock.props.resource_id || "");
-        // Try to find the page title from the pages list
-        const page = pages.find(p => p.id === integrationBlock.props.resource_id);
-        if (page) {
-          setSelectedPageTitle(page.properties?.title?.title?.[0]?.plain_text || integrationBlock.props.resource_id || "");
-        }
+        setSelectedPageId(integrationBlock.props.resource_id);
+        setSelectedPageTitle(integrationBlock.props.resource_name);
       }
     }
-  }, [editorContent, pages]);
+  }, [editorContent]);
 
-  // Check if user has Notion integration and handle OAuth callback
+  // Check if user has integration and handle OAuth callback
   useEffect(() => {
     if (!user?.id) return;
 
     // Check for OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const notionToken = urlParams.get('notion_token');
+    const accessToken = urlParams.get('access_token');
 
-    if (notionToken) {
+    if (accessToken) {
       // Create the integration
       const createIntegration = async () => {
         setIsConnecting(true);
@@ -160,16 +159,11 @@ export default function NotionIntegration({
             body: JSON.stringify({
               user_id: user.id,
               integration_type: 'notion',
-              access_token: notionToken,
+              access_token: accessToken,
             }),
           });
 
           if (response.ok) {
-            // Clear URL parameters and refresh integration status
-            const url = new URL(window.location.href);
-            url.searchParams.delete('notion_token');
-            window.history.replaceState({}, document.title, url.pathname + url.search);
-
             // Refresh integration status
             checkIntegration();
           } else {
@@ -179,6 +173,10 @@ export default function NotionIntegration({
           console.error('Error creating integration:', err);
         } finally {
           setIsConnecting(false);
+          // Clear URL parameters and refresh integration status
+          const url = new URL(window.location.href);
+          url.searchParams.delete('access_token');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
         }
       };
 
@@ -200,7 +198,7 @@ export default function NotionIntegration({
       setNoPagesFound(false); // Reset no pages found state
 
       try {
-        const response = await fetch(`/api/notion/pages?token=${encodeURIComponent(accessToken)}`);
+        const response = await fetch(`/api/integrations/fetchPages?token=${encodeURIComponent(accessToken)}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -275,7 +273,7 @@ export default function NotionIntegration({
     const pageId = e.target.value;
     if (pageId) {
       const selectedPage = pages.find(page => page.id === pageId);
-      const pageTitle = selectedPage?.properties?.title?.title?.[0]?.plain_text || pageId;
+      const pageTitle = selectedPage?.properties?.title?.title?.[0]?.plain_text || "New page";
 
       // Check if there's existing content that would be overwritten
       if (hasExistingContent()) {
@@ -386,6 +384,7 @@ export default function NotionIntegration({
       >
         <Button
           onClick={handleConnectNotion}
+          disabled={loading}
           isLoading={isConnecting}
           loadingText="Connecting..."
           normalText="Connect Notion"
@@ -416,6 +415,7 @@ export default function NotionIntegration({
         {noPagesFound && !selectedPageId && (
           <Button
             onClick={handleReconnectNotion}
+            disabled={loading}
             isLoading={isConnecting}
             loadingText="Connecting..."
             normalText="Reconnect Notion"
@@ -432,11 +432,12 @@ export default function NotionIntegration({
               <select
                 onChange={handlePageSelect}
                 value=""
-                className="px-3 pr-10 py-2 bg-white text-black rounded-md font-light text-sm focus:outline-none cursor-pointer border border-gray-300 hover:bg-gray-50 transition-colors appearance-none"
+                disabled={loading}
+                className={`px-3 pr-10 py-2 bg-white text-black rounded-md font-light text-sm focus:outline-none border border-gray-300 transition-colors appearance-none ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}`}
               >
                 <option value="" disabled>Select Notion page</option>
                 {pages.map((page) => {
-                  const title = page.properties?.title?.title?.[0]?.plain_text || page.id;
+                  const title = page.properties?.title?.title?.[0]?.plain_text || "New page";
                   return (
                     <option key={page.id} value={page.id}>
                       {title}
@@ -454,6 +455,7 @@ export default function NotionIntegration({
 
             <Button
               onClick={handleAddMorePages}
+              disabled={loading}
               isLoading={isConnecting}
               loadingText="Connecting..."
               normalText="Add more pages"
@@ -466,12 +468,13 @@ export default function NotionIntegration({
 
         {selectedPageId && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <div className="text-sm text-white font-light">
                 Connected to {selectedPageTitle} Notion page
               </div>
               <Button
                 onClick={handleUnlinkPage}
+                disabled={loading}
                 isLoading={isUnlinking}
                 loadingText="Unlinking..."
                 normalText="Unlink page"

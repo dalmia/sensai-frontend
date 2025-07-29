@@ -271,12 +271,12 @@ export default function CreateCourse() {
         // };
     }, []);
 
-    // Check for Notion OAuth callback and enable edit mode if coming from published content
+    // Check for Integration OAuth callback and enable edit mode if coming from published content
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        const notionToken = urlParams.get('notion_token');
+        const accessToken = urlParams.get('access_token');
 
-        if (notionToken) {
+        if (accessToken) {
             const hasPublishedContent = modules.some(module =>
                 module.items.some(item => item.status === 'published')
             );

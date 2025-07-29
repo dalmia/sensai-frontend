@@ -24,7 +24,7 @@ import { ChatMessage } from "../types/quiz";
 // Add import for PublishConfirmationDialog
 import PublishConfirmationDialog from "./PublishConfirmationDialog";
 
-// Add import for NotionIntegration
+// Add import for Integration
 import NotionIntegration from "./NotionIntegration";
 
 // Add imports for Notion rendering
@@ -35,12 +35,12 @@ import "katex/dist/katex.min.css";
 // Add import for useAuth
 import { useAuth } from "@/lib/auth";
 
-// Add import for shared Notion utilities
+// Add import for shared Integration utilities
 import {
-    fetchNotionBlocks,
-    handleNotionPageSelection,
-    handleNotionPageRemoval
-} from "@/lib/utils/notionUtils";
+    fetchIntegrationBlocks,
+    handleIntegrationPageSelection,
+    handleIntegrationPageRemoval
+} from "@/lib/utils/integrationUtils";
 
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
@@ -113,23 +113,15 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const initialContent = editorContent && editorContent.length > 0
-        ? editorContent.filter(
-            (block) =>
-                block &&
-                typeof block === "object" &&
-                typeof block.type === "string" &&
-                block.type !== "integration"
-        )
-        : undefined;
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== "integration") : undefined;
 
     // Function to fetch and render Integration blocks
     const fetchAndRenderIntegrationBlocks = useCallback(async (integrationBlock: any) => {
         try {
             setIsLoadingIntegration(true);
-            setIntegrationError(null); // Clear previous errors
+            setIntegrationError(null);
 
-            const result = await fetchNotionBlocks(integrationBlock);
+            const result = await fetchIntegrationBlocks(integrationBlock);
 
             if (result.error) {
                 setIntegrationError(result.error);
@@ -137,7 +129,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 setIntegrationBlocks(result.blocks);
             }
         } catch (error) {
-            setIntegrationError('Error fetching Notion blocks');
+            setIntegrationError('Error fetching Integration blocks');
         } finally {
             setIsLoadingIntegration(false);
         }
@@ -151,11 +143,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 fetchAndRenderIntegrationBlocks(integrationBlock);
             } else {
                 setIntegrationBlocks([]);
-                setIntegrationError(null); // Clear errors when no integration blocks
+                setIntegrationError(null);
                 setIsLoadingIntegration(false);
             }
         } else {
-            // Clear Notion blocks when no content
             setIntegrationBlocks([]);
             setIntegrationError(null);
             setIsLoadingIntegration(false);
@@ -326,8 +317,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    // Handle Notion page selection
-    const handleNotionPageSelect = async (pageId: string, pageTitle: string) => {
+    // Handle Integration page selection
+    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
         if (!userId) {
             console.error('User ID not provided');
             return;
@@ -337,13 +328,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         setIntegrationError(null);
 
         try {
-            await handleNotionPageSelection(
+            await handleIntegrationPageSelection(
                 pageId,
                 pageTitle,
                 userId,
+                'notion',
                 (content) => {
                     setEditorContent(content);
-                    // The content will be handled by the integration system
                     if (onChange) {
                         onChange(content);
                     }
@@ -352,17 +343,17 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 setIntegrationError
             );
         } catch (error) {
-            console.error('Error handling Notion page selection:', error);
+            console.error('Error handling Integration page selection:', error);
         } finally {
             setIsLoadingIntegration(false);
         }
     };
 
-    // Handle Notion page removal
-    const handleNotionPageRemove = () => {
-        setIntegrationError(null); // Clear any Notion errors
+    // Handle Integration page removal
+    const handleIntegrationPageRemove = () => {
+        setIntegrationError(null);
 
-        handleNotionPageRemoval(
+        handleIntegrationPageRemoval(
             (content) => {
                 setEditorContent(content);
                 setIntegrationBlocks([]);
@@ -465,6 +456,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const checkContent = (content: any[] | undefined) => {
                 if (!content || content.length === 0) return false;
 
+                const hasIntegrationBlock = editorContent.some(block => block.type === 'integration');
+                if (hasIntegrationBlock && integrationBlocks.length === 0) {
+                    return false;
+                }
+
                 // Check each block for actual content
                 for (const block of content) {
                     if (block.type === 'integration') {
@@ -492,11 +488,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 return true;
             }
 
-            // Check if we have Notion blocks (which means we have content)
+            // Check if we have integration blocks
             if (integrationBlocks.length > 0) {
                 return true;
             }
-
 
             return false;
         },
@@ -545,14 +540,15 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     return (
         <div className={`w-full h-full ${className}`}>
             <div className="w-full flex flex-col my-4">
-                {/* Notion Integration */}
+                {/* Integration */}
                 {!readOnly && (
                     <div className="mb-4">
                         <NotionIntegration
-                            onPageSelect={handleNotionPageSelect}
-                            onPageRemove={handleNotionPageRemove}
+                            onPageSelect={handleIntegrationPageSelect}
+                            onPageRemove={handleIntegrationPageRemove}
                             isEditMode={!readOnly}
                             editorContent={editorContent}
+                            loading={isLoadingIntegration}
                         />
                     </div>
                 )}
@@ -573,7 +569,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         </div>
                     ) : integrationBlocks.length > 0 ? (
                         <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{editorContent?.find(block => block.type === 'integration')?.props?.resource_name}</h1>
                             <BlockList blocks={integrationBlocks} />
+                        </div>
+                    ) : editorContent.some(block => block.type === 'integration') ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                            <div className="text-white text-lg mb-2">Notion page is empty</div>
+                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
                         </div>
                     ) : (
                         <BlockNoteEditor
