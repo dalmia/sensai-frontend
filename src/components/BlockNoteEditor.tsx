@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import '@blocknote/core/fonts/inter.css';
-import { createReactBlockSpec, useCreateBlockNote } from '@blocknote/react';
-import { BlockNoteView } from '@blocknote/mantine';
-import '@blocknote/mantine/style.css';
-import { useEffect, useRef, useState } from 'react';
-import { BlockNoteSchema, defaultBlockSpecs, locales } from '@blocknote/core';
-import Toast from './Toast';
+import "@blocknote/core/fonts/inter.css";
+import { createReactBlockSpec, useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import "@blocknote/mantine/style.css";
+import { useEffect, useRef, useState } from "react";
+import { BlockNoteSchema, defaultBlockSpecs, locales } from "@blocknote/core";
+import Toast from "./Toast";
 
 // Add custom styles for dark mode
-import './editor-styles.css';
+import "./editor-styles.css";
 
 interface BlockNoteEditorProps {
     initialContent?: any[];
@@ -25,7 +25,7 @@ interface BlockNoteEditorProps {
 // Uploads a file and returns the URL to the uploaded file
 async function uploadFile(file: File) {
     if (!file.type.startsWith('image/') && !file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
-        return '';
+        return ''
     }
 
     let presigned_url = '';
@@ -38,8 +38,8 @@ async function uploadFile(file: File) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                content_type: file.type,
-            }),
+                content_type: file.type
+            })
         });
 
         if (!presignedUrlResponse.ok) {
@@ -50,13 +50,13 @@ async function uploadFile(file: File) {
 
         presigned_url = presignedData.presigned_url;
     } catch (error) {
-        console.error('Error getting presigned URL for file:', error);
+        console.error("Error getting presigned URL for file:", error);
     }
 
     if (!presigned_url) {
         // If we couldn't get a presigned URL, try direct upload to the backend
         try {
-            console.log('Attempting direct upload to backend');
+            console.log("Attempting direct upload to backend");
 
             // Create FormData for the file upload
             const formData = new FormData();
@@ -66,7 +66,7 @@ async function uploadFile(file: File) {
             // Upload directly to the backend
             const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
                 method: 'POST',
-                body: formData,
+                body: formData
             });
 
             if (!uploadResponse.ok) {
@@ -95,8 +95,8 @@ async function uploadFile(file: File) {
                 method: 'PUT',
                 body: fileBlob,
                 headers: {
-                    'Content-Type': file.type,
-                },
+                    'Content-Type': file.type
+                }
             });
 
             if (!uploadResponse.ok) {
@@ -105,7 +105,7 @@ async function uploadFile(file: File) {
 
             console.log('File uploaded successfully to S3');
             // Update the request body with the file information
-            return uploadResponse.url;
+            return uploadResponse.url
         } catch (error) {
             console.error('Error uploading file to S3:', error);
             throw error;
@@ -114,7 +114,7 @@ async function uploadFile(file: File) {
 }
 
 async function resolveFileUrl(url: string) {
-    if (!url || !url.includes('?X-Amz-Algorithm=AWS4-HMAC-SHA256')) {
+    if (!url || !url.includes("?X-Amz-Algorithm=AWS4-HMAC-SHA256")) {
         return url;
     }
 
@@ -127,15 +127,12 @@ async function resolveFileUrl(url: string) {
 
     try {
         // Get presigned URL
-        const presignedResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
         if (!presignedResponse.ok) {
             throw new Error('Failed to get presigned URL for file');
@@ -156,15 +153,19 @@ function isYouTubeLink(url: string): boolean {
 // Function to get embedded youtube url
 function getYouTubeEmbedUrl(url: string): string {
     let videoId = '';
+    
     const youtubeMatch = url.match(
         /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/
     );
+   
     if (youtubeMatch && youtubeMatch[1]) {
         videoId = youtubeMatch[1];
     }
+   
     if (videoId) {
         return `https://www.youtube.com/embed/${videoId}`;
     }
+   
     return url;
 }
 
@@ -172,13 +173,13 @@ export default function BlockNoteEditor({
     initialContent = [],
     onChange,
     isDarkMode = true, // Default to dark mode
-    className = '',
+    className = "",
     readOnly = false,
     placeholder = "Enter text or type '/' for commands",
     onEditorReady,
     allowMedia = true,
 }: BlockNoteEditorProps) {
-    const locale = locales['en'];
+    const locale = locales["en"];
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const isUpdatingContent = useRef(false);
     const lastContent = useRef<any[]>([]);
@@ -189,7 +190,7 @@ export default function BlockNoteEditor({
         show: false,
         title: '',
         description: '',
-        emoji: '',
+        emoji: ''
     });
 
     // Add a timeout ref to store the timeout ID
@@ -207,7 +208,8 @@ export default function BlockNoteEditor({
         enabledBlocks = allowedBlockSpecs;
     }
 
-    const CustomVideoBlock = createReactBlockSpec(defaultBlockSpecs.video.config, {
+    // custom video block for youtube and normal videos
+     const CustomVideoBlock = createReactBlockSpec(defaultBlockSpecs.video.config, {
         render: (props) => {
             const url = props.block.props?.url || '';
             const caption = props.block.props?.caption || '';
@@ -272,7 +274,7 @@ export default function BlockNoteEditor({
 
     // Update the function to handle closing the toast
     const handleCloseToast = () => {
-        setToast((prev) => ({ ...prev, show: false }));
+        setToast(prev => ({ ...prev, show: false }));
 
         // Clear any existing timeout
         if (toastTimeoutRef.current) {
@@ -293,7 +295,7 @@ export default function BlockNoteEditor({
         if (editor && initialContent && initialContent.length > 0) {
             // Set flag to prevent triggering onChange during programmatic update
             isUpdatingContent.current = true;
-
+            
             // Prevent "flushSync" error by deferring replaceBlocks until after React render
             queueMicrotask(() => {
                 try {
@@ -306,7 +308,7 @@ export default function BlockNoteEditor({
                         lastContent.current = initialContent;
                     }
                 } catch (error) {
-                    console.error('Error updating editor content:', error);
+                    console.error("Error updating editor content:", error);
                 } finally {
                     // Reset flag after update
                     isUpdatingContent.current = false;
@@ -347,7 +349,7 @@ export default function BlockNoteEditor({
                         editor.focus();
                     }
                 } catch (err) {
-                    console.error('Error focusing editor:', err);
+                    console.error("Error focusing editor:", err);
                 }
             };
         }
@@ -361,7 +363,7 @@ export default function BlockNoteEditor({
                 const target = e.target as HTMLElement;
 
                 // Check if we're clicking on the editor container but not on an actual block content
-                const isEditorContainer = target.classList.contains('bn-block-content');
+                const isEditorContainer = target.classList.contains('bn-block-content')
 
                 if (isEditorContainer) {
                     // Find the closest block element to the click
@@ -372,7 +374,7 @@ export default function BlockNoteEditor({
                     let closestBlock: Element | null = null;
                     let minDistance = Infinity;
 
-                    blockElements.forEach((block) => {
+                    blockElements.forEach(block => {
                         const rect = block.getBoundingClientRect();
                         // Check if the click is on the same line as this block (y-axis)
                         if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
@@ -437,8 +439,8 @@ export default function BlockNoteEditor({
         >
             <BlockNoteView
                 editor={editor}
-                theme={isDarkMode ? 'dark' : 'light'}
-                className={isDarkMode ? 'dark-editor' : ''}
+                theme={isDarkMode ? "dark" : "light"}
+                className={isDarkMode ? "dark-editor" : ""}
                 editable={!readOnly}
             />
 
@@ -452,4 +454,4 @@ export default function BlockNoteEditor({
             />
         </div>
     );
-}
+} 
