@@ -1,7 +1,7 @@
 "use client";
 
 import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
+import { createReactBlockSpec, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState } from "react";
@@ -150,6 +150,25 @@ function isYouTubeLink(url: string): boolean {
     return url.includes('youtube.com') || url.includes('youtu.be');
 }
 
+// Function to get embedded youtube url
+function getYouTubeEmbedUrl(url: string): string {
+    let videoId = '';
+    
+    const youtubeMatch = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/
+    );
+   
+    if (youtubeMatch && youtubeMatch[1]) {
+        videoId = youtubeMatch[1];
+    }
+   
+    if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+    }
+   
+    return url;
+}
+
 export default function BlockNoteEditor({
     initialContent = [],
     onChange,
@@ -189,9 +208,46 @@ export default function BlockNoteEditor({
         enabledBlocks = allowedBlockSpecs;
     }
 
+    // custom video block for youtube and normal videos
+     const CustomVideoBlock = createReactBlockSpec(defaultBlockSpecs.video.config, {
+        render: (props) => {
+            const url = props.block.props?.url || '';
+            const caption = props.block.props?.caption || '';
+            const previewWidth = props.block.props?.previewWidth || 512;
+
+            if (!url) {
+                return null;
+            }
+
+            if (isYouTubeLink(url)) {
+                const embedUrl = getYouTubeEmbedUrl(url);
+                return (
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <iframe
+                            width='560'
+                            height='315'
+                            src={embedUrl}
+                            title='YouTube video player'
+                            allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                            allowFullScreen
+                            style={{ maxWidth: '100%', borderRadius: 8 }}
+                        />
+                    </div>
+                );
+            }
+
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <video controls src={url} style={{ maxWidth: previewWidth, borderRadius: 8 }} />
+                    {caption && <div style={{ marginTop: 8, color: '#aaa', fontSize: 14 }}>{caption}</div>}
+                </div>
+            );
+        },
+    });
+
     // Create a schema with only the allowed blocks
     const schema = BlockNoteSchema.create({
-        blockSpecs: enabledBlocks,
+        blockSpecs: { ...enabledBlocks, video: CustomVideoBlock },
     });
 
     // Creates a new editor instance with the custom schema
@@ -227,58 +283,6 @@ export default function BlockNoteEditor({
         }
     };
 
-    // Update the effect that checks for YouTube links
-    useEffect(() => {
-        if (editor && allowMedia) {
-            const handleVideoBlockChange = () => {
-                // Skip checking during programmatic updates
-                if (isUpdatingContent.current) return;
-
-                // Get all video blocks
-                const blocks = editor.document;
-
-                blocks.forEach(block => {
-                    // Check if this is a video block
-                    // @ts-ignore - TypeScript doesn't recognize custom block types
-                    if (block.type === "video") {
-                        // Check if the URL is a YouTube link
-                        // @ts-ignore - TypeScript doesn't recognize props on custom block types
-                        const videoUrl = block.props?.url || "";
-                        if (videoUrl && isYouTubeLink(videoUrl)) {
-                            // Show toast with customized properties
-                            setToast({
-                                show: true,
-                                title: "Cannot embed YouTube videos yet",
-                                description: "Please use video file URLs (e.g. link to a mp4 file) instead",
-                                emoji: "🚫"
-                            });
-
-                            // Clear any existing timeout
-                            if (toastTimeoutRef.current) {
-                                clearTimeout(toastTimeoutRef.current);
-                            }
-
-                            // Set a new timeout to auto-hide the toast after 5 seconds
-                            toastTimeoutRef.current = setTimeout(() => {
-                                setToast(prev => ({ ...prev, show: false }));
-                            }, 5000);
-                        }
-                    }
-                });
-            };
-
-            // Listen for content changes to detect YouTube links
-            editor.onEditorContentChange(handleVideoBlockChange);
-
-            // Cleanup function to clear timeout when component unmounts
-            return () => {
-                if (toastTimeoutRef.current) {
-                    clearTimeout(toastTimeoutRef.current);
-                }
-            };
-        }
-    }, [editor, allowMedia]);
-
     // Provide the editor instance to the parent component if onEditorReady is provided
     useEffect(() => {
         if (onEditorReady && editor) {
@@ -291,22 +295,25 @@ export default function BlockNoteEditor({
         if (editor && initialContent && initialContent.length > 0) {
             // Set flag to prevent triggering onChange during programmatic update
             isUpdatingContent.current = true;
+            
+            // Prevent "flushSync" error by deferring replaceBlocks until after React render
+            queueMicrotask(() => {
+                try {
+                    // Only replace blocks if the content has actually changed
+                    const currentContentStr = JSON.stringify(editor.document);
+                    const newContentStr = JSON.stringify(initialContent);
 
-            try {
-                // Only replace blocks if the content has actually changed
-                const currentContentStr = JSON.stringify(editor.document);
-                const newContentStr = JSON.stringify(initialContent);
-
-                if (currentContentStr !== newContentStr) {
-                    editor.replaceBlocks(editor.document, initialContent);
-                    lastContent.current = initialContent;
+                    if (currentContentStr !== newContentStr) {
+                        editor.replaceBlocks(editor.document, initialContent);
+                        lastContent.current = initialContent;
+                    }
+                } catch (error) {
+                    console.error("Error updating editor content:", error);
+                } finally {
+                    // Reset flag after update
+                    isUpdatingContent.current = false;
                 }
-            } catch (error) {
-                console.error("Error updating editor content:", error);
-            } finally {
-                // Reset flag after update
-                isUpdatingContent.current = false;
-            }
+            });
         }
     }, [editor, initialContent]);
 
