@@ -41,7 +41,7 @@ services:
   cron-prod:
     image: adalmia/sensai-ai:latest
     working_dir: /src
-    command: sh -c "apt-get update && apt-get install -y cron && echo '55 23 * * * cd /src && /usr/local/bin/python -c \"from api.cron import send_usage_summary_stats; import asyncio; asyncio.run(send_usage_summary_stats())\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && echo '45 4 * * * cd /src && /usr/local/bin/python -c \"from api.utils.phoenix import save_daily_traces; save_daily_traces()\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && crontab /src/sensai-cron && cron -f"
+    command: sh -c "apt-get update && apt-get install -y cron && echo '55 23 * * * cd /src && /usr/local/bin/python -c \"from api.cron import send_usage_summary_stats; import asyncio; asyncio.run(send_usage_summary_stats())\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && echo '45 4 * * * cd /src && /usr/local/bin/python -c \"from api.utils.phoenix import save_daily_traces; save_daily_traces()\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && echo '0 10 * * * cd /src && /usr/local/bin/python -c \"from api.bq.cron import run_all_syncs; import asyncio; asyncio.run(run_all_syncs())\" >> /appdata/logs/backend-cron.log 2>&1' >> /src/sensai-cron && crontab /src/sensai-cron && cron -f"
     volumes:
       - /appdata_prod:/appdata
     environment:

@@ -590,8 +590,8 @@ describe('QuizEditor Component', () => {
             // Should start on Question tab
             expect(screen.getByText('Question')).toBeInTheDocument();
 
-            // Switch to Correct Answer tab (for objective questions)
-            const answerTab = screen.getByText('Correct Answer');
+            // Switch to Correct answer tab (for objective questions)
+            const answerTab = screen.getByText('Correct answer');
             await act(async () => {
                 fireEvent.click(answerTab);
             });
@@ -599,8 +599,8 @@ describe('QuizEditor Component', () => {
             // Should show correct answer editor
             expect(screen.getByTestId('editor-placeholder')).toHaveTextContent('Enter the correct answer here');
 
-            // Switch to AI Training tab
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            // Switch to AI training resources
+            const knowledgeTab = screen.getByText('AI training resources');
             await act(async () => {
                 fireEvent.click(knowledgeTab);
             });
@@ -626,9 +626,9 @@ describe('QuizEditor Component', () => {
                 fireEvent.change(select!, { target: { value: 'subjective' } });
             });
 
-            // Should show Scorecard tab instead of Correct Answer
+            // Should show Scorecard tab instead of Correct answer
             expect(screen.getByText('Scorecard')).toBeInTheDocument();
-            expect(screen.queryByText('Correct Answer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Correct answer')).not.toBeInTheDocument();
         });
     });
 
@@ -1377,7 +1377,7 @@ describe('QuizEditor Component', () => {
             quizEditorRef = React.createRef();
         });
 
-        it('should switch to AI Training tab and show knowledge base editor', async () => {
+        it('should switch to AI training resources and show knowledge base editor', async () => {
             render(<QuizEditor {...defaultProps} ref={quizEditorRef} status="draft" courseId="course-1" />);
 
             // Add a question
@@ -1386,8 +1386,8 @@ describe('QuizEditor Component', () => {
                 fireEvent.click(addButton);
             });
 
-            // Switch to AI Training tab
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            // Switch to AI training resources
+            const knowledgeTab = screen.getByText('AI training resources');
             await act(async () => {
                 fireEvent.click(knowledgeTab);
             });
@@ -1409,8 +1409,8 @@ describe('QuizEditor Component', () => {
                 fireEvent.click(addButton);
             });
 
-            // Switch to AI Training tab
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            // Switch to AI training resources
+            const knowledgeTab = screen.getByText('AI training resources');
             await act(async () => {
                 fireEvent.click(knowledgeTab);
             });
@@ -1437,8 +1437,8 @@ describe('QuizEditor Component', () => {
                 fireEvent.click(addButton);
             });
 
-            // Switch to AI Training tab
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            // Switch to AI training resources
+            const knowledgeTab = screen.getByText('AI training resources');
             await act(async () => {
                 fireEvent.click(knowledgeTab);
             });
@@ -1469,8 +1469,8 @@ describe('QuizEditor Component', () => {
                 fireEvent.click(addButton);
             });
 
-            // Switch to AI Training tab
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            // Switch to AI training resources
+            const knowledgeTab = screen.getByText('AI training resources');
             await act(async () => {
                 fireEvent.click(knowledgeTab);
             });
@@ -1518,8 +1518,8 @@ describe('QuizEditor Component', () => {
                 fireEvent.click(addButton);
             });
 
-            // Switch to answer tab
-            const answerTab = screen.getByText('Correct Answer');
+            // Switch to Correct answer tab (for objective questions)
+            const answerTab = screen.getByText('Correct answer');
             await act(async () => {
                 fireEvent.click(answerTab);
             });
@@ -1568,7 +1568,7 @@ describe('QuizEditor Component', () => {
             });
 
             // Add a correct answer to make the validation pass
-            const answerTab = screen.getByText('Correct Answer');
+            const answerTab = screen.getByText('Correct answer');
             await act(async () => {
                 fireEvent.click(answerTab);
             });
@@ -2185,8 +2185,8 @@ describe('Additional Coverage Tests', () => {
 
             // Switch between different tabs
             const questionTab = screen.getByText('Question');
-            const answerTab = screen.getByText('Correct Answer');
-            const knowledgeTab = screen.getByText('AI Training Resources');
+            const answerTab = screen.getByText('Correct answer');
+            const knowledgeTab = screen.getByText('AI training resources');
 
             await act(async () => {
                 fireEvent.click(answerTab);

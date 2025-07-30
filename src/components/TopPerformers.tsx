@@ -34,7 +34,7 @@ export default function TopPerformers({
     const refreshButtonRef = useRef<HTMLButtonElement>(null);
 
     // State for data that will be fetched
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [performers, setPerformers] = useState<Performer[]>([]);
     const [currentUser, setCurrentUser] = useState<Performer | null>(null);
 
@@ -232,7 +232,14 @@ export default function TopPerformers({
             </div>
 
             <div className="divide-y divide-gray-800">
-                {performers.length > 0 ? (
+                {loading ? (
+                    // Show loading spinner while data is being fetched
+                    <div className="py-12 px-8 text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-8 h-8 border-2 border-gray-600 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                ) : performers.length > 0 ? (
                     // Show top performers if list is not empty
                     performers.map((performer) => {
                         // Check if this performer is the current user
@@ -303,7 +310,7 @@ export default function TopPerformers({
                         </div>
                     </div>
                 ) : (
-                    // No performers and no current user - show empty state
+                    // No performers and no current user - show empty state (only when not loading)
                     <div className="py-12 px-8 text-center">
                         <div className="flex justify-center mb-6">
                             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/40 to-gray-900/60 flex items-center justify-center border border-gray-700/30">
@@ -318,7 +325,7 @@ export default function TopPerformers({
                 )}
 
                 {/* Show current user if they're not in top performers and performers list is not empty */}
-                {currentUser && !isCurrentUserInTopPerformers && performers.length > 0 && (
+                {!loading && currentUser && !isCurrentUserInTopPerformers && performers.length > 0 && (
                     <>
                         <div className="px-4 bg-gray-900 text-center text-xs text-gray-400">
                         </div>

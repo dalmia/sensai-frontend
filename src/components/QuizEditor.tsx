@@ -2763,7 +2763,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     onClick={() => setActiveEditorTab('answer')}
                                                 >
                                                     <Check size={16} className="mr-2" />
-                                                    Correct Answer
+                                                    Correct answer
                                                 </button>
                                             ) : (
                                                 <button
@@ -2785,7 +2785,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 onClick={() => setActiveEditorTab('knowledge')}
                                             >
                                                 <BookOpen size={16} className="mr-2" />
-                                                AI Training Resources
+                                                AI training resources
                                             </button>
                                         </div>
                                     </div>
