@@ -28,6 +28,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/lodash": "^4.17.16",
     "@types/react-datepicker": "^6.2.0",
+    "@udus/notion-renderer": "^1.0.0-alpha.83",
     "autoprefixer": "^10.4.20",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
@@ -41,9 +42,9 @@
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.4",
     "pdfjs-dist": "4.8.69",
-    "react": "^18.3.1",
+    "react": "^19.0.0",
     "react-datepicker": "^8.3.0",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-pdf": "^9.2.1",
     "rehype-raw": "^7.0.0",
@@ -60,8 +61,8 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/pdfjs-dist": "^2.10.377",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "camelcase": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
@@ -75,5 +76,11 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.3.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@udus/notion-renderer": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
   }
 }

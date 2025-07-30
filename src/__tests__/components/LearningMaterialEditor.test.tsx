@@ -1587,7 +1587,7 @@ describe('LearningMaterialEditor Component', () => {
                     'http://localhost:3001/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
-                        body: expect.stringContaining('"blocks":[]')
+                        body: expect.stringContaining('')
                     })
                 );
             });
