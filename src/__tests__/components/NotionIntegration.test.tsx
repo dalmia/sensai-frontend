@@ -103,6 +103,52 @@ describe('NotionIntegration', () => {
 
       expect(screen.getByText('Checking Notion integration...')).toBeInTheDocument();
     });
+
+    it('should handle onMouseDown event propagation', () => {
+      (global.fetch as jest.Mock).mockImplementation(() =>
+        new Promise(() => { }) // Never resolves
+      );
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      const loadingContainer = screen.getByText('Checking Notion integration...').closest('div');
+      expect(loadingContainer).toBeInTheDocument();
+
+      // Test that onMouseDown is handled (this covers lines 366, 367, 382, 383, 404)
+      if (loadingContainer) {
+        fireEvent.mouseDown(loadingContainer);
+        // The test passes if no error is thrown (event propagation is stopped)
+      }
+    });
+
+    it('should handle onClick event propagation', () => {
+      (global.fetch as jest.Mock).mockImplementation(() =>
+        new Promise(() => { }) // Never resolves
+      );
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      const loadingContainer = screen.getByText('Checking Notion integration...').closest('div');
+      expect(loadingContainer).toBeInTheDocument();
+
+      // Test that onClick is handled (this covers lines 366, 382)
+      if (loadingContainer) {
+        fireEvent.click(loadingContainer);
+        // The test passes if no error is thrown (event propagation is stopped)
+      }
+    });
   });
 
   describe('Integration Status Check', () => {
@@ -189,6 +235,40 @@ describe('NotionIntegration', () => {
           ok: false, // This will trigger the uncovered else branch
           json: () => Promise.resolve({ error: 'Creation failed' })
         })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([])
+        });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          'http://localhost:3001/integrations/',
+          expect.objectContaining({
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: 'user-123',
+              integration_type: 'notion',
+              access_token: 'test-token',
+            })
+          })
+        );
+      });
+    });
+
+    it('should handle OAuth callback with integration creation error', async () => {
+      // Mock URL with access token
+      mockLocation.search = '?access_token=test-token';
+
+      (global.fetch as jest.Mock)
+        .mockRejectedValueOnce(new Error('Network error')) // This covers line 173
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve([])
@@ -1010,6 +1090,100 @@ describe('NotionIntegration', () => {
       await waitFor(() => {
         expect(screen.getByText('No pages found')).toBeInTheDocument();
       });
+    });
+
+    it('should handle empty pages array from API response', async () => {
+      // Clear mocks and set up specific mock for this test
+      jest.clearAllMocks();
+      (global.fetch as jest.Mock).mockReset();
+
+      // Mock successful integration check but empty pages array
+      (global.fetch as jest.Mock).mockImplementation((url) => {
+        if (url.includes('integrations') && url.includes('user_id=')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([
+              { integration_type: 'notion', access_token: 'test-token', id: 1 }
+            ])
+          });
+        }
+        if (url.includes('/api/integrations/fetchPages')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              pages: [] // Empty pages array - covers line 208
+            })
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([])
+        });
+      });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('No pages found')).toBeInTheDocument();
+        expect(screen.getByText('Reconnect Notion')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle onMouseDown event when no pages are found', async () => {
+      // Clear mocks and set up specific mock for this test
+      jest.clearAllMocks();
+      (global.fetch as jest.Mock).mockReset();
+
+      // Mock successful integration check but empty pages array
+      (global.fetch as jest.Mock).mockImplementation((url) => {
+        if (url.includes('integrations') && url.includes('user_id=')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([
+              { integration_type: 'notion', access_token: 'test-token', id: 1 }
+            ])
+          });
+        }
+        if (url.includes('/api/integrations/fetchPages')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              pages: [] // Empty pages array - covers line 208
+            })
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([])
+        });
+      });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('No pages found')).toBeInTheDocument();
+      });
+
+      const mainContainer = screen.getByText('No pages found').closest('div');
+      expect(mainContainer).toBeInTheDocument();
+
+      // Test that onMouseDown is handled (covers lines 366, 367, 382, 383, 404)
+      if (mainContainer) {
+        fireEvent.mouseDown(mainContainer);
+        // The test passes if no error is thrown (event propagation is stopped)
+      }
     });
   });
 }); 

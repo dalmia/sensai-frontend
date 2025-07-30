@@ -123,6 +123,37 @@ jest.mock('../../components/ChatView', () => {
     };
 });
 
+// Mock NotionIntegration component
+jest.mock('../../components/NotionIntegration', () => {
+    return function MockNotionIntegration({
+        onPageSelect,
+        onPageRemove,
+        isEditMode,
+        editorContent,
+        loading
+    }: any) {
+        return (
+            <div data-testid="mock-notion-integration">
+                <button
+                    onClick={() => onPageSelect && onPageSelect('page-123', 'Test Page')}
+                    data-testid="trigger-page-select"
+                >
+                    Select Page
+                </button>
+                <button
+                    onClick={() => onPageRemove && onPageRemove()}
+                    data-testid="trigger-page-remove"
+                >
+                    Remove Page
+                </button>
+                <div data-testid="integration-loading" style={{ display: loading ? 'block' : 'none' }}>
+                    Loading Integration...
+                </div>
+            </div>
+        );
+    };
+});
+
 // Mock fetch
 global.fetch = jest.fn();
 
@@ -2322,6 +2353,227 @@ describe('LearningMaterialEditor Component', () => {
             // Test hasContent method
             const hasContent = ref.current?.hasContent();
             expect(typeof hasContent).toBe('boolean');
+        });
+    });
+
+    describe('handleIntegrationPageSelect and handleIntegrationPageRemove Functions', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        it('should handle integration page selection successfully', async () => {
+            const mockOnChange = jest.fn();
+            const mockHandleIntegrationPageSelection = jest.fn().mockResolvedValue(undefined);
+
+            // Mock the integration utilities
+            const integrationUtils = require('@/lib/utils/integrationUtils');
+            integrationUtils.handleIntegrationPageSelection = mockHandleIntegrationPageSelection;
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockTaskData)
+            });
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
+            });
+
+            // Trigger page selection through the mocked NotionIntegration component
+            fireEvent.click(screen.getByTestId('trigger-page-select'));
+
+            await waitFor(() => {
+                expect(mockHandleIntegrationPageSelection).toHaveBeenCalledWith(
+                    'page-123',
+                    'Test Page',
+                    'user-123',
+                    'notion',
+                    expect.any(Function),
+                    expect.any(Function),
+                    expect.any(Function)
+                );
+            });
+        });
+
+        it('should handle integration page selection when userId is not available', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+            // Mock useAuth to return null user using spyOn
+            const authModule = require('@/lib/auth');
+            const originalUseAuth = authModule.useAuth;
+            authModule.useAuth = jest.fn(() => ({ user: null }));
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockTaskData)
+            });
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
+            });
+
+            // Trigger page selection
+            fireEvent.click(screen.getByTestId('trigger-page-select'));
+
+            // The function should handle null userId gracefully
+            expect(consoleErrorSpy).toHaveBeenCalledWith('User ID not provided');
+
+            // Restore the original useAuth
+            authModule.useAuth = originalUseAuth;
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should handle integration page selection error', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+            const mockHandleIntegrationPageSelection = jest.fn().mockRejectedValue(new Error('Integration failed'));
+
+            const integrationUtils = require('@/lib/utils/integrationUtils');
+            integrationUtils.handleIntegrationPageSelection = mockHandleIntegrationPageSelection;
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockTaskData)
+            });
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
+            });
+
+            // Trigger page selection
+            fireEvent.click(screen.getByTestId('trigger-page-select'));
+
+            // The function should handle errors gracefully
+            await waitFor(() => {
+                expect(consoleErrorSpy).toHaveBeenCalledWith('Error handling Integration page selection:', expect.any(Error));
+            });
+
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should call onChange callback when integration page selection succeeds', async () => {
+            const mockOnChange = jest.fn();
+            const mockHandleIntegrationPageSelection = jest.fn().mockImplementation((pageId, pageTitle, userId, integrationType, onContentUpdate) => {
+                // Simulate successful integration page selection
+                onContentUpdate([{ type: 'integration', props: { integration_type: 'notion' } }]);
+            });
+
+            const integrationUtils = require('@/lib/utils/integrationUtils');
+            integrationUtils.handleIntegrationPageSelection = mockHandleIntegrationPageSelection;
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockTaskData)
+            });
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
+            });
+
+            // Trigger page selection
+            fireEvent.click(screen.getByTestId('trigger-page-select'));
+
+            // The onChange should be called when integration succeeds
+            await waitFor(() => {
+                expect(mockOnChange).toHaveBeenCalledWith([
+                    { type: 'integration', props: { integration_type: 'notion' } }
+                ]);
+            });
+        });
+
+        it('should handle integration page removal successfully', async () => {
+            const mockOnChange = jest.fn();
+            const mockHandleIntegrationPageRemoval = jest.fn().mockImplementation((onContentUpdate, onBlocksUpdate) => {
+                // Simulate successful page removal
+                onContentUpdate([]);
+                onBlocksUpdate([]);
+            });
+
+            // Mock the integration utilities
+            const integrationUtils = require('@/lib/utils/integrationUtils');
+            integrationUtils.handleIntegrationPageRemoval = mockHandleIntegrationPageRemoval;
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockTaskData)
+            });
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
+            });
+
+            // Trigger page removal through the mocked NotionIntegration component
+            fireEvent.click(screen.getByTestId('trigger-page-remove'));
+
+            await waitFor(() => {
+                expect(mockHandleIntegrationPageRemoval).toHaveBeenCalledWith(
+                    expect.any(Function),
+                    expect.any(Function)
+                );
+            });
+
+            // Verify that onChange was called with empty content
+            await waitFor(() => {
+                expect(mockOnChange).toHaveBeenCalledWith([]);
+            });
+        });
+
+        it('should set integration error when fetchIntegrationBlocks throws (catch block)', async () => {
+            // Mock fetchIntegrationBlocks to throw
+            jest.spyOn(require('@/lib/utils/integrationUtils'), 'fetchIntegrationBlocks').mockImplementation(() => { throw new Error('fail'); });
+
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({
+                    id: 'task-1',
+                    title: 'Test Task',
+                    blocks: [
+                        { type: 'integration', props: { integration_type: 'notion' } }
+                    ],
+                    status: 'draft',
+                    scheduled_publish_at: undefined
+                })
+            });
+
+            render(
+                <LearningMaterialEditor taskId="task-1" />
+            );
+
+            // Wait for the error message to appear
+            await waitFor(() => {
+                expect(screen.getByText('Error fetching Integration blocks')).toBeInTheDocument();
+            });
         });
     });
 });
