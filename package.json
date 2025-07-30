@@ -28,8 +28,6 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/lodash": "^4.17.16",
     "@types/react-datepicker": "^6.2.0",
-
-    "@udus/notion-renderer": "^1.0.0-alpha.86",
     "autoprefixer": "^10.4.20",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
