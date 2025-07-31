@@ -597,10 +597,9 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText((content, element) => {
-          return element?.textContent === 'Connected to Test Page 1 Notion page';
-        })).toBeInTheDocument();
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Connected to')).toBeInTheDocument();
+        expect(screen.getByText('Test Page 1')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
     });
 
@@ -626,10 +625,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
 
-      const unlinkButton = screen.getByText('Unlink page');
+      const unlinkButton = screen.getByText('Unlink');
       fireEvent.click(unlinkButton);
 
       await waitFor(() => {
@@ -660,10 +659,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
 
-      const unlinkButton = screen.getByText('Unlink page');
+      const unlinkButton = screen.getByText('Unlink');
       fireEvent.click(unlinkButton);
 
       await waitFor(() => {
@@ -702,10 +701,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
 
-      const unlinkButton = screen.getByText('Unlink page');
+      const unlinkButton = screen.getByText('Unlink');
       fireEvent.click(unlinkButton);
 
       await waitFor(() => {
@@ -744,10 +743,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
 
-      const unlinkButton = screen.getByText('Unlink page');
+      const unlinkButton = screen.getByText('Unlink');
       fireEvent.click(unlinkButton);
 
       await waitFor(() => {
@@ -785,10 +784,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlink page')).toBeInTheDocument();
+        expect(screen.getByText('Unlink')).toBeInTheDocument();
       });
 
-      const unlinkButton = screen.getByText('Unlink page');
+      const unlinkButton = screen.getByText('Unlink');
       fireEvent.click(unlinkButton);
 
       await waitFor(() => {
@@ -973,9 +972,8 @@ describe('NotionIntegration', () => {
 
       // When there's an integration block, the component shows the connected state
       await waitFor(() => {
-        expect(screen.getByText((content, element) => {
-          return element?.textContent === 'Connected to Test Page 1 Notion page';
-        })).toBeInTheDocument();
+        expect(screen.getByText('Connected to')).toBeInTheDocument();
+        expect(screen.getByText('Test Page 1')).toBeInTheDocument();
       });
 
       // The hasExistingContent function should return false for integration blocks
