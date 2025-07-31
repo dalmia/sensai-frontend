@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
+import { Unlink } from "lucide-react";
 
 interface IntegrationPage {
   id: string;
@@ -21,7 +22,7 @@ interface ButtonProps {
   bgColor: string;
   textColor?: string;
   className?: string;
-  showIcon?: boolean;
+  icon?: React.ReactNode;
 }
 
 // Notion icon component
@@ -41,7 +42,7 @@ const Button = ({
   bgColor,
   textColor = "text-white",
   className = "",
-  showIcon = false
+  icon
 }: ButtonProps) => {
   return (
     <button
@@ -56,7 +57,7 @@ const Button = ({
         </div>
       ) : (
         <div className="flex items-center">
-          {showIcon && <NotionIcon className="w-4 h-4 mr-2" />}
+            {icon && <span className="mr-2">{icon}</span>}
           {normalText}
         </div>
       )}
@@ -390,7 +391,7 @@ export default function NotionIntegration({
           normalText="Connect Notion"
           bgColor="bg-white"
           textColor="text-black"
-          showIcon={true}
+          icon={<NotionIcon className="w-4 h-4" />}
         />
       </div>
     );
@@ -421,7 +422,7 @@ export default function NotionIntegration({
             normalText="Reconnect Notion"
             bgColor="bg-white"
             textColor="text-black"
-            showIcon={true}
+            icon={<NotionIcon className="w-4 h-4" />}
           />
         )}
 
@@ -461,7 +462,7 @@ export default function NotionIntegration({
               normalText="Add more pages"
               bgColor="bg-white"
               textColor="text-black"
-              showIcon={true}
+              icon={<NotionIcon className="w-4 h-4" />}
             />
           </>
         )}
@@ -479,7 +480,7 @@ export default function NotionIntegration({
                 loadingText="Unlinking..."
                 normalText="Unlink page"
                 bgColor="bg-red-800"
-                showIcon={false}
+                icon={<Unlink className="w-4 h-4" />}
               />
             </div>
             <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg px-3 py-2">
