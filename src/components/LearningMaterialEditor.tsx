@@ -113,7 +113,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== "integration") : undefined;
+    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== "integration");
+    const initialContent = getNonIntegrationBlocks(editorContent.length > 0 ? editorContent : (taskData?.blocks || []));
 
     // Function to fetch and render Integration blocks
     const fetchAndRenderIntegrationBlocks = useCallback(async (integrationBlock: any) => {
