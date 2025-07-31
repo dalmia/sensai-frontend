@@ -57,7 +57,7 @@ const Button = ({
         </div>
       ) : (
         <div className="flex items-center">
-            {icon && <span className="mr-2">{icon}</span>}
+          {icon && <span className="mr-2">{icon}</span>}
           {normalText}
         </div>
       )}
@@ -468,29 +468,41 @@ export default function NotionIntegration({
         )}
 
         {selectedPageId && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-sm text-white font-light">
-                Connected to <span className="font-medium underline">{selectedPageTitle}</span> Notion page
+          <div className="bg-gray-900/30 rounded-lg px-4 py-3 border border-gray-700/50">
+            {/* Connection status */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <NotionIcon className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400 font-light">Connected to</span>
+                    <span className="text-sm text-white font-medium bg-gray-800 px-2 py-1 rounded-md">
+                      {selectedPageTitle}
+                    </span>
+                  </div>
+                </div>
               </div>
               <Button
                 onClick={handleUnlinkPage}
                 disabled={loading}
                 isLoading={isUnlinking}
                 loadingText="Unlinking..."
-                normalText="Unlink page"
-                bgColor="bg-red-800"
-                icon={<Unlink className="w-4 h-4" />}
+                normalText="Unlink"
+                bgColor="bg-gray-700 hover:bg-red-700"
+                icon={<Unlink className="w-3 h-3" />}
+                className="text-xs px-2 py-1"
               />
             </div>
-            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg px-3 py-2">
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm text-yellow-300 font-light">
-                  This is a read-only Notion page. Make changes in the original Notion document for them to be reflected here.
-                </span>
+
+            {/* Read-only banner */}
+            <div className="flex items-start gap-3">
+              <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <div className="text-sm text-gray-300 font-light leading-relaxed">
+                  Changes must be made in the original Notion document for them to be reflected here
+                </div>
               </div>
             </div>
           </div>
