@@ -6004,8 +6004,8 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was called to clean up URL
-            expect(window.history.replaceState).toHaveBeenCalled();
+            // Verify that router.push was called to clean up URL
+            expect(mockPush).toHaveBeenCalled();
         });
 
         it('should close dialog and clean up URL when taskId is not present', async () => {
@@ -6046,8 +6046,8 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was called even without taskId
-            expect(window.history.replaceState).toHaveBeenCalled();
+            // Verify that router.push was called even without taskId
+            expect(mockPush).toHaveBeenCalled();
         });
 
         it('should handle closeDialog with complex URL parameters', async () => {
@@ -6088,11 +6088,10 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was called with cleaned URL
-            expect(window.history.replaceState).toHaveBeenCalledWith(
-                {},
-                '',
-                expect.stringContaining('/school/admin/123/courses/456?otherParam=value&anotherParam=test')
+            // Verify that router.push was called with cleaned URL
+            expect(mockPush).toHaveBeenCalledWith(
+                '/school/admin/123/courses/456?otherParam=value&anotherParam=test',
+                { scroll: false }
             );
         });
 
@@ -6134,11 +6133,10 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was called with pathname only
-            expect(window.history.replaceState).toHaveBeenCalledWith(
-                {},
-                '',
-                expect.stringContaining('/school/admin/123/courses/456')
+            // Verify that router.push was called with pathname only
+            expect(mockPush).toHaveBeenCalledWith(
+                '/school/admin/123/courses/456',
+                { scroll: false }
             );
         });
 
@@ -6180,8 +6178,8 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was still called
-            expect(window.history.replaceState).toHaveBeenCalled();
+            // Verify that router.push was still called
+            expect(mockPush).toHaveBeenCalled();
         });
 
         it('should handle closeDialog with special characters in taskId', async () => {
@@ -6260,8 +6258,8 @@ describe('CreateCourse Page', () => {
                 fireEvent.keyDown(document, { key: 'Escape' });
             }
 
-            // Verify that window.history.replaceState was called
-            expect(window.history.replaceState).toHaveBeenCalled();
+            // Verify that router.push was called
+            expect(mockPush).toHaveBeenCalled();
         });
 
         it('should handle closeDialog with very long taskId', async () => {

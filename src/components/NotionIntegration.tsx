@@ -470,7 +470,7 @@ export default function NotionIntegration({
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 mb-2">
               <div className="text-sm text-white font-light">
-                Connected to {selectedPageTitle} Notion page
+                Connected to <span className="font-medium underline">{selectedPageTitle}</span> Notion page
               </div>
               <Button
                 onClick={handleUnlinkPage}
@@ -478,7 +478,7 @@ export default function NotionIntegration({
                 isLoading={isUnlinking}
                 loadingText="Unlinking..."
                 normalText="Unlink page"
-                bgColor="bg-red-600"
+                bgColor="bg-red-800"
                 showIcon={false}
               />
             </div>
@@ -504,7 +504,7 @@ export default function NotionIntegration({
       <ConfirmationDialog
         open={showOverwriteConfirmation}
         title="Connect to Notion page?"
-        message="Connecting to a Notion page will replace all existing content in the editor."
+        message="Connecting to a Notion page will replace all existing content in the editor"
         confirmButtonText="Overwrite"
         cancelButtonText="Cancel"
         onConfirm={handleConfirmOverwrite}
@@ -516,7 +516,7 @@ export default function NotionIntegration({
       <ConfirmationDialog
         open={showUnlinkConfirmation}
         title="Unlink Notion page?"
-        message="Unlinking this Notion page will remove its content from the editor."
+        message="Unlinking this Notion page will remove its content from the editor"
         confirmButtonText="Unlink"
         cancelButtonText="Cancel"
         onConfirm={handleConfirmUnlink}

@@ -597,7 +597,9 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Connected to Test Page 1 Notion page')).toBeInTheDocument();
+        expect(screen.getByText((content, element) => {
+          return element?.textContent === 'Connected to Test Page 1 Notion page';
+        })).toBeInTheDocument();
         expect(screen.getByText('Unlink page')).toBeInTheDocument();
       });
     });
@@ -971,7 +973,9 @@ describe('NotionIntegration', () => {
 
       // When there's an integration block, the component shows the connected state
       await waitFor(() => {
-        expect(screen.getByText('Connected to Test Page 1 Notion page')).toBeInTheDocument();
+        expect(screen.getByText((content, element) => {
+          return element?.textContent === 'Connected to Test Page 1 Notion page';
+        })).toBeInTheDocument();
       });
 
       // The hasExistingContent function should return false for integration blocks

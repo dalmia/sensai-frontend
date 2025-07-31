@@ -4,9 +4,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
+  const error = searchParams.get("error");
 
-  if (!code) {
-    return NextResponse.json({ error: "Missing code" }, { status: 400 });
+  // Handle OAuth errors by redirecting back to state
+  if (error || !code) {
+    if (state) {
+      return NextResponse.redirect(state);
+    }
+    return NextResponse.json({ error: "Missing code and no state to redirect to" }, { status: 400 });
   }
 
   const basicAuth = Buffer.from(
@@ -22,16 +27,15 @@ export async function GET(req: NextRequest) {
     body: JSON.stringify({
       grant_type: "authorization_code",
       code,
-      external_account: {
-        type: 'user',
-        key: 'default',
-        name: 'User Account'
-      },
     }),
   });
 
   if (!tokenRes.ok) {
     const err = await tokenRes.text();
+    // If token request fails, redirect back to state
+    if (state) {
+      return NextResponse.redirect(state);
+    }
     return NextResponse.json({ error: err }, { status: 500 });
   }
 

@@ -335,6 +335,17 @@ export default function CreateCourse() {
         }
     };
 
+    // Utility function to handle URL manipulation for taskId
+    const updateTaskIdInUrl = (taskId: string | null) => {
+        const url = new URL(window.location.href);
+        if (taskId) {
+            url.searchParams.set('taskId', taskId);
+        } else {
+            url.searchParams.delete('taskId');
+        }
+        router.push(url.pathname + url.search, { scroll: false });
+    };
+
     const updateModuleTitle = (id: string, title: string) => {
         setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, title } : module
@@ -404,9 +415,7 @@ export default function CreateCourse() {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
-        const url = new URL(window.location.href);
-        url.searchParams.set('taskId', newItem.id);
-        router.push(url.pathname + url.search, { scroll: false });
+        updateTaskIdInUrl(newItem.id);
 
         setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
@@ -628,9 +637,7 @@ export default function CreateCourse() {
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
-        const url = new URL(window.location.href);
-        url.searchParams.set('taskId', itemId);
-        router.push(url.pathname + url.search, { scroll: false });
+        updateTaskIdInUrl(itemId);
 
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
@@ -674,9 +681,7 @@ export default function CreateCourse() {
     // Close the dialog
     const closeDialog = () => {
         // Clean up the URL (remove taskId)
-        const url = new URL(window.location.href);
-        url.searchParams.delete('taskId');
-        window.history.replaceState({}, '', url.pathname + url.search);
+        updateTaskIdInUrl(null);
 
         setIsDialogOpen(false);
         setActiveItem(null);
