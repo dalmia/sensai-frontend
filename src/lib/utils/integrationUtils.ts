@@ -7,6 +7,7 @@ export interface IntegrationBlock {
     resource_id: string;
     resource_type: string;
     integration_type: string;
+    blocks?: any[]; // Add blocks to store fetched content
   };
   id: string;
   position: number;
@@ -20,6 +21,14 @@ export interface IntegrationBlocksResult {
 // Function to fetch blocks from an integration block
 export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock): Promise<IntegrationBlocksResult> => {
   try {
+    // If blocks are already stored in the integration block, return them
+    if (integrationBlock.props.blocks && integrationBlock.props.blocks.length > 0) {
+      return {
+        blocks: integrationBlock.props.blocks,
+        error: null
+      };
+    }
+
     const integrationId = integrationBlock.props.integration_id;
     if (!integrationId) {
       return {
@@ -88,7 +97,8 @@ export const createIntegrationBlock = (
   integrationId: string,
   pageId: string,
   pageTitle: string,
-  integrationType: string
+  integrationType: string,
+  blocks?: any[] // Add blocks parameter
 ): IntegrationBlock => {
   return {
     type: "integration",
@@ -98,6 +108,7 @@ export const createIntegrationBlock = (
       resource_id: pageId,
       resource_type: "page",
       integration_type: integrationType,
+      blocks: blocks, // Store the blocks
     },
     id: `${integrationType}-integration-${Date.now()}`,
     position: 0
@@ -154,17 +165,24 @@ export const handleIntegrationPageSelection = async (
       return;
     }
 
-    // Create the integration block
+    const data = await response.json();
+    const fetchedBlocks = data.ok && data.data ? data.data : [];
+
+    // Create the integration block with the fetched blocks
     const integrationBlock = createIntegrationBlock(
       integration.id,
       pageId,
       pageTitle,
-      integrationType
+      integrationType,
+      fetchedBlocks // Pass the fetched blocks
     );
 
     // Replace all existing content with just the integration block
     const newContent = [integrationBlock];
     onContentUpdate(newContent);
+
+    // Update the blocks for rendering
+    onBlocksUpdate(fetchedBlocks);
 
   } catch (error) {
     console.error('Error handling page selection:', error);

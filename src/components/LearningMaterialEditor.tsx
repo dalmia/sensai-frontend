@@ -141,7 +141,16 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         if (editorContent.length > 0) {
             const integrationBlock = editorContent.find(block => block.type === 'integration');
             if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
-                fetchAndRenderIntegrationBlocks(integrationBlock);
+                // Check if blocks are already stored in the integration block
+                if (integrationBlock.props.blocks && integrationBlock.props.blocks.length > 0) {
+                    // Use stored blocks directly
+                    setIntegrationBlocks(integrationBlock.props.blocks);
+                    setIntegrationError(null);
+                    setIsLoadingIntegration(false);
+                } else {
+                // Fetch blocks if not stored
+                    fetchAndRenderIntegrationBlocks(integrationBlock);
+                }
             } else {
                 setIntegrationBlocks([]);
                 setIntegrationError(null);
@@ -165,7 +174,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 console.error('Error clearing editor content:', error);
             }
         }
-    }, [editorContent]);
+    }, [editorContent, fetchAndRenderIntegrationBlocks]);
 
     // Fetch task data when taskId changes
     useEffect(() => {
