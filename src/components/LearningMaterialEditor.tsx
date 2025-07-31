@@ -24,6 +24,24 @@ import { ChatMessage } from "../types/quiz";
 // Add import for PublishConfirmationDialog
 import PublishConfirmationDialog from "./PublishConfirmationDialog";
 
+// Add import for Integration
+import NotionIntegration from "./NotionIntegration";
+
+// Add imports for Notion rendering
+import { BlockList } from "@udus/notion-renderer/components";
+import "@udus/notion-renderer/styles/globals.css";
+import "katex/dist/katex.min.css";
+
+// Add import for useAuth
+import { useAuth } from "@/lib/auth";
+
+// Add import for shared Integration utilities
+import {
+    fetchIntegrationBlocks,
+    handleIntegrationPageSelection,
+    handleIntegrationPageRemoval
+} from "@/lib/utils/integrationUtils";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -42,7 +60,6 @@ interface LearningMaterialEditorProps {
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
     taskId?: string;
-    userId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     scheduledPublishAt?: string | null;
@@ -59,7 +76,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onPublishConfirm,
     onPublishCancel,
     taskId,
-    userId = '',
     onPublishSuccess,
     onSaveSuccess,
     scheduledPublishAt = null,
@@ -70,7 +86,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-
+    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
+    const [integrationError, setIntegrationError] = useState<string | null>(null);
+    const { user } = useAuth();
+    const userId = user?.id;
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
 
@@ -93,7 +113,59 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
+    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== "integration");
+    const initialContent = getNonIntegrationBlocks(editorContent.length > 0 ? editorContent : (taskData?.blocks || []));
+
+    // Function to fetch and render Integration blocks
+    const fetchAndRenderIntegrationBlocks = useCallback(async (integrationBlock: any) => {
+        try {
+            setIsLoadingIntegration(true);
+            setIntegrationError(null);
+
+            const result = await fetchIntegrationBlocks(integrationBlock);
+
+            if (result.error) {
+                setIntegrationError(result.error);
+            } else {
+                setIntegrationBlocks(result.blocks);
+            }
+        } catch (error) {
+            setIntegrationError('Error fetching Integration blocks');
+        } finally {
+            setIsLoadingIntegration(false);
+        }
+    }, []);
+
+    // handle integration blocks and editor instance clearing
+    useEffect(() => {
+        if (editorContent.length > 0) {
+            const integrationBlock = editorContent.find(block => block.type === 'integration');
+            if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
+                fetchAndRenderIntegrationBlocks(integrationBlock);
+            } else {
+                setIntegrationBlocks([]);
+                setIntegrationError(null);
+                setIsLoadingIntegration(false);
+            }
+        } else {
+            setIntegrationBlocks([]);
+            setIntegrationError(null);
+            setIsLoadingIntegration(false);
+        }
+
+        // Ensure editor instance is updated when content is cleared
+        if (editorRef.current && editorContent.length === 0) {
+            try {
+                if (editorRef.current.replaceBlocks) {
+                    editorRef.current.replaceBlocks(editorRef.current.document, []);
+                } else if (editorRef.current.setContent) {
+                    editorRef.current.setContent([]);
+                }
+            } catch (error) {
+                console.error('Error clearing editor content:', error);
+            }
+        }
+    }, [editorContent]);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -116,205 +188,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     // We only use the data fetched from our own API call
                     // Title updates only happen after publishing, not during editing
                     if (!data.blocks || data.blocks.length === 0) {
-                        data.blocks = [
-                            {
-                                type: "heading",
-                                props: { level: 2 },
-                                content: [{ "text": "Welcome to the Learning material editor!", "type": "text", styles: {} }],
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "This is where you will create your learning material. You can either modify this template or remove it entirely to start from scratch.", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "heading",
-                                props: { level: 3 },
-                                content: [{ "text": "Key Features", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Add new blocks by clicking the + icon that appears between blocks", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Reorder blocks using the side menu (hover near the left edge of any block and drag the button with 6 dots to reorder)", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Format text using the toolbar that appears when you select text", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "heading",
-                                props: { level: 3 },
-                                content: [{ "text": "Available Block Types", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Here are some examples of the different types of blocks you can use:", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "heading",
-                                props: { level: 2 },
-                                content: [{ "text": "Headings (like this one)", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Bullet lists (like this)", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "numberedListItem",
-                                content: [{ "text": "Numbered lists (like this)", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "checkListItem",
-                                content: [{ "text": "Check lists (like this)", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Regular paragraphs for your main content", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Insert images/videos/audio clips by clicking the + icon on the left and selecting Image/Video/Audio", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Insert code blocks by clicking the + icon on the left and selecting Code Block", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "heading",
-                                props: { level: 3 },
-                                content: [{ "text": "Creating Nested Content", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "You can create nested content in two ways:", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Using the Tab key: Simply press Tab while your cursor is on a block to indent it", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Using the side menu: Hover near the left edge of a block, click the menu icon (the button with 6 dots), and drag the block to the desired nested position inside another block", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Here are examples of nested content:", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Nested Lists Example", "type": "text", styles: { "bold": true } }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Main topic 1", "type": "text", styles: {} }],
-                                children: [
-                                    {
-                                        type: "bulletListItem",
-                                        props: { indent: 1 },
-                                        content: [{ "text": "Subtopic 1.1 (indented using Tab or side menu)", "type": "text", styles: {} }]
-                                    },
-                                    {
-                                        type: "bulletListItem",
-                                        props: { indent: 1 },
-                                        content: [{ "text": "Subtopic 1.2", "type": "text", styles: {} }],
-                                        children: [{
-                                            type: "bulletListItem",
-                                            props: { indent: 2 },
-                                            content: [{ "text": "Further nested item (press Tab again to create deeper nesting)", "type": "text", styles: {} }]
-                                        }]
-                                    }
-                                ]
-                            },
-
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Main topic 2", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Nested Numbered Lists", "type": "text", styles: { "bold": true } }],
-                            },
-
-                            {
-                                type: "numberedListItem",
-                                content: [{ "text": "First step", "type": "text", styles: {} }],
-                                children: [
-                                    {
-                                        type: "numberedListItem",
-                                        props: { indent: 1 },
-                                        content: [{ "text": "Substep 1.1 (indented with Tab)", "type": "text", styles: {} }]
-                                    },
-                                    {
-                                        type: "numberedListItem",
-                                        props: { indent: 1 },
-                                        content: [{ "text": "Substep 1.2", "type": "text", styles: {} }]
-                                    },
-                                ]
-                            },
-                            {
-                                type: "numberedListItem",
-                                content: [{ "text": "Second step", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Tips for working with nested content:", "type": "text", styles: { "bold": true } }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "To unnest/outdent an item, press Shift+Tab", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "You can mix bullet and numbered lists in your nesting hierarchy", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "bulletListItem",
-                                content: [{ "text": "Nesting helps create a clear organizational structure for complex topics", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "heading",
-                                props: { level: 3 },
-                                content: [{ "text": "Publishing Your Content", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "When you are ready to make your content available to learners, click the Publish button. You can always edit and republish your content later.", "type": "text", styles: {} }]
-                            },
-                            {
-                                type: "paragraph",
-                                content: [{ "text": "Feel free to delete or modify this template to create your own learning material!", "type": "text", styles: {} }]
-                            }
-                        ];
+                        data.blocks = [];
                     }
 
                     setTaskData(data);
@@ -444,6 +318,69 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
+    // Handle Integration page selection
+    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
+        if (!userId) {
+            console.error('User ID not provided');
+            return;
+        }
+
+        setIsLoadingIntegration(true);
+        setIntegrationError(null);
+
+        try {
+            await handleIntegrationPageSelection(
+                pageId,
+                pageTitle,
+                userId,
+                'notion',
+                (content) => {
+                    setEditorContent(content);
+                    if (onChange) {
+                        onChange(content);
+                    }
+                },
+                setIntegrationBlocks,
+                setIntegrationError
+            );
+        } catch (error) {
+            console.error('Error handling Integration page selection:', error);
+        } finally {
+            setIsLoadingIntegration(false);
+        }
+    };
+
+    // Handle Integration page removal
+    const handleIntegrationPageRemove = () => {
+        setIntegrationError(null);
+
+        handleIntegrationPageRemoval(
+            (content) => {
+                setEditorContent(content);
+                setIntegrationBlocks([]);
+
+                // Update the editor instance if available
+                if (editorRef.current && editorRef.current.replaceBlocks) {
+                    try {
+                        editorRef.current.replaceBlocks(editorRef.current.document, content);
+                    } catch (error) {
+                        console.error('Error replacing blocks:', error);
+                        // Fallback: try to set content directly
+                        if (editorRef.current.setContent) {
+                            editorRef.current.setContent(content);
+                        }
+                    }
+                }
+
+                // Call onChange if provided
+                if (onChange) {
+                    onChange(content);
+                }
+            },
+            setIntegrationBlocks
+        );
+    };
+
     // Handle saving changes when in edit mode
     const handleSave = async () => {
         if (!taskId) {
@@ -520,13 +457,18 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const checkContent = (content: any[] | undefined) => {
                 if (!content || content.length === 0) return false;
 
-                // Check if there are any blocks beyond the first default paragraph
-                if (content.length > 1) return true;
+                const hasIntegrationBlock = editorContent.some(block => block.type === 'integration');
+                if (hasIntegrationBlock && integrationBlocks.length === 0) {
+                    return false;
+                }
 
-                // If there's only one block, check if it has actual content
-                if (content.length === 1) {
-                    const block = content[0];
-                    // Use stringify to check if there's actual content
+                // Check each block for actual content
+                for (const block of content) {
+                    if (block.type === 'integration') {
+                        return true;
+                    }
+
+                    // Use stringify to check if it has actual content
                     const blockContent = JSON.stringify(block.content);
                     // Check if it's not just an empty paragraph
                     if (blockContent &&
@@ -547,9 +489,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 return true;
             }
 
-            // If editorContent is empty but we have taskData, check that as a fallback
-            if (taskData?.blocks) {
-                return checkContent(taskData.blocks);
+            // Check if we have integration blocks
+            if (integrationBlocks.length > 0) {
+                return true;
             }
 
             return false;
@@ -564,6 +506,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const originalTitle = originalDataRef.current.title || "";
 
             if (currentTitle !== originalTitle) {
+                return true;
+            }
+
+            if (integrationBlocks.length > 0) {
                 return true;
             }
 
@@ -595,15 +541,53 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     return (
         <div className={`w-full h-full ${className}`}>
             <div className="w-full flex flex-col my-4">
+                {/* Integration */}
+                {!readOnly && (
+                    <div className="mb-4">
+                        <NotionIntegration
+                            onPageSelect={handleIntegrationPageSelect}
+                            onPageRemove={handleIntegrationPageRemove}
+                            isEditMode={!readOnly}
+                            editorContent={editorContent}
+                            loading={isLoadingIntegration}
+                        />
+                    </div>
+                )}
+
                 <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0`}>
-                    <BlockNoteEditor
-                        initialContent={initialContent}
-                        onChange={handleEditorChange}
-                        isDarkMode={isDarkMode}
-                        readOnly={readOnly}
-                        className="dark-editor min-h-screen"
-                        onEditorReady={setEditorInstance}
-                    />
+                    {isLoadingIntegration ? (
+                        <div className="flex items-center justify-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                        </div>
+                    ) : integrationError ? (
+                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                            <div className="text-red-400 text-sm mb-4">
+                                {integrationError}
+                            </div>
+                            <div className="text-gray-400 text-xs">
+                                The Notion integration may have been disconnected. Please reconnect it.
+                            </div>
+                        </div>
+                    ) : integrationBlocks.length > 0 ? (
+                        <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
+                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{editorContent?.find(block => block.type === 'integration')?.props?.resource_name}</h1>
+                            <BlockList blocks={integrationBlocks} />
+                        </div>
+                    ) : editorContent.some(block => block.type === 'integration') ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                            <div className="text-white text-lg mb-2">Notion page is empty</div>
+                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                        </div>
+                    ) : (
+                        <BlockNoteEditor
+                            initialContent={initialContent}
+                            onChange={handleEditorChange}
+                            isDarkMode={isDarkMode}
+                            readOnly={readOnly}
+                            className="dark-editor min-h-screen"
+                            onEditorReady={setEditorInstance}
+                        />
+                    )}
                 </div>
             </div>
 

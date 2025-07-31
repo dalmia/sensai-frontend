@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share, Settings } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import CourseModuleList from "@/components/CourseModuleList";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
@@ -43,6 +43,7 @@ const defaultQuestionConfig: QuizQuestionConfig = {
 export default function CreateCourse() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const schoolId = params.id as string;
     const courseId = params.courseId as string;
     const [schoolSlug, setSchoolSlug] = useState<string>('');
@@ -133,6 +134,8 @@ export default function CreateCourse() {
 
     const [selectedCohortForSettings, setSelectedCohortForSettings] = useState<any | null>(null);
 
+    const taskId = searchParams.get('taskId');
+
     // Update the refs whenever the state changes
     useEffect(() => {
         isGeneratingCourseRef.current = isGeneratingCourse;
@@ -145,6 +148,21 @@ export default function CreateCourse() {
     useEffect(() => {
         generatedTasksCountRef.current = generatedTasksCount;
     }, [generatedTasksCount]);
+
+    useEffect(() => {
+        if (taskId && modules.length > 0) {
+            // Find the module containing this item
+            for (const module of modules) {
+                const item = module.items.find(i => i.id === taskId);
+                if (item) {
+                    openItemDialog(module.id, taskId);
+                    break;
+                }
+            }
+        } else if (!taskId) {
+            setIsDialogOpen(false);
+        }
+    }, [taskId, modules.length]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
@@ -253,6 +271,22 @@ export default function CreateCourse() {
         // };
     }, []);
 
+    // Check for Integration OAuth callback and enable edit mode if coming from published content
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+
+        if (accessToken) {
+            const hasPublishedContent = modules.some(module =>
+                module.items.some(item => item.status === 'published')
+            );
+
+            if (hasPublishedContent) {
+                setIsEditMode(true);
+            }
+        }
+    }, [modules]);
+
     // Set initial content and focus on newly added modules and items
     useEffect(() => {
         // Focus the newly added module
@@ -299,6 +333,17 @@ export default function CreateCourse() {
             // Remove focus
             (e.currentTarget as HTMLHeadingElement).blur();
         }
+    };
+
+    // Utility function to handle URL manipulation for taskId
+    const updateTaskIdInUrl = (taskId: string | null) => {
+        const url = new URL(window.location.href);
+        if (taskId) {
+            url.searchParams.set('taskId', taskId);
+        } else {
+            url.searchParams.delete('taskId');
+        }
+        router.push(url.pathname + url.search, { scroll: false });
     };
 
     const updateModuleTitle = (id: string, title: string) => {
@@ -370,6 +415,7 @@ export default function CreateCourse() {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
+        updateTaskIdInUrl(newItem.id);
 
         setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
@@ -591,6 +637,8 @@ export default function CreateCourse() {
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
+        updateTaskIdInUrl(itemId);
+
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
             const updatedItem = {
@@ -632,7 +680,9 @@ export default function CreateCourse() {
 
     // Close the dialog
     const closeDialog = () => {
-        // Dialog confirmation is handled by CourseItemDialog component
+        // Clean up the URL (remove taskId)
+        updateTaskIdInUrl(null);
+
         setIsDialogOpen(false);
         setActiveItem(null);
         setActiveModuleId(null);
@@ -1576,7 +1626,6 @@ export default function CreateCourse() {
         }
     }
 
-
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
         if (!data.referencePdf) {
@@ -1832,8 +1881,8 @@ export default function CreateCourse() {
                 </div>
             )}
 
-            {/* Show spinner when loading */}
-            {isLoading ? (
+            {/* Show spinner when loading, or when taskId is present and dialog is not open */}
+            {(isLoading || (taskId && !isDialogOpen)) ? (
                 <div className="flex justify-center items-center h-[calc(100vh-80px)]">
                     <div className="w-16 h-16 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>
