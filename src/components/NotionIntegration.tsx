@@ -133,8 +133,8 @@ export default function NotionIntegration({
   // Check for existing integration block in editor content
   useEffect(() => {
     if (editorContent && editorContent.length > 0) {
-      const integrationBlock = editorContent.find(block => block.type === 'integration');
-      if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
+      const integrationBlock = editorContent.find(block => block.type === 'notion');
+      if (integrationBlock) {
         setSelectedPageId(integrationBlock.props.resource_id);
         setSelectedPageTitle(integrationBlock.props.resource_name);
       }

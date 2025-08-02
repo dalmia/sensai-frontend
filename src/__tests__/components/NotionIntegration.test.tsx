@@ -578,7 +578,7 @@ describe('NotionIntegration', () => {
     it('should show selected page information when page is selected', async () => {
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -606,7 +606,7 @@ describe('NotionIntegration', () => {
     it('should handle unlink page action', async () => {
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -640,7 +640,7 @@ describe('NotionIntegration', () => {
     it('should handle unlink confirmation', async () => {
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -682,7 +682,7 @@ describe('NotionIntegration', () => {
 
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -720,11 +720,11 @@ describe('NotionIntegration', () => {
     });
 
     it('should handle unlink confirmation with error', async () => {
-      const errorMockOnPageRemove = jest.fn().mockRejectedValue(new Error('Unlink failed'));
+      const errorMockOnPageRemove = jest.fn().mockRejectedValue(new Error('Failed to unlink'));
 
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -756,7 +756,6 @@ describe('NotionIntegration', () => {
       const confirmButton = screen.getByTestId('confirm-button');
       fireEvent.click(confirmButton);
 
-      // Should handle the error gracefully
       await waitFor(() => {
         expect(errorMockOnPageRemove).toHaveBeenCalled();
       });
@@ -765,7 +764,7 @@ describe('NotionIntegration', () => {
     it('should handle unlink cancellation', async () => {
       const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion', // Changed from 'integration' to 'notion'
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -801,6 +800,7 @@ describe('NotionIntegration', () => {
         expect(screen.queryByTestId('confirmation-dialog')).not.toBeInTheDocument();
       });
 
+      // onPageRemove should not be called when cancelled
       expect(mockOnPageRemove).not.toHaveBeenCalled();
     });
 
@@ -950,9 +950,9 @@ describe('NotionIntegration', () => {
     });
 
     it('should return false when single block is integration type (line 258)', async () => {
-      const editorContentWithIntegrationBlock = [
+      const editorContentWithIntegration = [
         {
-          type: 'integration',
+          type: 'notion',
           props: {
             integration_type: 'notion',
             resource_id: 'page-1',
@@ -966,7 +966,7 @@ describe('NotionIntegration', () => {
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
-          editorContent={editorContentWithIntegrationBlock}
+          editorContent={editorContentWithIntegration}
         />
       );
 
@@ -976,9 +976,9 @@ describe('NotionIntegration', () => {
         expect(screen.getByText('Test Page 1')).toBeInTheDocument();
       });
 
-      // The hasExistingContent function should return false for integration blocks
-      // This is tested indirectly by the fact that we don't see a confirmation dialog
-      // when the page is already connected
+      // The hasExistingContent function should return false when there's only an integration block
+      // This is tested by checking that the component shows the connected state instead of the dropdown
+      expect(screen.queryByText('Select Notion page')).not.toBeInTheDocument();
     });
 
     it('should return false when single block has no content array (line 268)', async () => {
