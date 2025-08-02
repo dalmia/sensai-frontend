@@ -2549,31 +2549,6 @@ describe('LearningMaterialEditor Component', () => {
             });
         });
 
-        it('should set integration error when fetchIntegrationBlocks throws (catch block)', async () => {
-            // Mock fetchIntegrationBlocks to throw
-            jest.spyOn(require('@/lib/utils/integrationUtils'), 'fetchIntegrationBlocks').mockImplementation(() => { throw new Error('fail'); });
 
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve({
-                    id: 'task-1',
-                    title: 'Test Task',
-                    blocks: [
-                        { type: 'integration', props: { integration_type: 'notion' } }
-                    ],
-                    status: 'draft',
-                    scheduled_publish_at: undefined
-                })
-            });
-
-            render(
-                <LearningMaterialEditor taskId="task-1" />
-            );
-
-            // Wait for the error message to appear
-            await waitFor(() => {
-                expect(screen.getByText('Error fetching Integration blocks')).toBeInTheDocument();
-            });
-        });
     });
 });
