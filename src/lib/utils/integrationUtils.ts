@@ -13,6 +13,55 @@ export interface IntegrationBlock {
   position: number;
 }
 
+export interface IntegrationBlocksResult {
+  blocks: any[];
+  error: string | null;
+}
+
+// Function to fetch blocks from an integration block
+export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock): Promise<IntegrationBlocksResult> => {
+  try {
+    const integrationId = integrationBlock.props.integration_id;
+    if (!integrationId) {
+      return { blocks: [], error: 'Integration not found. Please try again later.' };
+    }
+
+    // Fetch the integration to get the access_token
+    const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
+    if (!integrationRes.ok) {
+      return { blocks: [], error: 'Content source not found. Please try again later.' };
+    }
+
+    const integration = await integrationRes.json();
+    const accessToken = integration?.access_token;
+    if (!accessToken) {
+      return { blocks: [], error: 'Content access not available. Please try again later.' };
+    }
+
+    // Fetch the page content using the access token
+    const response = await fetch(`/api/integrations/fetchPageBlocks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pageId: integrationBlock.props.resource_id,
+        token: accessToken
+      }),
+    });
+
+    if (!response.ok) {
+      return { blocks: [], error: 'Failed to load content. Please try again later.' };
+    }
+
+    const data = await response.json();
+    return {
+      blocks: data.ok && data.data ? data.data : [],
+      error: data.ok && data.data ? null : 'Content could not be loaded. Please try again later.'
+    };
+  } catch {
+    return { blocks: [], error: 'Unable to load content. Please try again later.' };
+  }
+};
+
 // Function to create a integration block
 export const createIntegrationBlock = (
   integrationId: string,
@@ -100,9 +149,6 @@ export const handleIntegrationPageSelection = async (
     // Replace all existing content with just the integration block
     const newContent = [integrationBlock];
     onContentUpdate(newContent);
-
-    // Update the blocks for rendering
-    onBlocksUpdate(fetchedBlocks);
 
   } catch (error) {
     console.error('Error handling page selection:', error);

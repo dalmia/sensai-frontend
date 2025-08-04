@@ -2,7 +2,8 @@ import {
   createIntegrationBlock,
   getUserIntegration,
   handleIntegrationPageSelection,
-  handleIntegrationPageRemoval
+  handleIntegrationPageRemoval,
+  fetchIntegrationBlocks
 } from '../../../lib/utils/integrationUtils';
 
 // Mock fetch
@@ -154,7 +155,7 @@ describe('integrationUtils', () => {
           content: mockBlocks
         })
       ]);
-      expect(mockOnBlocksUpdate).toHaveBeenCalledWith(mockBlocks);
+      expect(mockOnBlocksUpdate).not.toHaveBeenCalled();
       expect(mockOnError).not.toHaveBeenCalled();
     });
 
@@ -230,6 +231,35 @@ describe('integrationUtils', () => {
 
       consoleSpy.mockRestore();
     });
+
+    it('should handle exceptions during page content processing', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const mockIntegration = { id: 1, integration_type: 'notion', access_token: 'token-123' };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([mockIntegration])
+        })
+        .mockRejectedValueOnce(new Error('Network error during page content fetch'));
+
+      await handleIntegrationPageSelection(
+        'page-456',
+        'Test Page',
+        'user-123',
+        'notion',
+        mockOnContentUpdate,
+        mockOnBlocksUpdate,
+        mockOnError
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith('Error handling page selection:', expect.any(Error));
+      expect(mockOnContentUpdate).toHaveBeenCalledWith([]);
+      expect(mockOnBlocksUpdate).toHaveBeenCalledWith([]);
+      expect(mockOnError).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe('handleIntegrationPageRemoval', () => {
@@ -246,6 +276,201 @@ describe('integrationUtils', () => {
 
       expect(mockOnContentUpdate).toHaveBeenCalledWith([]);
       expect(mockOnBlocksUpdate).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe('fetchIntegrationBlocks', () => {
+    it('should successfully fetch integration blocks', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] },
+        { type: 'heading', content: [{ text: 'Test heading' }] }
+      ];
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: true,
+            data: mockBlocks
+          })
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual(mockBlocks);
+      expect(result.error).toBeNull();
+    });
+
+    it('should handle missing integration_id', async () => {
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Integration not found. Please try again later.');
+    });
+
+    it('should handle integration fetch failure', async () => {
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404
+      });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Content source not found. Please try again later.');
+    });
+
+    it('should handle missing access token', async () => {
+      const mockIntegration = { id: 1 }; // No access_token
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockIntegration)
+      });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Content access not available. Please try again later.');
+    });
+
+    it('should handle page content fetch failure', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Failed to load content. Please try again later.');
+    });
+
+    it('should handle invalid response data', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: false,
+            data: null
+          })
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Content could not be loaded. Please try again later.');
+    });
+
+    it('should handle network errors', async () => {
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Test Page',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual([]);
+      expect(result.error).toBe('Unable to load content. Please try again later.');
     });
   });
 });

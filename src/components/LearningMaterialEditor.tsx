@@ -38,7 +38,8 @@ import { useAuth } from "@/lib/auth";
 // Add import for shared Integration utilities
 import {
     handleIntegrationPageSelection,
-    handleIntegrationPageRemoval
+    handleIntegrationPageRemoval,
+    fetchIntegrationBlocks
 } from "@/lib/utils/integrationUtils";
 
 // Define the editor handle with methods that can be called by parent components
@@ -355,6 +356,55 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setIntegrationBlocks
         );
     };
+
+    // Function to fetch updated blocks from Notion when entering edit mode
+    const fetchUpdatedNotionBlocks = async () => {
+        if (!integrationBlock || readOnly) return;
+
+        setIsLoadingIntegration(true);
+        setIntegrationError(null);
+
+        try {
+            const result = await fetchIntegrationBlocks(integrationBlock);
+
+            if (result.error) {
+                setIntegrationError(result.error);
+                return;
+            }
+
+            if (result.blocks && result.blocks.length > 0) {
+                // Update the integration block with new content
+                const updatedIntegrationBlock = {
+                    ...integrationBlock,
+                    content: result.blocks
+                };
+
+                // Update the editor content with the new integration block
+                const updatedContent = editorContent.map(block =>
+                    block.type === currentIntegrationType ? updatedIntegrationBlock : block
+                );
+
+                setEditorContent(updatedContent);
+                setIntegrationBlocks(result.blocks);
+
+                // Call onChange if provided
+                if (onChange) {
+                    onChange(updatedContent);
+                }
+            }
+        } catch (error) {
+            setIntegrationError('Failed to fetch updated content from Notion');
+        } finally {
+            setIsLoadingIntegration(false);
+        }
+    };
+
+    // Fetch updated blocks when entering edit mode
+    useEffect(() => {
+        if (!readOnly && integrationBlock && integrationBlock.props?.resource_id) {
+            fetchUpdatedNotionBlocks();
+        }
+    }, [readOnly, integrationBlock?.props?.resource_id]);
 
     // Handle saving changes when in edit mode
     const handleSave = async () => {
