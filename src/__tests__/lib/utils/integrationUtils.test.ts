@@ -438,5 +438,189 @@ describe('integrationUtils', () => {
       expect(result.blocks).toEqual([]);
       expect(result.error).toBe('Unable to load content. Please try again later.');
     });
+
+    it('should successfully fetch and update title when title fetch succeeds', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] }
+      ];
+      const mockTitleData = {
+        page: {
+          properties: {
+            title: {
+              title: [
+                { plain_text: 'Updated Page Title' }
+              ]
+            }
+          }
+        }
+      };
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Original Title',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: true,
+            data: mockBlocks
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTitleData)
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual(mockBlocks);
+      expect(result.error).toBeNull();
+      expect(result.updatedTitle).toBe('Updated Page Title');
+    });
+
+    it('should handle title fetch failure gracefully', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] }
+      ];
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Original Title',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: true,
+            data: mockBlocks
+          })
+        })
+        .mockRejectedValueOnce(new Error('Title fetch error'));
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual(mockBlocks);
+      expect(result.error).toBeNull();
+      expect(result.updatedTitle).toBe('Original Title'); // Should fallback to original title
+      expect(consoleSpy).toHaveBeenCalledWith('Error fetching page title:', expect.any(Error));
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle title fetch with non-ok response', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] }
+      ];
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Original Title',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: true,
+            data: mockBlocks
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual(mockBlocks);
+      expect(result.error).toBeNull();
+      expect(result.updatedTitle).toBe('Original Title'); // Should fallback to original title
+    });
+
+    it('should handle title data without page property', async () => {
+      const mockIntegration = { id: 1, access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] }
+      ];
+      const mockTitleData = {
+        // No page property
+      };
+
+      const integrationBlock = {
+        id: 'block-123',
+        type: 'notion',
+        content: [],
+        props: {
+          integration_id: '1',
+          resource_name: 'Original Title',
+          resource_id: 'page-456',
+        },
+        position: 0
+      };
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockIntegration)
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            ok: true,
+            data: mockBlocks
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTitleData)
+        });
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      expect(result.blocks).toEqual(mockBlocks);
+      expect(result.error).toBeNull();
+      expect(result.updatedTitle).toBe('Original Title'); // Should fallback to original title
+    });
   });
 });
