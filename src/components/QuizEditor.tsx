@@ -1337,6 +1337,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         // Reset last content update ref
         lastContentUpdateRef.current = "";
 
+        // Reset integration blocks for the new question
+        setIntegrationBlocks([]);
+        setIntegrationError(null);
+        setIsLoadingIntegration(false);
+
         // Trigger animation
         setNewQuestionAdded(true);
 
