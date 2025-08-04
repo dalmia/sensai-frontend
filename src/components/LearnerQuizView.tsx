@@ -14,6 +14,11 @@ import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
 
+// Add imports for Notion rendering
+import { BlockList } from "@udus/notion-renderer/components";
+import "@udus/notion-renderer/styles/globals.css";
+import "katex/dist/katex.min.css";
+
 // Add interface for mobile view mode
 export interface MobileViewMode {
     mode: 'question-full' | 'chat-full' | 'split';
@@ -1368,6 +1373,18 @@ export default function LearnerQuizView({
     // Get current question content
     const currentQuestionContent = validQuestions[currentQuestionIndex]?.content || [];
 
+    // Integration logic for questions
+    const currentIntegrationType = 'notion';
+    const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
+    const integrationBlocks = integrationBlock?.content || [];
+
+    // Add loading and error states for integration blocks
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
+    const [integrationError, setIntegrationError] = useState<string | null>(null);
+
+    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
+    const initialContent = getNonIntegrationBlocks(currentQuestionContent.length > 0 ? currentQuestionContent : []);
+
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config
 
@@ -1937,15 +1954,35 @@ export default function LearnerQuizView({
                     <div className={`flex-1 ${questions.length > 1 ? 'mt-4' : ''}`}>
                         {/* Use editor with negative margin to offset unwanted space */}
                         <div className="ml-[-60px]"> {/* Increased negative margin to align with navigation arrow */}
-                            <BlockNoteEditor
-                                key={`question-view-${currentQuestionIndex}`}
-                                initialContent={currentQuestionContent}
-                                onChange={() => { }} // Read-only in view mode
-                                isDarkMode={isDarkMode}
-                                readOnly={true}
-                                className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
-                                placeholder="Question content will appear here"
-                            />
+                            {isLoadingIntegration ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                </div>
+                            ) : integrationError ? (
+                                <div className="flex flex-col items-center justify-center h-32 text-center">
+                                    <div className="text-red-400 text-sm mb-4">
+                                        {integrationError}
+                                    </div>
+                                    <div className="text-gray-400 text-xs">
+                                        Please contact your mentor if this issue persists.
+                                    </div>
+                                </div>
+                            ) : integrationBlocks.length > 0 ? (
+                                <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                    <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                    <BlockList blocks={integrationBlocks} />
+                                </div>
+                            ) : (
+                                <BlockNoteEditor
+                                    key={`question-view-${currentQuestionIndex}`}
+                                    initialContent={integrationBlock ? [] : initialContent}
+                                    onChange={() => { }} // Read-only in view mode
+                                    isDarkMode={isDarkMode}
+                                    readOnly={true}
+                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
+                                    placeholder="Question content will appear here"
+                                />
+                            )}
                         </div>
                     </div>
                 </div>

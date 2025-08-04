@@ -137,7 +137,15 @@ export default function NotionIntegration({
       if (integrationBlock) {
         setSelectedPageId(integrationBlock.props.resource_id);
         setSelectedPageTitle(integrationBlock.props.resource_name);
+      } else {
+        // Reset selection when no integration block is found
+        setSelectedPageId(undefined);
+        setSelectedPageTitle(undefined);
       }
+    } else {
+      // Reset selection when editor content is empty
+      setSelectedPageId(undefined);
+      setSelectedPageTitle(undefined);
     }
   }, [editorContent]);
 

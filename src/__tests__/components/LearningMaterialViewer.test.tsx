@@ -964,7 +964,7 @@ describe('LearningMaterialViewer Component', () => {
             });
         });
 
-        it('should handle integration blocks with error response', async () => {
+        it('should handle integration blocks with empty content', async () => {
             const taskDataWithIntegration = {
                 ...mockTaskData,
                 blocks: [
@@ -995,8 +995,8 @@ describe('LearningMaterialViewer Component', () => {
             );
 
             await waitFor(() => {
-                expect(screen.getByText('Content not available')).toBeInTheDocument();
-                expect(screen.getByText('Please contact your mentor if this issue persists')).toBeInTheDocument();
+                // Since the content is empty, it should show the BlockNoteEditor with empty content
+                expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
             });
         });
 

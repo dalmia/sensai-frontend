@@ -722,12 +722,7 @@ export default function LearningMaterialViewer({
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
                                         <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === 'notion')?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
-                            </div>
-                                ) : taskData?.blocks?.some(block => block.type === 'notion') ? (
-                            <div className="flex flex-col items-center justify-center h-64 text-center">
-                                <div className="text-white text-lg mb-2">Content not available</div>
-                                <div className="text-white text-sm">Please contact your mentor if this issue persists</div>
-                            </div>
+                                    </div>
                         ) : (
                             <BlockNoteEditor
                                 initialContent={initialContent}

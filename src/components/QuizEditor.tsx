@@ -34,6 +34,21 @@ import PublishConfirmationDialog from './PublishConfirmationDialog';
 import { useEditorContentOrSelectionChange } from "@blocknote/react";
 import { useAuth } from "@/lib/auth";
 
+// Add import for NotionIntegration
+import NotionIntegration from "./NotionIntegration";
+
+// Add imports for Notion rendering
+import { BlockList } from "@udus/notion-renderer/components";
+import "@udus/notion-renderer/styles/globals.css";
+import "katex/dist/katex.min.css";
+
+// Add import for shared Integration utilities
+import {
+    handleIntegrationPageSelection,
+    handleIntegrationPageRemoval,
+    fetchIntegrationBlocks
+} from "@/lib/utils/integrationUtils";
+
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
@@ -178,6 +193,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [toastTitle, setToastTitle] = useState("");
     const [toastMessage, setToastMessage] = useState("");
     const [toastEmoji, setToastEmoji] = useState("🚀");
+
+    // Add integration state variables
+    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
+    const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Add useEffect to automatically hide toast after 5 seconds
     useEffect(() => {
@@ -511,6 +531,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const validateQuestionContent = useCallback((content: any[]) => {
         if (!content || content.length === 0) {
             return false;
+        }
+
+        // Check for integration blocks (Notion)
+        const integrationBlock = content.find(block => block.type === 'notion');
+        // If there's an integration block, it's considered valid content
+        if (integrationBlock && integrationBlock.content.length > 0) {
+            return true;
         }
 
         // Check for text content
@@ -1020,6 +1047,127 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [questions, currentQuestionIndex, onChange]);
 
+    // Integration logic for questions
+    const currentIntegrationType = 'notion';
+    const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
+
+    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
+    const initialContent = getNonIntegrationBlocks(currentQuestionContent.length > 0 ? currentQuestionContent : []);
+
+    // Handle integration blocks and editor instance clearing
+    useEffect(() => {
+        if (currentQuestionContent.length > 0) {
+            if (integrationBlock && integrationBlock.content && integrationBlock.content.length > 0) {
+                setIntegrationBlocks(integrationBlock.content);
+            } else {
+                setIntegrationBlocks([]);
+            }
+        }
+
+        // Ensure editor instance is updated when content is cleared
+        if (editorRef.current && currentQuestionContent.length === 0) {
+            try {
+                if (editorRef.current.replaceBlocks) {
+                    editorRef.current.replaceBlocks(editorRef.current.document, []);
+                } else if (editorRef.current.setContent) {
+                    editorRef.current.setContent([]);
+                }
+            } catch (error) {
+                console.error('Error clearing editor content:', error);
+            }
+        }
+    }, [currentQuestionContent]);
+
+    // Handle Integration page selection
+    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
+        if (!user?.id) {
+            console.error('User ID not provided');
+            return;
+        }
+
+        setIsLoadingIntegration(true);
+        setIntegrationError(null);
+
+        try {
+            await handleIntegrationPageSelection(
+                pageId,
+                pageTitle,
+                user.id,
+                'notion',
+                (content) => {
+                    handleQuestionContentChange(content);
+                },
+                setIntegrationBlocks,
+                setIntegrationError
+            );
+        } catch (error) {
+            console.error('Error handling Integration page selection:', error);
+        } finally {
+            setIsLoadingIntegration(false);
+        }
+    };
+
+    // Handle Integration page removal
+    const handleIntegrationPageRemove = () => {
+        setIntegrationError(null);
+
+        handleIntegrationPageRemoval(
+            (content) => {
+                handleQuestionContentChange(content);
+                setIntegrationBlocks([]);
+            },
+            setIntegrationBlocks
+        );
+    };
+
+    // Function to fetch updated blocks from Notion when entering edit mode
+    const fetchUpdatedNotionBlocks = async () => {
+        if (!integrationBlock || readOnly) return;
+
+        setIsLoadingIntegration(true);
+        setIntegrationError(null);
+
+        try {
+            const result = await fetchIntegrationBlocks(integrationBlock);
+
+            if (result.error) {
+                setIntegrationError(result.error);
+                return;
+            }
+
+            if (result.blocks && result.blocks.length > 0) {
+                // Update the integration block with new content
+                const updatedIntegrationBlock = {
+                    ...integrationBlock,
+                    content: result.blocks,
+                    props: {
+                        ...integrationBlock.props,
+                        resource_name: result.updatedTitle || integrationBlock.props.resource_name
+                    }
+                };
+
+                // Update the question content with the new integration block
+                const updatedContent = currentQuestionContent.map(block =>
+                    block.type === currentIntegrationType ? updatedIntegrationBlock : block
+                );
+
+                handleQuestionContentChange(updatedContent);
+                setIntegrationBlocks(result.blocks);
+            }
+        } catch (error) {
+            setIntegrationError('Failed to fetch updated content from Notion');
+        } finally {
+            setIsLoadingIntegration(false);
+        }
+    };
+
+    // Fetch updated blocks when entering edit mode
+    useEffect(() => {
+        if (!readOnly && integrationBlock && integrationBlock.props?.resource_id) {
+            fetchUpdatedNotionBlocks();
+        }
+    }, [readOnly, integrationBlock?.props?.resource_id]);
+
     // Handle correct answer content change
     const handleCorrectAnswerChange = useCallback((content: any[]) => {
         if (questions.length === 0) return;
@@ -1061,11 +1209,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const hasUserModifiedContent = currentContent.some(block => 'id' in block);
 
             if (!hasUserModifiedContent) {
-                // Generate new template blocks based on the new question type
-                const newTemplateContent = getQuestionTemplateBlocks(options.newQuestionType, options.newInputType);
-
-                // Update the content with the new template
-                updatedQuestions[currentQuestionIndex].content = newTemplateContent;
+                updatedQuestions[currentQuestionIndex].content = [];
             }
         }
 
@@ -1126,360 +1270,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [questions, currentQuestionIndex, schoolScorecards, onChange]);
 
-    // Function to get template blocks based on question type
-    const getQuestionTemplateBlocks = (questionType: 'objective' | 'subjective', inputType: 'text' | 'code' | 'audio') => {
-        // Common blocks that appear in all templates
-        const commonBlocks = [
-            {
-                type: "heading",
-                props: { level: 2 },
-                content: [{ "text": "Welcome to the Question Editor!", "type": "text", styles: {} }],
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "This is where you will create your question. You can modify this template or remove it to start from scratch.", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Question Types", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "You can select from these question types:", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Objective", "type": "text", styles: { "bold": true } }, { "text": ": For questions with specific correct answers (multiple choice, true/false, etc.)", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Subjective", "type": "text", styles: { "bold": true } }, { "text": ": For questions that don't have a single correct answer.", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Coding", "type": "text", styles: { "bold": true } }, { "text": ": For questions that require learners to write code as their answer", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            }
-        ];
 
-        // Answer type section - not shown for coding questions
-        const answerTypeBlocks = [
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Answer Types", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "You can select from these answer types:", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Text", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to type their answer", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Audio", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to record their answer", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Code", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to write code as their answer in a code editor. They can run their code and see the output without leaving the editor and submit when they are done.", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            }
-        ];
-
-        // Programming languages section - only shown for coding questions
-        const programmingLanguagesBlocks = inputType === 'code' ? [
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Programming Languages", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "You should select the programming languages learners will use to answer the question. You can select multiple languages from the dropdown.", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            }
-        ] : [];
-
-        // Tabs explanation - dependent on question type
-        let tabsExplanationBlocks = [];
-        if (questionType === 'objective') {
-            tabsExplanationBlocks = [
-                {
-                    type: "heading",
-                    props: { level: 3 },
-                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
-                },
-                {
-                    type: "paragraph",
-                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Correct Answer", "type": "text", styles: { "bold": true } }, { "text": ": Where you provide the expected answer for automatic evaluation", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner responses", "type": "text", styles: {} }]
-                }
-            ];
-        } else if (questionType === 'subjective') {
-            tabsExplanationBlocks = [
-                {
-                    type: "heading",
-                    props: { level: 3 },
-                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
-                },
-                {
-                    type: "paragraph",
-                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Scorecard", "type": "text", styles: { "bold": true } }, { "text": ": Where you define grading criteria for subjective responses", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner responses", "type": "text", styles: {} }]
-                }
-            ];
-        } else { // coding
-            tabsExplanationBlocks = [
-                {
-                    type: "heading",
-                    props: { level: 3 },
-                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
-                },
-                {
-                    type: "paragraph",
-                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Correct Answer", "type": "text", styles: { "bold": true } }, { "text": ": Where you provide the expected code solution", "type": "text", styles: {} }]
-                },
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner code solutions", "type": "text", styles: {} }]
-                }
-            ];
-        }
-
-        // Available block types (from learning material editor)
-        const blockTypesBlocks = [
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Available Block Types", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Here are some examples of the different types of blocks you can use:", "type": "text", styles: {} }]
-            },
-            {
-                type: "heading",
-                props: { level: 2 },
-                content: [{ "text": "Headings (like this one)", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Bullet lists (like this)", "type": "text", styles: {} }]
-            },
-            {
-                type: "numberedListItem",
-                content: [{ "text": "Numbered lists (like this)", "type": "text", styles: {} }]
-            },
-            {
-                type: "checkListItem",
-                content: [{ "text": "Check lists (like this)", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Regular paragraphs for your main content", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Insert images/videos/audio clips by clicking the + icon on the left and selecting Image/Video/Audio", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Insert code blocks by clicking the + icon on the left and selecting Code Block", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Creating Nested Content", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "You can create nested content in two ways:", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Using the Tab key: Simply press Tab while your cursor is on a block to indent it", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Using the side menu: Hover near the left edge of a block, click the menu icon (the button with 6 dots), and drag the block to the desired nested position inside another block", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Here is an example of a nested list:", "type": "text", styles: { "bold": true } }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Main topic 1", "type": "text", styles: {} }],
-                children: [
-                    {
-                        type: "bulletListItem",
-                        props: { indent: 1 },
-                        content: [{ "text": "Subtopic 1.1 (indented using Tab or side menu)", "type": "text", styles: {} }]
-                    },
-                    {
-                        type: "bulletListItem",
-                        props: { indent: 1 },
-                        content: [{ "text": "Subtopic 1.2", "type": "text", styles: {} }],
-                        children: [{
-                            type: "bulletListItem",
-                            props: { indent: 2 },
-                            content: [{ "text": "Further nested item (press Tab again to create deeper nesting)", "type": "text", styles: {} }]
-                        }]
-                    },
-
-                ]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-        ];
-
-        // Writing effective questions section
-        const effectiveQuestionsBlocks = [
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Writing Effective Questions", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "For best results:", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Be clear and specific in your question text", "type": "text", styles: {} }]
-            }
-        ];
-
-        // Question type specific tips
-        let questionTypeTipsBlocks = [];
-        if (questionType === 'subjective') {
-            questionTypeTipsBlocks = [
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Create a detailed scorecard with clear evaluation criteria or pick one of the templates already provided", "type": "text", styles: {} }]
-                }
-            ];
-        } else if (inputType === 'code') {
-            questionTypeTipsBlocks = [
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Provide a clear problem statement and any constraints or performance requirements along with the expected code solution", "type": "text", styles: {} }]
-                }
-            ];
-        } else {
-            questionTypeTipsBlocks = [
-                {
-                    type: "bulletListItem",
-                    content: [{ "text": "Make sure your correct answer is complete and matches the expected format", "type": "text", styles: {} }]
-                }
-            ];
-        }
-
-        // Preview and publish explanation
-        const previewPublishBlocks = [
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            {
-                type: "heading",
-                props: { level: 3 },
-                content: [{ "text": "Preview and Publishing", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "When you're ready to test your quiz:", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Preview Button", "type": "text", styles: { "bold": true } }, { "text": ": Lets you see and answer the question exactly as a learner will see it", "type": "text", styles: {} }]
-            },
-            {
-                type: "bulletListItem",
-                content: [{ "text": "Publish Button", "type": "text", styles: { "bold": true } }, { "text": ": Makes the quiz available to learners. You can always edit and publish again", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            {
-                type: "paragraph",
-                content: [{ "text": "Delete this template when you are ready to create your own question!", "type": "text", styles: {} }]
-            }
-        ];
-
-        // Combine all blocks based on question type
-        return [
-            ...commonBlocks,
-            ...answerTypeBlocks,
-            ...programmingLanguagesBlocks,
-            ...tabsExplanationBlocks,
-            {
-                type: "paragraph",
-                content: [{ "text": "", "type": "text", styles: {} }]
-            },
-            ...blockTypesBlocks,
-            ...effectiveQuestionsBlocks,
-            ...questionTypeTipsBlocks,
-            ...previewPublishBlocks
-        ];
-    };
 
     // Add a new question
     const addQuestion = useCallback(() => {
@@ -1528,7 +1319,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         const newQuestion: QuizQuestion = {
             id: `question-${Date.now()}`,
-            content: getQuestionTemplateBlocks(questionType as 'objective' | 'subjective', inputType),
+            content: [],
             config: {
                 ...defaultQuestionConfig,
                 questionType: questionType as 'objective' | 'subjective',
@@ -2795,16 +2586,57 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         {/* Show content based on active tab */}
                                         {activeEditorTab === 'question' ? (
                                             <div className="w-full h-full">
+                                                        <div className="w-full flex flex-col my-4">
+                                                            {/* Integration */}
+                                                            {!readOnly && (
+                                                                <div className="mb-4">
+                                                                    <NotionIntegration
+                                                                        key={`notion-integration-${currentQuestionIndex}`}
+                                                                        onPageSelect={handleIntegrationPageSelect}
+                                                                        onPageRemove={handleIntegrationPageRemove}
+                                                                        isEditMode={!readOnly}
+                                                                        editorContent={currentQuestionContent}
+                                                                        loading={isLoadingIntegration}
+                                                                    />
+                                                                </div>
+                                                            )}
+
                                                 <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                                                {isLoadingIntegration ? (
+                                                                    <div className="flex items-center justify-center h-32">
+                                                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                                                    </div>
+                                                                ) : integrationError ? (
+                                                                    <div className="flex flex-col items-center justify-center h-32 text-center">
+                                                                        <div className="text-red-400 text-sm mb-4">
+                                                                            {integrationError}
+                                                                        </div>
+                                                                        <div className="text-gray-400 text-xs">
+                                                                            The Notion integration may have been disconnected. Please reconnect it.
+                                                                        </div>
+                                                                    </div>
+                                                                ) : integrationBlocks.length > 0 ? (
+                                                                    <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                                                        <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                                                        <BlockList blocks={integrationBlocks} />
+                                                                    </div>
+                                                                ) : integrationBlock ? (
+                                                                    <div className="flex flex-col items-center justify-center h-64 text-center">
+                                                                        <div className="text-white text-lg mb-2">Notion page is empty</div>
+                                                                        <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                                                    </div>
+                                                                ) : (
                                                     <BlockNoteEditor
                                                         key={`quiz-editor-question-${currentQuestionIndex}`}
-                                                        initialContent={currentQuestionContent}
+                                                                                        initialContent={initialContent}
                                                         onChange={handleQuestionContentChange}
                                                         isDarkMode={isDarkMode}
                                                         readOnly={readOnly}
                                                         onEditorReady={setEditorInstance}
                                                         className="quiz-editor"
                                                     />
+                                                                )}
+                                                            </div>
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (

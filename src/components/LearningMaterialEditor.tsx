@@ -373,10 +373,14 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
 
             if (result.blocks && result.blocks.length > 0) {
-                // Update the integration block with new content
+                // Update the integration block with new content and title
                 const updatedIntegrationBlock = {
                     ...integrationBlock,
-                    content: result.blocks
+                    content: result.blocks,
+                    props: {
+                        ...integrationBlock.props,
+                        resource_name: result.updatedTitle || integrationBlock.props.resource_name
+                    }
                 };
 
                 // Update the editor content with the new integration block

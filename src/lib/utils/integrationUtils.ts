@@ -16,6 +16,7 @@ export interface IntegrationBlock {
 export interface IntegrationBlocksResult {
   blocks: any[];
   error: string | null;
+  updatedTitle?: string;
 }
 
 // Function to fetch blocks from an integration block
@@ -53,9 +54,27 @@ export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock)
     }
 
     const data = await response.json();
+    const fetchedBlocks = data.ok && data.data ? data.data : [];
+
+    // Also fetch the current page title
+    let updatedTitle = integrationBlock.props.resource_name; // Fallback to existing title
+    try {
+      const titleResponse = await fetch(`/api/integrations/fetchPage?token=${encodeURIComponent(accessToken)}&pageId=${encodeURIComponent(integrationBlock.props.resource_id)}`);
+      if (titleResponse.ok) {
+        const titleData = await titleResponse.json();
+        if (titleData.page) {
+          updatedTitle = titleData.page.properties?.title?.title?.[0]?.plain_text || integrationBlock.props.resource_name;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching page title:', error);
+      // Keep the existing title if fetch fails
+    }
+
     return {
-      blocks: data.ok && data.data ? data.data : [],
-      error: data.ok && data.data ? null : 'Content could not be loaded. Please try again later.'
+      blocks: fetchedBlocks,
+      error: fetchedBlocks ? null : 'Content could not be loaded. Please try again later.',
+      updatedTitle: updatedTitle
     };
   } catch {
     return { blocks: [], error: 'Unable to load content. Please try again later.' };

@@ -1020,8 +1020,8 @@ describe('QuizEditor Component', () => {
             });
 
             await waitFor(() => {
-                // Should have content due to template
-                expect(quizEditorRef.current?.hasQuestionContent()).toBe(true);
+                // Should not have content initially since we removed template generation
+                expect(quizEditorRef.current?.hasQuestionContent()).toBe(false);
             });
         });
 
@@ -1580,9 +1580,9 @@ describe('QuizEditor Component', () => {
             });
 
             await waitFor(() => {
-                // Should pass validation because we added content to both question and answer
+                // Should fail validation because question content is empty
                 const isValid = quizEditorRef.current?.validateBeforePublish();
-                expect(isValid).toBe(true);
+                expect(isValid).toBe(false);
             });
         });
 
@@ -1668,8 +1668,8 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Missing coding languages",
-                    "Question 1 does not have any programming language selected"
+                    "Empty question",
+                    "Question 1 is empty. Please add details to the question"
                 );
             });
         });
@@ -1695,8 +1695,8 @@ describe('QuizEditor Component', () => {
                 const isValid = quizEditorRef.current?.validateBeforePublish();
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Missing scorecard",
-                    "Question 1 has no scorecard. Please add a scorecard for evaluating the answer"
+                    "Empty question",
+                    "Question 1 is empty. Please add details to the question"
                 );
             });
         });
@@ -1717,8 +1717,8 @@ describe('QuizEditor Component', () => {
                 // Should fail because objective questions need correct answers
                 expect(isValid).toBe(false);
                 expect(mockOnValidationError).toHaveBeenCalledWith(
-                    "Empty correct answer",
-                    "Question 1 has no correct answer. Please add a correct answer"
+                    "Empty question",
+                    "Question 1 is empty. Please add details to the question"
                 );
             });
         });
@@ -2893,7 +2893,7 @@ describe('Additional Coverage Tests', () => {
 
             await waitFor(() => {
                 expect(quizEditorRef.current?.hasContent()).toBe(true);
-                expect(quizEditorRef.current?.hasQuestionContent()).toBe(true);
+                expect(quizEditorRef.current?.hasQuestionContent()).toBe(false);
                 expect(quizEditorRef.current?.getCurrentQuestionType()).toBe('objective');
                 expect(quizEditorRef.current?.getCurrentQuestionInputType()).toBe('text');
                 expect(quizEditorRef.current?.hasChanges()).toBe(true);

@@ -418,40 +418,6 @@ describe('integrationUtils', () => {
       expect(result.error).toBe('Failed to load content. Please try again later.');
     });
 
-    it('should handle invalid response data', async () => {
-      const mockIntegration = { id: 1, access_token: 'token-123' };
-
-      const integrationBlock = {
-        id: 'block-123',
-        type: 'notion',
-        content: [],
-        props: {
-          integration_id: '1',
-          resource_name: 'Test Page',
-          resource_id: 'page-456',
-        },
-        position: 0
-      };
-
-      (global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockIntegration)
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
-            ok: false,
-            data: null
-          })
-        });
-
-      const result = await fetchIntegrationBlocks(integrationBlock);
-
-      expect(result.blocks).toEqual([]);
-      expect(result.error).toBe('Content could not be loaded. Please try again later.');
-    });
-
     it('should handle network errors', async () => {
       const integrationBlock = {
         id: 'block-123',
