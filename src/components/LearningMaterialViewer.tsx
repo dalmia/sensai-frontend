@@ -76,10 +76,9 @@ export default function LearningMaterialViewer({
 
 
     const currentIntegrationType = 'notion';
+    const integrationBlock = taskData?.blocks?.find(block => block.type === currentIntegrationType);
+    const integrationBlocks = integrationBlock?.content || [];
     const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== currentIntegrationType) : undefined;
-
-    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -417,21 +416,6 @@ export default function LearningMaterialViewer({
         }
     };
 
-    // Check for integration blocks and fetch content
-    useEffect(() => {
-        if (taskData?.blocks && taskData.blocks.length > 0) {
-            const integrationBlock = taskData.blocks.find(block => block.type === currentIntegrationType);
-            if (integrationBlock) {
-                setIntegrationBlocks(integrationBlock.content);
-                setIsLoadingIntegration(false);
-                return;
-            }
-        }
-        // Default if no integrationBlock found
-        setIntegrationBlocks([]);
-        setIsLoadingIntegration(false);
-    }, [taskData?.blocks]);
-
     // Apply CSS classes based on mode
     useEffect(() => {
         const container = document.querySelector('.material-view-container');
@@ -700,15 +684,11 @@ export default function LearningMaterialViewer({
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
-                        {isLoadingIntegration ? (
-                            <div className="flex items-center justify-center h-32">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                            </div>
-                        ) : integrationBlocks.length > 0 ? (
+                        {integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === currentIntegrationType)?.props?.resource_name}</div>
+                                <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
-                                    </div>
+                                </div>
                         ) : (
                             <BlockNoteEditor
                                 initialContent={initialContent}

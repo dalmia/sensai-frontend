@@ -2606,7 +2606,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         </div>
                                                     )}
                                                     <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                                        {integrationError ? (
+                                                        {isLoadingIntegration ? (
+                                                            <div className="flex items-center justify-center h-32">
+                                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                                            </div>
+                                                        ) : integrationError ? (
                                                             <div className="flex flex-col items-center justify-center h-32 text-center">
                                                                 <div className="text-red-400 text-sm mb-4">
                                                                     {integrationError}

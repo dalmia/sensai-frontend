@@ -598,7 +598,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         </div>
                     ) : integrationBlocks.length > 0 ? (
                         <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                    <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
                             <BlockList blocks={integrationBlocks} />
                         </div>
                     ) : integrationBlock ? (
