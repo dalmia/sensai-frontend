@@ -2591,57 +2591,52 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         {/* Show content based on active tab */}
                                         {activeEditorTab === 'question' ? (
                                             <div className="w-full h-full">
-                                                        <div className="w-full flex flex-col my-4">
-                                                            {/* Integration */}
-                                                            {!readOnly && (
-                                                                <div className="mb-4">
-                                                                    <NotionIntegration
-                                                                        key={`notion-integration-${currentQuestionIndex}`}
-                                                                        onPageSelect={handleIntegrationPageSelect}
-                                                                        onPageRemove={handleIntegrationPageRemove}
-                                                                        isEditMode={!readOnly}
-                                                                        editorContent={currentQuestionContent}
-                                                                        loading={isLoadingIntegration}
-                                                                    />
+                                                <div className="w-full flex flex-col my-4">
+                                                    {/* Integration */}
+                                                    {!readOnly && (
+                                                        <div className="mb-4">
+                                                            <NotionIntegration
+                                                                key={`notion-integration-${currentQuestionIndex}`}
+                                                                onPageSelect={handleIntegrationPageSelect}
+                                                                onPageRemove={handleIntegrationPageRemove}
+                                                                isEditMode={!readOnly}
+                                                                editorContent={currentQuestionContent}
+                                                                loading={isLoadingIntegration}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                                        {integrationError ? (
+                                                            <div className="flex flex-col items-center justify-center h-32 text-center">
+                                                                <div className="text-red-400 text-sm mb-4">
+                                                                    {integrationError}
                                                                 </div>
-                                                            )}
-
-                                                <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                                                {isLoadingIntegration ? (
-                                                                    <div className="flex items-center justify-center h-32">
-                                                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                                                    </div>
-                                                                ) : integrationError ? (
-                                                                    <div className="flex flex-col items-center justify-center h-32 text-center">
-                                                                        <div className="text-red-400 text-sm mb-4">
-                                                                            {integrationError}
-                                                                        </div>
-                                                                        <div className="text-gray-400 text-xs">
-                                                                            The Notion integration may have been disconnected. Please reconnect it.
-                                                                        </div>
-                                                                    </div>
-                                                                ) : integrationBlocks.length > 0 ? (
-                                                                    <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                                                        <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                                        <BlockList blocks={integrationBlocks} />
-                                                                    </div>
-                                                                ) : integrationBlock ? (
-                                                                    <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                                        <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                                                        <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
-                                                                    </div>
-                                                                ) : (
-                                                    <BlockNoteEditor
-                                                        key={`quiz-editor-question-${currentQuestionIndex}`}
-                                                                                        initialContent={initialContent}
-                                                        onChange={handleQuestionContentChange}
-                                                        isDarkMode={isDarkMode}
-                                                        readOnly={readOnly}
-                                                        onEditorReady={setEditorInstance}
-                                                        className="quiz-editor"
-                                                    />
-                                                                )}
+                                                                <div className="text-gray-400 text-xs">
+                                                                    The Notion integration may have been disconnected. Please reconnect it.
+                                                                </div>
                                                             </div>
+                                                        ) : integrationBlocks.length > 0 ? (
+                                                            <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                                                <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                                                <BlockList blocks={integrationBlocks} />
+                                                            </div>
+                                                        ) : integrationBlock ? (
+                                                            <div className="flex flex-col items-center justify-center h-64 text-center">
+                                                                <div className="text-white text-lg mb-2">Notion page is empty</div>
+                                                                <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                                            </div>
+                                                        ) : (
+                                                            <BlockNoteEditor
+                                                                key={`quiz-editor-question-${currentQuestionIndex}`}
+                                                                initialContent={initialContent}
+                                                                onChange={handleQuestionContentChange}
+                                                                isDarkMode={isDarkMode}
+                                                                readOnly={readOnly}
+                                                                onEditorReady={setEditorInstance}
+                                                                className="quiz-editor"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (
