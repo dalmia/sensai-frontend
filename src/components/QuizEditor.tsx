@@ -1050,9 +1050,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Integration logic for questions
     const currentIntegrationType = 'notion';
     const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
-
-    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
-    const initialContent = getNonIntegrationBlocks(currentQuestionContent.length > 0 ? currentQuestionContent : []);
+    
+    const initialContent = integrationBlock ? undefined : currentQuestionContent;
 
     // Handle integration blocks and editor instance clearing
     useEffect(() => {

@@ -78,7 +78,8 @@ export default function LearningMaterialViewer({
     const currentIntegrationType = 'notion';
     const integrationBlock = taskData?.blocks?.find(block => block.type === currentIntegrationType);
     const integrationBlocks = integrationBlock?.content || [];
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== currentIntegrationType) : undefined;
+    
+    const initialContent = integrationBlock ? undefined : taskData?.blocks;
 
     // Fetch task data when taskId changes
     useEffect(() => {

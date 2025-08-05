@@ -1378,8 +1378,7 @@ export default function LearnerQuizView({
     const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
     const integrationBlocks = integrationBlock?.content || [];
 
-    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
-    const initialContent = getNonIntegrationBlocks(currentQuestionContent.length > 0 ? currentQuestionContent : []);
+    const initialContent = integrationBlock ? undefined : currentQuestionContent;
 
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config

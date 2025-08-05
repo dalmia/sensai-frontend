@@ -115,9 +115,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     const currentIntegrationType = 'notion';
     const integrationBlock = editorContent.find(block => block.type === currentIntegrationType);
-
-    const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
-    const initialContent = getNonIntegrationBlocks(editorContent.length > 0 ? editorContent : (taskData?.blocks || []));
+    
+    const initialContent = integrationBlock ? undefined : editorContent;
 
     // handle integration blocks and editor instance clearing
     useEffect(() => {
