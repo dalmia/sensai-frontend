@@ -132,20 +132,13 @@ export default function NotionIntegration({
 
   // Check for existing integration block in editor content
   useEffect(() => {
-    if (editorContent && editorContent.length > 0) {
-      const integrationBlock = editorContent.find(block => block.type === 'notion');
-      if (integrationBlock) {
-        setSelectedPageId(integrationBlock.props.resource_id);
-        setSelectedPageTitle(integrationBlock.props.resource_name);
-      } else {
-        // Reset selection when no integration block is found
-        setSelectedPageId(undefined);
-        setSelectedPageTitle(undefined);
-      }
-    } else {
-      // Reset selection when editor content is empty
-      setSelectedPageId(undefined);
-      setSelectedPageTitle(undefined);
+    setSelectedPageId(undefined);
+    setSelectedPageTitle(undefined);
+
+    const integrationBlock = editorContent?.find?.(block => block.type === 'notion');
+    if (integrationBlock) {
+      setSelectedPageId(integrationBlock.props.resource_id);
+      setSelectedPageTitle(integrationBlock.props.resource_name);
     }
   }, [editorContent]);
 

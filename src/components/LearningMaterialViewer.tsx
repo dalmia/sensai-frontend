@@ -75,11 +75,11 @@ export default function LearningMaterialViewer({
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== "notion") : undefined;
+    const currentIntegrationType = 'notion';
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== currentIntegrationType) : undefined;
 
     const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -420,21 +420,16 @@ export default function LearningMaterialViewer({
     // Check for integration blocks and fetch content
     useEffect(() => {
         if (taskData?.blocks && taskData.blocks.length > 0) {
-            const integrationBlock = taskData.blocks.find(block => block.type === 'notion');
+            const integrationBlock = taskData.blocks.find(block => block.type === currentIntegrationType);
             if (integrationBlock) {
                 setIntegrationBlocks(integrationBlock.content);
-                setIntegrationError(null);
                 setIsLoadingIntegration(false);
-            } else {
-                setIntegrationBlocks([]);
-                setIntegrationError(null);
-                setIsLoadingIntegration(false);
+                return;
             }
-        } else {
-            setIntegrationBlocks([]);
-            setIntegrationError(null);
-            setIsLoadingIntegration(false);
         }
+        // Default if no integrationBlock found
+        setIntegrationBlocks([]);
+        setIsLoadingIntegration(false);
     }, [taskData?.blocks]);
 
     // Apply CSS classes based on mode
@@ -709,18 +704,9 @@ export default function LearningMaterialViewer({
                             <div className="flex items-center justify-center h-32">
                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                             </div>
-                        ) : integrationError ? (
-                            <div className="flex flex-col items-center justify-center h-32 text-center">
-                                <div className="text-red-400 text-sm mb-4">
-                                    {integrationError}
-                                </div>
-                                <div className="text-gray-400 text-xs">
-                                    Please contact your mentor if this issue persists.
-                                </div>
-                            </div>
                         ) : integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                        <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === 'notion')?.props?.resource_name}</div>
+                                <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === currentIntegrationType)?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
                                     </div>
                         ) : (

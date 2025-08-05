@@ -1378,10 +1378,6 @@ export default function LearnerQuizView({
     const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
     const integrationBlocks = integrationBlock?.content || [];
 
-    // Add loading and error states for integration blocks
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
-
     const getNonIntegrationBlocks = (blocks: any[]) => blocks.filter(block => block.type !== currentIntegrationType);
     const initialContent = getNonIntegrationBlocks(currentQuestionContent.length > 0 ? currentQuestionContent : []);
 
@@ -1954,20 +1950,7 @@ export default function LearnerQuizView({
                     <div className={`flex-1 ${questions.length > 1 ? 'mt-4' : ''}`}>
                         {/* Use editor with negative margin to offset unwanted space */}
                         <div className="ml-[-60px]"> {/* Increased negative margin to align with navigation arrow */}
-                            {isLoadingIntegration ? (
-                                <div className="flex items-center justify-center h-32">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                </div>
-                            ) : integrationError ? (
-                                <div className="flex flex-col items-center justify-center h-32 text-center">
-                                    <div className="text-red-400 text-sm mb-4">
-                                        {integrationError}
-                                    </div>
-                                    <div className="text-gray-400 text-xs">
-                                        Please contact your mentor if this issue persists.
-                                    </div>
-                                </div>
-                            ) : integrationBlocks.length > 0 ? (
+                            {integrationBlocks.length > 0 ? (
                                 <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
                                     <BlockList blocks={integrationBlocks} />
