@@ -46,7 +46,9 @@ jest.mock('../../components/BlockNoteEditor', () => {
             if (onEditorReady) {
                 onEditorReady({
                     getDocument: () => initialContent || [],
-                    setDocument: jest.fn()
+                    setDocument: jest.fn(),
+                    replaceBlocks: jest.fn(),
+                    setContent: jest.fn()
                 });
             }
         }, [onEditorReady, initialContent]);
@@ -153,6 +155,23 @@ jest.mock('../../components/NotionIntegration', () => {
         );
     };
 });
+
+// Mock Notion renderer components
+jest.mock('@udus/notion-renderer/components', () => ({
+    BlockList: ({ blocks }: any) => (
+        <div data-testid="mock-block-list">
+            {blocks.map((block: any, index: number) => (
+                <div key={index} data-testid={`block-${index}`}>
+                    {JSON.stringify(block)}
+                </div>
+            ))}
+        </div>
+    )
+}));
+
+// Mock CSS imports for Notion renderer
+jest.mock('@udus/notion-renderer/styles/globals.css', () => ({}), { virtual: true });
+jest.mock('katex/dist/katex.min.css', () => ({}), { virtual: true });
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -2549,30 +2568,290 @@ describe('LearningMaterialEditor Component', () => {
             });
         });
 
-        it('should set integration error when fetchIntegrationBlocks throws (catch block)', async () => {
-            // Mock fetchIntegrationBlocks to throw
-            jest.spyOn(require('@/lib/utils/integrationUtils'), 'fetchIntegrationBlocks').mockImplementation(() => { throw new Error('fail'); });
+
+    });
+
+    describe('fetchUpdatedNotionBlocks and Integration Block Updates', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        it('should fetch updated Notion blocks when entering edit mode', async () => {
+            // Mock task data with integration block
+            const taskDataWithIntegration = {
+                ...mockTaskData,
+                blocks: [
+                    {
+                        type: 'notion',
+                        content: [{ type: 'paragraph', content: [{ text: 'Old content', type: 'text', styles: {} }] }],
+                        props: {
+                            integration_id: 'integration-123',
+                            resource_name: 'Test Page',
+                            resource_id: 'page-123'
+                        }
+                    }
+                ]
+            };
+
+            // Mock API responses
+            (global.fetch as jest.Mock)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(taskDataWithIntegration)
+                }) // Initial fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ access_token: 'mock-token' })
+                }) // Integration fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ ok: true, data: [{ type: 'paragraph', content: [{ text: 'New content', type: 'text', styles: {} }] }] })
+                }); // Fetch page blocks
+
+            const mockOnChange = jest.fn();
+
+            // Start in readOnly mode
+            const { rerender } = render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                    readOnly={true}
+                />
+            );
+
+            await waitFor(() => {
+                // Should render the BlockList when there are integration blocks
+                expect(screen.getByTestId('mock-block-list')).toBeInTheDocument();
+            });
+
+            // Switch to edit mode (readOnly=false)
+            rerender(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                    readOnly={false}
+                />
+            );
+
+            // Should trigger fetchUpdatedNotionBlocks
+            await waitFor(() => {
+                expect(global.fetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/integrations/integration-123'
+                );
+            });
+
+            // Should call fetchPageBlocks API
+            await waitFor(() => {
+                expect(global.fetch).toHaveBeenCalledWith(
+                    '/api/integrations/fetchPageBlocks',
+                    expect.objectContaining({
+                        method: 'POST',
+                        body: expect.stringContaining('"pageId":"page-123"')
+                    })
+                );
+            });
+        });
+
+        it('should not fetch updated blocks when in readOnly mode', async () => {
+            const taskDataWithIntegration = {
+                ...mockTaskData,
+                blocks: [
+                    {
+                        type: 'notion',
+                        content: [],
+                        props: {
+                            integration_id: 'integration-123',
+                            resource_name: 'Test Page',
+                            resource_id: 'page-123'
+                        }
+                    }
+                ]
+            };
 
             (global.fetch as jest.Mock).mockResolvedValueOnce({
                 ok: true,
-                json: () => Promise.resolve({
-                    id: 'task-1',
-                    title: 'Test Task',
-                    blocks: [
-                        { type: 'integration', props: { integration_type: 'notion' } }
-                    ],
-                    status: 'draft',
-                    scheduled_publish_at: undefined
-                })
+                json: () => Promise.resolve(taskDataWithIntegration)
             });
 
             render(
-                <LearningMaterialEditor taskId="task-1" />
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    readOnly={true}
+                />
             );
 
-            // Wait for the error message to appear
             await waitFor(() => {
-                expect(screen.getByText('Error fetching Integration blocks')).toBeInTheDocument();
+                // Should show "Notion page is empty" when content is empty
+                expect(screen.getByText('Notion page is empty')).toBeInTheDocument();
+            });
+
+            // Should not call integration APIs when in readOnly mode
+            expect(global.fetch).toHaveBeenCalledTimes(1); // Only the initial task fetch
+        });
+
+        it('should handle integration fetch error gracefully', async () => {
+            const taskDataWithIntegration = {
+                ...mockTaskData,
+                blocks: [
+                    {
+                        type: 'notion',
+                        content: [],
+                        props: {
+                            integration_id: 'integration-123',
+                            resource_name: 'Test Page',
+                            resource_id: 'page-123'
+                        }
+                    }
+                ]
+            };
+
+            // Mock API responses
+            (global.fetch as jest.Mock)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(taskDataWithIntegration)
+                }) // Initial fetch
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 404
+                }); // Integration fetch fails
+
+            const mockOnChange = jest.fn();
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                    readOnly={false}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
+            });
+
+            // Should handle the error without crashing
+            await waitFor(() => {
+                expect(global.fetch).toHaveBeenCalledWith(
+                    'http://localhost:3001/integrations/integration-123'
+                );
+            });
+        });
+
+        it('should update editor content when new blocks are fetched', async () => {
+            const taskDataWithIntegration = {
+                ...mockTaskData,
+                blocks: [
+                    {
+                        type: 'notion',
+                        content: [{ type: 'paragraph', content: [{ text: 'Old content', type: 'text', styles: {} }] }],
+                        props: {
+                            integration_id: 'integration-123',
+                            resource_name: 'Test Page',
+                            resource_id: 'page-123'
+                        }
+                    }
+                ]
+            };
+
+            const newBlocks = [
+                { type: 'paragraph', content: [{ text: 'Updated content', type: 'text', styles: {} }] },
+                { type: 'heading', content: [{ text: 'New heading', type: 'text', styles: {} }] }
+            ];
+
+            // Mock API responses
+            (global.fetch as jest.Mock)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(taskDataWithIntegration)
+                }) // Initial fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ access_token: 'mock-token' })
+                }) // Integration fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ ok: true, data: newBlocks })
+                }); // Fetch page blocks
+
+            const mockOnChange = jest.fn();
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                    readOnly={false}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
+            });
+
+            // Should call onChange with updated content
+            await waitFor(() => {
+                expect(mockOnChange).toHaveBeenCalledWith(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            type: 'notion',
+                            content: newBlocks
+                        })
+                    ])
+                );
+            });
+        });
+
+        it('should handle empty blocks response from Notion', async () => {
+            const taskDataWithIntegration = {
+                ...mockTaskData,
+                blocks: [
+                    {
+                        type: 'notion',
+                        content: [{ type: 'paragraph', content: [{ text: 'Old content', type: 'text', styles: {} }] }],
+                        props: {
+                            integration_id: 'integration-123',
+                            resource_name: 'Test Page',
+                            resource_id: 'page-123'
+                        }
+                    }
+                ]
+            };
+
+            // Mock API responses
+            (global.fetch as jest.Mock)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(taskDataWithIntegration)
+                }) // Initial fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ access_token: 'mock-token' })
+                }) // Integration fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ ok: true, data: [] })
+                }); // Empty blocks response
+
+            const mockOnChange = jest.fn();
+
+            render(
+                <LearningMaterialEditor
+                    taskId="task-1"
+                    onChange={mockOnChange}
+                    readOnly={false}
+                />
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
+            });
+
+            // Should handle empty blocks without crashing
+            await waitFor(() => {
+                expect(global.fetch).toHaveBeenCalledWith(
+                    '/api/integrations/fetchPageBlocks',
+                    expect.any(Object)
+                );
             });
         });
     });

@@ -1,20 +1,22 @@
+import { v4 as uuidv4 } from 'uuid';
+
 // Types for integration
 export interface IntegrationBlock {
+  id: string;
   type: string;
+  content: any[];
   props: {
     integration_id: string;
     resource_name: string;
     resource_id: string;
-    resource_type: string;
-    integration_type: string;
   };
-  id: string;
   position: number;
 }
 
 export interface IntegrationBlocksResult {
   blocks: any[];
   error: string | null;
+  updatedTitle?: string;
 }
 
 // Function to fetch blocks from an integration block
@@ -22,28 +24,19 @@ export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock)
   try {
     const integrationId = integrationBlock.props.integration_id;
     if (!integrationId) {
-      return {
-        blocks: [],
-        error: 'Integration not found. Please try again later.'
-      };
+      return { blocks: [], error: 'Integration not found. Please try again later.' };
     }
 
     // Fetch the integration to get the access_token
     const integrationRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/${integrationId}`);
     if (!integrationRes.ok) {
-      return {
-        blocks: [],
-        error: 'Content source not found. Please try again later.'
-      };
+      return { blocks: [], error: 'Content source not found. Please try again later.' };
     }
 
     const integration = await integrationRes.json();
     const accessToken = integration?.access_token;
     if (!accessToken) {
-      return {
-        blocks: [],
-        error: 'Content access is not available. Please try again later.'
-      };
+      return { blocks: [], error: 'Content access not available. Please try again later.' };
     }
 
     // Fetch the page content using the access token
@@ -57,29 +50,34 @@ export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock)
     });
 
     if (!response.ok) {
-      return {
-        blocks: [],
-        error: 'Failed to load content. Please try again later.'
-      };
+      return { blocks: [], error: 'Failed to load content. Please try again later.' };
     }
 
     const data = await response.json();
-    if (data.ok && data.data) {
-      return {
-        blocks: data.data,
-        error: null
-      };
-    } else {
-      return {
-        blocks: [],
-        error: 'Content could not be loaded. Please try again later.'
-      };
+    const fetchedBlocks = data.ok && data.data ? data.data : [];
+
+    // Also fetch the current page title
+    let updatedTitle = integrationBlock.props.resource_name; // Fallback to existing title
+    try {
+      const titleResponse = await fetch(`/api/integrations/fetchPage?token=${encodeURIComponent(accessToken)}&pageId=${encodeURIComponent(integrationBlock.props.resource_id)}`);
+      if (titleResponse.ok) {
+        const titleData = await titleResponse.json();
+        if (titleData.page) {
+          updatedTitle = titleData.page.properties?.title?.title?.[0]?.plain_text || integrationBlock.props.resource_name;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching page title:', error);
+      // Keep the existing title if fetch fails
     }
-  } catch (error) {
+
     return {
-      blocks: [],
-      error: 'Unable to load content. Please try again later.'
+      blocks: fetchedBlocks,
+      error: fetchedBlocks ? null : 'Content could not be loaded. Please try again later.',
+      updatedTitle: updatedTitle
     };
+  } catch {
+    return { blocks: [], error: 'Unable to load content. Please try again later.' };
   }
 };
 
@@ -88,19 +86,20 @@ export const createIntegrationBlock = (
   integrationId: string,
   pageId: string,
   pageTitle: string,
-  integrationType: string
+  integrationType: string,
+  blocks?: any[],
+  position?: number
 ): IntegrationBlock => {
   return {
-    type: "integration",
+    id: uuidv4(),
+    type: integrationType,
+    content: blocks || [],
     props: {
       integration_id: integrationId,
       resource_name: pageTitle,
       resource_id: pageId,
-      resource_type: "page",
-      integration_type: integrationType,
     },
-    id: `${integrationType}-integration-${Date.now()}`,
-    position: 0
+    position: position || 0
   };
 };
 
@@ -154,12 +153,16 @@ export const handleIntegrationPageSelection = async (
       return;
     }
 
-    // Create the integration block
+    const data = await response.json();
+    const fetchedBlocks = data.ok && data.data ? data.data : [];
+
+    // Create the integration block with the fetched blocks
     const integrationBlock = createIntegrationBlock(
       integration.id,
       pageId,
       pageTitle,
-      integrationType
+      integrationType,
+      fetchedBlocks,
     );
 
     // Replace all existing content with just the integration block

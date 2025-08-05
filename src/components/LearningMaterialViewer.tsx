@@ -23,8 +23,6 @@ import { BlockList } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
-import { fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
-
 interface LearningMaterialViewerProps {
     taskId?: string;
     userId?: string;
@@ -77,11 +75,11 @@ export default function LearningMaterialViewer({
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
 
 
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks.filter((block) => block.type !== "integration") : undefined;
-
-    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
+    const currentIntegrationType = 'notion';
+    const integrationBlock = taskData?.blocks?.find(block => block.type === currentIntegrationType);
+    const integrationBlocks = integrationBlock?.content || [];
+    
+    const initialContent = integrationBlock ? undefined : taskData?.blocks;
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -419,44 +417,6 @@ export default function LearningMaterialViewer({
         }
     };
 
-    // Function to fetch and render integration blocks
-    const fetchAndRenderIntegrationBlocks = async (integrationBlock: any) => {
-        try {
-            setIsLoadingIntegration(true);
-            setIntegrationError(null);
-
-            const result = await fetchIntegrationBlocks(integrationBlock);
-
-            if (result.error) {
-                setIntegrationError(result.error);
-            } else {
-                setIntegrationBlocks(result.blocks);
-            }
-        } catch (error) {
-            setIntegrationError('Unable to load content. Please try again later.');
-        } finally {
-            setIsLoadingIntegration(false);
-        }
-    };
-
-    // Check for integration blocks and fetch content
-    useEffect(() => {
-        if (taskData?.blocks && taskData.blocks.length > 0) {
-            const integrationBlock = taskData.blocks.find(block => block.type === 'integration');
-            if (integrationBlock && integrationBlock.props.integration_type === 'notion') {
-                fetchAndRenderIntegrationBlocks(integrationBlock);
-            } else {
-                setIntegrationBlocks([]);
-                setIntegrationError(null);
-                setIsLoadingIntegration(false);
-            }
-        } else {
-            setIntegrationBlocks([]);
-            setIntegrationError(null);
-            setIsLoadingIntegration(false);
-        }
-    }, [taskData?.blocks]);
-
     // Apply CSS classes based on mode
     useEffect(() => {
         const container = document.querySelector('.material-view-container');
@@ -725,29 +685,11 @@ export default function LearningMaterialViewer({
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
-                        {isLoadingIntegration ? (
-                            <div className="flex items-center justify-center h-32">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                            </div>
-                        ) : integrationError ? (
-                            <div className="flex flex-col items-center justify-center h-32 text-center">
-                                <div className="text-red-400 text-sm mb-4">
-                                    {integrationError}
-                                </div>
-                                <div className="text-gray-400 text-xs">
-                                    Please contact your mentor if this issue persists.
-                                </div>
-                            </div>
-                        ) : integrationBlocks.length > 0 ? (
+                        {integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                                <div className="text-white text-4xl font-bold mb-4 pl-1">{taskData?.blocks?.find(block => block.type === 'integration')?.props?.resource_name}</div>
+                                <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
-                            </div>
-                        ) : taskData?.blocks?.some(block => block.type === 'integration') ? (
-                            <div className="flex flex-col items-center justify-center h-64 text-center">
-                                <div className="text-white text-lg mb-2">Content not available</div>
-                                <div className="text-white text-sm">Please contact your mentor if this issue persists</div>
-                            </div>
+                                </div>
                         ) : (
                             <BlockNoteEditor
                                 initialContent={initialContent}
