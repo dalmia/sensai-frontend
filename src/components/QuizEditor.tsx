@@ -46,7 +46,6 @@ import "katex/dist/katex.min.css";
 import {
     handleIntegrationPageSelection,
     handleIntegrationPageRemoval,
-    fetchIntegrationBlocks
 } from "@/lib/utils/integrationUtils";
 
 // Default configuration for new questions
@@ -1097,7 +1096,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     handleQuestionContentChange(content);
                 },
                 setIntegrationBlocks,
-                setIntegrationError
+                (error) => {
+                    setIntegrationError(error);
+                }
             );
         } catch (error) {
             console.error('Error handling Integration page selection:', error);
@@ -1118,54 +1119,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setIntegrationBlocks
         );
     };
-
-    // Function to fetch updated blocks from Notion when entering edit mode
-    const fetchUpdatedNotionBlocks = async () => {
-        if (!integrationBlock || readOnly) return;
-
-        setIsLoadingIntegration(true);
-        setIntegrationError(null);
-
-        try {
-            const result = await fetchIntegrationBlocks(integrationBlock);
-
-            if (result.error) {
-                setIntegrationError(result.error);
-                return;
-            }
-
-            if (result.blocks && result.blocks.length > 0) {
-                // Update the integration block with new content
-                const updatedIntegrationBlock = {
-                    ...integrationBlock,
-                    content: result.blocks,
-                    props: {
-                        ...integrationBlock.props,
-                        resource_name: result.updatedTitle || integrationBlock.props.resource_name
-                    }
-                };
-
-                // Update the question content with the new integration block
-                const updatedContent = currentQuestionContent.map(block =>
-                    block.type === currentIntegrationType ? updatedIntegrationBlock : block
-                );
-
-                handleQuestionContentChange(updatedContent);
-                setIntegrationBlocks(result.blocks);
-            }
-        } catch (error) {
-            setIntegrationError('Failed to fetch updated content from Notion');
-        } finally {
-            setIsLoadingIntegration(false);
-        }
-    };
-
-    // Fetch updated blocks when entering edit mode
-    useEffect(() => {
-        if (!readOnly && integrationBlock && integrationBlock.props?.resource_id) {
-            fetchUpdatedNotionBlocks();
-        }
-    }, [readOnly, integrationBlock?.props?.resource_id]);
 
     // Handle correct answer content change
     const handleCorrectAnswerChange = useCallback((content: any[]) => {
@@ -2601,6 +2554,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                                 isEditMode={!readOnly}
                                                                 editorContent={currentQuestionContent}
                                                                 loading={isLoadingIntegration}
+                                                                onSaveDraft={() => updateDraftQuiz(null, 'draft')}
+                                                                status={status}
+                                                                storedBlocks={integrationBlocks}
+                                                                onContentUpdate={(updatedContent) => {
+                                                                    handleQuestionContentChange(updatedContent);
+                                                                    setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                                                }}
+                                                                onLoadingChange={setIsLoadingIntegration}
                                                             />
                                                         </div>
                                                     )}
@@ -2621,7 +2582,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         ) : integrationBlocks.length > 0 ? (
                                                             <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                                                 <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                                <BlockList blocks={integrationBlocks} />
+                                                                                <div>
+                                                                    <BlockList blocks={integrationBlocks} />
+                                                                </div>
                                                             </div>
                                                         ) : integrationBlock ? (
                                                             <div className="flex flex-col items-center justify-center h-64 text-center">

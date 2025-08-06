@@ -689,7 +689,7 @@ export default function LearningMaterialViewer({
                             <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
                                 <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
-                                </div>
+                            </div>
                         ) : (
                             <BlockNoteEditor
                                 initialContent={initialContent}
