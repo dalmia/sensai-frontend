@@ -363,6 +363,7 @@ export default function NotionIntegration({
       setSelectedPageId("");
       setSelectedPageTitle("");
       setShowDropdown(true);
+      setError(null);
     } catch (error) {
       console.error('Error unlinking page:', error);
     } finally {
@@ -390,7 +391,16 @@ export default function NotionIntegration({
 
       const result = await fetchIntegrationBlocks(integrationBlock);
 
-      if (result.error) return;
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      // Check if the updated blocks contain nested pages or databases
+      if (result.hasNestedPages) {
+        setError('This page now contains sub-pages or databases which are not supported for syncing');
+        return;
+      }
 
       if (result.blocks && result.blocks.length > 0) {
         const updatedIntegrationBlock = {
@@ -412,9 +422,10 @@ export default function NotionIntegration({
 
         onContentUpdate(updatedContent);
         setShowSyncNotice(false);
+        setError(null);
       }
     } catch (error) {
-      // Handle error silently
+      setError('Failed to sync content. Please try again.');
     } finally {
       setIsSyncing(false);
       if (onLoadingChange) {
@@ -442,6 +453,13 @@ export default function NotionIntegration({
           const result = await fetchIntegrationBlocks(integrationBlock);
 
           if (result.error) {
+            setHasCheckedForNotionUpdates(true);
+            return;
+          }
+
+          // Check if the updated blocks contain nested pages or databases
+          if (result.hasNestedPages) {
+            setError('This page now contains sub-pages or databases which are not supported for syncing');
             setHasCheckedForNotionUpdates(true);
             return;
           }
@@ -640,6 +658,9 @@ export default function NotionIntegration({
             )}
 
             {/* Sync notice for edit mode - only show in published status */}
+            {error && (
+              <div className="text-sm text-red-400 mt-3">{error}</div>
+            )}
             {showSyncNotice && isEditMode && status === 'published' && (
               <div className="flex items-start gap-2 mt-3">
                 <svg className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -653,10 +674,6 @@ export default function NotionIntegration({
               </div>
             )}
           </div>
-        )}
-
-        {error && (
-          <div className="text-xs text-red-400">{error}</div>
         )}
       </div>
 

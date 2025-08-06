@@ -39,8 +39,6 @@ import { useAuth } from "@/lib/auth";
 import {
     handleIntegrationPageSelection,
     handleIntegrationPageRemoval,
-    fetchIntegrationBlocks,
-    handleNotionLinkClick
 } from "@/lib/utils/integrationUtils";
 
 // Define the editor handle with methods that can be called by parent components
@@ -317,7 +315,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     }
                 },
                 setIntegrationBlocks,
-                setIntegrationError
+                (error) => {
+                    setIntegrationError(error);
+                }
             );
         } catch (error) {
             console.error('Error handling Integration page selection:', error);
@@ -555,10 +555,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             </div>
                         </div>
                     ) : integrationBlocks.length > 0 ? (
-                        <div 
-                            className="bg-[#191919] text-white px-6 pb-6 rounded-lg"
-                            onClick={(e) => handleNotionLinkClick(e, integrationBlocks)}
-                        >
+                                <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
                             <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
                             <BlockList blocks={integrationBlocks} />
                         </div>

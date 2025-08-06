@@ -46,8 +46,6 @@ import "katex/dist/katex.min.css";
 import {
     handleIntegrationPageSelection,
     handleIntegrationPageRemoval,
-    fetchIntegrationBlocks,
-    handleNotionLinkClick
 } from "@/lib/utils/integrationUtils";
 
 // Default configuration for new questions
@@ -1098,7 +1096,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     handleQuestionContentChange(content);
                 },
                 setIntegrationBlocks,
-                setIntegrationError
+                (error) => {
+                    setIntegrationError(error);
+                }
             );
         } catch (error) {
             console.error('Error handling Integration page selection:', error);
@@ -2582,9 +2582,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         ) : integrationBlocks.length > 0 ? (
                                                             <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                                                 <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                                <div 
-                                                                    onClick={(e) => handleNotionLinkClick(e, integrationBlocks)}
-                                                                >
+                                                                                <div>
                                                                     <BlockList blocks={integrationBlocks} />
                                                                 </div>
                                                             </div>

@@ -4,7 +4,6 @@ import {
   handleIntegrationPageSelection,
   handleIntegrationPageRemoval,
   fetchIntegrationBlocks,
-  handleNotionLinkClick,
   compareNotionBlocks
 } from '../../../lib/utils/integrationUtils';
 
@@ -102,6 +101,45 @@ describe('integrationUtils', () => {
       const result = await getUserIntegration('user-123', 'notion');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('hasNestedPagesOrDatabases', () => {
+    it('should return true for direct child_page', () => {
+      const blocks = [{ child_page: { title: 'Subpage' } }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(true);
+    });
+    it('should return true for direct child_database', () => {
+      const blocks = [{ child_database: { title: 'Subdb' } }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(true);
+    });
+    it('should return true for nested child_page in object', () => {
+      const blocks = [{ someProp: { child_page: { title: 'Subpage' } } }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(true);
+    });
+    it('should return true for nested child_database in array', () => {
+      const blocks = [{ arr: [{ child_database: { title: 'Subdb' } }] }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(true);
+    });
+    it('should return true for deep nesting', () => {
+      const blocks = [{ a: { b: { c: { child_page: { title: 'Deep' } } } } }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(true);
+    });
+    it('should return false if no nested pages/databases', () => {
+      const blocks = [{ type: 'paragraph', content: [{ text: 'Test' }] }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(false);
     });
   });
 
@@ -261,6 +299,37 @@ describe('integrationUtils', () => {
       expect(mockOnError).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
+    });
+
+    it('should handle fetched blocks with nested pages/databases', async () => {
+      const mockIntegration = { id: 1, integration_type: 'notion', access_token: 'token-123' };
+      const mockBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] },
+        { child_page: { title: 'Subpage' } }
+      ];
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([mockIntegration])
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ ok: true, data: mockBlocks })
+        });
+      await handleIntegrationPageSelection(
+        'page-456',
+        'Test Page',
+        'user-123',
+        'notion',
+        mockOnContentUpdate,
+        mockOnBlocksUpdate,
+        mockOnError
+      );
+      expect(mockOnError).toHaveBeenCalledWith(
+        'This page contains nested pages or databases which are not supported. Please select a different page.'
+      );
+      expect(mockOnContentUpdate).not.toHaveBeenCalled();
+      expect(mockOnBlocksUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -626,280 +695,7 @@ describe('integrationUtils', () => {
     });
   });
 
-  describe('handleNotionLinkClick', () => {
-    let mockWindowOpen: jest.SpyInstance;
 
-    beforeEach(() => {
-      mockWindowOpen = jest.spyOn(window, 'open').mockImplementation(() => null);
-    });
-
-    afterEach(() => {
-      mockWindowOpen.mockRestore();
-    });
-
-    it('should handle clicking on a link element', () => {
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      
-      const mockEvent = {
-        target: mockLink,
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const integrationBlocks = [
-        {
-          id: 'test-page-id-123456789012345678901234567890',
-          child_page: {
-            page: {
-              public_url: 'https://notion.so/test-page'
-            }
-          }
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith('https://notion.so/test-page', '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle clicking on a child element of a link', () => {
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      
-      const mockSpan = document.createElement('span');
-      mockLink.appendChild(mockSpan);
-
-      const mockEvent = {
-        target: mockSpan,
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const integrationBlocks = [
-        {
-          id: 'test-page-id-123456789012345678901234567890',
-          child_page: {
-            page: {
-              public_url: 'https://notion.so/test-page'
-            }
-          }
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith('https://notion.so/test-page', '_blank', 'noopener,noreferrer');
-    });
-
-    it('should not handle non-link elements', () => {
-      const mockEvent = {
-        target: document.createElement('div'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const integrationBlocks = [];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
-      expect(mockWindowOpen).not.toHaveBeenCalled();
-    });
-
-    it('should not handle external links', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', 'https://external-site.com');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks: any[] = [];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
-      expect(mockWindowOpen).not.toHaveBeenCalled();
-    });
-
-    it('should not handle protocol-relative links', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '//external-site.com');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks: any[] = [];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
-      expect(mockWindowOpen).not.toHaveBeenCalled();
-    });
-
-    it('should handle links with invalid page ID length', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/short-id');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks: any[] = [];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-
-    it('should not handle links when no matching integration block found', () => {
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      
-      const mockEvent = {
-        target: mockLink,
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const integrationBlocks = [
-        {
-          id: 'different-page-id',
-          child_page: {
-            page: {
-              public_url: 'https://notion.so/different-page'
-            }
-          }
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle links when integration blocks array is empty', () => {
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      
-      const mockEvent = {
-        target: mockLink,
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const integrationBlocks: any[] = [];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle links when integration block has no child_page', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks = [
-        {
-          id: 'test-page-id-123456789012345678901234567890',
-          // No child_page property
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle links when integration block has no page in child_page', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks = [
-        {
-          id: 'test-page-id-123456789012345678901234567890',
-          child_page: {
-            // No page property
-          }
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-
-    it('should handle links when integration block has no public_url in page', () => {
-      const mockEvent = {
-        target: document.createElement('a'),
-        preventDefault: jest.fn(),
-        stopPropagation: jest.fn()
-      } as any;
-
-      const mockLink = document.createElement('a');
-      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
-      mockEvent.target = mockLink;
-
-      const integrationBlocks = [
-        {
-          id: 'test-page-id-123456789012345678901234567890',
-          child_page: {
-            page: {
-              // No public_url property
-            }
-          }
-        }
-      ];
-
-      handleNotionLinkClick(mockEvent, integrationBlocks);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).toHaveBeenCalled();
-      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
-    });
-  });
 
   describe('compareNotionBlocks', () => {
     it('should return false when both arrays are empty', () => {

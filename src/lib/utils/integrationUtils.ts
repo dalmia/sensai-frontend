@@ -17,7 +17,48 @@ export interface IntegrationBlocksResult {
   blocks: any[];
   error: string | null;
   updatedTitle?: string;
+  hasNestedPages?: boolean;
 }
+
+// Function to check if blocks contain nested pages or databases
+export const hasNestedPagesOrDatabases = (blocks: any[]): boolean => {
+  if (!blocks || blocks.length === 0) return false;
+  
+  const checkForNestedContent = (obj: any): boolean => {
+    if (!obj || typeof obj !== 'object') return false;
+    
+    // Check if this object contains child_page or child_database
+    if (obj.child_page || obj.child_database) {
+      return true;
+    }
+    
+    // Recursively check all properties
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        if (typeof value === 'object' && value !== null) {
+          if (Array.isArray(value)) {
+            // If it's an array, check each item
+            for (const item of value) {
+              if (checkForNestedContent(item)) {
+                return true;
+              }
+            }
+          } else {
+            // If it's an object, check it recursively
+            if (checkForNestedContent(value)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
+  };
+  
+  return blocks.some(checkForNestedContent);
+};
 
 // Function to fetch blocks from an integration block
 export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock): Promise<IntegrationBlocksResult> => {
@@ -56,6 +97,9 @@ export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock)
     const data = await response.json();
     const fetchedBlocks = data.ok && data.data ? data.data : [];
 
+    // Check if blocks contain nested pages or databases
+    const hasNestedPages = hasNestedPagesOrDatabases(fetchedBlocks);
+
     // Also fetch the current page title
     let updatedTitle = integrationBlock.props.resource_name; // Fallback to existing title
     try {
@@ -74,7 +118,8 @@ export const fetchIntegrationBlocks = async (integrationBlock: IntegrationBlock)
     return {
       blocks: fetchedBlocks,
       error: fetchedBlocks ? null : 'Content could not be loaded. Please try again later.',
-      updatedTitle: updatedTitle
+      updatedTitle: updatedTitle,
+      hasNestedPages: hasNestedPages
     };
   } catch {
     return { blocks: [], error: 'Unable to load content. Please try again later.' };
@@ -156,6 +201,13 @@ export const handleIntegrationPageSelection = async (
     const data = await response.json();
     const fetchedBlocks = data.ok && data.data ? data.data : [];
 
+    // Check if blocks contain nested pages or databases
+    const hasNestedPages = hasNestedPagesOrDatabases(fetchedBlocks);
+    if (hasNestedPages) {
+      onError('This page contains nested pages or databases which are not supported. Please select a different page.');
+      return;
+    }
+
     // Create the integration block with the fetched blocks
     const integrationBlock = createIntegrationBlock(
       integration.id,
@@ -188,45 +240,7 @@ export const handleIntegrationPageRemoval = (
 };
 
 // Function to handle Notion link clicks
-export const handleNotionLinkClick = (
-  event: React.MouseEvent,
-  integrationBlocks: any[]
-) => {
-  const target = event.target as HTMLElement;
-  
-  // Check if the clicked element is a link
-  if (target.tagName === 'A' || target.closest('a')) {
-    const link = target.tagName === 'A' ? target as HTMLAnchorElement : target.closest('a') as HTMLAnchorElement;
-    
-    if (link) {
-      const href = link.getAttribute('href');
-      
-      // Check if this is a relative link that should be treated as external
-      if (href && href.startsWith('/') && !href.startsWith('//')) {
-        const pageId = href.replace(/^\//, '');
-        
-        if (pageId) {
-          event.preventDefault();
-          event.stopPropagation();
-          
-          let notionUrl = null;
-          if (integrationBlocks && integrationBlocks.length > 0) {
-            for (const block of integrationBlocks) {
-              if (block.id === pageId && block.child_page && block.child_page.page && block.child_page.page.public_url) {
-                notionUrl = block.child_page.page.public_url;
-                break;
-              }
-            }
-          }
-          
-          // Open the link in a new tab
-          window.open(notionUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-      }
-    }
-  }
-};
+
 
 // Function to compare Notion blocks and detect changes
 export const compareNotionBlocks = (

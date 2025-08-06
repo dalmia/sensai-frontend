@@ -17,7 +17,6 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
-import { handleNotionLinkClick } from "@/lib/utils/integrationUtils";
 
 // Add imports for Notion rendering
 import { BlockList } from "@udus/notion-renderer/components";
@@ -687,10 +686,7 @@ export default function LearningMaterialViewer({
                 >
                     <div className="flex-1">
                         {integrationBlocks.length > 0 ? (
-                            <div 
-                                className="bg-[#191919] text-white px-6 pb-6 rounded-lg"
-                                onClick={(e) => handleNotionLinkClick(e, integrationBlocks)}
-                            >
+                            <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
                                 <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
                                 <BlockList blocks={integrationBlocks} />
                             </div>
