@@ -356,8 +356,8 @@ export default function NotionIntegration({
 
   // Function to show toast for nested pages error
   const showNestedPagesToast = () => {
-    setToastTitle("Page selection");
-    setToastMessage('Sub-pages are not supported. Please select a different page.');
+    setToastTitle("Nested page not supported");
+    setToastMessage('This page contains nested pages or databases which are not supported. Please select a different page.');
     setToastEmoji("⚠️");
     setShowToast(true);
   };
