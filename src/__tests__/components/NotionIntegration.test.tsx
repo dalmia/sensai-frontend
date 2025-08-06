@@ -2299,4 +2299,130 @@ describe('NotionIntegration', () => {
       });
     });
   });
+
+  describe('Nested Pages Handling', () => {
+    beforeEach(() => {
+      // Clear any existing mocks first
+      jest.clearAllMocks();
+      (global.fetch as jest.Mock).mockReset();
+
+      // Mock fetch to handle different endpoints
+      (global.fetch as jest.Mock).mockImplementation((url) => {
+        // Mock integration check endpoint
+        if (url.includes('integrations') && url.includes('user_id=')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([
+              { integration_type: 'notion', access_token: 'test-token', id: 1 }
+            ])
+          });
+        }
+
+        // Mock pages fetch endpoint
+        if (url.includes('/api/integrations/fetchPages')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              pages: [
+                {
+                  id: 'page-1',
+                  object: 'page',
+                  properties: {
+                    title: { title: [{ plain_text: 'Test Page 1' }] }
+                  }
+                },
+                {
+                  id: 'page-2',
+                  object: 'page',
+                  properties: {
+                    title: { title: [{ plain_text: 'Test Page 2' }] }
+                  }
+                }
+              ]
+            })
+          });
+        }
+
+        // Default response for other fetch calls
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([])
+        });
+      });
+    });
+
+    it('should handle nested pages in handlePageSelect and show toast', async () => {
+      const mockOnPageSelectWithNestedPages = jest.fn().mockResolvedValue({ hasNestedPages: true });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelectWithNestedPages}
+          onPageRemove={mockOnPageRemove}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Select Notion page')).toBeInTheDocument();
+      });
+
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'page-1' } });
+
+      await waitFor(() => {
+        expect(mockOnPageSelectWithNestedPages).toHaveBeenCalledWith('page-1', 'Test Page 1');
+      });
+
+      // Should show toast for nested pages
+      await waitFor(() => {
+        expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
+        expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle nested pages in handleConfirmOverwrite and show toast', async () => {
+      const mockOnPageSelectWithNestedPages = jest.fn().mockResolvedValue({ hasNestedPages: true });
+
+      const editorContentWithContent = [
+        {
+          type: 'paragraph',
+          props: {},
+          content: [{ text: 'Existing content' }]
+        }
+      ];
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelectWithNestedPages}
+          onPageRemove={mockOnPageRemove}
+          editorContent={editorContentWithContent}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Select Notion page')).toBeInTheDocument();
+      });
+
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'page-1' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('confirmation-dialog')).toBeInTheDocument();
+      });
+
+      const confirmButton = screen.getByTestId('confirm-button');
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockOnPageSelectWithNestedPages).toHaveBeenCalledWith('page-1', 'Test Page 1');
+      });
+
+      // Should show toast for nested pages
+      await waitFor(() => {
+        expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
+        expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
+      });
+    });
+  });
 }); 

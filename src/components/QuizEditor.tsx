@@ -1087,7 +1087,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         setIntegrationError(null);
 
         try {
-            await handleIntegrationPageSelection(
+            return await handleIntegrationPageSelection(
                 pageId,
                 pageTitle,
                 user.id,
@@ -2345,8 +2345,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         <div className="p-3 border-b">
                                             <button
                                                 onClick={addQuestion}
-                                                className="w-full flex items-center justify-center px-4 py-2 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
-                                                disabled={readOnly}
+                                                className="w-full flex items-center justify-center px-4 py-2 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                                disabled={readOnly || isLoadingIntegration}
                                             >
                                                 <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
                                                     <Plus size={10} className="text-black" />
@@ -2582,7 +2582,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         ) : integrationBlocks.length > 0 ? (
                                                             <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                                                 <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                                                <div>
+                                                                <div>
                                                                     <BlockList blocks={integrationBlocks} />
                                                                 </div>
                                                             </div>

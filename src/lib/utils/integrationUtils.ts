@@ -204,8 +204,7 @@ export const handleIntegrationPageSelection = async (
     // Check if blocks contain nested pages or databases
     const hasNestedPages = hasNestedPagesOrDatabases(fetchedBlocks);
     if (hasNestedPages) {
-      onError('This page contains nested pages or databases which are not supported. Please select a different page.');
-      return;
+      return { hasNestedPages: true };
     }
 
     // Create the integration block with the fetched blocks
@@ -238,9 +237,6 @@ export const handleIntegrationPageRemoval = (
   onContentUpdate([]);
   onBlocksUpdate([]);
 };
-
-// Function to handle Notion link clicks
-
 
 // Function to compare Notion blocks and detect changes
 export const compareNotionBlocks = (
@@ -293,4 +289,4 @@ export const compareNotionBlocks = (
   const normalizedFetched = normalizeBlocks(fetchedBlocks);
   
   return JSON.stringify(normalizedStored) !== JSON.stringify(normalizedFetched);
-}; 
+};
