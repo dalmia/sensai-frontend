@@ -1087,7 +1087,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         setIntegrationError(null);
 
         try {
-            await handleIntegrationPageSelection(
+            const result = await handleIntegrationPageSelection(
                 pageId,
                 pageTitle,
                 user.id,
@@ -1100,6 +1100,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     setIntegrationError(error);
                 }
             );
+            return result;
         } catch (error) {
             console.error('Error handling Integration page selection:', error);
         } finally {

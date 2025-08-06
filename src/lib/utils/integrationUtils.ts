@@ -201,11 +201,10 @@ export const handleIntegrationPageSelection = async (
     const data = await response.json();
     const fetchedBlocks = data.ok && data.data ? data.data : [];
 
-    // Check if blocks contain nested pages or databases
+        // Check if blocks contain nested pages or databases
     const hasNestedPages = hasNestedPagesOrDatabases(fetchedBlocks);
     if (hasNestedPages) {
-      onError('This page contains nested pages or databases which are not supported. Please select a different page.');
-      return;
+      return { hasNestedPages: true };
     }
 
     // Create the integration block with the fetched blocks

@@ -303,7 +303,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         setIntegrationError(null);
 
         try {
-            await handleIntegrationPageSelection(
+            const result = await handleIntegrationPageSelection(
                 pageId,
                 pageTitle,
                 userId,
@@ -319,6 +319,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     setIntegrationError(error);
                 }
             );
+            return result;
         } catch (error) {
             console.error('Error handling Integration page selection:', error);
         } finally {

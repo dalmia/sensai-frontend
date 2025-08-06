@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { RefreshCcw, Unlink } from "lucide-react";
 import { compareNotionBlocks, fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
+import Toast from "./Toast";
 
 interface IntegrationPage {
   id: string;
@@ -67,7 +68,7 @@ const Button = ({
 };
 
 interface IntegrationProps {
-  onPageSelect?: (pageId: string, pageTitle: string) => void | Promise<void>;
+  onPageSelect?: (pageId: string, pageTitle: string) => Promise<{ hasNestedPages?: boolean } | void>;
   onPageRemove?: () => void | Promise<void>;
   className?: string;
   isEditMode?: boolean;
@@ -124,6 +125,12 @@ export default function NotionIntegration({
   const [pendingPageSelection, setPendingPageSelection] = useState<{ pageId: string; pageTitle: string } | null>(null);
   const [showUnlinkConfirmation, setShowUnlinkConfirmation] = useState(false);
 
+  // Add state for Toast
+  const [showToast, setShowToast] = useState(false);
+  const [toastTitle, setToastTitle] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastEmoji, setToastEmoji] = useState("⚠️");
+
   const checkIntegration = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${user.id}`);
@@ -152,6 +159,27 @@ export default function NotionIntegration({
       setSelectedPageTitle(integrationBlock.props.resource_name);
     }
   }, [editorContent]);
+
+  // Add this after the useEffect that sets selectedPageId/selectedPageTitle from editorContent
+  useEffect(() => {
+    // If editorContent is empty, clear the selected page
+    if (Array.isArray(editorContent) && editorContent.length === 0) {
+      setSelectedPageId(undefined);
+      setSelectedPageTitle(undefined);
+    }
+  }, [editorContent]);
+
+  // Add useEffect to automatically hide toast after 5 seconds
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+      }, 5000);
+
+      // Cleanup the timer when component unmounts or showToast changes
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   // Check if user has integration and handle OAuth callback
   useEffect(() => {
@@ -290,7 +318,7 @@ export default function NotionIntegration({
     return false;
   };
 
-  const handlePageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handlePageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation();
     const pageId = e.target.value;
     if (pageId) {
@@ -311,7 +339,13 @@ export default function NotionIntegration({
 
         // Automatically insert the page when selected
         if (onPageSelect) {
-          onPageSelect(pageId, pageTitle);
+          const result = await onPageSelect(pageId, pageTitle);
+          if (result && result.hasNestedPages) {
+            showNestedPagesToast();
+            setSelectedPageId(undefined);
+            setSelectedPageTitle(undefined);
+            return;
+          }
         }
       }
     } else {
@@ -320,15 +354,31 @@ export default function NotionIntegration({
     }
   };
 
+  // Function to show toast for nested pages error
+  const showNestedPagesToast = () => {
+    setToastTitle("Page selection");
+    setToastMessage('Sub-pages are not supported. Please select a different page.');
+    setToastEmoji("⚠️");
+    setShowToast(true);
+  };
+
   // Handle confirmation to overwrite existing content
-  const handleConfirmOverwrite = () => {
+  const handleConfirmOverwrite = async () => {
     if (pendingPageSelection) {
       setSelectedPageId(pendingPageSelection.pageId);
       setSelectedPageTitle(pendingPageSelection.pageTitle);
 
       // Automatically insert the page when confirmed
       if (onPageSelect) {
-        onPageSelect(pendingPageSelection.pageId, pendingPageSelection.pageTitle);
+        const result = await onPageSelect(pendingPageSelection.pageId, pendingPageSelection.pageTitle);
+        if (result && result.hasNestedPages) {
+          showNestedPagesToast();
+          setSelectedPageId(undefined);
+          setSelectedPageTitle(undefined);
+          setPendingPageSelection(null);
+          setShowOverwriteConfirmation(false);
+          return;
+        }
       }
     }
 
@@ -699,6 +749,15 @@ export default function NotionIntegration({
         onConfirm={handleConfirmUnlink}
         onCancel={handleCancelUnlink}
         type="delete"
+      />
+
+      {/* Toast component */}
+      <Toast
+        show={showToast}
+        title={toastTitle}
+        description={toastMessage}
+        emoji={toastEmoji}
+        onClose={() => setShowToast(false)}
       />
     </>
   );
