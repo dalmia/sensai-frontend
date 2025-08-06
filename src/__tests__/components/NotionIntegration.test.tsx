@@ -2375,7 +2375,7 @@ describe('NotionIntegration', () => {
 
       // Should show toast for nested pages
       await waitFor(() => {
-        expect(screen.getByText('Page selection')).toBeInTheDocument();
+        expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
         expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
       });
     });
@@ -2420,7 +2420,7 @@ describe('NotionIntegration', () => {
 
       // Should show toast for nested pages
       await waitFor(() => {
-        expect(screen.getByText('Page selection')).toBeInTheDocument();
+        expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
         expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
       });
     });
