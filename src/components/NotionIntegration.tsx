@@ -668,7 +668,7 @@ export default function NotionIntegration({
                 </svg>
                 <div className="flex-1">
                   <div className="text-sm text-yellow-400 font-light leading-relaxed">
-                    The Notion page has been updated. Click the sync button to update the latest changes.
+                    The Notion page has been updated. Click the sync button to fetch the latest changes.
                   </div>
                 </div>
               </div>
