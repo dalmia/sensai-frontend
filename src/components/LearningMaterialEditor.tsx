@@ -303,7 +303,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         setIntegrationError(null);
 
         try {
-            await handleIntegrationPageSelection(
+            return await handleIntegrationPageSelection(
                 pageId,
                 pageTitle,
                 userId,

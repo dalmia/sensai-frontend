@@ -316,7 +316,7 @@ describe('integrationUtils', () => {
           ok: true,
           json: () => Promise.resolve({ ok: true, data: mockBlocks })
         });
-      await handleIntegrationPageSelection(
+      const result = await handleIntegrationPageSelection(
         'page-456',
         'Test Page',
         'user-123',
@@ -325,9 +325,8 @@ describe('integrationUtils', () => {
         mockOnBlocksUpdate,
         mockOnError
       );
-      expect(mockOnError).toHaveBeenCalledWith(
-        'This page contains nested pages or databases which are not supported. Please select a different page.'
-      );
+      expect(result).toEqual({ hasNestedPages: true });
+      expect(mockOnError).not.toHaveBeenCalled();
       expect(mockOnContentUpdate).not.toHaveBeenCalled();
       expect(mockOnBlocksUpdate).not.toHaveBeenCalled();
     });
