@@ -13,6 +13,7 @@ import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
+import { handleNotionLinkClick } from "@/lib/utils/integrationUtils";
 
 // Add imports for Notion rendering
 import { BlockList } from "@udus/notion-renderer/components";
@@ -1950,7 +1951,10 @@ export default function LearnerQuizView({
                         {/* Use editor with negative margin to offset unwanted space */}
                         <div className="ml-[-60px]"> {/* Increased negative margin to align with navigation arrow */}
                             {integrationBlocks.length > 0 ? (
-                                <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                <div 
+                                    className="bg-[#191919] text-white px-16 pb-6 rounded-lg"
+                                    onClick={(e) => handleNotionLinkClick(e, integrationBlocks)}
+                                >
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
                                     <BlockList blocks={integrationBlocks} />
                                 </div>

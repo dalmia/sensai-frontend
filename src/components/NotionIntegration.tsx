@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { Unlink } from "lucide-react";
+import { RefreshCcw, Unlink } from "lucide-react";
+import { compareNotionBlocks, fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
 
 interface IntegrationPage {
   id: string;
@@ -82,6 +83,11 @@ interface IntegrationProps {
       text?: string;
     }>;
   }>;
+  onSaveDraft?: () => void | Promise<void>;
+  status?: string;
+  storedBlocks?: any[];
+  onContentUpdate?: (updatedContent: any[]) => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export default function NotionIntegration({
@@ -90,12 +96,20 @@ export default function NotionIntegration({
   className = "",
   isEditMode = false,
   editorContent = [],
-  loading = false
+  loading = false,
+  onSaveDraft,
+  status = "draft",
+  storedBlocks = [],
+  onContentUpdate,
+  onLoadingChange
 }: IntegrationProps) {
   const { user } = useAuth();
   const [pages, setPages] = useState<IntegrationPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSyncNotice, setShowSyncNotice] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [hasCheckedForNotionUpdates, setHasCheckedForNotionUpdates] = useState(false);
   const [hasIntegration, setHasIntegration] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>();
@@ -222,8 +236,17 @@ export default function NotionIntegration({
     fetchPages();
   }, [accessToken]);
 
-  const handleConnectNotion = (e?: React.MouseEvent) => {
+  const handleConnectNotion = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
+
+    // Save draft before connecting
+    if (onSaveDraft) {
+      try {
+        await onSaveDraft();
+      } catch (error) {
+        console.error('Error saving draft before connecting:', error);
+      }
+    }
 
     setIsConnecting(true);
     const NOTION_CLIENT_ID = process.env.NEXT_PUBLIC_NOTION_CLIENT_ID || "";
@@ -232,14 +255,14 @@ export default function NotionIntegration({
     window.location.href = NOTION_AUTH_URL;
   };
 
-  const handleAddMorePages = (e?: React.MouseEvent) => {
+  const handleAddMorePages = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    handleConnectNotion(e);
+    await handleConnectNotion(e);
   };
 
-  const handleReconnectNotion = (e?: React.MouseEvent) => {
+  const handleReconnectNotion = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    handleConnectNotion(e);
+    await handleConnectNotion(e);
   };
 
   // Function to check if there are existing blocks that would be overwritten
@@ -352,13 +375,109 @@ export default function NotionIntegration({
     setShowUnlinkConfirmation(false);
   };
 
+  // Handle sync button click
+  const handleSyncNotionBlocks = async () => {
+    if (!selectedPageId || !editorContent || !onContentUpdate) return;
+
+    setIsSyncing(true);
+    if (onLoadingChange) {
+      onLoadingChange(true);
+    }
+
+    try {
+      const integrationBlock = editorContent.find(block => block.type === 'notion');
+      if (!integrationBlock) return;
+
+      const result = await fetchIntegrationBlocks(integrationBlock);
+
+      if (result.error) return;
+
+      if (result.blocks && result.blocks.length > 0) {
+        const updatedIntegrationBlock = {
+          ...integrationBlock,
+          content: result.blocks,
+          props: {
+            ...integrationBlock.props,
+            resource_name: result.updatedTitle || integrationBlock.props.resource_name
+          }
+        };
+
+        const updatedContent = editorContent.map(block =>
+          block.type === 'notion' ? updatedIntegrationBlock : block
+        );
+
+        if (result.updatedTitle && result.updatedTitle !== selectedPageTitle) {
+          setSelectedPageTitle(result.updatedTitle);
+        }
+
+        onContentUpdate(updatedContent);
+        setShowSyncNotice(false);
+      }
+    } catch (error) {
+      // Handle error silently
+    } finally {
+      setIsSyncing(false);
+      if (onLoadingChange) {
+        onLoadingChange(false);
+      }
+    }
+  };
+
+  // Check if we should show sync notice in edit mode
+  useEffect(() => {
+    if (isEditMode && selectedPageId && storedBlocks.length > 0 && !hasCheckedForNotionUpdates && status === 'published') {
+
+      const checkForUpdates = async () => {
+        try {
+          setIsLoading(true);
+
+          // Find the integration block to get the integration details
+          const integrationBlock = editorContent.find(block => block.type === 'notion');
+          if (!integrationBlock) {
+            setHasCheckedForNotionUpdates(true);
+            return;
+          }
+
+          // Fetch the latest blocks from Notion API
+          const result = await fetchIntegrationBlocks(integrationBlock);
+
+          if (result.error) {
+            setHasCheckedForNotionUpdates(true);
+            return;
+          }
+
+          if (result.blocks && result.blocks.length > 0) {
+            // Compare the stored blocks with the freshly fetched blocks
+            const hasChanges = compareNotionBlocks(storedBlocks, result.blocks);
+
+            // Also check if the title has changed
+            const titleChanged = result.updatedTitle &&
+              result.updatedTitle !== integrationBlock.props.resource_name;
+
+            if (hasChanges || titleChanged) {
+              setShowSyncNotice(true);
+            }
+          }
+
+          // Mark that we've checked for updates
+          setHasCheckedForNotionUpdates(true);
+        } catch (error) {
+          setHasCheckedForNotionUpdates(true);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      checkForUpdates();
+    }
+  }, [isEditMode, selectedPageId, storedBlocks, hasCheckedForNotionUpdates, status, isLoading, editorContent]);
+
   // Don't show anything if not in edit mode
   if (!isEditMode) {
     return null;
   }
 
-  // Show loading state while checking integration
-  if (isLoading) {
+  // Show loading state only if user has connected Notion
+  if (isLoading && hasIntegration) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
@@ -367,7 +486,7 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">Checking Notion integration...</span>
+          <span className="text-sm text-white">Fetching notion pages...</span>
         </div>
       </div>
     );
@@ -468,11 +587,11 @@ export default function NotionIntegration({
         {selectedPageId && (
           <div className="bg-gray-900/30 rounded-lg px-4 py-3 border border-gray-700/50">
             {/* Connection status */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <NotionIcon className="w-4 h-4 text-gray-400" />
-                  <div className="flex items-center gap-2">
+                  <div className={`flex items-center gap-2 ${status === 'published' ? 'mr-3' : ''}`}>
                     <span className="text-sm text-gray-400 font-light">Connected to</span>
                     <span className="text-sm text-white font-medium bg-gray-800 px-2 py-1 rounded-md">
                       {selectedPageTitle}
@@ -480,29 +599,59 @@ export default function NotionIntegration({
                   </div>
                 </div>
               </div>
-              <Button
-                onClick={handleUnlinkPage}
-                disabled={loading}
-                isLoading={isUnlinking}
-                loadingText="Unlinking..."
-                normalText="Unlink"
-                bgColor="bg-gray-700 hover:bg-red-700"
-                icon={<Unlink className="w-3 h-3" />}
-                className="text-xs px-2 py-1"
-              />
-            </div>
-
-            {/* Read-only banner */}
-            <div className="flex items-start gap-3">
-              <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="flex-1">
-                <div className="text-sm text-gray-300 font-light leading-relaxed">
-                  Changes must be made in the original Notion document for them to be reflected here
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleUnlinkPage}
+                  disabled={loading}
+                  isLoading={isUnlinking}
+                  loadingText="Unlinking..."
+                  normalText="Unlink"
+                  bgColor="bg-gray-700 hover:bg-red-700"
+                  icon={<Unlink className="w-3 h-3" />}
+                  className="text-xs px-2 py-1"
+                />
+                {showSyncNotice && isEditMode && (
+                  <Button
+                    onClick={handleSyncNotionBlocks}
+                    disabled={isSyncing}
+                    isLoading={isSyncing}
+                    loadingText="Syncing..."
+                    normalText="Sync"
+                    bgColor="bg-yellow-800 hover:bg-yellow-900"
+                    icon={<RefreshCcw className="w-3 h-3" />}
+                    className="text-xs px-3 py-1"
+                  />
+                )}
               </div>
             </div>
+
+            {/* Conditional notice message based on status */}
+            {status === "draft" && (
+              <div className="flex items-start gap-2 mt-3">
+                <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-300 font-light leading-relaxed">
+                    Changes must be made in the original Notion document for them to be reflected here
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sync notice for edit mode - only show in published status */}
+            {showSyncNotice && isEditMode && status === 'published' && (
+              <div className="flex items-start gap-2 mt-3">
+                <svg className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-yellow-400 font-light leading-relaxed">
+                    The Notion page has been updated. Click the sync button to update the latest changes.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

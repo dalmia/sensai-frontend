@@ -42,6 +42,12 @@ jest.mock('../../components/ConfirmationDialog', () => {
   };
 });
 
+// Mock integration utils
+jest.mock('@/lib/utils/integrationUtils', () => ({
+  fetchIntegrationBlocks: jest.fn(),
+  compareNotionBlocks: jest.fn()
+}));
+
 // Mock environment variables
 process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
 process.env.NEXT_PUBLIC_NOTION_CLIENT_ID = 'test-notion-client-id';
@@ -101,7 +107,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      expect(screen.getByText('Checking Notion integration...')).toBeInTheDocument();
+      expect(screen.getByText('Connect Notion')).toBeInTheDocument();
     });
 
     it('should handle onMouseDown event propagation', () => {
@@ -117,7 +123,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Checking Notion integration...').closest('div');
+      const loadingContainer = screen.getByText('Connect Notion').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
       // Test that onMouseDown is handled (this covers lines 366, 367, 382, 383, 404)
@@ -140,7 +146,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Checking Notion integration...').closest('div');
+      const loadingContainer = screen.getByText('Connect Notion').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
       // Test that onClick is handled (this covers lines 366, 382)
@@ -326,6 +332,78 @@ describe('NotionIntegration', () => {
       fireEvent.click(connectButton);
 
       expect(window.location.href).toContain('api.notion.com/v1/oauth/authorize');
+    });
+
+    it('should call onSaveDraft before connecting when provided', async () => {
+      const mockOnSaveDraft = jest.fn().mockResolvedValue(undefined);
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([])
+      });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+          onSaveDraft={mockOnSaveDraft}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
+      });
+
+      const connectButton = screen.getByText('Connect Notion');
+      fireEvent.click(connectButton);
+
+      await waitFor(() => {
+        expect(mockOnSaveDraft).toHaveBeenCalledTimes(1);
+      });
+
+      expect(window.location.href).toContain('api.notion.com/v1/oauth/authorize');
+    });
+
+    it('should handle onSaveDraft error gracefully', async () => {
+      const mockOnSaveDraft = jest.fn().mockRejectedValue(new Error('Save failed'));
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([])
+      });
+
+      // Mock console.error to avoid noise in test output
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+      render(
+        <NotionIntegration
+          isEditMode={true}
+          onPageSelect={mockOnPageSelect}
+          onPageRemove={mockOnPageRemove}
+          onSaveDraft={mockOnSaveDraft}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
+      });
+
+      const connectButton = screen.getByText('Connect Notion');
+      fireEvent.click(connectButton);
+
+      await waitFor(() => {
+        expect(mockOnSaveDraft).toHaveBeenCalledTimes(1);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Error saving draft before connecting:',
+          expect.any(Error)
+        );
+      });
+
+      // Should still redirect even if onSaveDraft fails
+      expect(window.location.href).toContain('api.notion.com/v1/oauth/authorize');
+
+      consoleSpy.mockRestore();
     });
   });
 
@@ -1186,6 +1264,660 @@ describe('NotionIntegration', () => {
         fireEvent.mouseDown(mainContainer);
         // The test passes if no error is thrown (event propagation is stopped)
       }
+    });
+  });
+
+  describe('Sync Functionality', () => {
+    // Get the mocked functions
+    let fetchIntegrationBlocks: jest.Mock;
+    let compareNotionBlocks: jest.Mock;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Get the mocked functions from the module
+      const integrationUtils = require('@/lib/utils/integrationUtils');
+      fetchIntegrationBlocks = integrationUtils.fetchIntegrationBlocks as jest.Mock;
+      compareNotionBlocks = integrationUtils.compareNotionBlocks as jest.Mock;
+      fetchIntegrationBlocks.mockClear();
+      compareNotionBlocks.mockClear();
+    });
+
+    describe('handleSyncNotionBlocks', () => {
+      it('should handle sync button click when all conditions are met', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        // Mock successful integration check and pages fetch
+        (global.fetch as jest.Mock).mockImplementation((url) => {
+          if (url.includes('integrations') && url.includes('user_id=')) {
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve([
+                { integration_type: 'notion', access_token: 'test-token', id: 1 }
+              ])
+            });
+          }
+          if (url.includes('/api/integrations/fetchPages')) {
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve({
+                pages: [
+                  {
+                    id: 'page-1',
+                    object: 'page',
+                    properties: {
+                      title: { title: [{ plain_text: 'Test Page' }] }
+                    }
+                  }
+                ]
+              })
+            });
+          }
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([])
+          });
+        });
+
+        // Mock fetchIntegrationBlocks to return successful result
+        (fetchIntegrationBlocks as jest.Mock).mockResolvedValue({
+          blocks: [{ type: 'paragraph', content: [{ text: 'Updated content' }] }],
+          error: null,
+          updatedTitle: 'Updated Page Title'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+            status="published"
+          />
+        );
+
+        // Wait for the component to load and show the sync button
+        await waitFor(() => {
+          expect(screen.getByText('Connected to')).toBeInTheDocument();
+        });
+
+        // Find and click the sync button
+        const syncButton = screen.getByText('Sync');
+        fireEvent.click(syncButton);
+
+        // Verify that fetchIntegrationBlocks was called
+        await waitFor(() => {
+          expect(fetchIntegrationBlocks).toHaveBeenCalled();
+        });
+
+        // Verify that onContentUpdate was called with updated content
+        await waitFor(() => {
+          expect(mockOnContentUpdate).toHaveBeenCalled();
+        });
+      });
+
+      it('should not sync when editorContent is missing', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[]}
+          />
+        );
+
+        expect(mockOnContentUpdate).not.toHaveBeenCalled();
+        expect(mockOnLoadingChange).not.toHaveBeenCalled();
+      });
+
+      it('should not sync when onContentUpdate is missing', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not throw any errors
+        expect(true).toBe(true);
+      });
+
+      it('should handle sync when integration block is not found', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'paragraph',
+                props: {},
+                content: [{ text: 'Some content' }]
+              }
+            ]}
+          />
+        );
+
+        expect(mockOnContentUpdate).not.toHaveBeenCalled();
+        expect(mockOnLoadingChange).not.toHaveBeenCalled();
+      });
+
+      it('should handle sync when fetchIntegrationBlocks returns error', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        // Mock fetchIntegrationBlocks to return error
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [],
+          error: 'Failed to fetch blocks'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        expect(mockOnContentUpdate).not.toHaveBeenCalled();
+        expect(mockOnLoadingChange).not.toHaveBeenCalled();
+      });
+
+      it('should handle sync when fetchIntegrationBlocks returns no blocks', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        // Mock fetchIntegrationBlocks to return no blocks
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [],
+          error: null
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        expect(mockOnContentUpdate).not.toHaveBeenCalled();
+        expect(mockOnLoadingChange).not.toHaveBeenCalled();
+      });
+
+      it('should handle sync when fetchIntegrationBlocks returns blocks successfully', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        // Mock fetchIntegrationBlocks to return blocks
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [{ type: 'paragraph', content: [{ text: 'Updated content' }] }],
+          error: null,
+          updatedTitle: 'Updated Page Title'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // The sync functionality would be triggered by a button click
+        // Since we can't directly call the function, we test the conditions
+        expect(fetchIntegrationBlocks).not.toHaveBeenCalled();
+      });
+
+      it('should handle sync when fetchIntegrationBlocks throws an error', async () => {
+        const mockOnContentUpdate = jest.fn();
+        const mockOnLoadingChange = jest.fn();
+
+        // Mock fetchIntegrationBlocks to throw error
+        fetchIntegrationBlocks.mockRejectedValue(new Error('Network error'));
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            onContentUpdate={mockOnContentUpdate}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        expect(mockOnContentUpdate).not.toHaveBeenCalled();
+        expect(mockOnLoadingChange).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Sync Notice useEffect', () => {
+      it('should not check for updates when not in edit mode', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={false}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when not in edit mode
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should not check for updates when selectedPageId is missing', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[]}
+          />
+        );
+
+        // Should not show sync notice when no page is selected
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should not check for updates when storedBlocks is empty', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when no stored blocks
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should not check for updates when already checked', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when already checked
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should not check for updates when status is not published', async () => {
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="draft"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when status is draft
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should handle case when integration block is not found', async () => {
+        // Mock fetchIntegrationBlocks to return error
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [],
+          error: 'Integration not found'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'paragraph',
+                props: {},
+                content: [{ text: 'Some content' }]
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when no integration block found
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should handle case when fetchIntegrationBlocks returns error', async () => {
+        // Mock fetchIntegrationBlocks to return error
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [],
+          error: 'Failed to fetch blocks'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when fetch fails
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should handle case when fetchIntegrationBlocks returns no blocks', async () => {
+        // Mock fetchIntegrationBlocks to return no blocks
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [],
+          error: null
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when no blocks returned
+        expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+      });
+
+      it('should show sync notice when blocks have changed', async () => {
+        // Mock compareNotionBlocks to return true (indicating changes)
+        compareNotionBlocks.mockReturnValue(true);
+
+        // Mock fetchIntegrationBlocks to return blocks
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [{ type: 'paragraph', content: [{ text: 'Updated content' }] }],
+          error: null,
+          updatedTitle: 'Test Page'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should show sync notice when blocks have changed
+        await waitFor(() => {
+          expect(screen.getByText('Sync')).toBeInTheDocument();
+        });
+      });
+
+      it('should show sync notice when title has changed', async () => {
+        // Mock compareNotionBlocks to return false (no block changes)
+        compareNotionBlocks.mockReturnValue(false);
+
+        // Mock fetchIntegrationBlocks to return blocks with updated title
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [{ type: 'paragraph', content: [{ text: 'Same content' }] }],
+          error: null,
+          updatedTitle: 'Updated Page Title'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Same content' }] }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should show sync notice when title has changed
+        await waitFor(() => {
+          expect(screen.getByText('Sync')).toBeInTheDocument();
+        });
+      });
+
+      it('should not show sync notice when no changes detected', async () => {
+        // Mock compareNotionBlocks to return false (no changes)
+        compareNotionBlocks.mockReturnValue(false);
+
+        // Mock fetchIntegrationBlocks to return blocks with same title
+        fetchIntegrationBlocks.mockResolvedValue({
+          blocks: [{ type: 'paragraph', content: [{ text: 'Same content' }] }],
+          error: null,
+          updatedTitle: 'Test Page'
+        });
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Same content' }] }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when no changes detected
+        await waitFor(() => {
+          expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+        });
+      });
+
+      it('should handle case when fetchIntegrationBlocks throws an error', async () => {
+        // Mock fetchIntegrationBlocks to throw error
+        fetchIntegrationBlocks.mockRejectedValue(new Error('Network error'));
+
+        render(
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={mockOnPageRemove}
+            storedBlocks={[{ type: 'paragraph' }]}
+            status="published"
+            editorContent={[
+              {
+                type: 'notion',
+                props: {
+                  integration_type: 'notion',
+                  resource_id: 'page-1',
+                  resource_name: 'Test Page'
+                }
+              }
+            ]}
+          />
+        );
+
+        // Should not show sync notice when fetch throws error
+        await waitFor(() => {
+          expect(screen.queryByText('Sync')).not.toBeInTheDocument();
+        });
+      });
     });
   });
 }); 

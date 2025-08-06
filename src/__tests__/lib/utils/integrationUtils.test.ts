@@ -3,7 +3,9 @@ import {
   getUserIntegration,
   handleIntegrationPageSelection,
   handleIntegrationPageRemoval,
-  fetchIntegrationBlocks
+  fetchIntegrationBlocks,
+  handleNotionLinkClick,
+  compareNotionBlocks
 } from '../../../lib/utils/integrationUtils';
 
 // Mock fetch
@@ -621,6 +623,536 @@ describe('integrationUtils', () => {
       expect(result.blocks).toEqual(mockBlocks);
       expect(result.error).toBeNull();
       expect(result.updatedTitle).toBe('Original Title'); // Should fallback to original title
+    });
+  });
+
+  describe('handleNotionLinkClick', () => {
+    let mockWindowOpen: jest.SpyInstance;
+
+    beforeEach(() => {
+      mockWindowOpen = jest.spyOn(window, 'open').mockImplementation(() => null);
+    });
+
+    afterEach(() => {
+      mockWindowOpen.mockRestore();
+    });
+
+    it('should handle clicking on a link element', () => {
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      
+      const mockEvent = {
+        target: mockLink,
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const integrationBlocks = [
+        {
+          id: 'test-page-id-123456789012345678901234567890',
+          child_page: {
+            page: {
+              public_url: 'https://notion.so/test-page'
+            }
+          }
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith('https://notion.so/test-page', '_blank', 'noopener,noreferrer');
+    });
+
+    it('should handle clicking on a child element of a link', () => {
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      
+      const mockSpan = document.createElement('span');
+      mockLink.appendChild(mockSpan);
+
+      const mockEvent = {
+        target: mockSpan,
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const integrationBlocks = [
+        {
+          id: 'test-page-id-123456789012345678901234567890',
+          child_page: {
+            page: {
+              public_url: 'https://notion.so/test-page'
+            }
+          }
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith('https://notion.so/test-page', '_blank', 'noopener,noreferrer');
+    });
+
+    it('should not handle non-link elements', () => {
+      const mockEvent = {
+        target: document.createElement('div'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const integrationBlocks = [];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('should not handle external links', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', 'https://external-site.com');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks: any[] = [];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('should not handle protocol-relative links', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '//external-site.com');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks: any[] = [];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('should handle links with invalid page ID length', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/short-id');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks: any[] = [];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+
+    it('should not handle links when no matching integration block found', () => {
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      
+      const mockEvent = {
+        target: mockLink,
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const integrationBlocks = [
+        {
+          id: 'different-page-id',
+          child_page: {
+            page: {
+              public_url: 'https://notion.so/different-page'
+            }
+          }
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+
+    it('should handle links when integration blocks array is empty', () => {
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      
+      const mockEvent = {
+        target: mockLink,
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const integrationBlocks: any[] = [];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+
+    it('should handle links when integration block has no child_page', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks = [
+        {
+          id: 'test-page-id-123456789012345678901234567890',
+          // No child_page property
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+
+    it('should handle links when integration block has no page in child_page', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks = [
+        {
+          id: 'test-page-id-123456789012345678901234567890',
+          child_page: {
+            // No page property
+          }
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+
+    it('should handle links when integration block has no public_url in page', () => {
+      const mockEvent = {
+        target: document.createElement('a'),
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as any;
+
+      const mockLink = document.createElement('a');
+      mockLink.setAttribute('href', '/test-page-id-123456789012345678901234567890');
+      mockEvent.target = mockLink;
+
+      const integrationBlocks = [
+        {
+          id: 'test-page-id-123456789012345678901234567890',
+          child_page: {
+            page: {
+              // No public_url property
+            }
+          }
+        }
+      ];
+
+      handleNotionLinkClick(mockEvent, integrationBlocks);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(mockWindowOpen).toHaveBeenCalledWith(null, '_blank', 'noopener,noreferrer');
+    });
+  });
+
+  describe('compareNotionBlocks', () => {
+    it('should return false when both arrays are empty', () => {
+      const result = compareNotionBlocks([], []);
+      expect(result).toBe(false);
+    });
+
+    it('should return true when one array is empty and the other is not', () => {
+      const storedBlocks: any[] = [];
+      const fetchedBlocks = [{ type: 'paragraph', content: [{ text: 'Test' }] }];
+
+      const result1 = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      const result2 = compareNotionBlocks(fetchedBlocks, storedBlocks);
+
+      expect(result1).toBe(true);
+      expect(result2).toBe(true);
+    });
+
+    it('should return true when arrays have different lengths', () => {
+      const storedBlocks = [{ type: 'paragraph', content: [{ text: 'Test' }] }];
+      const fetchedBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test' }] },
+        { type: 'heading', content: [{ text: 'Heading' }] }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when blocks are identical', () => {
+      const storedBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] },
+        { type: 'heading', content: [{ text: 'Test heading' }] }
+      ];
+      const fetchedBlocks = [
+        { type: 'paragraph', content: [{ text: 'Test content' }] },
+        { type: 'heading', content: [{ text: 'Test heading' }] }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should return true when blocks have different content', () => {
+      const storedBlocks = [
+        { type: 'paragraph', content: [{ text: 'Original content' }] }
+      ];
+      const fetchedBlocks = [
+        { type: 'paragraph', content: [{ text: 'Updated content' }] }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(true);
+    });
+
+    it('should ignore timestamps when comparing blocks', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          last_edited_time: '2023-01-01T00:00:00Z',
+          created_time: '2023-01-01T00:00:00Z'
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          last_edited_time: '2023-01-02T00:00:00Z',
+          created_time: '2023-01-01T00:00:00Z'
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should remove IDs from rich_text arrays', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          rich_text: [
+            { id: 'text-1', text: { content: 'Test' } },
+            { id: 'text-2', text: { content: ' content' } }
+          ]
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          rich_text: [
+            { id: 'text-3', text: { content: 'Test' } },
+            { id: 'text-4', text: { content: ' content' } }
+          ]
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should handle nested objects with rich_text arrays', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          properties: {
+            title: {
+              rich_text: [
+                { id: 'title-1', text: { content: 'Title' } }
+              ]
+            }
+          }
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test content' }],
+          properties: {
+            title: {
+              rich_text: [
+                { id: 'title-2', text: { content: 'Title' } }
+              ]
+            }
+          }
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should return true when rich_text content differs', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          rich_text: [
+            { id: 'text-1', text: { content: 'Original text' } }
+          ]
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          rich_text: [
+            { id: 'text-2', text: { content: 'Updated text' } }
+          ]
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(true);
+    });
+
+    it('should handle complex nested structures', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: {
+              rich_text: [
+                { id: 'title-1', text: { content: 'Title' } }
+              ]
+            },
+            description: {
+              rich_text: [
+                { id: 'desc-1', text: { content: 'Description' } }
+              ]
+            }
+          },
+          last_edited_time: '2023-01-01T00:00:00Z'
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: {
+              rich_text: [
+                { id: 'title-2', text: { content: 'Title' } }
+              ]
+            },
+            description: {
+              rich_text: [
+                { id: 'desc-2', text: { content: 'Description' } }
+              ]
+            }
+          },
+          last_edited_time: '2023-01-02T00:00:00Z'
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should handle non-object values in normalization', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: 'Simple string',
+            count: 42,
+            isActive: true
+          }
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: 'Simple string',
+            count: 42,
+            isActive: true
+          }
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
+    });
+
+    it('should handle null and undefined values', () => {
+      const storedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: null,
+            description: undefined
+          }
+        }
+      ];
+      const fetchedBlocks = [
+        {
+          type: 'paragraph',
+          content: [{ text: 'Test' }],
+          properties: {
+            title: null,
+            description: undefined
+          }
+        }
+      ];
+
+      const result = compareNotionBlocks(storedBlocks, fetchedBlocks);
+      expect(result).toBe(false);
     });
   });
 });

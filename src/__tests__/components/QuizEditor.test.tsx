@@ -3855,18 +3855,8 @@ describe('Question Title Handlers', () => {
             });
         });
 
-        describe('fetchUpdatedNotionBlocks', () => {
-            it('should fetch updated Notion blocks successfully', async () => {
-                const mockFetchIntegrationBlocks = jest.fn().mockResolvedValue({
-                    blocks: [
-                        { type: 'paragraph', content: [{ text: 'Updated content', type: 'text', styles: {} }] }
-                    ],
-                    updatedTitle: 'Updated Page Title'
-                });
-
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
+        describe('NotionIntegration sync functionality', () => {
+            it('should render NotionIntegration with integration blocks', async () => {
                 // Mock API response with questions that have integration blocks
                 const mockApiResponse = {
                     questions: [
@@ -3904,27 +3894,11 @@ describe('Question Title Handlers', () => {
                     expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
                 });
 
-                // The useEffect should trigger fetchUpdatedNotionBlocks when the component mounts
-                // with an integration block and not in readOnly mode
-                await waitFor(() => {
-                    expect(mockFetchIntegrationBlocks).toHaveBeenCalledWith(
-                        expect.objectContaining({
-                            type: 'notion',
-                            props: {
-                                integration_id: 'integration-123',
-                                resource_name: 'Test Page',
-                                resource_id: 'page-123'
-                            }
-                        })
-                    );
-                });
+                // Verify that NotionIntegration is rendered with the correct props
+                expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
             });
 
-            it('should not fetch updated blocks when in readOnly mode', async () => {
-                const mockFetchIntegrationBlocks = jest.fn();
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
+            it('should not show sync functionality in readOnly mode', async () => {
                 // Mock API response with questions that have integration blocks
                 const mockApiResponse = {
                     questions: [
@@ -3962,18 +3936,11 @@ describe('Question Title Handlers', () => {
                     expect(screen.getByTestId('block-list')).toBeInTheDocument();
                 });
 
-                // Should not call fetchIntegrationBlocks when in readOnly mode
-                expect(mockFetchIntegrationBlocks).not.toHaveBeenCalled();
+                // NotionIntegration should not be rendered in readOnly mode
+                expect(screen.queryByTestId('mock-notion-integration')).not.toBeInTheDocument();
             });
 
-            it('should handle fetch integration blocks error', async () => {
-                const mockFetchIntegrationBlocks = jest.fn().mockResolvedValue({
-                    error: 'Failed to fetch blocks'
-                });
-
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
+            it('should handle integration blocks in question content', async () => {
                 // Mock API response with questions that have integration blocks
                 const mockApiResponse = {
                     questions: [
@@ -4010,106 +3977,8 @@ describe('Question Title Handlers', () => {
                     expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
                 });
 
-                // The function should be called and handle errors gracefully
-                await waitFor(() => {
-                    expect(mockFetchIntegrationBlocks).toHaveBeenCalled();
-                });
-            });
-
-            it('should update question content when new blocks are fetched', async () => {
-                const mockOnChange = jest.fn();
-                const mockFetchIntegrationBlocks = jest.fn().mockResolvedValue({
-                    blocks: [
-                        { type: 'paragraph', content: [{ text: 'New content', type: 'text', styles: {} }] },
-                        { type: 'heading', content: [{ text: 'New heading', type: 'text', styles: {} }] }
-                    ],
-                    updatedTitle: 'Updated Page Title'
-                });
-
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
-                render(<QuizEditor {...defaultProps} onChange={mockOnChange} />);
-
-                // Add a question first
-                const addButton = screen.getByText('Add question');
-                fireEvent.click(addButton);
-
-                await waitFor(() => {
-                    expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
-                });
-
-                // The function should be available for testing
-                expect(mockFetchIntegrationBlocks).toBeDefined();
-            });
-
-            it('should handle empty blocks response from Notion', async () => {
-                const mockFetchIntegrationBlocks = jest.fn().mockResolvedValue({
-                    blocks: []
-                });
-
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
-                render(<QuizEditor {...defaultProps} />);
-
-                // Add a question first
-                const addButton = screen.getByText('Add question');
-                fireEvent.click(addButton);
-
-                await waitFor(() => {
-                    expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
-                });
-
-                // Should handle empty blocks without crashing
-                expect(mockFetchIntegrationBlocks).toBeDefined();
-            });
-
-            it('should handle fetch integration blocks exception', async () => {
-                const mockFetchIntegrationBlocks = jest.fn().mockRejectedValue(new Error('Network error'));
-                const integrationUtils = require('@/lib/utils/integrationUtils');
-                integrationUtils.fetchIntegrationBlocks = mockFetchIntegrationBlocks;
-
-                // Mock API response with questions that have integration blocks
-                const mockApiResponse = {
-                    questions: [
-                        {
-                            id: 1,
-                            title: 'Test Question',
-                            blocks: [
-                                {
-                                    type: 'notion',
-                                    content: [{ type: 'paragraph', content: [{ text: 'Old content', type: 'text', styles: {} }] }],
-                                    props: {
-                                        integration_id: 'integration-123',
-                                        resource_name: 'Test Page',
-                                        resource_id: 'page-123'
-                                    }
-                                }
-                            ],
-                            type: 'objective',
-                            input_type: 'text',
-                            response_type: 'chat'
-                        }
-                    ]
-                };
-
-                // Mock fetch to return the API response
-                (global.fetch as jest.Mock).mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => mockApiResponse
-                });
-
-                render(<QuizEditor {...defaultProps} taskId="test-task" />);
-
-                await waitFor(() => {
-                    expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
-                });
-
-                // The function should be called and handle exceptions gracefully
-                await waitFor(() => {
-                    expect(mockFetchIntegrationBlocks).toHaveBeenCalled();
-                });
+                // Verify that the integration block is properly handled
+                expect(screen.getByTestId('mock-notion-integration')).toBeInTheDocument();
             });
         });
     });

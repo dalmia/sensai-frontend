@@ -185,4 +185,98 @@ export const handleIntegrationPageRemoval = (
   // Clear all content and blocks when unlinking
   onContentUpdate([]);
   onBlocksUpdate([]);
+};
+
+// Function to handle Notion link clicks
+export const handleNotionLinkClick = (
+  event: React.MouseEvent,
+  integrationBlocks: any[]
+) => {
+  const target = event.target as HTMLElement;
+  
+  // Check if the clicked element is a link
+  if (target.tagName === 'A' || target.closest('a')) {
+    const link = target.tagName === 'A' ? target as HTMLAnchorElement : target.closest('a') as HTMLAnchorElement;
+    
+    if (link) {
+      const href = link.getAttribute('href');
+      
+      // Check if this is a relative link that should be treated as external
+      if (href && href.startsWith('/') && !href.startsWith('//')) {
+        const pageId = href.replace(/^\//, '');
+        
+        if (pageId) {
+          event.preventDefault();
+          event.stopPropagation();
+          
+          let notionUrl = null;
+          if (integrationBlocks && integrationBlocks.length > 0) {
+            for (const block of integrationBlocks) {
+              if (block.id === pageId && block.child_page && block.child_page.page && block.child_page.page.public_url) {
+                notionUrl = block.child_page.page.public_url;
+                break;
+              }
+            }
+          }
+          
+          // Open the link in a new tab
+          window.open(notionUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
+    }
+  }
+};
+
+// Function to compare Notion blocks and detect changes
+export const compareNotionBlocks = (
+  storedBlocks: any[],
+  fetchedBlocks: any[]
+): boolean => {
+  // Handle empty arrays
+  if (storedBlocks.length === 0 && fetchedBlocks.length === 0) {
+    return false;
+  }
+  
+  if ((storedBlocks.length === 0) !== (fetchedBlocks.length === 0)) {
+    return true;
+  }
+  
+  if (storedBlocks.length !== fetchedBlocks.length) {
+    return true;
+  }
+  
+  // Normalize blocks to ignore timestamps and IDs
+  const normalizeBlocks = (blocks: any[]) => {
+    return blocks.map(block => {
+      const normalized = { ...block };
+      delete normalized.last_edited_time;
+      delete normalized.created_time;
+      
+      // Remove all IDs from any rich_text arrays in any block type
+      const removeIdsFromRichText = (obj: any) => {
+        if (obj && typeof obj === 'object') {
+          Object.keys(obj).forEach(key => {
+            if (key === 'rich_text' && Array.isArray(obj[key])) {
+              obj[key] = obj[key].map((text: any) => {
+                const normalizedText = { ...text };
+                delete normalizedText.id;
+                return normalizedText;
+              });
+            } else if (typeof obj[key] === 'object') {
+              removeIdsFromRichText(obj[key]);
+            }
+          });
+        }
+      };
+      
+      removeIdsFromRichText(normalized);
+      return normalized;
+    });
+  };
+  
+  const normalizedStored = normalizeBlocks(storedBlocks);
+  const normalizedFetched = normalizeBlocks(fetchedBlocks);
+  
+  return JSON.stringify(normalizedStored) !== JSON.stringify(normalizedFetched);
 }; 
