@@ -107,7 +107,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      expect(screen.getByText('Connect Notion')).toBeInTheDocument();
+      expect(screen.getByText('Checking notion integration...')).toBeInTheDocument();
     });
 
     it('should handle onMouseDown event propagation', () => {
@@ -123,7 +123,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Connect Notion').closest('div');
+      const loadingContainer = screen.getByText('Checking notion integration...').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
       // Test that onMouseDown is handled (this covers lines 366, 367, 382, 383, 404)
@@ -146,7 +146,7 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Connect Notion').closest('div');
+      const loadingContainer = screen.getByText('Checking notion integration...').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
       // Test that onClick is handled (this covers lines 366, 382)
