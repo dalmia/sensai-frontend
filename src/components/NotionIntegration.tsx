@@ -107,6 +107,7 @@ export default function NotionIntegration({
   const { user } = useAuth();
   const [pages, setPages] = useState<IntegrationPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isIntegrationCheckComplete, setIsIntegrationCheckComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSyncNotice, setShowSyncNotice] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -148,6 +149,7 @@ export default function NotionIntegration({
       console.error('Error checking integration:', err);
     } finally {
       setIsLoading(false);
+      setIsIntegrationCheckComplete(true);
     }
   };
 
@@ -544,8 +546,13 @@ export default function NotionIntegration({
     return null;
   }
 
-  // Show loading state only if user has connected Notion
-  if (isLoading) {
+  // Don't show anything until integration check is complete
+  if (!isIntegrationCheckComplete) {
+    return null;
+  }
+
+  // Show loading state when fetching pages after integration check is complete
+  if (isLoading && hasIntegration) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
@@ -554,15 +561,13 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">
-            {hasIntegration ? 'Fetching notion pages...' : 'Checking notion integration...'}
-          </span>
+          <span className="text-sm text-white">Fetching notion pages... </span>
         </div>
       </div>
     );
   }
 
-  // Show connect button if not connected
+  // Show connect button if integration check is complete and not connected
   if (!hasIntegration) {
     return (
       <div
