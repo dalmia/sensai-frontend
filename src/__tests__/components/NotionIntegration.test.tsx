@@ -94,7 +94,7 @@ describe('NotionIntegration', () => {
       expect(screen.queryByText('Connect Notion')).not.toBeInTheDocument();
     });
 
-    it('should show loading state initially', () => {
+    it('should show nothing initially until integration check is complete', () => {
       (global.fetch as jest.Mock).mockImplementation(() =>
         new Promise(() => { }) // Never resolves
       );
@@ -107,13 +107,19 @@ describe('NotionIntegration', () => {
         />
       );
 
-      expect(screen.getByText('Connect Notion')).toBeInTheDocument();
+      // Should not show anything until integration check is complete
+      expect(screen.queryByText('Checking notion integration...')).not.toBeInTheDocument();
+      expect(screen.queryByText('Connect Notion')).not.toBeInTheDocument();
     });
 
-    it('should handle onMouseDown event propagation', () => {
-      (global.fetch as jest.Mock).mockImplementation(() =>
-        new Promise(() => { }) // Never resolves
-      );
+    it('should handle onMouseDown event propagation when loading pages', async () => {
+      // Mock successful integration check but slow page fetch
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([{ integration_type: 'notion', access_token: 'test-token' }])
+        })
+        .mockImplementation(() => new Promise(() => { })); // Never resolves for page fetch
 
       render(
         <NotionIntegration
@@ -123,20 +129,29 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Connect Notion').closest('div');
+      // Wait for integration check to complete and loading state to appear
+      await waitFor(() => {
+        expect(screen.getByText('Fetching notion pages...')).toBeInTheDocument();
+      });
+
+      const loadingContainer = screen.getByText('Fetching notion pages...').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
-      // Test that onMouseDown is handled (this covers lines 366, 367, 382, 383, 404)
+      // Test that onMouseDown is handled
       if (loadingContainer) {
         fireEvent.mouseDown(loadingContainer);
         // The test passes if no error is thrown (event propagation is stopped)
       }
     });
 
-    it('should handle onClick event propagation', () => {
-      (global.fetch as jest.Mock).mockImplementation(() =>
-        new Promise(() => { }) // Never resolves
-      );
+    it('should handle onClick event propagation when loading pages', async () => {
+      // Mock successful integration check but slow page fetch
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([{ integration_type: 'notion', access_token: 'test-token' }])
+        })
+        .mockImplementation(() => new Promise(() => { })); // Never resolves for page fetch
 
       render(
         <NotionIntegration
@@ -146,10 +161,15 @@ describe('NotionIntegration', () => {
         />
       );
 
-      const loadingContainer = screen.getByText('Connect Notion').closest('div');
+      // Wait for integration check to complete and loading state to appear
+      await waitFor(() => {
+        expect(screen.getByText('Fetching notion pages...')).toBeInTheDocument();
+      });
+
+      const loadingContainer = screen.getByText('Fetching notion pages...').closest('div');
       expect(loadingContainer).toBeInTheDocument();
 
-      // Test that onClick is handled (this covers lines 366, 382)
+      // Test that onClick is handled
       if (loadingContainer) {
         fireEvent.click(loadingContainer);
         // The test passes if no error is thrown (event propagation is stopped)

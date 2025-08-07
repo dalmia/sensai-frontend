@@ -107,6 +107,7 @@ export default function NotionIntegration({
   const { user } = useAuth();
   const [pages, setPages] = useState<IntegrationPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isIntegrationCheckComplete, setIsIntegrationCheckComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSyncNotice, setShowSyncNotice] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -148,6 +149,7 @@ export default function NotionIntegration({
       console.error('Error checking integration:', err);
     } finally {
       setIsLoading(false);
+      setIsIntegrationCheckComplete(true);
     }
   };
 
@@ -544,7 +546,12 @@ export default function NotionIntegration({
     return null;
   }
 
-  // Show loading state only if user has connected Notion
+  // Don't show anything until integration check is complete
+  if (!isIntegrationCheckComplete) {
+    return null;
+  }
+
+  // Show loading state when fetching pages after integration check is complete
   if (isLoading && hasIntegration) {
     return (
       <div
@@ -560,7 +567,7 @@ export default function NotionIntegration({
     );
   }
 
-  // Show connect button if not connected
+  // Show connect button if integration check is complete and not connected
   if (!hasIntegration) {
     return (
       <div
