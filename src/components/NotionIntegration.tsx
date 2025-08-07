@@ -561,7 +561,7 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">Fetching notion pages... </span>
+          <span className="text-sm text-white">Fetching notion pages...</span>
         </div>
       </div>
     );
