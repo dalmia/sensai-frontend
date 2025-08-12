@@ -342,7 +342,7 @@ export default function NotionIntegration({
 
         // Automatically insert the page when selected
         if (onPageSelect) {
-            const result = await onPageSelect(pageId, pageTitle);
+          const result = await onPageSelect(pageId, pageTitle);
           if (result && result.hasNestedPages) {
               setIsLoading(false);
               showNestedPagesToast();

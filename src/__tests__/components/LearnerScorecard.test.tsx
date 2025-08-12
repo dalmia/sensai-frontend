@@ -143,6 +143,36 @@ describe('LearnerScorecard Component', () => {
         expect(container.querySelector('[data-testid="detail-1"] .border-t')).not.toBeInTheDocument();
     });
 
+    it('should expand collapsed sections when clicked', async () => {
+        const { container } = render(<LearnerScorecard scorecard={mockScorecard} />);
+
+        // Get category headers (clickable areas)
+        const understandingHeader = container.querySelector('[data-testid="detail-0"] .p-4');
+
+        // All sections should be expanded by default
+        expect(container.querySelector('[data-testid="detail-0"] .border-t')).toBeInTheDocument();
+        expect(container.textContent).toContain('Shows strong understanding of core concepts.');
+
+        // Click Understanding section to collapse it
+        fireEvent.click(understandingHeader!);
+
+        // Wait for Understanding to collapse
+        await waitFor(() => {
+            const understandingFeedback = container.querySelector('[data-testid="detail-0"] .border-t');
+            expect(understandingFeedback).not.toBeInTheDocument();
+        });
+
+        // Click Understanding section again to expand it
+        fireEvent.click(understandingHeader!);
+
+        // Wait for Understanding to expand again
+        await waitFor(() => {
+            const understandingFeedback = container.querySelector('[data-testid="detail-0"] .border-t');
+            expect(understandingFeedback).toBeInTheDocument();
+            expect(container.textContent).toContain('Shows strong understanding of core concepts.');
+        });
+    });
+
     it('should apply the correct colors based on score percentages', () => {
         const mockScorecardWithVariedScores: ScorecardItem[] = [
             {
