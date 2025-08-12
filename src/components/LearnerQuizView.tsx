@@ -76,6 +76,8 @@ export default function LearnerQuizView({
                 setCurrentQuestionIndex(index);
                 // Reset to chat view when changing questions
                 setIsViewingScorecard(false);
+                // Reset auto-open flag for new questions
+                setShouldAutoOpenScorecard(false);
             }
         }
     }, [currentQuestionId, questions]);
@@ -180,6 +182,9 @@ export default function LearnerQuizView({
     // New state to track which scorecard we're viewing
     const [activeScorecard, setActiveScorecard] = useState<ScorecardItem[]>([]);
 
+    // New state to track if we should auto-open the scorecard for the first time
+    const [shouldAutoOpenScorecard, setShouldAutoOpenScorecard] = useState(false);
+
     // Add state to remember chat scroll position
     const [chatScrollPosition, setChatScrollPosition] = useState(0);
 
@@ -245,6 +250,32 @@ export default function LearnerQuizView({
             setIsChatHistoryLoaded(false);
         }
     }, [taskId]);
+
+    // Effect to auto-open scorecard when report is prepared for the first time
+    useEffect(() => {
+        // Only proceed if we were showing preparing report and now we're not
+        if (!showPreparingReport && shouldAutoOpenScorecard) {
+            // Get the current question's chat history
+            const currentQuestionId = validQuestions[currentQuestionIndex]?.id || '';
+            const history = chatHistories[currentQuestionId] || [];
+
+            // Find the last AI message to check for scorecard data
+            const lastAiMessage = history.filter(msg => msg.sender === 'ai').pop();
+
+            // Only auto-open if there's a scorecard and no error
+            if (lastAiMessage &&
+                lastAiMessage.scorecard &&
+                lastAiMessage.scorecard.length > 0 &&
+                !lastAiMessage.isError) {
+
+                // Auto-open the scorecard
+                handleViewScorecard(lastAiMessage.scorecard);
+
+                // Reset the auto-open flag so it won't auto-open again
+                setShouldAutoOpenScorecard(false);
+            }
+        }
+    }, [showPreparingReport, shouldAutoOpenScorecard, chatHistories, validQuestions, currentQuestionIndex]);
 
     // Get the current question's chat history
     const currentChatHistory = useMemo(() => {
@@ -671,6 +702,8 @@ export default function LearnerQuizView({
 
             // Set submitting state to true
             setIsSubmitting(true);
+            // Reset auto-open flag for new submissions
+            setShouldAutoOpenScorecard(false);
 
             // Create the user message object
             const userMessage: ChatMessage = {
@@ -1030,6 +1063,8 @@ export default function LearnerQuizView({
                                             // Show preparing report message if not already shown
                                             if (!showPreparingReport && validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
                                                 setShowPreparingReport(true);
+                                                // Set flag to auto-open scorecard when report is ready
+                                                setShouldAutoOpenScorecard(true);
                                             }
 
                                             // Instead of immediately updating the chat message,
@@ -1418,6 +1453,8 @@ export default function LearnerQuizView({
 
         setActiveScorecard(scorecard);
         setIsViewingScorecard(true);
+        // Reset auto-open flag when manually opening scorecard
+        setShouldAutoOpenScorecard(false);
 
         // Reset scroll position of scorecard view when opened
         setTimeout(() => {
@@ -1429,6 +1466,8 @@ export default function LearnerQuizView({
 
     const handleBackToChat = () => {
         setIsViewingScorecard(false);
+        // Reset the auto-open flag so scorecard won't auto-open again
+        setShouldAutoOpenScorecard(false);
 
         // Focus the input field when returning to chat if appropriate
         setTimeout(() => {

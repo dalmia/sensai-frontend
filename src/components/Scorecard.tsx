@@ -7,6 +7,94 @@ import Toast from './Toast'; // Import the Toast component
 import Tooltip from './Tooltip'; // Import the Tooltip component
 import { useEditorContentOrSelectionChange } from '@blocknote/react';
 
+// Description Edit Modal Component
+interface DescriptionEditModalProps {
+    open: boolean;
+    onClose: () => void;
+    onSave: (description: string) => void;
+    currentDescription: string;
+    parameterName: string;
+}
+
+function DescriptionEditModal({ open, onClose, onSave, currentDescription, parameterName }: DescriptionEditModalProps) {
+    const [description, setDescription] = useState(currentDescription);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Reset description when modal opens
+    useEffect(() => {
+        if (open) {
+            setDescription(currentDescription);
+        }
+    }, [open, currentDescription]);
+
+    // Focus textarea when modal opens
+    useEffect(() => {
+        if (open && textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.select();
+        }
+    }, [open]);
+
+    const handleSave = () => {
+        onSave(description);
+        onClose();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            handleSave();
+        } else if (e.key === 'Escape') {
+            onClose();
+        }
+    };
+
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div
+                className="w-full max-w-2xl bg-[#1A1A1A] rounded-lg shadow-2xl"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Dialog Content */}
+                <div className="p-6">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-light text-white mb-2">
+                                Edit Description for &quot;{parameterName}&quot;
+                            </h3>
+                            <textarea
+                                ref={textareaRef}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Enter description"
+                                className="w-full px-4 py-3 bg-[#0D0D0D] text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border-none resize-none min-h-[120px]"
+                                onKeyDown={handleKeyDown}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dialog Footer */}
+                <div className="flex justify-end gap-4 p-6">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 interface ScorecardProps {
     name: string;
     criteria: CriterionData[];
@@ -33,7 +121,7 @@ export interface ScorecardHandle {
 // Interface to track which cell is being edited
 interface EditingCell {
     rowIndex: number;
-    field: 'name' | 'description' | 'maxScore' | 'minScore' | 'passScore';
+    field: 'name' | 'maxScore' | 'minScore' | 'passScore';
 }
 
 const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
@@ -69,6 +157,19 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     });
     // State to track highlighted fields
     const [highlightedField, setHighlightedField] = useState<{ index: number, field: 'name' | 'description' } | null>(null);
+
+    // State for description edit modal
+    const [descriptionModal, setDescriptionModal] = useState<{
+        open: boolean;
+        rowIndex: number;
+        currentDescription: string;
+        parameterName: string;
+    }>({
+        open: false,
+        rowIndex: -1,
+        currentDescription: '',
+        parameterName: ''
+    });
 
     // Add ref to track previous scorecard ID for transition detection
     const prevScorecardIdRef = useRef<string | undefined>(scorecardId);
@@ -231,6 +332,31 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         setEditValue(value);
     };
 
+    // Function to open description edit modal
+    const openDescriptionModal = (rowIndex: number) => {
+        if (readOnly) return;
+
+        setDescriptionModal({
+            open: true,
+            rowIndex,
+            currentDescription: criteria[rowIndex].description || '',
+            parameterName: criteria[rowIndex].name || 'Untitled'
+        });
+    };
+
+    // Function to save description from modal
+    const saveDescriptionFromModal = (description: string) => {
+        if (!onChange || descriptionModal.rowIndex === -1) return;
+
+        const updatedCriteria = [...criteria];
+        updatedCriteria[descriptionModal.rowIndex] = {
+            ...updatedCriteria[descriptionModal.rowIndex],
+            description: description
+        };
+
+        onChange(updatedCriteria);
+    };
+
     // Function to save changes when editing is complete
     const saveChanges = () => {
         if (!editingCell || !onChange) return;
@@ -298,16 +424,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     // Handle key press events in the edit inputs
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            if (editingCell?.field === 'description') {
-                // For descriptions, only save on Ctrl+Enter
-                if (e.ctrlKey) {
-                    saveChanges();
-                }
-                // Otherwise allow line breaks (default textarea behavior)
-            } else {
-                // For other fields, save on Enter
-                saveChanges();
-            }
+            // For all fields, save on Enter
+            saveChanges();
         } else if (e.key === 'Escape') {
             setEditingCell(null);
         }
@@ -594,36 +712,14 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
                                     {/* Description Cell */}
                                     <div className="px-2 py-1 text-sm flex items-start h-full">
-                                        {editingCell?.rowIndex === index && editingCell.field === 'description' ? (
-                                            <div className="relative w-full flex items-start">
-                                                <textarea
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={saveChanges}
-                                                    onKeyDown={handleKeyDown}
-                                                    autoFocus
-                                                    className="bg-[#333] rounded w-full text-sm p-2 pr-10 outline-none min-h-[60px] resize-y"
-                                                    style={{ caretColor: 'white', resize: 'none' }}
-                                                    placeholder="Enter description"
-                                                />
-                                                <button
-                                                    onClick={saveChanges}
-                                                    className="absolute right-2 top-2 p-1 rounded-md bg-green-600 hover:bg-green-700 text-white shadow-lg border border-green-500 transition-colors cursor-pointer"
-                                                    aria-label="Save description"
-                                                >
-                                                    <Check size={16} />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly} className="w-full">
-                                                <span
-                                                    className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? '' : 'text-gray-500'}`}
-                                                    onClick={() => startEditing(index, 'description')}
-                                                >
-                                                    {criterion.description || 'Click to add description'}
-                                                </span>
-                                            </Tooltip>
-                                        )}
+                                        <Tooltip content="Click to edit" position="bottom" disabled={readOnly} className="w-full">
+                                            <span
+                                                className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? '' : 'text-gray-500'}`}
+                                                onClick={() => openDescriptionModal(index)}
+                                            >
+                                                {criterion.description || 'Click to add description'}
+                                            </span>
+                                        </Tooltip>
                                     </div>
 
                                     {/* Min Score Cell */}
@@ -754,6 +850,14 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 </div>
             </div>
 
+            {/* Description Edit Modal */}
+            <DescriptionEditModal
+                open={descriptionModal.open}
+                onClose={() => setDescriptionModal(prev => ({ ...prev, open: false }))}
+                onSave={saveDescriptionFromModal}
+                currentDescription={descriptionModal.currentDescription}
+                parameterName={descriptionModal.parameterName}
+            />
         </div>
     );
 });

@@ -11,6 +11,7 @@ describe('LearnerScorecard Component', () => {
             category: 'Understanding',
             score: 8,
             max_score: 10,
+            pass_score: 6,
             feedback: {
                 correct: 'Shows strong understanding of core concepts.',
                 wrong: 'Could be more precise with technical terms.'
@@ -20,6 +21,7 @@ describe('LearnerScorecard Component', () => {
             category: 'Implementation',
             score: 6,
             max_score: 10,
+            pass_score: 6,
             feedback: {
                 correct: 'Successfully implemented the main features.',
                 wrong: 'Some edge cases were not handled properly.'
@@ -29,6 +31,7 @@ describe('LearnerScorecard Component', () => {
             category: 'Code Quality',
             score: 7,
             max_score: 10,
+            pass_score: 6,
             feedback: {
                 correct: 'Clean and readable code structure.',
                 wrong: 'Variable naming could be improved.'
@@ -66,92 +69,78 @@ describe('LearnerScorecard Component', () => {
         expect(container.firstChild).toBeNull();
     });
 
-    it('should expand detailed feedback when clicked', async () => {
+    it('should collapse detailed feedback when clicked', () => {
         const { container } = render(<LearnerScorecard scorecard={mockScorecard} />);
 
-        // Get all category boxes
-        const categoryHeaders = screen.getAllByText('Understanding');
-        const categoryBox = categoryHeaders[1].closest('.cursor-pointer');
+        // Verify that feedback is visible initially (expanded by default)
+        expect(container.querySelector('.border-emerald-900\\/30')).toBeInTheDocument();
+        expect(container.querySelector('.border-amber-900\\/30')).toBeInTheDocument();
 
-        // Verify that feedback is not visible initially
-        expect(container.querySelector('.border-emerald-900\\/30')).not.toBeInTheDocument();
-        expect(container.querySelector('.border-amber-900\\/30')).not.toBeInTheDocument();
+        // Click on the first category header to collapse it
+        const firstCategoryHeader = container.querySelector('[data-testid="detail-0"] .p-4');
+        fireEvent.click(firstCategoryHeader!);
 
-        // Click on the first category to expand it
-        fireEvent.click(categoryBox!);
-
-        // Wait for the expanded content to appear
-        await waitFor(() => {
-            // Check for feedback sections by their distinctive classes
-            const strengthsSection = container.querySelector('.border-emerald-900\\/30');
-            const improvementSection = container.querySelector('.border-amber-900\\/30');
-
-            expect(strengthsSection).toBeInTheDocument();
-            expect(improvementSection).toBeInTheDocument();
-
-            // Check for the actual text content within those sections
-            expect(strengthsSection?.textContent).toContain('Strengths');
-            expect(strengthsSection?.textContent).toContain('Shows strong understanding of core concepts.');
-            expect(improvementSection?.textContent).toContain('Areas for improvement');
-            expect(improvementSection?.textContent).toContain('Could be more precise with technical terms.');
-        });
+        // Verify that feedback is now hidden for the first category
+        const firstCategoryFeedback = container.querySelector('[data-testid="detail-0"] .border-t');
+        expect(firstCategoryFeedback).not.toBeInTheDocument();
     });
 
     it('should collapse feedback when expanded section is clicked again', async () => {
         const { container } = render(<LearnerScorecard scorecard={mockScorecard} />);
 
-        // Get the first category box
-        const categoryHeaders = screen.getAllByText('Understanding');
-        const categoryBox = categoryHeaders[1].closest('.cursor-pointer');
+        // Get the first category header (clickable area)
+        const firstCategoryHeader = container.querySelector('[data-testid="detail-0"] .p-4');
 
-        // First click to expand
-        fireEvent.click(categoryBox!);
+        // Feedback should be visible initially (expanded by default)
+        expect(container.querySelector('.border-emerald-900\\/30')).toBeInTheDocument();
 
-        // Wait for expansion
-        await waitFor(() => {
-            expect(container.querySelector('.border-emerald-900\\/30')).toBeInTheDocument();
-        });
-
-        // Second click to collapse
-        fireEvent.click(categoryBox!);
+        // Click to collapse
+        fireEvent.click(firstCategoryHeader!);
 
         // Wait for collapse
         await waitFor(() => {
-            expect(container.querySelector('.border-emerald-900\\/30')).not.toBeInTheDocument();
+            const firstCategoryFeedback = container.querySelector('[data-testid="detail-0"] .border-t');
+            expect(firstCategoryFeedback).not.toBeInTheDocument();
         });
     });
 
-    it('should handle changing between expanded sections', async () => {
+    it('should handle expanding and collapsing sections independently', async () => {
         const { container } = render(<LearnerScorecard scorecard={mockScorecard} />);
 
-        // Get category boxes
-        const understandingHeaders = screen.getAllByText('Understanding');
-        const understandingBox = understandingHeaders[1].closest('.cursor-pointer');
+        // Get category headers (clickable areas)
+        const understandingHeader = container.querySelector('[data-testid="detail-0"] .p-4');
+        const implementationHeader = container.querySelector('[data-testid="detail-1"] .p-4');
 
-        const implementationHeaders = screen.getAllByText('Implementation');
-        const implementationBox = implementationHeaders[1].closest('.cursor-pointer');
+        // All sections should be expanded by default
+        expect(container.querySelector('[data-testid="detail-0"] .border-t')).toBeInTheDocument();
+        expect(container.querySelector('[data-testid="detail-1"] .border-t')).toBeInTheDocument();
+        expect(container.textContent).toContain('Shows strong understanding of core concepts.');
 
-        // Expand Understanding section
-        fireEvent.click(understandingBox!);
+        // Click Understanding section to collapse it
+        fireEvent.click(understandingHeader!);
 
-        // Wait for expansion
+        // Wait for Understanding to collapse
         await waitFor(() => {
-            const strengthsSection = container.querySelector('.border-emerald-900\\/30');
-            expect(strengthsSection?.textContent).toContain('Shows strong understanding of core concepts.');
+            const understandingFeedback = container.querySelector('[data-testid="detail-0"] .border-t');
+            expect(understandingFeedback).not.toBeInTheDocument();
         });
 
-        // Expand Implementation section - Understanding should collapse
-        fireEvent.click(implementationBox!);
+        // Implementation section should still be expanded
+        expect(container.querySelector('[data-testid="detail-1"] .border-t')).toBeInTheDocument();
+        expect(container.textContent).toContain('Successfully implemented the main features.');
 
-        // Wait for Implementation to expand and Understanding to collapse
+        // Click Implementation section to collapse it
+        fireEvent.click(implementationHeader!);
+
+        // Wait for Implementation to collapse
         await waitFor(() => {
-            // Understanding feedback should no longer be visible
-            expect(container.textContent).not.toContain('Shows strong understanding of core concepts.');
-
-            // Implementation feedback should be visible
-            const strengthsSection = container.querySelector('.border-emerald-900\\/30');
-            expect(strengthsSection?.textContent).toContain('Successfully implemented the main features.');
+            const implementationFeedback = container.querySelector('[data-testid="detail-1"] .border-t');
+            expect(implementationFeedback).not.toBeInTheDocument();
         });
+
+        // Both sections should now be collapsed
+        expect(container.querySelector('[data-testid="detail-0"] .border-t')).not.toBeInTheDocument();
+        expect(container.querySelector('[data-testid="detail-1"] .border-t')).not.toBeInTheDocument();
     });
 
     it('should apply the correct colors based on score percentages', () => {
@@ -160,24 +149,28 @@ describe('LearnerScorecard Component', () => {
                 category: 'Excellent',
                 score: 9,
                 max_score: 10, // 90% - should be emerald
+                pass_score: 6,
                 feedback: { correct: 'Great work', wrong: '' }
             },
             {
                 category: 'Good',
                 score: 7,
                 max_score: 10, // 70% - should be blue
+                pass_score: 6,
                 feedback: { correct: 'Good effort', wrong: '' }
             },
             {
                 category: 'Average',
                 score: 5,
                 max_score: 10, // 50% - should be amber
+                pass_score: 6,
                 feedback: { correct: '', wrong: 'Needs improvement' }
             },
             {
                 category: 'Poor',
                 score: 3,
                 max_score: 10, // 30% - should be rose
+                pass_score: 6,
                 feedback: { correct: '', wrong: 'Significant issues' }
             }
         ];

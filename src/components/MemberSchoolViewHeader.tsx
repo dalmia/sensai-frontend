@@ -52,7 +52,7 @@ const MemberSchoolViewHeader: React.FC<MemberSchoolViewHeaderProps> = ({
                         <ChevronDown className="ml-1 sm:ml-2 h-5 w-5 flex-shrink-0" />
                     </button>
                     {cohortDropdownOpen && (
-                        <div className="absolute left-1/2 transform -translate-x-1/2 z-10 mt-1 w-full min-w-[200px] bg-[#0f0f0f] rounded-lg shadow-lg">
+                        <div className="absolute left-1/2 transform -translate-x-1/2 z-50 mt-1 w-full min-w-[200px] bg-[#0f0f0f] rounded-lg shadow-lg">
                             <ul className="py-2">
                                 {cohorts.map(cohort => (
                                     <li

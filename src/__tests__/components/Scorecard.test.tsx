@@ -450,17 +450,20 @@ describe('Scorecard Component', () => {
             />
         );
 
-        // Click on the description cell
+        // Click on the description cell to open modal
         const descriptionCell = screen.getByText(mockCriteria[0].description);
         fireEvent.click(descriptionCell);
 
-        // Should show textarea for editing
-        const textarea = screen.getByDisplayValue(mockCriteria[0].description);
-        expect(textarea.tagName).toBe('TEXTAREA');
+        // Should show the description edit modal
+        expect(screen.getByText('Edit Description for "Clarity"')).toBeInTheDocument();
 
-        // Change the value
+        // Change the value in the modal
+        const textarea = screen.getByDisplayValue(mockCriteria[0].description);
         fireEvent.change(textarea, { target: { value: 'Updated description' } });
-        fireEvent.blur(textarea);
+
+        // Click the save button in the modal
+        const saveButton = screen.getByText('Save');
+        fireEvent.click(saveButton);
 
         // Check that onChange was called
         expect(mockOnChange).toHaveBeenCalledWith([
@@ -891,8 +894,8 @@ describe('Scorecard Component', () => {
         const textarea = screen.getByDisplayValue(mockCriteria[0].description);
         fireEvent.change(textarea, { target: { value: 'New description' } });
 
-        // Click the save button that appears
-        const saveButton = screen.getByLabelText('Save description');
+        // Click the save button that appears in the modal
+        const saveButton = screen.getByText('Save');
         fireEvent.click(saveButton);
 
         // Should save the changes

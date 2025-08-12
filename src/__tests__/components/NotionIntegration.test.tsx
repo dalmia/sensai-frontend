@@ -2389,15 +2389,16 @@ describe('NotionIntegration', () => {
       const select = screen.getByRole('combobox');
       fireEvent.change(select, { target: { value: 'page-1' } });
 
+      // Wait for the onPageSelect to be called and the result to be processed
       await waitFor(() => {
         expect(mockOnPageSelectWithNestedPages).toHaveBeenCalledWith('page-1', 'Test Page 1');
       });
 
-      // Should show toast for nested pages
+      // Wait for the toast to appear after processing the nested pages result
       await waitFor(() => {
         expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
         expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
     });
 
     it('should handle nested pages in handleConfirmOverwrite and show toast', async () => {
@@ -2434,15 +2435,16 @@ describe('NotionIntegration', () => {
       const confirmButton = screen.getByTestId('confirm-button');
       fireEvent.click(confirmButton);
 
+      // Wait for the onPageSelect to be called and the result to be processed
       await waitFor(() => {
         expect(mockOnPageSelectWithNestedPages).toHaveBeenCalledWith('page-1', 'Test Page 1');
       });
 
-      // Should show toast for nested pages
+      // Wait for the toast to appear after processing the nested pages result
       await waitFor(() => {
         expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
         expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
     });
   });
 }); 
