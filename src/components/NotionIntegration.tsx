@@ -593,10 +593,7 @@ export default function NotionIntegration({
   }
 
   // Show loading state when fetching pages after integration check is complete
-  if (
-    (isLoading && hasIntegration) ||
-    (status === "publish" && !hasCheckedForNotionUpdates)
-  ) {
+  if (isLoading && hasIntegration || (!hasCheckedForNotionUpdates && status === 'published')) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
@@ -640,26 +637,25 @@ export default function NotionIntegration({
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Show message when no pages are found */}
+        {/* Show message and reconnect button when no pages are found */}
         {noPagesFound && !selectedPageId && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-yellow-400 font-light">
-              No pages found
-            </span>
-          </div>
-        )}
-        {/* Show reconnect button if no pages found */}
-        {noPagesFound && !selectedPageId && (
-          <Button
-            onClick={handleReconnectNotion}
-            disabled={loading}
-            isLoading={isConnecting}
-            loadingText="Connecting..."
-            normalText="Reconnect Notion"
-            bgColor="bg-white"
-            textColor="text-black"
-            icon={<NotionIcon className="w-4 h-4" />}
-          />
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-yellow-400 font-light">
+                No pages found
+              </span>
+            </div>
+            <Button
+              onClick={handleReconnectNotion}
+              disabled={loading}
+              isLoading={isConnecting}
+              loadingText="Connecting..."
+              normalText="Reconnect Notion"
+              bgColor="bg-white"
+              textColor="text-black"
+              icon={<NotionIcon className="w-4 h-4" />}
+            />
+          </>
         )}
 
         {/* Show dropdown and add more pages button when pages are loaded and no page is selected */}
@@ -703,7 +699,7 @@ export default function NotionIntegration({
           </>
         )}
 
-        {selectedPageId && !isLoading && (status === "published" ? hasCheckedForNotionUpdates : true) && (
+        {selectedPageId && (
           <div className="bg-gray-900/30 rounded-lg px-4 py-3 border border-gray-700/50">
             {/* Connection status */}
             <div className="flex items-center justify-between">
