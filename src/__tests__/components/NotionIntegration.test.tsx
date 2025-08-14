@@ -923,7 +923,7 @@ describe('NotionIntegration', () => {
       expect(window.location.href).toContain('api.notion.com/v1/oauth/authorize');
     });
 
-    it('should handle Reconnect Notion button click', async () => {
+    it('should handle Connect Notion button click', async () => {
       // Clear mocks and set up specific mock for this test
       jest.clearAllMocks();
       (global.fetch as jest.Mock).mockReset();
@@ -956,11 +956,11 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Reconnect Notion')).toBeInTheDocument();
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
       });
 
-      const reconnectButton = screen.getByText('Reconnect Notion');
-      fireEvent.click(reconnectButton);
+      const connectButton = screen.getByText('Connect Notion');
+      fireEvent.click(connectButton);
 
       // Should redirect to Notion OAuth
       expect(window.location.href).toContain('api.notion.com/v1/oauth/authorize');
@@ -1147,8 +1147,7 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('No pages found')).toBeInTheDocument();
-        expect(screen.getByText('Reconnect Notion')).toBeInTheDocument();
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
       });
     });
 
@@ -1188,7 +1187,7 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('No pages found')).toBeInTheDocument();
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
       });
     });
 
@@ -1230,8 +1229,7 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('No pages found')).toBeInTheDocument();
-        expect(screen.getByText('Reconnect Notion')).toBeInTheDocument();
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
       });
     });
 
@@ -1273,10 +1271,10 @@ describe('NotionIntegration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('No pages found')).toBeInTheDocument();
+        expect(screen.getByText('Connect Notion')).toBeInTheDocument();
       });
 
-      const mainContainer = screen.getByText('No pages found').closest('div');
+      const mainContainer = screen.getByText('Connect Notion').closest('div');
       expect(mainContainer).toBeInTheDocument();
 
       // Test that onMouseDown is handled (covers lines 366, 367, 382, 383, 404)

@@ -5,95 +5,10 @@ import './scorecard-styles.css'; // We'll create this CSS file
 import SimpleTooltip from './SimpleTooltip';
 import Toast from './Toast'; // Import the Toast component
 import Tooltip from './Tooltip'; // Import the Tooltip component
+import DescriptionEditModal from './DescriptionEditModal';
 import { useEditorContentOrSelectionChange } from '@blocknote/react';
 
-// Description Edit Modal Component
-interface DescriptionEditModalProps {
-    open: boolean;
-    onClose: () => void;
-    onSave: (description: string) => void;
-    currentDescription: string;
-    parameterName: string;
-}
 
-function DescriptionEditModal({ open, onClose, onSave, currentDescription, parameterName }: DescriptionEditModalProps) {
-    const [description, setDescription] = useState(currentDescription);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // Reset description when modal opens
-    useEffect(() => {
-        if (open) {
-            setDescription(currentDescription);
-        }
-    }, [open, currentDescription]);
-
-    // Focus textarea when modal opens
-    useEffect(() => {
-        if (open && textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.select();
-        }
-    }, [open]);
-
-    const handleSave = () => {
-        onSave(description);
-        onClose();
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            handleSave();
-        } else if (e.key === 'Escape') {
-            onClose();
-        }
-    };
-
-    if (!open) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div
-                className="w-full max-w-2xl bg-[#1A1A1A] rounded-lg shadow-2xl"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Dialog Content */}
-                <div className="p-6">
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-light text-white mb-2">
-                                Edit Description for &quot;{parameterName}&quot;
-                            </h3>
-                            <textarea
-                                ref={textareaRef}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Enter description"
-                                className="w-full px-4 py-3 bg-[#0D0D0D] text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border-none resize-none min-h-[120px]"
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Dialog Footer */}
-                <div className="flex justify-end gap-4 p-6">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
-                    >
-                        Save
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 interface ScorecardProps {
     name: string;
@@ -856,7 +771,6 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 onClose={() => setDescriptionModal(prev => ({ ...prev, open: false }))}
                 onSave={saveDescriptionFromModal}
                 currentDescription={descriptionModal.currentDescription}
-                parameterName={descriptionModal.parameterName}
             />
         </div>
     );

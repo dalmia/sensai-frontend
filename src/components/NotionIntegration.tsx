@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { RefreshCcw, Unlink } from "lucide-react";
@@ -131,6 +131,7 @@ export default function NotionIntegration({
   const [toastTitle, setToastTitle] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [toastEmoji, setToastEmoji] = useState("⚠️");
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkIntegration = async () => {
     try {
@@ -174,13 +175,25 @@ export default function NotionIntegration({
   // Add useEffect to automatically hide toast after 5 seconds
   useEffect(() => {
     if (showToast) {
-      const timer = setTimeout(() => {
-        setShowToast(false);
-      }, 5000);
+      // Clear any existing timer
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
 
-      // Cleanup the timer when component unmounts or showToast changes
-      return () => clearTimeout(timer);
+      // Set new timer
+      toastTimerRef.current = setTimeout(() => {
+        setShowToast(false);
+        toastTimerRef.current = null;
+      }, 5000);
     }
+
+    // Cleanup function
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = null;
+      }
+    };
   }, [showToast]);
 
   // Check if user has integration and handle OAuth callback
@@ -249,6 +262,7 @@ export default function NotionIntegration({
           setShowDropdown(true);
           if (data.pages && data.pages.length === 0) {
             setNoPagesFound(true);
+            showNoPagesToast()
           }
         } else {
           setError(data.error || 'Failed to fetch pages');
@@ -286,11 +300,6 @@ export default function NotionIntegration({
   };
 
   const handleAddMorePages = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    await handleConnectNotion(e);
-  };
-
-  const handleReconnectNotion = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     await handleConnectNotion(e);
   };
@@ -364,6 +373,14 @@ export default function NotionIntegration({
     setToastTitle("Nested page not supported");
     setToastMessage('This page contains nested pages or databases which are not supported. Please select a different page.');
     setToastEmoji("⚠️");
+    setShowToast(true);
+  };
+
+  // Function to show toast for no pages found
+  const showNoPagesToast = () => {
+    setToastTitle("No pages found");
+    setToastMessage("No pages were found in your Notion workspace. Please create a page in Notion and try again.");
+    setToastEmoji("📄");
     setShowToast(true);
   };
 
@@ -602,31 +619,43 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">Fetching notion pages...</span>
+          <span className="text-sm text-white">{selectedPageId ? 'Fetching integration...' : 'Fetching notion pages...'}</span>
         </div>
       </div>
     );
   }
 
   // Show connect button if integration check is complete and not connected
-  if (!hasIntegration) {
+  if (!hasIntegration || noPagesFound) {
+    console.log('Showing connect button - hasIntegration:', hasIntegration, 'noPagesFound:', noPagesFound);
     return (
-      <div
-        className={`flex items-center gap-3 ml-4 ${className}`}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <Button
-          onClick={handleConnectNotion}
-          disabled={loading}
-          isLoading={isConnecting}
-          loadingText="Connecting..."
-          normalText="Connect Notion"
-          bgColor="bg-white"
-          textColor="text-black"
-          icon={<NotionIcon className="w-4 h-4" />}
+      <>
+        <div
+          className={`flex items-center gap-3 ml-4 ${className}`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <Button
+            onClick={handleConnectNotion}
+            disabled={loading}
+            isLoading={isConnecting}
+            loadingText="Connecting..."
+            normalText="Connect Notion"
+            bgColor="bg-white"
+            textColor="text-black"
+            icon={<NotionIcon className="w-4 h-4" />}
+          />
+        </div>
+
+        {/* Toast component - ensure it's always rendered when needed */}
+        <Toast
+          show={showToast}
+          title={toastTitle}
+          description={toastMessage}
+          emoji={toastEmoji}
+          onClose={() => setShowToast(false)}
         />
-      </div>
+      </>
     );
   }
 
@@ -637,27 +666,6 @@ export default function NotionIntegration({
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Show message and reconnect button when no pages are found */}
-        {noPagesFound && !selectedPageId && (
-          <>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-yellow-400 font-light">
-                No pages found
-              </span>
-            </div>
-            <Button
-              onClick={handleReconnectNotion}
-              disabled={loading}
-              isLoading={isConnecting}
-              loadingText="Connecting..."
-              normalText="Reconnect Notion"
-              bgColor="bg-white"
-              textColor="text-black"
-              icon={<NotionIcon className="w-4 h-4" />}
-            />
-          </>
-        )}
-
         {/* Show dropdown and add more pages button when pages are loaded and no page is selected */}
         {showDropdown && !selectedPageId && pages.length > 0 && (
           <>
