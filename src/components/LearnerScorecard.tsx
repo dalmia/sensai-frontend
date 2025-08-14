@@ -10,7 +10,10 @@ const LearnerScorecard: React.FC<LearnerScorecardProps> = ({
     scorecard,
     className = ""
 }) => {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    // Initialize with all criteria expanded by default
+    const [expandedIndices, setExpandedIndices] = useState<number[]>(
+        scorecard.map((_, index) => index)
+    );
 
     if (!scorecard || scorecard.length === 0) {
         return null;
@@ -22,7 +25,11 @@ const LearnerScorecard: React.FC<LearnerScorecardProps> = ({
     const overallPercentage = Math.round((totalScore / totalMaxScore) * 100);
 
     const toggleExpand = (index: number) => {
-        setExpandedIndex(expandedIndex === index ? null : index);
+        setExpandedIndices(prev =>
+            prev.includes(index)
+                ? prev.filter(i => i !== index)
+                : [...prev, index]
+        );
     };
 
     return (
@@ -104,11 +111,12 @@ const LearnerScorecard: React.FC<LearnerScorecardProps> = ({
             <div className="space-y-3">
                 {scorecard.map((item, index) => {
                     const scorePercentage = Math.round((item.score / item.max_score) * 100);
-                    const isExpanded = expandedIndex === index;
+                    const isExpanded = expandedIndices.includes(index);
 
                     return (
                         <div
                             key={`detail-${index}`}
+                            data-testid={`detail-${index}`}
                             className="bg-zinc-900 rounded-xl shadow-sm overflow-hidden"
                         >
                             <div

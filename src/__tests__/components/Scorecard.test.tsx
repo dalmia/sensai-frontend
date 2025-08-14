@@ -450,73 +450,26 @@ describe('Scorecard Component', () => {
             />
         );
 
-        // Click on the description cell
+        // Click on the description cell to open modal
         const descriptionCell = screen.getByText(mockCriteria[0].description);
         fireEvent.click(descriptionCell);
 
-        // Should show textarea for editing
-        const textarea = screen.getByDisplayValue(mockCriteria[0].description);
-        expect(textarea.tagName).toBe('TEXTAREA');
+        // Should show the description edit modal
+        expect(screen.getByText('Edit description')).toBeInTheDocument();
 
-        // Change the value
+        // Change the value in the modal
+        const textarea = screen.getByDisplayValue(mockCriteria[0].description);
         fireEvent.change(textarea, { target: { value: 'Updated description' } });
-        fireEvent.blur(textarea);
+
+        // Click the save button in the modal
+        const saveButton = screen.getByText('Save');
+        fireEvent.click(saveButton);
 
         // Check that onChange was called
         expect(mockOnChange).toHaveBeenCalledWith([
             { ...mockCriteria[0], description: 'Updated description' },
             mockCriteria[1]
         ]);
-    });
-
-    it('should handle Ctrl+Enter in description field', () => {
-        render(
-            <Scorecard
-                name={mockName}
-                criteria={mockCriteria}
-                onChange={mockOnChange}
-                linked={false}
-            />
-        );
-
-        // Click on the description cell
-        const descriptionCell = screen.getByText(mockCriteria[0].description);
-        fireEvent.click(descriptionCell);
-
-        // Should show textarea for editing
-        const textarea = screen.getByDisplayValue(mockCriteria[0].description);
-        fireEvent.change(textarea, { target: { value: 'New description' } });
-        fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true });
-
-        // Check that onChange was called
-        expect(mockOnChange).toHaveBeenCalledWith([
-            { ...mockCriteria[0], description: 'New description' },
-            mockCriteria[1]
-        ]);
-    });
-
-    it('should handle Escape key to cancel editing', () => {
-        render(
-            <Scorecard
-                name={mockName}
-                criteria={mockCriteria}
-                onChange={mockOnChange}
-                linked={false}
-            />
-        );
-
-        // Start editing the name
-        const nameCell = screen.getByText(mockCriteria[0].name);
-        fireEvent.click(nameCell);
-
-        const inputField = screen.getByDisplayValue(mockCriteria[0].name);
-        fireEvent.change(inputField, { target: { value: 'Changed' } });
-        fireEvent.keyDown(inputField, { key: 'Escape' });
-
-        // Should not call onChange since we cancelled
-        expect(mockOnChange).not.toHaveBeenCalled();
-        // Should go back to display mode
-        expect(screen.getByText(mockCriteria[0].name)).toBeInTheDocument();
     });
 
     it('should allow editing maxScore field', () => {
@@ -891,8 +844,8 @@ describe('Scorecard Component', () => {
         const textarea = screen.getByDisplayValue(mockCriteria[0].description);
         fireEvent.change(textarea, { target: { value: 'New description' } });
 
-        // Click the save button that appears
-        const saveButton = screen.getByLabelText('Save description');
+        // Click the save button that appears in the modal
+        const saveButton = screen.getByText('Save');
         fireEvent.click(saveButton);
 
         // Should save the changes

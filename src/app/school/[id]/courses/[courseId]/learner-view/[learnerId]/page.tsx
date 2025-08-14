@@ -64,13 +64,16 @@ export default async function AdminLearnerViewPage({
 
         if (learnerResponse.ok) {
             const learnerData = await learnerResponse.json();
-            learnerName = learnerName || learnerData.email;
+
+            learnerName = [learnerData.first_name, learnerData.middle_name, learnerData.last_name]
+                .filter(Boolean)
+                .join(' ') || learnerData.first_name || learnerData.email;
         }
 
         return (
             <div className="min-h-screen bg-black">
                 {/* Admin learner view banner */}
-                <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm">
+                <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
                     <p className="font-light text-sm">
                         You are viewing this course as <span className="font-medium">{learnerName}</span>
                     </p>

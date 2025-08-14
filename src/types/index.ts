@@ -10,6 +10,9 @@ export interface TaskData {
 export interface Member {
     id: number;
     email: string;
+    first_name: string;
+    middle_name: string;
+    last_name: string;
 }
 
 export interface CohortMember extends Member {

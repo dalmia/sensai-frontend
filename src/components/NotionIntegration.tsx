@@ -249,6 +249,7 @@ export default function NotionIntegration({
           setShowDropdown(true);
           if (data.pages && data.pages.length === 0) {
             setNoPagesFound(true);
+            showNoPagesToast()
           }
         } else {
           setError(data.error || 'Failed to fetch pages');
@@ -290,11 +291,6 @@ export default function NotionIntegration({
     await handleConnectNotion(e);
   };
 
-  const handleReconnectNotion = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    await handleConnectNotion(e);
-  };
-
   // Function to check if there are existing blocks that would be overwritten
   const hasExistingContent = () => {
     if (!editorContent || editorContent.length === 0) return false;
@@ -323,6 +319,7 @@ export default function NotionIntegration({
   const handlePageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation();
     const pageId = e.target.value;
+    setIsLoading(true);
     if (pageId) {
       const selectedPage = pages.find(page => page.id === pageId);
       const pageTitle = selectedPage?.properties?.title?.title?.[0]?.plain_text || "New page";
@@ -343,9 +340,10 @@ export default function NotionIntegration({
         if (onPageSelect) {
           const result = await onPageSelect(pageId, pageTitle);
           if (result && result.hasNestedPages) {
-            showNestedPagesToast();
-            setSelectedPageId(undefined);
-            setSelectedPageTitle(undefined);
+              setIsLoading(false);
+              showNestedPagesToast();
+              setSelectedPageId(undefined);
+              setSelectedPageTitle(undefined);
             return;
           }
         }
@@ -354,6 +352,7 @@ export default function NotionIntegration({
       setSelectedPageId("");
       setSelectedPageTitle("");
     }
+    setIsLoading(false);
   };
 
   // Function to show toast for nested pages error
@@ -361,6 +360,14 @@ export default function NotionIntegration({
     setToastTitle("Nested page not supported");
     setToastMessage('This page contains nested pages or databases which are not supported. Please select a different page.');
     setToastEmoji("⚠️");
+    setShowToast(true);
+  };
+
+  // Function to show toast for no pages found
+  const showNoPagesToast = () => {
+    setToastTitle("No pages found");
+    setToastMessage("No pages were found. Please select some pages while connecting Notion.");
+    setToastEmoji("📄");
     setShowToast(true);
   };
 
@@ -488,11 +495,14 @@ export default function NotionIntegration({
 
   // Check if we should show sync notice in edit mode
   useEffect(() => {
-    if (isEditMode && selectedPageId && storedBlocks.length > 0 && !hasCheckedForNotionUpdates && status === 'published') {
+    if (isEditMode && selectedPageId && storedBlocks.length > 0 && !hasCheckedForNotionUpdates) {
 
       const checkForUpdates = async () => {
         try {
           setIsLoading(true);
+          if (onLoadingChange) {
+            onLoadingChange(true);
+          }
 
           // Find the integration block to get the integration details
           const integrationBlock = editorContent.find(block => block.type === 'notion');
@@ -511,21 +521,53 @@ export default function NotionIntegration({
 
           // Check if the updated blocks contain nested pages or databases
           if (result.hasNestedPages) {
-            setError('This page now contains sub-pages or databases which are not supported for syncing');
+            if (status === 'draft') {
+              showNestedPagesToast();
+              if (onContentUpdate) {
+                onContentUpdate([]);
+              }
+            } else {
+              setError('This page now contains sub-pages or databases which are not supported for syncing');
+            }
+            setIsLoading(false);
             setHasCheckedForNotionUpdates(true);
             return;
           }
 
           if (result.blocks && result.blocks.length > 0) {
-            // Compare the stored blocks with the freshly fetched blocks
-            const hasChanges = compareNotionBlocks(storedBlocks, result.blocks);
+            if (status === 'draft') {
+              // For draft status, automatically sync and update content
+              const updatedIntegrationBlock = {
+                ...integrationBlock,
+                content: result.blocks,
+                props: {
+                  ...integrationBlock.props,
+                  resource_name: result.updatedTitle || integrationBlock.props.resource_name
+                }
+              };
 
-            // Also check if the title has changed
-            const titleChanged = result.updatedTitle &&
-              result.updatedTitle !== integrationBlock.props.resource_name;
+              const updatedContent = editorContent.map(block =>
+                block.type === 'notion' ? updatedIntegrationBlock : block
+              );
 
-            if (hasChanges || titleChanged) {
-              setShowSyncNotice(true);
+              if (result.updatedTitle && result.updatedTitle !== selectedPageTitle) {
+                setSelectedPageTitle(result.updatedTitle);
+              }
+
+              if (onContentUpdate) {
+                onContentUpdate(updatedContent);
+              }
+            } else {
+              // For published status, compare with stored blocks to show sync notice
+              if (storedBlocks.length > 0) {
+                const hasChanges = compareNotionBlocks(storedBlocks, result.blocks);
+                const titleChanged = result.updatedTitle &&
+                  result.updatedTitle !== integrationBlock.props.resource_name;
+
+                if (hasChanges || titleChanged) {
+                  setShowSyncNotice(true);
+                }
+              }
             }
           }
 
@@ -535,11 +577,14 @@ export default function NotionIntegration({
           setHasCheckedForNotionUpdates(true);
         } finally {
           setIsLoading(false);
+          if (onLoadingChange) {
+            onLoadingChange(false);
+          }
         }
       };
       checkForUpdates();
     }
-  }, [isEditMode, selectedPageId, storedBlocks, hasCheckedForNotionUpdates, status, isLoading, editorContent]);
+  }, [isEditMode, selectedPageId, storedBlocks, hasCheckedForNotionUpdates, status, editorContent, storedBlocks, onContentUpdate, onLoadingChange]);
 
   // Don't show anything if not in edit mode
   if (!isEditMode) {
@@ -552,7 +597,7 @@ export default function NotionIntegration({
   }
 
   // Show loading state when fetching pages after integration check is complete
-  if (isLoading && hasIntegration) {
+  if ((isLoading && hasIntegration) || (!hasCheckedForNotionUpdates && status === 'published')) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
@@ -561,31 +606,42 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">Fetching notion pages...</span>
+          <span className="text-sm text-white">{selectedPageId ? 'Fetching notion page...' : 'Fetching notion pages...'}</span>
         </div>
       </div>
     );
   }
 
   // Show connect button if integration check is complete and not connected
-  if (!hasIntegration) {
+  if (!hasIntegration || noPagesFound) {
     return (
-      <div
-        className={`flex items-center gap-3 ml-4 ${className}`}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <Button
-          onClick={handleConnectNotion}
-          disabled={loading}
-          isLoading={isConnecting}
-          loadingText="Connecting..."
-          normalText="Connect Notion"
-          bgColor="bg-white"
-          textColor="text-black"
-          icon={<NotionIcon className="w-4 h-4" />}
+      <>
+        <div
+          className={`flex items-center gap-3 ml-4 ${className}`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <Button
+            onClick={handleConnectNotion}
+            disabled={loading}
+            isLoading={isConnecting}
+            loadingText="Connecting..."
+            normalText="Connect Notion"
+            bgColor="bg-white"
+            textColor="text-black"
+            icon={<NotionIcon className="w-4 h-4" />}
+          />
+        </div>
+
+        {/* Toast component - ensure it's always rendered when needed */}
+        <Toast
+          show={showToast}
+          title={toastTitle}
+          description={toastMessage}
+          emoji={toastEmoji}
+          onClose={() => setShowToast(false)}
         />
-      </div>
+      </>
     );
   }
 
@@ -596,28 +652,6 @@ export default function NotionIntegration({
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Show message when no pages are found */}
-        {noPagesFound && !selectedPageId && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-yellow-400 font-light">
-              No pages found
-            </span>
-          </div>
-        )}
-        {/* Show reconnect button if no pages found */}
-        {noPagesFound && !selectedPageId && (
-          <Button
-            onClick={handleReconnectNotion}
-            disabled={loading}
-            isLoading={isConnecting}
-            loadingText="Connecting..."
-            normalText="Reconnect Notion"
-            bgColor="bg-white"
-            textColor="text-black"
-            icon={<NotionIcon className="w-4 h-4" />}
-          />
-        )}
-
         {/* Show dropdown and add more pages button when pages are loaded and no page is selected */}
         {showDropdown && !selectedPageId && pages.length > 0 && (
           <>
@@ -718,6 +752,8 @@ export default function NotionIntegration({
             {error && (
               <div className="text-sm text-red-400 mt-3">{error}</div>
             )}
+
+            {/* Sync notice for edit mode - only show in published status */}
             {showSyncNotice && isEditMode && status === 'published' && (
               <div className="flex items-start gap-2 mt-3">
                 <svg className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

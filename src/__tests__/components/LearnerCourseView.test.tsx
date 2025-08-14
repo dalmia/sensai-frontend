@@ -466,6 +466,56 @@ describe('LearnerCourseView Component', () => {
             render(<LearnerCourseView {...mockProps} />);
             expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
         });
+
+        it('should show admin view banner when isAdminView is true and dialog is open', async () => {
+            // Mock user with name and email
+            mockUseAuth.mockReturnValue({
+                user: {
+                    id: 'admin-123',
+                    name: 'Admin User',
+                    email: 'admin@example.com'
+                },
+                isAuthenticated: true,
+                isLoading: false,
+            });
+
+            render(<LearnerCourseView {...mockProps} isAdminView={true} />);
+
+            // Open a dialog to trigger the admin banner
+            const openButton = screen.getByTestId('open-item-item-1');
+            fireEvent.click(openButton);
+
+            await waitFor(() => {
+                // Should show the admin banner with user name
+                expect(screen.getByText(/You are viewing this course as/)).toBeInTheDocument();
+                expect(screen.getByText('Admin User')).toBeInTheDocument();
+            });
+        });
+
+        it('should show admin view banner with email when user name is not available', async () => {
+            // Mock user with only email
+            mockUseAuth.mockReturnValue({
+                user: {
+                    id: 'admin-123',
+                    name: null,
+                    email: 'admin@example.com'
+                },
+                isAuthenticated: true,
+                isLoading: false,
+            });
+
+            render(<LearnerCourseView {...mockProps} isAdminView={true} />);
+
+            // Open a dialog to trigger the admin banner
+            const openButton = screen.getByTestId('open-item-item-1');
+            fireEvent.click(openButton);
+
+            await waitFor(() => {
+                // Should show the admin banner with email
+                expect(screen.getByText(/You are viewing this course as/)).toBeInTheDocument();
+                expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+            });
+        });
     });
 
     describe('UseEffect Hooks', () => {

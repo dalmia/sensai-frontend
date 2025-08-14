@@ -112,6 +112,15 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
         }
     };
 
+    // Format learner name
+    const formatLearnerName = (member: CohortMember): string => {
+        const name = [member.first_name, member.middle_name, member.last_name]
+          .filter(Boolean)
+          .join(' ');
+          
+        return name || member.email;
+    }
+
     // Set initial active course when courses change or activeCourseIndex changes
     useEffect(() => {
         if (cohort?.courses && cohort.courses.length > 0) {
@@ -661,7 +670,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             return (
                                                 <tr key={studentId} className="border-b border-gray-800 hover:bg-black/30">
                                                     <td className="p-4">
-                                                        {member ? member.email : `Learner ${studentId}`}
+                                                        {formatLearnerName(member)}
                                                     </td>
                                                     {courseMetrics.task_type_metrics?.learning_material && (
                                                         <td className={`p-4 ${getColorClass(learningMaterialCompletion)}`}>

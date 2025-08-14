@@ -969,6 +969,14 @@ export default function LearnerCourseView({
                     className="fixed inset-0 bg-black z-50 overflow-hidden"
                     onClick={handleDialogBackdropClick}
                 >
+                    {isAdminView && (
+                    <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
+                        <p className="font-light text-sm">
+                                You are viewing this course as <span className="font-medium">{user?.name || user?.email}</span>
+                            </p>
+                        </div>
+                    )}
+
                     <div
                         ref={dialogContentRef}
                         className="w-full h-full flex flex-row"
@@ -985,7 +993,7 @@ export default function LearnerCourseView({
                         )}
 
                         {/* Sidebar with module tasks - hidden on mobile by default */}
-                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 h-full bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
+                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
                             {/* Sidebar Header */}
                             <div className="p-4 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
                                 <h3 className="text-lg font-light text-white truncate">
@@ -1112,7 +1120,7 @@ export default function LearnerCourseView({
                         </div>
 
                         {/* Main Content */}
-                        <div className="flex-1 h-full flex flex-col bg-[#1A1A1A]">
+                        <div className={`flex-1 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} flex flex-col bg-[#1A1A1A]`}>
                             {/* Dialog Header */}
                             <div
                                 className={`flex items-start justify-between p-4 border-b border-gray-800 ${
