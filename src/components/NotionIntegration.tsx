@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { RefreshCcw, Unlink } from "lucide-react";
@@ -131,7 +131,6 @@ export default function NotionIntegration({
   const [toastTitle, setToastTitle] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [toastEmoji, setToastEmoji] = useState("⚠️");
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkIntegration = async () => {
     try {
@@ -175,25 +174,13 @@ export default function NotionIntegration({
   // Add useEffect to automatically hide toast after 5 seconds
   useEffect(() => {
     if (showToast) {
-      // Clear any existing timer
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-
-      // Set new timer
-      toastTimerRef.current = setTimeout(() => {
+      const timer = setTimeout(() => {
         setShowToast(false);
-        toastTimerRef.current = null;
       }, 5000);
-    }
 
-    // Cleanup function
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = null;
-      }
-    };
+      // Cleanup the timer when component unmounts or showToast changes
+      return () => clearTimeout(timer);
+    }
   }, [showToast]);
 
   // Check if user has integration and handle OAuth callback
@@ -379,7 +366,7 @@ export default function NotionIntegration({
   // Function to show toast for no pages found
   const showNoPagesToast = () => {
     setToastTitle("No pages found");
-    setToastMessage("No pages were found in your Notion workspace. Please create a page in Notion and try again.");
+    setToastMessage("No pages were found. Please select some pages while connecting Notion.");
     setToastEmoji("📄");
     setShowToast(true);
   };
@@ -627,7 +614,6 @@ export default function NotionIntegration({
 
   // Show connect button if integration check is complete and not connected
   if (!hasIntegration || noPagesFound) {
-    console.log('Showing connect button - hasIntegration:', hasIntegration, 'noPagesFound:', noPagesFound);
     return (
       <>
         <div
