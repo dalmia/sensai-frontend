@@ -597,7 +597,7 @@ export default function NotionIntegration({
   }
 
   // Show loading state when fetching pages after integration check is complete
-  if (isLoading && hasIntegration || (!hasCheckedForNotionUpdates && status === 'published')) {
+  if ((isLoading && hasIntegration) || (!hasCheckedForNotionUpdates && status === 'published')) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
@@ -606,7 +606,7 @@ export default function NotionIntegration({
       >
         <div className="flex items-center">
           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-          <span className="text-sm text-white">{selectedPageId ? 'Fetching integration...' : 'Fetching notion pages...'}</span>
+          <span className="text-sm text-white">{selectedPageId ? 'Fetching notion page...' : 'Fetching notion pages...'}</span>
         </div>
       </div>
     );
