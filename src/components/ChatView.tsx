@@ -97,6 +97,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     // Get coding languages from question config
     const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
 
+    const disableCopyPaste = !currentQuestionConfig?.settings?.allowCopyPaste;
+
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = codingLanguages.some((lang: string) =>
         ['html', 'css', 'js', 'sql', 'react'].includes(lang?.toLowerCase())
@@ -485,6 +487,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     languages={codingLanguages}
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
+                    disableCopyPaste={disableCopyPaste}
                 />
             );
         } else {
@@ -581,6 +584,21 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             boxShadow: "none",
                                                             padding: "12px 24px",
                                                             resize: "none"
+                                                        }}
+                                                        onCopy={(event) => {
+                                                            if (disableCopyPaste) {
+                                                                event.preventDefault();
+                                                            }
+                                                        }}
+                                                        onPaste={(event) => {
+                                                            if (disableCopyPaste) {
+                                                                event.preventDefault();
+                                                            }
+                                                        }}
+                                                        onCut={(event) => {
+                                                            if (disableCopyPaste) {
+                                                                event.preventDefault();
+                                                            }
                                                         }}
                                                     />
                                                 </div>

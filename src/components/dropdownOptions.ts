@@ -32,6 +32,23 @@ export const questionTypeOptions: DropdownOption[] = [
     },
 ];
 
+// Options for copy-paste control in exam questions
+export const copyPasteControlOptions: DropdownOption[] = [
+    {
+        "label": "Allow",
+        "value": "true",
+        "color": "#3C6562",
+        "tooltip": "Learners can copy and paste content during the exam"
+    },
+    {
+        "label": "Disable",
+        "value": "false",
+        "color": "#E43F5A",
+        "tooltip": "Copy and paste is disabled to prevent cheating"
+    },
+];
+
+
 // Options for answer types in the quiz editor
 export const answerTypeOptions: DropdownOption[] = [
     {

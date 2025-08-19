@@ -112,7 +112,8 @@ export default function LearnerQuizView({
                     questionType: q.config?.questionType,
                     correctAnswer: q.config?.correctAnswer || [],
                     scorecardData: q.config?.scorecardData,
-                    codingLanguages: q.config?.codingLanguages || [] // Ensure code language is set
+                    codingLanguages: q.config?.codingLanguages || [], // Ensure code language is set
+                    settings: q.config?.settings,
                 };
                 return {
                     ...q,
@@ -133,7 +134,8 @@ export default function LearnerQuizView({
                         questionType: config.questionType,
                         correctAnswer: config.correctAnswer || [],
                         scorecardData: config.scorecardData,
-                        codingLanguages: config.codingLanguages || [] // Ensure code language is set
+                        codingLanguages: config.codingLanguages || [], // Ensure code language is set
+                        settings: config.settings,
                     }
                 };
             }
@@ -150,7 +152,8 @@ export default function LearnerQuizView({
                     questionType: config.questionType,
                     correctAnswer: config.correctAnswer || [],
                     scorecardData: config.scorecardData,
-                    codingLanguages: config.codingLanguages || [] // Ensure code language is set
+                    codingLanguages: config.codingLanguages || [], // Ensure code language is set
+                    settings: config.settings,
                 }
             };
         });

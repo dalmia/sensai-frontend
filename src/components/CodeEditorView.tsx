@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
+import type { editor as MonacoEditor, IDisposable, IKeyboardEvent } from 'monaco-editor';
 import { Play, Send, Terminal, ArrowLeft, X } from 'lucide-react';
 import Toast from './Toast';
 
@@ -8,6 +9,7 @@ interface CodeEditorViewProps {
     languages?: string[];
     handleCodeSubmit: (code: Record<string, string>) => void;
     onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
+    disableCopyPaste?: boolean;
 }
 
 // Add interface for the ref methods
@@ -409,6 +411,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     languages = ['javascript'],
     handleCodeSubmit,
     onCodeRun,
+    disableCopyPaste = false,
 }, ref) => {
     // Check if React is in the original languages array
     const hasReact = languages.some(lang =>
@@ -469,6 +472,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     const [showInputPanel, setShowInputPanel] = useState<boolean>(false);
     const [stdInput, setStdInput] = useState<string>('');
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+    const keydownDisposableRef = useRef<IDisposable | null>(null);
 
     // Reset active language when languages prop changes
     useEffect(() => {
@@ -1084,8 +1089,21 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
     // Monaco editor setup
     const handleEditorDidMount = (editor: any, monaco: Monaco) => {
-        // You can customize the editor here if needed
+        editorRef.current = editor;
         editor.focus();
+        if (disableCopyPaste) {
+            keydownDisposableRef.current = editor.onKeyDown((e: IKeyboardEvent) => {
+                const isCmdCtrl = e.ctrlKey || e.metaKey;
+                const key = (e.browserEvent?.key || '').toLowerCase();
+                const isCopy = isCmdCtrl && key === 'c';
+                const isCut = isCmdCtrl && key === 'x';
+                const isPaste = isCmdCtrl && key === 'v';
+                if (isCopy || isCut || isPaste) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+        }
     };
 
     // Get the correct Monaco editor language based on active language
@@ -1286,6 +1304,9 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 setStdInput(e.target.value);
                                 setInputError(false); // Clear error on input change
                             }}
+                            onCopy={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
+                            onCut={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
+                            onPaste={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
                             placeholder="Add every input to your program in a new line"
                         />
                     </div>

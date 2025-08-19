@@ -20,7 +20,7 @@ import ScorecardPickerDialog, { CriterionData, ScorecardTemplate } from "./Score
 // Import the new Scorecard component
 import Scorecard, { ScorecardHandle } from "./Scorecard";
 // Import dropdown options
-import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions } from "./dropdownOptions";
+import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
 // Add import for LearningMaterialLinker
@@ -55,7 +55,8 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     questionType: 'objective',
     knowledgeBaseBlocks: [],
     linkedMaterialIds: [],
-    title: ''
+    title: '',
+    settings: {},
 };
 
 // Add these new interfaces after your existing interfaces
@@ -334,6 +335,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
+                            const settings = { allowCopyPaste: true };
+                            if (question.settings) {
+                                settings.allowCopyPaste = question.settings.allowCopyPaste;
+                            }
+
                             return {
                                 id: String(question.id),
                                 content: question.blocks || [],
@@ -346,7 +352,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     knowledgeBaseBlocks: knowledgeBaseBlocks,
                                     linkedMaterialIds: linkedMaterialIds,
                                     codingLanguages: question.coding_languages || [],
-                                    title: question.title
+                                    title: question.title,
+                                    settings: settings
                                 }
                             };
                         });
@@ -1250,7 +1257,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         let inputType: 'text' | 'code' | 'audio' = 'text';
         let codingLanguages: string[] = [];
         let responseType: 'chat' | 'exam' = 'chat';
-
+        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: true };
         // If there's at least one question (to be used as a reference)
         if (questions.length > 0) {
             const previousQuestion = questions[questions.length - 1];
@@ -1266,6 +1273,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     codingLanguages = [...previousQuestion.config.codingLanguages];
                 }
                 responseType = previousQuestion.config.responseType;
+                settings = previousQuestion.config.settings
             }
         }
 
@@ -1279,6 +1287,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 codingLanguages: codingLanguages,
                 responseType: responseType,
                 title: 'Question ' + (questions.length + 1),
+                settings: settings
             }
         };
 
@@ -1518,6 +1527,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config),
                     title: question.config.title,
+                    settings: question.config.settings,
                 };
             });
 
@@ -1608,6 +1618,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config),
                     title: question.config.title,
+                    settings: question.config.settings,
                 };
             });
 
@@ -1951,6 +1962,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [handleConfigChange]);
 
+    // Handle copy-paste control change
+    const handleCopyPasteControlChange = useCallback((option: DropdownOption | DropdownOption[]) => {
+        if (!Array.isArray(option)) {
+            setSelectedCopyPasteControl(option);
+            handleConfigChange({ settings: { allowCopyPaste: option.value === 'true' } });
+        }
+    }, [handleConfigChange]);
+
     // Handle answer type change
     const handleAnswerTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
         // We know this is a single-select dropdown
@@ -2044,6 +2063,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
     const [selectedCodingLanguages, setSelectedCodingLanguages] = useState<DropdownOption[]>([codingLanguageOptions[0]]);
     const [selectedPurpose, setSelectedPurpose] = useState<DropdownOption>(questionPurposeOptions[0]);
+    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[0]);
 
     // Update the selected options based on the current question's config
     useEffect(() => {
@@ -2058,6 +2078,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Set purpose based on config.purpose or default to 'practice'
             setSelectedPurpose(getPurposeOption(currentConfig.responseType));
+
+            // Set copy-paste control based on config.settings or default to 'allow'
+            const allowCopyPaste = currentConfig.settings?.allowCopyPaste;
+            if (allowCopyPaste !== undefined) {
+                const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
+                setSelectedCopyPasteControl(copyPasteOption || copyPasteControlOptions[0]);
+            } else {
+                setSelectedCopyPasteControl(copyPasteControlOptions[0]); // Default to allow
+            }
 
             // Set coding languages based on config.codingLanguages or default to first option
             if (currentConfig.codingLanguages && currentConfig.codingLanguages.length > 0) {
@@ -2452,7 +2481,18 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 disabled={readOnly}
                                             />
                                         </div>
-
+                                                {selectedPurpose.value === 'exam' && (
+                                                    <div className="flex items-center">
+                                                        <Dropdown
+                                                            icon={<ClipboardCheck size={16} />}
+                                                            title="Copy-Paste Control"
+                                                            options={copyPasteControlOptions}
+                                                            selectedOption={selectedCopyPasteControl}
+                                                            onChange={handleCopyPasteControlChange}
+                                                            disabled={readOnly}
+                                                        />
+                                                    </div>
+                                                )}
                                         <div className="flex items-center">
                                             <Dropdown
                                                 icon={<HelpCircle size={16} />}

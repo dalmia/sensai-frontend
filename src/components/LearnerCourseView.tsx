@@ -33,6 +33,7 @@ interface LearnerCourseViewProps {
     learnerId?: string;
     isTestMode?: boolean;
     isAdminView?: boolean;
+    learnerName?: string;
 }
 
 export default function LearnerCourseView({
@@ -46,6 +47,7 @@ export default function LearnerCourseView({
     viewOnly = false,
     learnerId = '',
     isAdminView = false,
+    learnerName = '',
 }: LearnerCourseViewProps) {
     // Get user from auth context
     const { user } = useAuth();
@@ -342,7 +344,8 @@ export default function LearnerCourseView({
                             title: q.title,
                             scorecardData: {
                                 id: q.scorecard_id,
-                            }
+                            },
+                            settings: q.settings
                         }
                     };
                 });
@@ -969,10 +972,10 @@ export default function LearnerCourseView({
                     className="fixed inset-0 bg-black z-50 overflow-hidden"
                     onClick={handleDialogBackdropClick}
                 >
-                    {isAdminView && (
+                    {isAdminView && learnerName && (
                     <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
                         <p className="font-light text-sm">
-                                You are viewing this course as <span className="font-medium">{user?.name || user?.email}</span>
+                                You are viewing this course as <span className="font-medium">{learnerName}</span>
                             </p>
                         </div>
                     )}

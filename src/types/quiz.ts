@@ -37,6 +37,7 @@ export interface QuizQuestionConfig {
     knowledgeBaseBlocks: any[]; // Add knowledge base content blocks
     linkedMaterialIds: string[]; // Add IDs of linked learning materials
     title: string;
+    settings?: any;
 }
 
 export interface QuizQuestion {
@@ -106,7 +107,8 @@ export interface APIQuestionResponse {
         linkedMaterialIds?: string[];
     };
     coding_languages?: string[];
-} 
+    settings?: any;
+}
 
 
 // Define a message type for the chat history
