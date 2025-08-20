@@ -1628,6 +1628,33 @@ export default function LearnerQuizView({
         };
     }, []);
 
+    // Handle keyboard shortcuts to prevent select all when copy-paste is disabled
+    useEffect(() => {
+        function handleKeyDown(event: KeyboardEvent) {
+            // Check if copy-paste is disabled for the current question
+            if (!questions[currentQuestionIndex]?.config?.settings?.allowCopyPaste) {
+                // Prevent CMD+A or CTRL+A
+                if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    // Show toast
+                    setToastData({
+                        title: 'Not allowed',
+                        description: 'Selecting all text is disabled for this question',
+                        emoji: '🚫'
+                    });
+                    setShowToast(true);
+                }
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [currentQuestionIndex, questions]);
+
     // Toggle mobile menu
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(prev => !prev);
