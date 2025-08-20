@@ -2081,8 +2081,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Set copy-paste control based on config.settings
             const allowCopyPaste = currentConfig.settings?.allowCopyPaste;
-            const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
-            setSelectedCopyPasteControl(copyPasteOption || copyPasteControlOptions[0]);
+            if (allowCopyPaste !== undefined) {
+                const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
+                setSelectedCopyPasteControl(copyPasteOption);
+            } else {
+                setSelectedCopyPasteControl(copyPasteControlOptions[0]);
+            }
 
             // Set coding languages based on config.codingLanguages or default to first option
             if (currentConfig.codingLanguages && currentConfig.codingLanguages.length > 0) {

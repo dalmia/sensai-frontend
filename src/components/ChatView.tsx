@@ -413,7 +413,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     const [isSaving, setIsSaving] = useState(false);
 
     // Unified toast state for all notifications
-    const [showToast, setShowToast] = useState(false);
     const [toastData, setToastData] = useState({
         title: '',
         description: '',
@@ -468,7 +467,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                 description: 'The code will be restored when you return to this question',
                 emoji: '✅'
             });
-            setShowToast(true);
         } catch (error) {
             console.error('Error saving code:', error);
             // Optionally show error feedback
@@ -479,14 +477,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Auto-hide toast after 3 seconds
     useEffect(() => {
-        if (showToast) {
+        if (toastData.title || toastData.description) {
             const timer = setTimeout(() => {
-                setShowToast(false);
+                setToastData({ title: '', description: '', emoji: '' });
             }, 3000);
 
             return () => clearTimeout(timer);
         }
-    }, [showToast]);
+    }, [toastData.title, toastData.description]);
 
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
@@ -603,11 +601,10 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
                                                                 // Show toast message
                                                                 setToastData({
-                                                                    title: 'Pasting is disabled',
-                                                                    description: 'Pasting is disabled for this question',
+                                                                    title: 'Not allowed',
+                                                                    description: 'Pasting the answer is disabled for this question',
                                                                     emoji: '🚫'
                                                                 });
-                                                                setShowToast(true);
                                                             }
                                                         }}
                                                     />
@@ -838,11 +835,11 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
             {/* Toast */}
             <Toast
-                show={showToast}
+                show={Boolean(toastData.title || toastData.description)}
                 title={toastData.title}
                 description={toastData.description}
                 emoji={toastData.emoji}
-                onClose={() => setShowToast(false)}
+                onClose={() => setToastData({ title: '', description: '', emoji: '' })}
             />
         </div>
     );

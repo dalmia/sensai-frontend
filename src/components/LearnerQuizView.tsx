@@ -1987,7 +1987,7 @@ export default function LearnerQuizView({
 
                                     // Show toast
                                     setToastData({
-                                        title: 'Copying is disabled',
+                                        title: 'Not allowed',
                                         description: 'Copying is disabled for this question',
                                         emoji: '🚫'
                                     });

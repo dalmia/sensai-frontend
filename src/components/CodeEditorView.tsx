@@ -1108,8 +1108,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                     e.stopPropagation();
 
                     setToastData({
-                        title: `Pasting is disabled`,
-                        description: `Pasting is disabled for this question`,
+                        title: 'Not allowed',
+                        description: 'Pasting the answer is disabled for this question',
                         emoji: '🚫'
                     });
                     setShowToast(true);

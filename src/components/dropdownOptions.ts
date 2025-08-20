@@ -38,13 +38,13 @@ export const copyPasteControlOptions: DropdownOption[] = [
         "label": "Allow",
         "value": "true",
         "color": "#3C6562",
-        "tooltip": "Learners can copy and paste content during the exam"
+        "tooltip": "Learners can copy the question content and paste their answer for this question"
     },
     {
         "label": "Disable",
         "value": "false",
         "color": "#E43F5A",
-        "tooltip": "Copy and paste is disabled to prevent cheating"
+        "tooltip": "Learners cannot copy the question content or paste their answer for this question"
     },
 ];
 
