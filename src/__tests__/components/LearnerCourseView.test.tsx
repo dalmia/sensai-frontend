@@ -479,15 +479,20 @@ describe('LearnerCourseView Component', () => {
                 isLoading: false,
             });
 
-            render(<LearnerCourseView {...mockProps} isAdminView={true} />);
+            render(<LearnerCourseView {...mockProps} isAdminView={true} learnerName="Admin User" />);
 
             // Open a dialog to trigger the admin banner
             const openButton = screen.getByTestId('open-item-item-1');
             fireEvent.click(openButton);
 
             await waitFor(() => {
-                // Should show the admin banner with user name
-                expect(screen.getByText(/You are viewing this course as/)).toBeInTheDocument();
+                // Should show the admin banner with user name inside the dialog banner structure
+                const bannerText = screen.getByText((content, element) => {
+                    return element?.tagName === 'P' &&
+                        element?.className.includes('font-light') &&
+                        element?.textContent?.includes('You are viewing this course as');
+                });
+                expect(bannerText).toBeInTheDocument();
                 expect(screen.getByText('Admin User')).toBeInTheDocument();
             });
         });
@@ -504,15 +509,20 @@ describe('LearnerCourseView Component', () => {
                 isLoading: false,
             });
 
-            render(<LearnerCourseView {...mockProps} isAdminView={true} />);
+            render(<LearnerCourseView {...mockProps} isAdminView={true} learnerName="admin@example.com" />);
 
             // Open a dialog to trigger the admin banner
             const openButton = screen.getByTestId('open-item-item-1');
             fireEvent.click(openButton);
 
             await waitFor(() => {
-                // Should show the admin banner with email
-                expect(screen.getByText(/You are viewing this course as/)).toBeInTheDocument();
+                // Should show the admin banner with email inside the dialog banner structure
+                const bannerText = screen.getByText((content, element) => {
+                    return element?.tagName === 'P' &&
+                        element?.className.includes('font-light') &&
+                        element?.textContent?.includes('You are viewing this course as');
+                });
+                expect(bannerText).toBeInTheDocument();
                 expect(screen.getByText('admin@example.com')).toBeInTheDocument();
             });
         });

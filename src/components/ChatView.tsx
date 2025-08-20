@@ -97,6 +97,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     // Get coding languages from question config
     const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
 
+    const disableCopyPaste = !currentQuestionConfig?.settings?.allowCopyPaste;
+
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = codingLanguages.some((lang: string) =>
         ['html', 'css', 'js', 'sql', 'react'].includes(lang?.toLowerCase())
@@ -408,8 +410,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     };
 
     // Handle save functionality
-    const [showSaveToast, setShowSaveToast] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Unified toast state for all notifications
+    const [toastData, setToastData] = useState({
+        title: '',
+        description: '',
+        emoji: ''
+    });
 
     const handleSave = async () => {
         if (!codeEditorRef.current || !currentQuestionId || isSaving) {
@@ -454,7 +462,11 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             console.log('here')
 
             // Show success toast
-            setShowSaveToast(true);
+            setToastData({
+                title: 'Code Saved',
+                description: 'The code will be restored when you return to this question',
+                emoji: '✅'
+            });
         } catch (error) {
             console.error('Error saving code:', error);
             // Optionally show error feedback
@@ -463,16 +475,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     };
 
-    // Auto-hide save toast after 3 seconds
+    // Auto-hide toast after 3 seconds
     useEffect(() => {
-        if (showSaveToast) {
+        if (toastData.title || toastData.description) {
             const timer = setTimeout(() => {
-                setShowSaveToast(false);
+                setToastData({ title: '', description: '', emoji: '' });
             }, 3000);
 
             return () => clearTimeout(timer);
         }
-    }, [showSaveToast]);
+    }, [toastData.title, toastData.description]);
 
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
@@ -485,6 +497,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     languages={codingLanguages}
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
+                    disableCopyPaste={disableCopyPaste}
                 />
             );
         } else {
@@ -581,6 +594,18 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             boxShadow: "none",
                                                             padding: "12px 24px",
                                                             resize: "none"
+                                                        }}
+                                                        onPaste={(event) => {
+                                                            if (disableCopyPaste) {
+                                                                event.preventDefault();
+
+                                                                // Show toast message
+                                                                setToastData({
+                                                                    title: 'Not allowed',
+                                                                    description: 'Pasting the answer is disabled for this question',
+                                                                    emoji: '🚫'
+                                                                });
+                                                            }
                                                         }}
                                                     />
                                                 </div>
@@ -808,13 +833,13 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             {/* Main content area with code editor or chat view */}
             {renderMainContent()}
 
-            {/* Save Toast */}
+            {/* Toast */}
             <Toast
-                show={showSaveToast}
-                title="Code Saved"
-                description="The code will be restored when you return to this question"
-                emoji="✅"
-                onClose={() => setShowSaveToast(false)}
+                show={Boolean(toastData.title || toastData.description)}
+                title={toastData.title}
+                description={toastData.description}
+                emoji={toastData.emoji}
+                onClose={() => setToastData({ title: '', description: '', emoji: '' })}
             />
         </div>
     );

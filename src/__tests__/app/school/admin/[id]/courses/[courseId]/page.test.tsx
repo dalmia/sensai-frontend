@@ -670,8 +670,9 @@ describe('CreateCourse Page', () => {
 
         // Mock the contentEditable element for module
         const mockElement = {
-            textContent: 'Updated Module Title'
-        };
+            textContent: 'Updated Module Title',
+            focus: jest.fn()
+        } as any;
         (document.querySelector as jest.Mock).mockReturnValue(mockElement);
 
         // Mock successful PUT request for module title update

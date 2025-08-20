@@ -89,6 +89,14 @@ jest.mock('../../components/ChatView', () => {
                 <button onClick={() => props.handleAudioSubmit(new Blob())} data-testid="submit-audio">Submit Audio</button>
                 <button onClick={() => props.handleRetry()} data-testid="retry-button">Retry</button>
                 <button
+                    onClick={() => props.handleViewScorecard?.([
+                        { category: 'Score', feedback: 'Nice', score: 5 }
+                    ])}
+                    data-testid="view-scorecard"
+                >
+                    View Scorecard
+                </button>
+                <button
                     onClick={() => {
                         // For mobile view change test - trigger code state with exact conditions
                         if (props.onCodeStateChange && window.innerWidth < 1024) {
@@ -1204,6 +1212,13 @@ describe('LearnerQuizView Component', () => {
 
             expect(screen.getByTestId('chat-view')).toBeInTheDocument();
             expect(screen.queryByTestId('scorecard-view')).not.toBeInTheDocument();
+
+            // Trigger scorecard through ChatView mock
+            const viewScorecardBtn = screen.getByTestId('view-scorecard');
+            fireEvent.click(viewScorecardBtn);
+
+            // Now the ScorecardView mock should render
+            expect(screen.getByTestId('scorecard-view')).toBeInTheDocument();
         });
 
         it('handles scorecard data correctly', () => {

@@ -284,6 +284,10 @@ jest.mock('../../components/dropdownOptions', () => ({
     questionPurposeOptions: [
         { value: 'chat', label: 'Practice' },
         { value: 'exam', label: 'Exam' }
+    ],
+    copyPasteControlOptions: [
+        { value: 'true', label: 'Allow' },
+        { value: 'false', label: 'Disable' }
     ]
 }));
 

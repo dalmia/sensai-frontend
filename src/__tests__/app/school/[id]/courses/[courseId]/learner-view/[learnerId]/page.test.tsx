@@ -227,7 +227,8 @@ describe('AdminLearnerViewPage', () => {
                     learnerId: 'learner789',
                     cohortId: 'cohort101',
                     courseId: 'course456',
-                    isAdminView: true
+                    isAdminView: true,
+                    learnerName: 'student@example.com'
                 },
                 undefined
             );
