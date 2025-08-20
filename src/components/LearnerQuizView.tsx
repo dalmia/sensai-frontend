@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { BlockList } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
+import Toast from "./Toast";
 
 // Add interface for mobile view mode
 export interface MobileViewMode {
@@ -210,6 +211,27 @@ export default function LearnerQuizView({
 
     // Use a single state to track completed/submitted questions - initialize with props
     const [completedQuestionIds, setCompletedQuestionIds] = useState<Record<string, boolean>>(initialCompletedQuestionIds);
+
+    // State to track toast data
+    const [toastData, setToastData] = useState({
+        title: '',
+        description: '',
+        emoji: ''
+    });
+
+    // State to track if toast is visible
+    const [showToast, setShowToast] = useState(false);
+
+    // Auto-hide toast after 3 seconds
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
 
     // Update completedQuestionIds when the prop changes
     useEffect(() => {
@@ -1956,7 +1978,23 @@ export default function LearnerQuizView({
 
                     <div className={`flex-1 ${questions.length > 1 ? 'mt-4' : ''}`}>
                         {/* Use editor with negative margin to offset unwanted space */}
-                        <div className="ml-[-60px]"> {/* Increased negative margin to align with navigation arrow */}
+                        <div
+                            className="ml-[-60px]"
+                            onCopy={(e) => {
+                                if (!questions[currentQuestionIndex].config.settings?.allowCopyPaste) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    // Show toast
+                                    setToastData({
+                                        title: 'Copying is disabled',
+                                        description: 'Copying is disabled for this question',
+                                        emoji: '🚫'
+                                    });
+                                    setShowToast(true);
+                                }
+                            }}
+                        > {/* Increased negative margin to align with navigation arrow */}
                             {integrationBlocks.length > 0 ? (
                                 <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
@@ -2140,6 +2178,15 @@ export default function LearnerQuizView({
                     </div>
                 </div>
             )}
+
+            {/* Toast */}
+            <Toast
+                show={showToast}
+                title={toastData.title}
+                description={toastData.description}
+                emoji={toastData.emoji}
+                onClose={() => setShowToast(false)}
+            />
         </div>
     );
 } 

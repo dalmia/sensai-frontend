@@ -2079,14 +2079,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Set purpose based on config.purpose or default to 'practice'
             setSelectedPurpose(getPurposeOption(currentConfig.responseType));
 
-            // Set copy-paste control based on config.settings or default to 'allow'
+            // Set copy-paste control based on config.settings
             const allowCopyPaste = currentConfig.settings?.allowCopyPaste;
-            if (allowCopyPaste !== undefined) {
-                const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
-                setSelectedCopyPasteControl(copyPasteOption || copyPasteControlOptions[0]);
-            } else {
-                setSelectedCopyPasteControl(copyPasteControlOptions[0]); // Default to allow
-            }
+            const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
+            setSelectedCopyPasteControl(copyPasteOption || copyPasteControlOptions[0]);
 
             // Set coding languages based on config.codingLanguages or default to first option
             if (currentConfig.codingLanguages && currentConfig.codingLanguages.length > 0) {
@@ -2485,7 +2481,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     <div className="flex items-center">
                                                         <Dropdown
                                                             icon={<ClipboardCheck size={16} />}
-                                                            title="Copy-Paste Control"
+                                                            title="Allow copy/paste?"
                                                             options={copyPasteControlOptions}
                                                             selectedOption={selectedCopyPasteControl}
                                                             onChange={handleCopyPasteControlChange}

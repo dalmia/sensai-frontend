@@ -1088,23 +1088,54 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     };
 
     // Monaco editor setup
-    const handleEditorDidMount = (editor: any, monaco: Monaco) => {
-        editorRef.current = editor;
-        editor.focus();
-        if (disableCopyPaste) {
+    const setupPastePreventionHandler = () => {
+        const editor = editorRef.current;
+
+        // Dispose any existing listener first
+        if (keydownDisposableRef.current) {
+            try {
+                keydownDisposableRef.current.dispose();
+            } catch { }
+            keydownDisposableRef.current = null;
+        }
+
+        if (editor && disableCopyPaste) {
             keydownDisposableRef.current = editor.onKeyDown((e: IKeyboardEvent) => {
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
                 const key = (e.browserEvent?.key || '').toLowerCase();
-                const isCopy = isCmdCtrl && key === 'c';
-                const isCut = isCmdCtrl && key === 'x';
-                const isPaste = isCmdCtrl && key === 'v';
-                if (isCopy || isCut || isPaste) {
+                if (isCmdCtrl && key === 'v') {
                     e.preventDefault();
                     e.stopPropagation();
+
+                    setToastData({
+                        title: `Pasting is disabled`,
+                        description: `Pasting is disabled for this question`,
+                        emoji: '🚫'
+                    });
+                    setShowToast(true);
                 }
             });
         }
     };
+
+    const handleEditorDidMount = (editor: any, monaco: Monaco) => {
+        editorRef.current = editor;
+        editor.focus();
+        setupPastePreventionHandler();
+    };
+
+    // Update paste prevention when flag changes and cleanup on unmount
+    useEffect(() => {
+        setupPastePreventionHandler();
+        return () => {
+            if (keydownDisposableRef.current) {
+                try {
+                    keydownDisposableRef.current.dispose();
+                } catch { }
+                keydownDisposableRef.current = null;
+            }
+        };
+    }, [disableCopyPaste]);
 
     // Get the correct Monaco editor language based on active language
     const getMonacoLanguage = (lang: string) => {
@@ -1304,9 +1335,6 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 setStdInput(e.target.value);
                                 setInputError(false); // Clear error on input change
                             }}
-                            onCopy={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
-                            onCut={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
-                            onPaste={(e) => { if (disableCopyPaste) { e.preventDefault(); } }}
                             placeholder="Add every input to your program in a new line"
                         />
                     </div>

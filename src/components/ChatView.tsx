@@ -410,8 +410,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     };
 
     // Handle save functionality
-    const [showSaveToast, setShowSaveToast] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Unified toast state for all notifications
+    const [showToast, setShowToast] = useState(false);
+    const [toastData, setToastData] = useState({
+        title: '',
+        description: '',
+        emoji: ''
+    });
 
     const handleSave = async () => {
         if (!codeEditorRef.current || !currentQuestionId || isSaving) {
@@ -456,7 +463,12 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             console.log('here')
 
             // Show success toast
-            setShowSaveToast(true);
+            setToastData({
+                title: 'Code Saved',
+                description: 'The code will be restored when you return to this question',
+                emoji: '✅'
+            });
+            setShowToast(true);
         } catch (error) {
             console.error('Error saving code:', error);
             // Optionally show error feedback
@@ -465,16 +477,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     };
 
-    // Auto-hide save toast after 3 seconds
+    // Auto-hide toast after 3 seconds
     useEffect(() => {
-        if (showSaveToast) {
+        if (showToast) {
             const timer = setTimeout(() => {
-                setShowSaveToast(false);
+                setShowToast(false);
             }, 3000);
 
             return () => clearTimeout(timer);
         }
-    }, [showSaveToast]);
+    }, [showToast]);
 
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
@@ -585,19 +597,17 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             padding: "12px 24px",
                                                             resize: "none"
                                                         }}
-                                                        onCopy={(event) => {
-                                                            if (disableCopyPaste) {
-                                                                event.preventDefault();
-                                                            }
-                                                        }}
                                                         onPaste={(event) => {
                                                             if (disableCopyPaste) {
                                                                 event.preventDefault();
-                                                            }
-                                                        }}
-                                                        onCut={(event) => {
-                                                            if (disableCopyPaste) {
-                                                                event.preventDefault();
+
+                                                                // Show toast message
+                                                                setToastData({
+                                                                    title: 'Pasting is disabled',
+                                                                    description: 'Pasting is disabled for this question',
+                                                                    emoji: '🚫'
+                                                                });
+                                                                setShowToast(true);
                                                             }
                                                         }}
                                                     />
@@ -826,13 +836,13 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             {/* Main content area with code editor or chat view */}
             {renderMainContent()}
 
-            {/* Save Toast */}
+            {/* Toast */}
             <Toast
-                show={showSaveToast}
-                title="Code Saved"
-                description="The code will be restored when you return to this question"
-                emoji="✅"
-                onClose={() => setShowSaveToast(false)}
+                show={showToast}
+                title={toastData.title}
+                description={toastData.description}
+                emoji={toastData.emoji}
+                onClose={() => setShowToast(false)}
             />
         </div>
     );
