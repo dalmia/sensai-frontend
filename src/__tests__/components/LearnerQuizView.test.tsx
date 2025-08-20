@@ -546,6 +546,91 @@ describe('LearnerQuizView Component', () => {
         });
     });
 
+    describe('Keyboard shortcuts - prevent select all when copy-paste disabled', () => {
+        it('prevents CMD/CTRL+A and shows toast when allowCopyPaste is disabled', async () => {
+            const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+            const removeEventListenerSpy = jest.spyOn(document, 'removeEventListener');
+
+            const { unmount } = render(<LearnerQuizView {...defaultProps} />);
+
+            // Capture the keydown handler added by the effect
+            const keydownCall = addEventListenerSpy.mock.calls.find(call => call[0] === 'keydown');
+            expect(keydownCall).toBeTruthy();
+            const handler = keydownCall?.[1] as (e: KeyboardEvent) => void;
+            expect(typeof handler).toBe('function');
+
+            // Fire a synthetic keydown with metaKey + 'a'
+            const event: any = {
+                key: 'a',
+                metaKey: true,
+                ctrlKey: false,
+                preventDefault: jest.fn(),
+                stopPropagation: jest.fn()
+            };
+            handler(event);
+
+            await waitFor(() => {
+                expect(screen.getByText('Not allowed')).toBeInTheDocument();
+                expect(screen.getByText('Selecting all text is disabled for this question')).toBeInTheDocument();
+            });
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(event.stopPropagation).toHaveBeenCalled();
+
+            // Auto-hide after 3s
+            act(() => {
+                jest.advanceTimersByTime(3000);
+            });
+            await waitFor(() => {
+                expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+            });
+
+            // Unmount triggers cleanup and removal of the handler
+            unmount();
+            expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', handler);
+
+            addEventListenerSpy.mockRestore();
+            removeEventListenerSpy.mockRestore();
+        });
+
+        it('does not prevent select all and no toast when allowCopyPaste is enabled', async () => {
+            const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+
+            const questionsWithCopyPaste = [
+                {
+                    ...sampleQuestions[0],
+                    config: {
+                        ...sampleQuestions[0].config,
+                        settings: { allowCopyPaste: true }
+                    }
+                },
+                ...sampleQuestions.slice(1)
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={questionsWithCopyPaste as any} />);
+
+            const keydownCall = addEventListenerSpy.mock.calls.find(call => call[0] === 'keydown');
+            expect(keydownCall).toBeTruthy();
+            const handler = keydownCall?.[1] as (e: KeyboardEvent) => void;
+
+            const event: any = {
+                key: 'a',
+                metaKey: true,
+                ctrlKey: false,
+                preventDefault: jest.fn(),
+                stopPropagation: jest.fn()
+            };
+            handler(event);
+
+            // No toast should appear
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(event.stopPropagation).not.toHaveBeenCalled();
+
+            addEventListenerSpy.mockRestore();
+        });
+    });
+
     describe('Code View Functionality', () => {
         it('shows three-column layout for code questions', () => {
             render(<LearnerQuizView {...defaultProps} currentQuestionId="q3" />);
