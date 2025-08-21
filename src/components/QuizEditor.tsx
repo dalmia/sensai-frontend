@@ -335,7 +335,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
-                            const settings = { allowCopyPaste: true };
+                            const settings = { allowCopyPaste: false };
                             if (question.settings) {
                                 settings.allowCopyPaste = question.settings.allowCopyPaste;
                             }
@@ -1257,7 +1257,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         let inputType: 'text' | 'code' | 'audio' = 'text';
         let codingLanguages: string[] = [];
         let responseType: 'chat' | 'exam' = 'chat';
-        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: true };
+        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: false };
         // If there's at least one question (to be used as a reference)
         if (questions.length > 0) {
             const previousQuestion = questions[questions.length - 1];
@@ -2063,7 +2063,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
     const [selectedCodingLanguages, setSelectedCodingLanguages] = useState<DropdownOption[]>([codingLanguageOptions[0]]);
     const [selectedPurpose, setSelectedPurpose] = useState<DropdownOption>(questionPurposeOptions[0]);
-    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[0]);
+    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[1]);
 
     // Update the selected options based on the current question's config
     useEffect(() => {
@@ -2085,7 +2085,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
                 setSelectedCopyPasteControl(copyPasteOption);
             } else {
-                setSelectedCopyPasteControl(copyPasteControlOptions[0]);
+                setSelectedCopyPasteControl(copyPasteControlOptions[1]);
             }
 
             // Set coding languages based on config.codingLanguages or default to first option
@@ -2480,19 +2480,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 onChange={handlePurposeChange}
                                                 disabled={readOnly}
                                             />
-                                        </div>
-                                                {selectedPurpose.value === 'exam' && (
-                                                    <div className="flex items-center">
-                                                        <Dropdown
-                                                            icon={<ClipboardCheck size={16} />}
-                                                            title="Allow copy/paste?"
-                                                            options={copyPasteControlOptions}
-                                                            selectedOption={selectedCopyPasteControl}
-                                                            onChange={handleCopyPasteControlChange}
-                                                            disabled={readOnly}
-                                                        />
-                                                    </div>
-                                                )}
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <Dropdown
+                                                        icon={<ClipboardCheck size={16} />}
+                                                        title="Allow copy/paste?"
+                                                        options={copyPasteControlOptions}
+                                                        selectedOption={selectedCopyPasteControl}
+                                                        onChange={handleCopyPasteControlChange}
+                                                        disabled={readOnly}
+                                                    />
+                                                </div>
                                         <div className="flex items-center">
                                             <Dropdown
                                                 icon={<HelpCircle size={16} />}

@@ -41,7 +41,7 @@ export const copyPasteControlOptions: DropdownOption[] = [
         "tooltip": "Learners can copy the question content and paste their answer for this question"
     },
     {
-        "label": "Disable",
+        "label": "Deny",
         "value": "false",
         "color": "#E43F5A",
         "tooltip": "Learners cannot copy the question content or paste their answer for this question"
