@@ -183,7 +183,9 @@ export const getCompletionData = async (cohortId: number, userId: string): Promi
           const questionsMap: Record<string, boolean> = {};
 
           taskData.questions.forEach((question: any) => {
-              questionsMap[question.question_id.toString()] = question.is_complete;
+              if (question && question.question_id != null) {
+                  questionsMap[question.question_id.toString()] = question.is_complete;
+              }
           });
 
           questionCompletions[taskId] = questionsMap;

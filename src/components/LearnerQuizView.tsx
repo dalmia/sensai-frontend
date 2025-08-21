@@ -1111,8 +1111,9 @@ export default function LearnerQuizView({
                                 // Only now hide the preparing report message
                                 setTimeout(() => setShowPreparingReport(false), 0);
 
-                                // Auto-open the scorecard when report is ready
-                                if (completeScorecard && completeScorecard.length > 0) {
+                                // Auto-open the scorecard when report is ready if not exam question
+                                if (completeScorecard && completeScorecard.length > 0 &&
+                                    validQuestions[currentQuestionIndex]?.config?.responseType !== 'exam') {
                                     handleViewScorecard(completeScorecard);
                                 }
                             }
