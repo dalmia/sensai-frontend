@@ -97,7 +97,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     // Get coding languages from question config
     const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
 
-    const disableCopyPaste = !currentQuestionConfig?.settings?.allowCopyPaste;
+    const disableCopyPaste = currentQuestionConfig?.settings?.allowCopyPaste === false;
 
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = codingLanguages.some((lang: string) =>

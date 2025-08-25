@@ -1592,6 +1592,8 @@ export default function LearnerQuizView({
     const [showButtonPulse, setShowButtonPulse] = useState(false);
     // Track if button has completed entrance animation
     const [showButtonEntrance, setShowButtonEntrance] = useState(true);
+    // Default behavior: disable copy/paste unless explicitly enabled via settings.allowCopyPaste === true
+    const disableCopyPaste = currentQuestionConfig?.settings?.allowCopyPaste !== true;
 
     // Effect to start pulsing animation after entrance animation completes
     useEffect(() => {
@@ -1633,7 +1635,7 @@ export default function LearnerQuizView({
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
             // Check if copy-paste is disabled for the current question
-            if (!questions[currentQuestionIndex]?.config?.settings?.allowCopyPaste) {
+            if (disableCopyPaste) {
                 // Prevent CMD+A or CTRL+A
                 if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
                     event.preventDefault();
@@ -1654,7 +1656,7 @@ export default function LearnerQuizView({
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [currentQuestionIndex, questions]);
+    }, [disableCopyPaste]);
 
     // Toggle mobile menu
     const toggleMobileMenu = () => {
@@ -2009,7 +2011,7 @@ export default function LearnerQuizView({
                         <div
                             className="ml-[-60px]"
                             onCopy={(e) => {
-                                if (!questions[currentQuestionIndex].config.settings?.allowCopyPaste) {
+                                if (disableCopyPaste) {
                                     e.preventDefault();
                                     e.stopPropagation();
 
