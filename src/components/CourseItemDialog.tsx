@@ -175,6 +175,17 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 activeItem.questions = [];
             }
         } else if (isOpen) {
+            // Add a new history entry when dialog opens to intercept back button
+            const hasChanges = activeItem.type === 'material'
+                ? learningMaterialEditorRef.current?.hasChanges() || false
+                : quizEditorRef.current?.hasChanges() || false;
+            
+            setTimeout(() => {
+                if (isEditMode || activeItem?.status === 'draft' || hasChanges) {
+                    window.history.pushState({ dialogOpen: true }, '', window.location.href);
+                }
+            }, 100);
+
             // Reset toast state when dialog opens to prevent lingering toasts
             if (toastTimeoutRef.current) {
                 clearTimeout(toastTimeoutRef.current);
@@ -303,6 +314,63 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             }
         };
     }, []);
+
+    // Add beforeunload event listener to prevent page reload/close with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            const hasChanges = activeItem.type === 'material'
+                ? learningMaterialEditorRef.current?.hasChanges() || false
+                : quizEditorRef.current?.hasChanges() || false;
+            // Only show warning if user is in edit mode or if there are actual unsaved changes
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return 'You have unsaved changes. Are you sure you want to leave?';
+            }
+        };
+
+        // Add the event listener
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Clean up the event listener
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [activeItem, dialogTitleRef, isEditMode]);
+
+    // Handle browser back/forward navigation
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            const hasChanges = activeItem.type === 'material'
+                ? learningMaterialEditorRef.current?.hasChanges() || false
+                : quizEditorRef.current?.hasChanges() || false;
+            // Prevent navigation if user is in edit mode, the item is a draft, or if there are unsaved changes
+            if (isEditMode || activeItem?.status === 'draft' || hasChanges) {
+                // Prevent the navigation by pushing the current state back
+                window.history.pushState(null, '', window.location.href);
+
+                // Show the close confirmation dialog with appropriate type
+                if (activeItem?.status === 'published' && isEditMode) {
+                    setConfirmationType('exit_edit_publish');
+                } else {
+                    setConfirmationType('exit_draft');
+                }
+                setShowCloseConfirmation(true);
+
+                // Prevent the default navigation
+                e.preventDefault();
+                return;
+            }
+        };
+
+        // Add the event listener
+        window.addEventListener('popstate', handlePopState);
+
+        // Clean up the event listener
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [activeItem, isEditMode, dialogTitleRef]);
 
     // Handle clicking outside of the date picker
     useEffect(() => {
