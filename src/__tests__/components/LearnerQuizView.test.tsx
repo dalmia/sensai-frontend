@@ -551,7 +551,24 @@ describe('LearnerQuizView Component', () => {
             const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
             const removeEventListenerSpy = jest.spyOn(document, 'removeEventListener');
 
-            const { unmount } = render(<LearnerQuizView {...defaultProps} />);
+            // Explicitly disable copy/paste via settings on the current question
+            const questionsWithCopyPasteDisabled = [
+                {
+                    ...sampleQuestions[0],
+                    config: {
+                        ...sampleQuestions[0].config,
+                        settings: { allowCopyPaste: false }
+                    }
+                },
+                ...sampleQuestions.slice(1)
+            ];
+
+            const { unmount } = render(
+                <LearnerQuizView
+                    {...defaultProps}
+                    questions={questionsWithCopyPasteDisabled as any}
+                />
+            );
 
             // Capture the keydown handler added by the effect
             const keydownCall = addEventListenerSpy.mock.calls.find(call => call[0] === 'keydown');
