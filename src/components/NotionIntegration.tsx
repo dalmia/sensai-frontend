@@ -596,8 +596,8 @@ export default function NotionIntegration({
     return null;
   }
 
-  // Show loading state when fetching pages after integration check is complete
-  if ((isLoading && hasIntegration) || (!hasCheckedForNotionUpdates && status === 'published')) {
+  // Show loading state when fetching pages
+  if (isLoading && hasIntegration) {
     return (
       <div
         className={`flex items-center gap-3 ml-4 ${className}`}
