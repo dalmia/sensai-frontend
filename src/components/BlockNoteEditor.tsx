@@ -5,7 +5,8 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState } from "react";
-import { BlockNoteSchema, defaultBlockSpecs, locales } from "@blocknote/core";
+import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 
 // Add custom styles for dark mode
@@ -160,7 +161,7 @@ export default function BlockNoteEditor({
     onEditorReady,
     allowMedia = true,
 }: BlockNoteEditorProps) {
-    const locale = locales["en"];
+    const locale = en;
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const isUpdatingContent = useRef(false);
     const lastContent = useRef<any[]>([]);
@@ -203,7 +204,6 @@ export default function BlockNoteEditor({
         dictionary: {
             ...locale,
             placeholders: {
-                ...locale.placeholders,
                 emptyDocument: placeholder,
             },
         },
