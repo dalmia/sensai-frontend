@@ -1593,7 +1593,7 @@ export default function LearnerQuizView({
     // Track if button has completed entrance animation
     const [showButtonEntrance, setShowButtonEntrance] = useState(true);
     // Default behavior: disable copy/paste unless explicitly enabled via settings.allowCopyPaste === true
-    const disableCopyPaste = currentQuestionConfig?.settings?.allowCopyPaste !== true;
+    const disableCopyPaste = currentQuestionConfig?.settings?.allowCopyPaste === false;
 
     // Effect to start pulsing animation after entrance animation completes
     useEffect(() => {
