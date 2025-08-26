@@ -181,7 +181,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 : quizEditorRef.current?.hasChanges() || false;
             
             setTimeout(() => {
-                if (isEditMode || activeItem?.status === 'draft' || hasChanges) {
+                if (isEditMode || activeItem?.status || hasChanges) {
                     window.history.pushState({ dialogOpen: true }, '', window.location.href);
                 }
             }, 100);
