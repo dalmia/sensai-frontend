@@ -2918,6 +2918,9 @@ describe('CourseItemDialog', () => {
             renderDialog({ activeItem: publishedLM, isEditMode: true });
             await screen.findByTestId('lm-editor');
 
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
             // Get the popstate handler that was registered
             const popstateCall = mockAddEventListener.mock.calls.find(
                 call => call[0] === 'popstate'
@@ -2941,6 +2944,9 @@ describe('CourseItemDialog', () => {
             const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
             renderDialog({ activeItem: draftLM });
             await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
 
             // Get the popstate handler that was registered
             const popstateCall = mockAddEventListener.mock.calls.find(
@@ -3016,6 +3022,9 @@ describe('CourseItemDialog', () => {
             renderDialog({ activeItem: publishedLM, isEditMode: true });
             await screen.findByTestId('lm-editor');
 
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
             // Get the popstate handler that was registered
             const popstateCall = mockAddEventListener.mock.calls.find(
                 call => call[0] === 'popstate'
@@ -3039,6 +3048,9 @@ describe('CourseItemDialog', () => {
             const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
             renderDialog({ activeItem: draftLM });
             await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
 
             // Get the popstate handler that was registered
             const popstateCall = mockAddEventListener.mock.calls.find(

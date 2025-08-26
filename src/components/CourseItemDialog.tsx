@@ -175,16 +175,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 activeItem.questions = [];
             }
         } else if (isOpen) {
-            // Add a new history entry when dialog opens to intercept back button
-            const hasChanges = activeItem.type === 'material'
-                ? learningMaterialEditorRef.current?.hasChanges() || false
-                : quizEditorRef.current?.hasChanges() || false;
-            
-            setTimeout(() => {
-                if (isEditMode || activeItem?.status || hasChanges) {
+            window.setInterval(() => {
+                const hasChanges = activeItem.type === 'material'
+                    ? (learningMaterialEditorRef.current?.hasChanges() || false)
+                    : (quizEditorRef.current?.hasChanges() || false);
+
+                if (hasChanges) {
                     window.history.pushState({ dialogOpen: true }, '', window.location.href);
                 }
-            }, 100);
+            }, 300);
 
             // Reset toast state when dialog opens to prevent lingering toasts
             if (toastTimeoutRef.current) {
@@ -318,14 +317,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Add beforeunload event listener to prevent page reload/close with unsaved changes
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            const message = 'You have unsaved changes. Are you sure you want to leave?';
             const hasChanges = activeItem.type === 'material'
                 ? learningMaterialEditorRef.current?.hasChanges() || false
                 : quizEditorRef.current?.hasChanges() || false;
             // Only show warning if user is in edit mode or if there are actual unsaved changes
             if (hasChanges) {
                 e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return 'You have unsaved changes. Are you sure you want to leave?';
+                e.returnValue = message;
+                return message;
             }
         };
 
@@ -345,7 +345,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 ? learningMaterialEditorRef.current?.hasChanges() || false
                 : quizEditorRef.current?.hasChanges() || false;
             // Prevent navigation if user is in edit mode, the item is a draft, or if there are unsaved changes
-            if (isEditMode || activeItem?.status === 'draft' || hasChanges) {
+            if (hasChanges && (isEditMode || activeItem?.status === 'draft')) {
+
                 // Prevent the navigation by pushing the current state back
                 window.history.pushState(null, '', window.location.href);
 
