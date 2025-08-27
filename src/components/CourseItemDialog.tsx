@@ -92,6 +92,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Ref to store toast timeout ID
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Ref to track if we've already pushed history state for current changes
+    const hasPushedHistoryRef = useRef<boolean>(false);
+
     // State to track preview mode for quizzes
     const [quizPreviewMode, setQuizPreviewMode] = useState(false);
 
@@ -175,13 +178,20 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 activeItem.questions = [];
             }
         } else if (isOpen) {
+            // Reset the history flag when dialog opens
+            hasPushedHistoryRef.current = false;
+
+            // Create interval to monitor for changes and push history state only once
             window.setInterval(() => {
                 const hasChanges = activeItem.type === 'material'
                     ? (learningMaterialEditorRef.current?.hasChanges() || false)
                     : (quizEditorRef.current?.hasChanges() || false);
 
-                if (hasChanges) {
+                // Only push history state if we haven't already done so for this change
+                if (hasChanges && (isEditMode || activeItem?.status === 'draft') && !hasPushedHistoryRef.current) {
+                    console.log('Pushing state for draft item');
                     window.history.pushState({ dialogOpen: true }, '', window.location.href);
+                    hasPushedHistoryRef.current = true;
                 }
             }, 300);
 
@@ -317,15 +327,13 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Add beforeunload event listener to prevent page reload/close with unsaved changes
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            const message = 'You have unsaved changes. Are you sure you want to leave?';
             const hasChanges = activeItem.type === 'material'
                 ? learningMaterialEditorRef.current?.hasChanges() || false
                 : quizEditorRef.current?.hasChanges() || false;
-            // Only show warning if user is in edit mode or if there are actual unsaved changes
-            if (hasChanges) {
+            // Only show warning if there are actual unsaved changes
+            if (hasChanges && (isEditMode || activeItem?.status === 'draft')) {
                 e.preventDefault();
-                e.returnValue = message;
-                return message;
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
             }
         };
 
@@ -1012,6 +1020,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         // Update will be handled by the parent component
                                         onPublishConfirm();
 
+                                        // Clear the history state since the item is now published
+                                        // This prevents needing to click back twice after publishing
+                                        if (window.history.state && window.history.state.dialogOpen) {
+                                            window.history.back();
+                                        }
+
                                         // Show toast notification
                                         const publishMessage = updatedData.scheduled_publish_at ? "Your learning material has been scheduled for publishing" : "Your learning material has been published";
                                         displayToast("Published", publishMessage);
@@ -1036,6 +1050,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                                         // Call the parent's save function
                                         onSaveItem();
+
+                                        // Clear the history state since changes have been saved
+                                        // This prevents needing to click back twice after saving
+                                        if (window.history.state && window.history.state.dialogOpen && activeItem.status === 'published') {
+                                            window.history.back();
+                                        }
 
                                         // Show toast notification for save success
                                         displayToast("Saved", `Your learning material has been updated`);
@@ -1089,6 +1109,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         // Call onSaveItem to exit edit mode
                                         onSaveItem();
 
+                                        // Clear the history state since changes have been saved
+                                        // This prevents needing to click back twice after saving
+                                        if (window.history.state && window.history.state.dialogOpen && activeItem.status === 'published') {
+                                            window.history.back();
+                                        }
+
                                         // Show toast notification for save success
                                         displayToast("Saved", `Your ${activeItem.type} has been updated`);
                                     }
@@ -1119,6 +1145,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         // Update will be handled by the parent component
                                         // Pass the updated data to the parent component
                                         onPublishConfirm();
+
+                                        // Clear the history state since the item is now published
+                                        // This prevents needing to click back twice after publishing
+                                        if (window.history.state && window.history.state.dialogOpen) {
+                                            window.history.back();
+                                        }
 
                                         // Show toast notification
                                         const publishMessage = updatedData.scheduled_publish_at ? `Your quiz has been scheduled for publishing` : `Your quiz has been published`;

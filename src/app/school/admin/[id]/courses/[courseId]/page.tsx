@@ -637,6 +637,8 @@ export default function CreateCourse() {
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
+        setIsEditMode(false);
+
         updateTaskIdInUrl(itemId);
 
         // Ensure quiz items have questions property initialized

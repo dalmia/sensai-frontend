@@ -2856,7 +2856,7 @@ describe('CourseItemDialog', () => {
             // Verify preventDefault was called
             expect(mockEvent.preventDefault).toHaveBeenCalled();
             expect(mockEvent.returnValue).toBe('You have unsaved changes. Are you sure you want to leave?');
-            expect(result).toBe('You have unsaved changes. Are you sure you want to leave?');
+            expect(result).toBeUndefined();
         });
 
         it('handles beforeunload event with unsaved changes for quiz', async () => {
@@ -2883,7 +2883,7 @@ describe('CourseItemDialog', () => {
             // Verify preventDefault was called
             expect(mockEvent.preventDefault).toHaveBeenCalled();
             expect(mockEvent.returnValue).toBe('You have unsaved changes. Are you sure you want to leave?');
-            expect(result).toBe('You have unsaved changes. Are you sure you want to leave?');
+            expect(result).toBeUndefined();
         });
 
         it('handles beforeunload event with no unsaved changes', async () => {
