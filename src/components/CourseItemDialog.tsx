@@ -189,7 +189,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                 // Only push history state if we haven't already done so for this change
                 if (hasChanges && (isEditMode || activeItem?.status === 'draft') && !hasPushedHistoryRef.current) {
-                    console.log('Pushing state for draft item');
                     window.history.pushState({ dialogOpen: true }, '', window.location.href);
                     hasPushedHistoryRef.current = true;
                 }
@@ -226,7 +225,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 setHasQuizQuestions(true);
             }
         }
-    }, [isOpen, activeItem]);
+    }, [isOpen, activeItem, isEditMode]);
 
     // Add a capture phase event listener for Escape key
     useEffect(() => {
