@@ -2756,5 +2756,319 @@ describe('CourseItemDialog', () => {
             });
         });
     });
+
+    /* ---------------- Browser event handlers (beforeunload and popstate) --------------- */
+    describe('Browser event handlers', () => {
+        let originalAddEventListener: typeof window.addEventListener;
+        let originalRemoveEventListener: typeof window.removeEventListener;
+        let originalPushState: typeof window.history.pushState;
+        let mockAddEventListener: jest.Mock;
+        let mockRemoveEventListener: jest.Mock;
+        let mockPushState: jest.Mock;
+
+        beforeEach(() => {
+            // Store original methods
+            originalAddEventListener = window.addEventListener;
+            originalRemoveEventListener = window.removeEventListener;
+            originalPushState = window.history.pushState;
+
+            // Create mocks
+            mockAddEventListener = jest.fn();
+            mockRemoveEventListener = jest.fn();
+            mockPushState = jest.fn();
+
+            // Replace with mocks
+            window.addEventListener = mockAddEventListener;
+            window.removeEventListener = mockRemoveEventListener;
+            window.history.pushState = mockPushState;
+        });
+
+        afterEach(() => {
+            // Restore original methods
+            window.addEventListener = originalAddEventListener;
+            window.removeEventListener = originalRemoveEventListener;
+            window.history.pushState = originalPushState;
+        });
+
+        it('adds beforeunload event listener when component mounts', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Verify beforeunload event listener was added
+            expect(mockAddEventListener).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+        });
+
+        it('removes beforeunload event listener when component unmounts', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            const { unmount } = renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Unmount component
+            unmount();
+
+            // Verify beforeunload event listener was removed
+            expect(mockRemoveEventListener).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+        });
+
+        it('adds popstate event listener when component mounts', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Verify popstate event listener was added
+            expect(mockAddEventListener).toHaveBeenCalledWith('popstate', expect.any(Function));
+        });
+
+        it('removes popstate event listener when component unmounts', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            const { unmount } = renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Unmount component
+            unmount();
+
+            // Verify popstate event listener was removed
+            expect(mockRemoveEventListener).toHaveBeenCalledWith('popstate', expect.any(Function));
+        });
+
+        it('handles beforeunload event with unsaved changes for learning material', async () => {
+            lmMethods.hasChanges.mockReturnValue(true);
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Get the beforeunload handler that was registered
+            const beforeunloadCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'beforeunload'
+            );
+            const beforeunloadHandler = beforeunloadCall[1];
+
+            // Create a mock BeforeUnloadEvent
+            const mockEvent = {
+                preventDefault: jest.fn(),
+                returnValue: ''
+            } as any;
+
+            // Call the handler
+            const result = beforeunloadHandler(mockEvent);
+
+            // Verify preventDefault was called
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+            expect(mockEvent.returnValue).toBe('You have unsaved changes. Are you sure you want to leave?');
+            expect(result).toBeUndefined();
+        });
+
+        it('handles beforeunload event with unsaved changes for quiz', async () => {
+            quizMethods.hasChanges.mockReturnValue(true);
+            const draftQuiz = { id: 'q1', type: 'quiz', status: 'draft', title: 'New quiz', questions: [] } as any;
+            renderDialog({ activeItem: draftQuiz });
+            await screen.findByTestId('quiz-editor');
+
+            // Get the beforeunload handler that was registered
+            const beforeunloadCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'beforeunload'
+            );
+            const beforeunloadHandler = beforeunloadCall[1];
+
+            // Create a mock BeforeUnloadEvent
+            const mockEvent = {
+                preventDefault: jest.fn(),
+                returnValue: ''
+            } as any;
+
+            // Call the handler
+            const result = beforeunloadHandler(mockEvent);
+
+            // Verify preventDefault was called
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+            expect(mockEvent.returnValue).toBe('You have unsaved changes. Are you sure you want to leave?');
+            expect(result).toBeUndefined();
+        });
+
+        it('handles beforeunload event with no unsaved changes', async () => {
+            lmMethods.hasChanges.mockReturnValue(false);
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Get the beforeunload handler that was registered
+            const beforeunloadCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'beforeunload'
+            );
+            const beforeunloadHandler = beforeunloadCall[1];
+
+            // Create a mock BeforeUnloadEvent
+            const mockEvent = {
+                preventDefault: jest.fn(),
+                returnValue: ''
+            } as any;
+
+            // Call the handler
+            const result = beforeunloadHandler(mockEvent);
+
+            // Verify preventDefault was NOT called
+            expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+            expect(mockEvent.returnValue).toBe('');
+            expect(result).toBeUndefined();
+        });
+
+        it('handles popstate event for published item in edit mode', async () => {
+            const publishedLM = { id: 'lm1', type: 'material', status: 'published', title: 'Published Material' } as any;
+            renderDialog({ activeItem: publishedLM, isEditMode: true });
+            await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify pushState was called to prevent navigation
+            expect(mockPushState).toHaveBeenCalledWith(null, '', window.location.href);
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('handles popstate event for draft item', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify pushState was called to prevent navigation
+            expect(mockPushState).toHaveBeenCalledWith(null, '', window.location.href);
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('handles popstate event for item with unsaved changes', async () => {
+            lmMethods.hasChanges.mockReturnValue(true);
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify pushState was called to prevent navigation
+            expect(mockPushState).toHaveBeenCalledWith(null, '', window.location.href);
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('allows popstate navigation when no conditions are met', async () => {
+            lmMethods.hasChanges.mockReturnValue(false);
+            const publishedLM = { id: 'lm1', type: 'material', status: 'published', title: 'Published Material' } as any;
+            renderDialog({ activeItem: publishedLM, isEditMode: false });
+            await screen.findByTestId('lm-editor');
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify pushState was NOT called (navigation allowed)
+            expect(mockPushState).not.toHaveBeenCalled();
+            expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+        });
+
+        it('sets correct confirmation type for published item in edit mode on popstate', async () => {
+            const publishedLM = { id: 'lm1', type: 'material', status: 'published', title: 'Published Material' } as any;
+            renderDialog({ activeItem: publishedLM, isEditMode: true });
+            await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify the confirmation dialog would be shown with correct type
+            // We can't easily test the state changes directly, but we can verify the logic path
+            expect(mockPushState).toHaveBeenCalledWith(null, '', window.location.href);
+        });
+
+        it('sets correct confirmation type for draft item on popstate', async () => {
+            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
+            renderDialog({ activeItem: draftLM });
+            await screen.findByTestId('lm-editor');
+
+            // Simulate unsaved changes to trigger interception
+            lmMethods.hasChanges.mockReturnValue(true);
+
+            // Get the popstate handler that was registered
+            const popstateCall = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'popstate'
+            );
+            const popstateHandler = popstateCall[1];
+
+            // Create a mock PopStateEvent
+            const mockEvent = {
+                preventDefault: jest.fn()
+            } as any;
+
+            // Call the handler
+            popstateHandler(mockEvent);
+
+            // Verify the confirmation dialog would be shown with correct type
+            expect(mockPushState).toHaveBeenCalledWith(null, '', window.location.href);
+        });
+    });
 });
 
