@@ -1080,9 +1080,11 @@ export default function LearnerQuizView({
                                 if (completeScorecard.length > 0) {
                                     // Set isCorrect to true only if all criteria have received their maximum score
                                     isCorrect = completeScorecard.every((item: ScorecardItem) =>
-                                        item.score !== undefined &&
-                                        ((item.pass_score !== undefined && item.score >= item.pass_score) ||
-                                            (item.max_score !== undefined && item.score === item.max_score))
+                                        item.score != null &&
+                                        (
+                                            (item.pass_score != null && item.score >= item.pass_score) ||
+                                            (item.max_score != null && item.score === item.max_score)
+                                        )
                                     );
                                 }
 
@@ -2037,7 +2039,7 @@ export default function LearnerQuizView({
                                     onChange={() => { }} // Read-only in view mode
                                     isDarkMode={isDarkMode}
                                     readOnly={true}
-                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
+                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'ml-5'}`}
                                     placeholder="Question content will appear here"
                                 />
                             )}
