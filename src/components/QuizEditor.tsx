@@ -1037,6 +1037,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const handleQuestionContentChange = useCallback((content: any[]) => {
         if (questions.length === 0) return;
 
+        // Clear highlight and toast immediately when user starts editing
+        if (highlightedField === 'question') {
+            setHighlightedField(null);
+        }
+
         // Simply update the content without all the complexity
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex] = {
@@ -1051,7 +1056,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         if (onChange) {
             onChange(updatedQuestions);
         }
-    }, [questions, currentQuestionIndex, onChange]);
+    }, [questions, currentQuestionIndex, onChange, highlightedField]);
 
     // Integration logic for questions
     const currentIntegrationType = 'notion';
@@ -1131,6 +1136,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const handleCorrectAnswerChange = useCallback((content: any[]) => {
         if (questions.length === 0) return;
 
+        // Clear highlight and toast immediately when user starts editing
+        if (highlightedField === 'answer') {
+            setHighlightedField(null);
+        }
+
         // Store blocks but don't extract text on every change
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex] = {
@@ -1145,7 +1155,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         if (onChange) {
             onChange(updatedQuestions);
         }
-    }, [questions, currentQuestionIndex, onChange]);
+    }, [questions, currentQuestionIndex, onChange, highlightedField]);
 
     // Handle configuration change for the current question
     const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: 'objective' | 'subjective', newInputType?: 'text' | 'code' | 'audio' }) => {
@@ -1895,6 +1905,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Handle question title input validation
     const handleQuestionTitleInput = useCallback((e: React.FormEvent<HTMLSpanElement>) => {
+        // Clear highlight immediately when user starts editing
+        if (highlightedField === 'title') {
+            setHighlightedField(null);
+        }
+
         const el = e.currentTarget;
         if (el.textContent && el.textContent.length > 200) {
             el.textContent = el.textContent.slice(0, 200);
@@ -1905,7 +1920,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             sel?.removeAllRanges();
             sel?.addRange(range);
         }
-    }, []);
+    }, [highlightedField]);
 
     // Handle question title blur
     const handleQuestionTitleBlur = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
@@ -2480,17 +2495,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 onChange={handlePurposeChange}
                                                 disabled={readOnly}
                                             />
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <Dropdown
-                                                        icon={<ClipboardCheck size={16} />}
-                                                        title="Allow copy/paste?"
-                                                        options={copyPasteControlOptions}
-                                                        selectedOption={selectedCopyPasteControl}
-                                                        onChange={handleCopyPasteControlChange}
-                                                        disabled={readOnly}
-                                                    />
-                                                </div>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <Dropdown
+                                                icon={<ClipboardCheck size={16} />}
+                                                title="Allow copy/paste?"
+                                                options={copyPasteControlOptions}
+                                                selectedOption={selectedCopyPasteControl}
+                                                onChange={handleCopyPasteControlChange}
+                                                disabled={readOnly}
+                                            />
+                                        </div>
                                         <div className="flex items-center">
                                             <Dropdown
                                                 icon={<HelpCircle size={16} />}
@@ -2580,98 +2595,98 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     <div className="flex-1 overflow-hidden">
                                         {/* Show content based on active tab */}
                                         {activeEditorTab === 'question' ? (
-                                            <div className="w-full h-full">
-                                                <div className="w-full flex flex-col my-4">
-                                                    {/* Integration */}
-                                                    {!readOnly && (
-                                                        <div className="mb-4">
-                                                            <NotionIntegration
-                                                                key={`notion-integration-${currentQuestionIndex}`}
-                                                                onPageSelect={handleIntegrationPageSelect}
-                                                                onPageRemove={handleIntegrationPageRemove}
-                                                                isEditMode={!readOnly}
-                                                                editorContent={currentQuestionContent}
-                                                                loading={isLoadingIntegration}
-                                                                onSaveDraft={() => updateDraftQuiz(null, 'draft')}
-                                                                status={status}
-                                                                storedBlocks={integrationBlocks}
-                                                                onContentUpdate={(updatedContent) => {
-                                                                    handleQuestionContentChange(updatedContent);
-                                                                    setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                                                }}
-                                                                onLoadingChange={setIsLoadingIntegration}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                                        {isLoadingIntegration ? (
-                                                            <div className="flex items-center justify-center h-32">
-                                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                                            </div>
-                                                        ) : integrationError ? (
-                                                            <div className="flex flex-col items-center justify-center h-32 text-center">
-                                                                <div className="text-red-400 text-sm mb-4">
-                                                                    {integrationError}
-                                                                </div>
-                                                                <div className="text-gray-400 text-xs">
-                                                                    The Notion integration may have been disconnected. Please reconnect it.
-                                                                </div>
-                                                            </div>
-                                                        ) : integrationBlocks.length > 0 ? (
-                                                            <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                                                <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                                <div>
-                                                                    <BlockList blocks={integrationBlocks} />
-                                                                </div>
-                                                            </div>
-                                                        ) : integrationBlock ? (
-                                                            <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                                <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                                                <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
-                                                            </div>
-                                                        ) : (
-                                                            <BlockNoteEditor
-                                                                key={`quiz-editor-question-${currentQuestionIndex}`}
-                                                                initialContent={initialContent}
-                                                                onChange={handleQuestionContentChange}
-                                                                isDarkMode={isDarkMode}
-                                                                readOnly={readOnly}
-                                                                onEditorReady={setEditorInstance}
-                                                                className="quiz-editor"
-                                                            />
-                                                        )}
+                                            <div className="w-full h-full flex flex-col">
+                                                {/* Integration */}
+                                                {!readOnly && (
+                                                    <div className="my-4">
+                                                        <NotionIntegration
+                                                            key={`notion-integration-${currentQuestionIndex}`}
+                                                            onPageSelect={handleIntegrationPageSelect}
+                                                            onPageRemove={handleIntegrationPageRemove}
+                                                            isEditMode={!readOnly}
+                                                            editorContent={currentQuestionContent}
+                                                            loading={isLoadingIntegration}
+                                                            onSaveDraft={() => updateDraftQuiz(null, 'draft')}
+                                                            status={status}
+                                                            storedBlocks={integrationBlocks}
+                                                            onContentUpdate={(updatedContent) => {
+                                                                handleQuestionContentChange(updatedContent);
+                                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                                            }}
+                                                            onLoadingChange={setIsLoadingIntegration}
+                                                        />
                                                     </div>
+                                                )}
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                                    {isLoadingIntegration ? (
+                                                        <div className="flex items-center justify-center h-32">
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                                        </div>
+                                                    ) : integrationError ? (
+                                                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                                                            <div className="text-red-400 text-sm mb-4">
+                                                                {integrationError}
+                                                            </div>
+                                                            <div className="text-gray-400 text-xs">
+                                                                The Notion integration may have been disconnected. Please reconnect it.
+                                                            </div>
+                                                        </div>
+                                                    ) : integrationBlocks.length > 0 ? (
+                                                        <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                                            <div>
+                                                                <BlockList blocks={integrationBlocks} />
+                                                            </div>
+                                                        </div>
+                                                    ) : integrationBlock ? (
+                                                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                                                            <div className="text-white text-lg mb-2">Notion page is empty</div>
+                                                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                                        </div>
+                                                    ) : (
+                                                        <BlockNoteEditor
+                                                            key={`quiz-editor-question-${currentQuestionIndex}`}
+                                                            initialContent={initialContent}
+                                                            onChange={handleQuestionContentChange}
+                                                            isDarkMode={isDarkMode}
+                                                            readOnly={readOnly}
+                                                            onEditorReady={setEditorInstance}
+                                                            className="quiz-editor"
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (
-                                            <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    // Ensure the correct answer editor keeps focus
-                                                    if (correctAnswerEditorRef.current) {
-                                                        try {
-                                                            // Try to focus the editor
-                                                            correctAnswerEditorRef.current.focusEditor();
-                                                        } catch (err) {
-                                                            console.error("Error focusing correct answer editor:", err);
+                                            <div className="w-full h-full flex flex-col">
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Ensure the correct answer editor keeps focus
+                                                        if (correctAnswerEditorRef.current) {
+                                                            try {
+                                                                // Try to focus the editor
+                                                                correctAnswerEditorRef.current.focusEditor();
+                                                            } catch (err) {
+                                                                console.error("Error focusing correct answer editor:", err);
+                                                            }
                                                         }
-                                                    }
-                                                }}
-                                                onMouseDown={(e) => {
-                                                    e.stopPropagation();
-                                                }}
-                                            >
-                                                <BlockNoteEditor
-                                                    key={`correct-answer-editor-${currentQuestionIndex}`}
-                                                    initialContent={currentQuestionConfig.correctAnswer}
-                                                    onChange={handleCorrectAnswerChange}
-                                                    isDarkMode={isDarkMode}
-                                                    readOnly={readOnly}
-                                                    onEditorReady={setCorrectAnswerEditorInstance}
-                                                    className="correct-answer-editor"
-                                                    placeholder="Enter the correct answer here"
-                                                    allowMedia={false}
-                                                />
+                                                    }}
+                                                    onMouseDown={(e) => {
+                                                        e.stopPropagation();
+                                                    }}
+                                                >
+                                                    <BlockNoteEditor
+                                                        key={`correct-answer-editor-${currentQuestionIndex}`}
+                                                        initialContent={currentQuestionConfig.correctAnswer}
+                                                        onChange={handleCorrectAnswerChange}
+                                                        isDarkMode={isDarkMode}
+                                                        readOnly={readOnly}
+                                                        onEditorReady={setCorrectAnswerEditorInstance}
+                                                        className="correct-answer-editor"
+                                                        placeholder="Enter the correct answer here"
+                                                        allowMedia={false}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : activeEditorTab === 'knowledge' ? (
                                             <div className="w-full h-full flex flex-row overflow-y-auto p-4">

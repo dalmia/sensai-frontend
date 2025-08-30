@@ -648,7 +648,7 @@ export default function NotionIntegration({
   return (
     <>
       <div
-        className={`flex items-center gap-3 ml-4 ${className}`}
+        className={`flex items-center gap-3 ml-16 ${className}`}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >

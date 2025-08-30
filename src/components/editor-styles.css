@@ -541,6 +541,12 @@ div[role="dialog"]>div {
     overflow-y: auto !important;
 }
 
+.quiz-editor .bn-container,
+.quiz-editor .bn-editor,
+.quiz-editor .bn-content {
+    height: 100% !important;
+}
+
 /* Make the quiz question viewer have a max height with scroll */
 .quiz-viewer-preview .ProseMirror {
     min-height: 100px !important;
@@ -556,6 +562,12 @@ div[role="dialog"]>div {
     margin-left: 20px;
 }
 
+.learning-material-editor .bn-container,
+.learning-material-editor .bn-editor,
+.learning-material-editor .bn-content {
+    height: 100% !important;
+    overflow-y: auto !important;
+}
 /* Animation for validation error highlighting */
 @keyframes error-pulse {
     0% {
