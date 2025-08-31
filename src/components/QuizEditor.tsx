@@ -335,7 +335,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
-                            const settings = { allowCopyPaste: false };
+                            const settings = { allowCopyPaste: true };
                             if (question.settings) {
                                 settings.allowCopyPaste = question.settings.allowCopyPaste;
                             }
@@ -1267,7 +1267,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         let inputType: 'text' | 'code' | 'audio' = 'text';
         let codingLanguages: string[] = [];
         let responseType: 'chat' | 'exam' = 'chat';
-        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: false };
+        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: true };
         // If there's at least one question (to be used as a reference)
         if (questions.length > 0) {
             const previousQuestion = questions[questions.length - 1];
@@ -1971,9 +1971,16 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const newPurpose = option.value as 'practice' | 'exam';
 
             // Update the question config with the new purpose
-            handleConfigChange({
+            const configUpdate: any = {
                 responseType: newPurpose === 'exam' ? 'exam' : 'chat'
-            });
+            };
+
+            // If purpose is exam, also update the copy-paste control setting
+            if (newPurpose === 'exam') {
+                configUpdate.settings = { allowCopyPaste: false };
+            }
+
+            handleConfigChange(configUpdate);
         }
     }, [handleConfigChange]);
 
@@ -2078,7 +2085,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
     const [selectedCodingLanguages, setSelectedCodingLanguages] = useState<DropdownOption[]>([codingLanguageOptions[0]]);
     const [selectedPurpose, setSelectedPurpose] = useState<DropdownOption>(questionPurposeOptions[0]);
-    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[1]);
+    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[0]);
 
     // Update the selected options based on the current question's config
     useEffect(() => {

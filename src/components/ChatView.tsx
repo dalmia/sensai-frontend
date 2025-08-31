@@ -90,6 +90,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     const [output, setOutput] = useState('');
     const [isRunning, setIsRunning] = useState(false);
     const [executionTime, setExecutionTime] = useState('');
+    const [lastCopiedContent, setLastCopiedContent] = useState<string>('');
 
     // Determine if this is a coding question
     const isCodingQuestion = currentQuestionConfig?.inputType === 'code';
@@ -389,6 +390,22 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Modified handleKeyPress for textarea
     const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Handle select-all (Ctrl/Cmd+A) within the textarea
+        if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+            // Completely handle the event locally
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Manually select all text in the textarea
+            if (textareaRef.current) {
+                textareaRef.current.select();
+            }
+
+            // Mark this event as handled to prevent global handler
+            e.nativeEvent.stopImmediatePropagation();
+            return false;
+        }
+
         // Submit on Enter key without shift key
         if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim()) {
             e.preventDefault(); // Prevent new line
@@ -595,8 +612,25 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             padding: "12px 24px",
                                                             resize: "none"
                                                         }}
+                                                        onCopy={() => {
+                                                            // Store the copied content for same-window paste functionality
+                                                            const selection = window.getSelection();
+                                                            if (selection && selection.toString()) {
+                                                                setLastCopiedContent(selection.toString());
+                                                            }
+                                                        }}
                                                         onPaste={(event) => {
+                                                            // Always store copied content for same-window paste functionality
+                                                            const pastedText = event.clipboardData?.getData('text') || '';
+
                                                             if (disableCopyPaste) {
+                                                                // Check if the pasted content matches the last copied content
+                                                                if (pastedText === lastCopiedContent) {
+                                                                    // Allow paste if it's the same content copied from this window
+                                                                    return;
+                                                                }
+
+                                                                // Prevent paste and show toast message for external paste attempts
                                                                 event.preventDefault();
 
                                                                 // Show toast message

@@ -1080,10 +1080,10 @@ export default function LearnerQuizView({
                                 if (completeScorecard.length > 0) {
                                     // Set isCorrect to true only if all criteria have received their maximum score
                                     isCorrect = completeScorecard.every((item: ScorecardItem) =>
-                                        item.score != null &&
+                                        item.score !== null && item.score !== undefined &&
                                         (
-                                            (item.pass_score != null && item.score >= item.pass_score) ||
-                                            (item.max_score != null && item.score === item.max_score)
+                                            (item.pass_score !== null && item.pass_score !== undefined && item.score >= item.pass_score) ||
+                                            (item.max_score !== null && item.max_score !== undefined && item.score === item.max_score)
                                         )
                                     );
                                 }
@@ -2028,7 +2028,7 @@ export default function LearnerQuizView({
                             }}
                         > {/* Increased negative margin to align with navigation arrow */}
                             {integrationBlocks.length > 0 ? (
-                                <div className="bg-[#191919] text-white px-20 pb-6 rounded-lg">
+                                <div className="bg-[#191919] text-white px-20 pr-0 pb-6 rounded-lg">
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
                                     <BlockList blocks={integrationBlocks} />
                                 </div>
@@ -2039,7 +2039,7 @@ export default function LearnerQuizView({
                                     onChange={() => { }} // Read-only in view mode
                                     isDarkMode={isDarkMode}
                                     readOnly={true}
-                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'ml-5'}`}
+                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
                                     placeholder="Question content will appear here"
                                 />
                             )}

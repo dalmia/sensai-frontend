@@ -474,6 +474,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
     const keydownDisposableRef = useRef<IDisposable | null>(null);
+    const [lastCopiedContent, setLastCopiedContent] = useState<string>('');
 
     // Reset active language when languages prop changes
     useEffect(() => {
@@ -1100,21 +1101,71 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
         }
 
         if (editor && disableCopyPaste) {
-            keydownDisposableRef.current = editor.onKeyDown((e: IKeyboardEvent) => {
+            // Listen for copy operations using onKeyDown for Cmd/Ctrl+C
+            const copyKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
+                const isCmdCtrl = e.ctrlKey || e.metaKey;
+                const key = (e.browserEvent?.key || '').toLowerCase();
+                if (isCmdCtrl && key === 'c') {
+                    const selection = editor.getSelection();
+                    if (selection) {
+                        const selectedText = editor.getModel()?.getValueInRange(selection) || '';
+                        console.log(selectedText)
+                        if (selectedText) {
+                            setLastCopiedContent(selectedText);
+                        }
+                    }
+                }
+            });
+
+            console.log(lastCopiedContent)
+
+            const pasteKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
                 const key = (e.browserEvent?.key || '').toLowerCase();
                 if (isCmdCtrl && key === 'v') {
+                    // Prevent the default paste behavior
                     e.preventDefault();
                     e.stopPropagation();
 
-                    setToastData({
-                        title: 'Not allowed',
-                        description: 'Pasting the answer is disabled for this question',
-                        emoji: '🚫'
+                    navigator.clipboard.readText().then((clipboardText) => {
+                        console.log("clipboardText", clipboardText)
+                        // Check if the pasted content matches the last copied content
+                        if (clipboardText === lastCopiedContent) {
+                            const selection = editor.getSelection();
+                            if (selection) {
+                                editor.executeEdits('paste', [{
+                                    range: selection,
+                                    text: clipboardText
+                                }]);
+                            }
+                        } else {
+                            // Show toast message for external paste attempts
+                            setToastData({
+                                title: 'Not allowed',
+                                description: 'Pasting the answer is disabled for this question',
+                                emoji: '🚫'
+                            });
+                            setShowToast(true);
+                        }
+                    }).catch(() => {
+                    // If clipboard access fails, show toast anyway
+                        setToastData({
+                            title: 'Not allowed',
+                            description: 'Pasting the answer is disabled for this question',
+                            emoji: '🚫'
+                        });
+                        setShowToast(true);
                     });
-                    setShowToast(true);
                 }
             });
+
+            // Store disposables for cleanup
+            keydownDisposableRef.current = {
+                dispose: () => {
+                    copyKeyDownDisposable.dispose();
+                    pasteKeyDownDisposable.dispose();
+                }
+            };
         }
     };
 
