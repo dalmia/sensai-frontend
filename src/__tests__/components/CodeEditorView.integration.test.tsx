@@ -2,6 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock clipboard API for tests
+Object.defineProperty(navigator, 'clipboard', {
+    value: {
+        readText: jest.fn().mockResolvedValue('mocked clipboard content'),
+        writeText: jest.fn().mockResolvedValue(undefined),
+    },
+    writable: true,
+});
+
 // Lightweight mock for Monaco Editor that exposes onKeyDown/focus and triggers onMount
 let lastKeydownHandler: ((e: any) => void) | null = null;
 jest.mock('@monaco-editor/react', () => ({
