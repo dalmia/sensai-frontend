@@ -1109,15 +1109,12 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                     const selection = editor.getSelection();
                     if (selection) {
                         const selectedText = editor.getModel()?.getValueInRange(selection) || '';
-                        console.log(selectedText)
                         if (selectedText) {
                             setLastCopiedContent(selectedText);
                         }
                     }
                 }
             });
-
-            console.log(lastCopiedContent)
 
             const pasteKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
@@ -1128,7 +1125,6 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                     e.stopPropagation();
 
                     navigator.clipboard.readText().then((clipboardText) => {
-                        console.log("clipboardText", clipboardText)
                         // Check if the pasted content matches the last copied content
                         if (clipboardText === lastCopiedContent) {
                             const selection = editor.getSelection();

@@ -1975,9 +1975,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 responseType: newPurpose === 'exam' ? 'exam' : 'chat'
             };
 
-            // If purpose is exam, also update the copy-paste control setting
+            // Set allowCopyPaste based on purpose
+            console.log("newPurpose", newPurpose);
             if (newPurpose === 'exam') {
                 configUpdate.settings = { allowCopyPaste: false };
+            } else {
+                configUpdate.settings = { allowCopyPaste: true };
             }
 
             handleConfigChange(configUpdate);

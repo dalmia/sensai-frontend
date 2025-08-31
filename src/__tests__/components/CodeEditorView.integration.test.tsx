@@ -13,6 +13,8 @@ Object.defineProperty(navigator, 'clipboard', {
 
 // Lightweight mock for Monaco Editor that exposes onKeyDown/focus and triggers onMount
 let lastKeydownHandler: ((e: any) => void) | null = null;
+let mockEditorInstance: any = null;
+
 jest.mock('@monaco-editor/react', () => ({
     __esModule: true,
     default: ({ onChange, onMount, value }: any) => {
@@ -22,7 +24,13 @@ jest.mock('@monaco-editor/react', () => ({
                 return { dispose: jest.fn() };
             },
             focus: jest.fn(),
+            getSelection: jest.fn().mockReturnValue({ startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 20 }),
+            getModel: jest.fn().mockReturnValue({
+                getValueInRange: jest.fn().mockReturnValue('console.log(1);')
+            }),
+            executeEdits: jest.fn()
         };
+        mockEditorInstance = fakeEditor;
         // Trigger onMount immediately with our fake editor
         onMount?.(fakeEditor, {});
         return (
@@ -52,6 +60,9 @@ import CodeEditorView from '../../components/CodeEditorView';
 describe('CodeEditorView (integration)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Reset the mock editor instance
+        mockEditorInstance = null;
+        lastKeydownHandler = null;
         // Default fetch mock that can be customized per test
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (global as any).fetch = jest.fn((url: string) => {
@@ -253,6 +264,81 @@ describe('CodeEditorView (integration)', () => {
 
         expect(preventDefault).toHaveBeenCalled();
         expect(stopPropagation).toHaveBeenCalled();
+    });
+
+    it('shows toast when clipboard access fails', async () => {
+        // Mock clipboard to reject
+        (navigator.clipboard.readText as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+
+        render(
+            <CodeEditorView
+                languages={['javascript']}
+                initialCode={{ javascript: 'console.log(1);' }}
+                handleCodeSubmit={jest.fn()}
+                onCodeRun={jest.fn()}
+                disableCopyPaste={true}
+            />
+        );
+
+        // Simulate Cmd/Ctrl+V which will trigger clipboard access
+        expect(lastKeydownHandler).toBeTruthy();
+        const preventDefault = jest.fn();
+        const stopPropagation = jest.fn();
+        lastKeydownHandler?.({
+            ctrlKey: true,
+            metaKey: false,
+            browserEvent: { key: 'v' },
+            preventDefault,
+            stopPropagation
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('toast')).toBeInTheDocument();
+            expect(screen.getByText('Not allowed')).toBeInTheDocument();
+            expect(screen.getByText('Pasting the answer is disabled for this question')).toBeInTheDocument();
+        });
+    });
+
+    it('shows toast for external paste attempts when clipboard content does not match', async () => {
+        // Mock clipboard to return different content than what was copied
+        (navigator.clipboard.readText as jest.Mock).mockResolvedValue('external content');
+
+        render(
+            <CodeEditorView
+                languages={['javascript']}
+                initialCode={{ javascript: 'console.log(1);' }}
+                handleCodeSubmit={jest.fn()}
+                onCodeRun={jest.fn()}
+                disableCopyPaste={true}
+            />
+        );
+
+        // First simulate a copy to set lastCopiedContent
+        lastKeydownHandler?.({
+            ctrlKey: true,
+            metaKey: false,
+            browserEvent: { key: 'c' },
+            preventDefault: jest.fn(),
+            stopPropagation: jest.fn()
+        });
+
+        // Then simulate paste with different clipboard content
+        lastKeydownHandler?.({
+            ctrlKey: true,
+            metaKey: false,
+            browserEvent: { key: 'v' },
+            preventDefault: jest.fn(),
+            stopPropagation: jest.fn()
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('toast')).toBeInTheDocument();
+            expect(screen.getByText('Not allowed')).toBeInTheDocument();
+            expect(screen.getByText('Pasting the answer is disabled for this question')).toBeInTheDocument();
+        });
+
+        // Verify that executeEdits was not called
+        expect(mockEditorInstance.executeEdits).not.toHaveBeenCalled();
     });
 });
 
