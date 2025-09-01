@@ -596,14 +596,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             resize: "none"
                                                         }}
                                                         onPaste={(event) => {
-                                                            event.preventDefault();
+                                                            if (disableCopyPaste) {
+                                                                event.preventDefault();
 
-                                                            // Show toast message
-                                                            setToastData({
-                                                                title: 'Not allowed',
-                                                                description: 'Pasting the answer is disabled for this question',
-                                                                emoji: '🚫'
-                                                            });
+                                                                // Show toast message
+                                                                setToastData({
+                                                                    title: 'Not allowed',
+                                                                    description: 'Pasting the answer is disabled for this question',
+                                                                    emoji: '🚫'
+                                                                });
+                                                            }
                                                         }}
                                                     />
                                                 </div>

@@ -1104,10 +1104,9 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
                 const key = (e.browserEvent?.key || '').toLowerCase();
                 if (isCmdCtrl && key === 'v') {
-                    // Prevent the default paste behavior
                     e.preventDefault();
                     e.stopPropagation();
-                            // Show toast message for external paste attempts
+                    
                     setToastData({
                         title: 'Not allowed',
                         description: 'Pasting the answer is disabled for this question',
