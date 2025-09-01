@@ -1976,7 +1976,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             };
 
             // Set allowCopyPaste based on purpose
-            console.log("newPurpose", newPurpose);
             if (newPurpose === 'exam') {
                 configUpdate.settings = { allowCopyPaste: false };
             } else {

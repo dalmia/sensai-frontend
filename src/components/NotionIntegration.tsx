@@ -64,8 +64,8 @@ const Button = ({
         <div className="flex items-center">
           {icon && <span className="mr-2">{icon}</span>}
           {normalText}
-            {tooltip && <Tooltip content="You can only add pages where you have full access. If you want to add pages where you don't have full access, either ask for full access or get someone who has the full access to connect the notion page with this question." position="bottom" tooltipWidth="400px" className="">
-              <Info className="w-4 h-4 text-black cursor-help ml-2" />
+            {tooltip && <Tooltip content="You can only add those Notion pages where you have full access. If you want to add a page that you don't have full access to, either request your Notion admin for full access or ask someone with full access to connect that notion page with this question. Once that page is connected, you will be able to view it here." position="bottom" tooltipWidth="400px" className="">
+              <Info className="w-4 h-4 text-black cursor-pointer ml-2" />
             </Tooltip>}
         </div>
       )}
