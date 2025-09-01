@@ -114,7 +114,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     const currentIntegrationType = 'notion';
     const integrationBlock = editorContent.find(block => block.type === currentIntegrationType);
-    
+
     const initialContent = integrationBlock ? undefined : editorContent;
 
     // handle integration blocks and editor instance clearing
@@ -514,67 +514,65 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     }
 
     return (
-        <div className={`w-full h-full ${className}`}>
-            <div className="w-full flex flex-col my-4">
-                {/* Integration */}
-                {!readOnly && (
-                    <div className="mb-4">
-                        <NotionIntegration
-                            onPageSelect={handleIntegrationPageSelect}
-                            onPageRemove={handleIntegrationPageRemove}
-                            isEditMode={!readOnly}
-                            editorContent={editorContent}
-                            loading={isLoadingIntegration}
-                            onSaveDraft={handleSave}
-                            status={taskData?.status}
-                            storedBlocks={integrationBlocks}
-                            onContentUpdate={(updatedContent) => {
-                                setEditorContent(updatedContent);
-                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                if (onChange) {
-                                    onChange(updatedContent);
-                                }
-                            }}
-                            onLoadingChange={setIsLoadingIntegration}
-                        />
-                    </div>
-                )}
-
-                <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0`}>
-                    {isLoadingIntegration ? (
-                        <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                        </div>
-                    ) : integrationError ? (
-                        <div className="flex flex-col items-center justify-center h-32 text-center">
-                            <div className="text-red-400 text-sm mb-4">
-                                {integrationError}
-                            </div>
-                            <div className="text-gray-400 text-xs">
-                                The Notion integration may have been disconnected. Please reconnect it.
-                            </div>
-                        </div>
-                    ) : integrationBlocks.length > 0 ? (
-                        <div className="bg-[#191919] text-white px-6 pb-6 rounded-lg">
-                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                            <BlockList blocks={integrationBlocks} />
-                        </div>
-                    ) : integrationBlock ? (
-                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                            <div className="text-white text-lg mb-2">Notion page is empty</div>
-                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
-                        </div>
-                    ) : (
-                        <BlockNoteEditor
-                            initialContent={initialContent}
-                            onChange={handleEditorChange}
-                            isDarkMode={isDarkMode}
-                            readOnly={readOnly}
-                            className="dark-editor min-h-screen"
-                            onEditorReady={setEditorInstance}
-                        />
-                    )}
+        <div className={`w-full h-full flex flex-col ${className}`}>
+            {/* Integration */}
+            {!readOnly && (
+                <div className="my-4">
+                    <NotionIntegration
+                        onPageSelect={handleIntegrationPageSelect}
+                        onPageRemove={handleIntegrationPageRemove}
+                        isEditMode={!readOnly}
+                        editorContent={editorContent}
+                        loading={isLoadingIntegration}
+                        onSaveDraft={handleSave}
+                        status={taskData?.status}
+                        storedBlocks={integrationBlocks}
+                        onContentUpdate={(updatedContent) => {
+                            setEditorContent(updatedContent);
+                            setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                            if (onChange) {
+                                onChange(updatedContent);
+                            }
+                        }}
+                        onLoadingChange={setIsLoadingIntegration}
+                    />
                 </div>
+            )}
+
+            <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0`}>
+                {isLoadingIntegration ? (
+                    <div className="flex items-center justify-center h-32">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                    </div>
+                ) : integrationError ? (
+                    <div className="flex flex-col items-center justify-center h-32 text-center">
+                        <div className="text-red-400 text-sm mb-4">
+                            {integrationError}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                            The Notion integration may have been disconnected. Please reconnect it.
+                        </div>
+                    </div>
+                ) : integrationBlocks.length > 0 ? (
+                    <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg h-full overflow-y-auto">
+                        <h1 className={`text-white text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''}`}>{integrationBlock?.props?.resource_name}</h1>
+                        <BlockList blocks={integrationBlocks} />
+                    </div>
+                ) : integrationBlock ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-center">
+                        <div className="text-white text-lg mb-2">Notion page is empty</div>
+                        <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                    </div>
+                ) : (
+                    <BlockNoteEditor
+                        initialContent={initialContent}
+                        onChange={handleEditorChange}
+                        isDarkMode={isDarkMode}
+                        readOnly={readOnly}
+                        className="learning-material-editor"
+                        onEditorReady={setEditorInstance}
+                    />
+                )}
             </div>
 
             {/* Replace the ConfirmationDialog with PublishConfirmationDialog */}

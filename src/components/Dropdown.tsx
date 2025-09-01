@@ -105,7 +105,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                                     style={{ backgroundColor: option.color }}
                                 >
                                     <span className="text-white text-sm">{option.label}</span>
-                                    {multiselect && (
+                                    {multiselect && !disabled && (
                                         <button
                                             className="ml-1 text-white opacity-70 hover:opacity-100"
                                             onClick={(e) => {

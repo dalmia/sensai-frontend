@@ -805,41 +805,6 @@ describe('CourseItemDialog', () => {
         });
     });
 
-    /* ---------------- Focus handling ------------------------------ */
-    describe('Focus handling', () => {
-        it('focuses editor when clicking content area in editable mode', async () => {
-            const draftLM = { id: 'lm1', type: 'material', status: 'draft', title: 'New learning material' } as any;
-            const { props } = renderDialog({ activeItem: draftLM });
-            await screen.findByTestId('lm-editor');
-
-            // Click on the content area
-            const contentArea = document.querySelector('.dialog-content-editor');
-            if (contentArea) {
-                fireEvent.click(contentArea);
-                expect(props.focusEditor).toHaveBeenCalled();
-            }
-        });
-
-        it('does not focus editor for published items in view mode', async () => {
-            const publishedLM = {
-                id: 'lm1',
-                type: 'material',
-                status: 'published',
-                title: 'Published Material'
-            } as any;
-
-            const { props } = renderDialog({ activeItem: publishedLM, isEditMode: false });
-            await screen.findByTestId('lm-editor');
-
-            // Click on the content area
-            const contentArea = document.querySelector('.dialog-content-editor');
-            if (contentArea) {
-                fireEvent.click(contentArea);
-                expect(props.focusEditor).not.toHaveBeenCalled();
-            }
-        });
-    });
-
     /* ---------------- Scheduled badge & date picker -------------- */
     it('renders scheduled badge and date picker functionality', async () => {
         const scheduled = {

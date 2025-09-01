@@ -7,6 +7,7 @@ interface TooltipProps {
     delay?: number;
     disabled?: boolean;
     className?: string;
+    tooltipWidth?: string;
 }
 
 export default function Tooltip({
@@ -16,6 +17,7 @@ export default function Tooltip({
     delay = 300,
     disabled = false,
     className = "",
+    tooltipWidth = "",
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,6 +63,7 @@ export default function Tooltip({
     };
 
     if (disabled) return children;
+    const tooltipWidthClass = tooltipWidth ? `w-[${tooltipWidth}]` : "whitespace-nowrap";
 
     return (
         <div
@@ -74,7 +77,7 @@ export default function Tooltip({
 
             {isVisible && (
                 <div
-                    className={`absolute px-3 py-2 text-sm font-light text-white bg-gray-900 rounded-md whitespace-nowrap pointer-events-none ${positionClasses[position]}`}
+                    className={`absolute px-3 py-2 text-sm font-light text-white bg-gray-900 rounded-md pointer-events-none ${positionClasses[position]} ${tooltipWidthClass}`}
                     role="tooltip"
                     aria-hidden={!isVisible}
                     style={{ zIndex: 9999 }}

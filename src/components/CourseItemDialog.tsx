@@ -758,30 +758,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Set a flag to indicate the title is being edited
                                     const titleElement = e.currentTarget as HTMLElement;
                                     titleElement.dataset.editing = "true";
-
-                                    // Only set cursor at the end on first click (not on double-click)
-                                    // This allows double-click to select text as expected
-                                    if (!titleElement.dataset.clicked) {
-                                        titleElement.dataset.clicked = "true";
-
-                                        // Set cursor position at the end of text
-                                        const range = document.createRange();
-                                        const selection = window.getSelection();
-                                        const textNode = titleElement.firstChild || titleElement;
-
-                                        if (textNode) {
-                                            const textLength = textNode.textContent?.length || 0;
-                                            range.setStart(textNode, textLength);
-                                            range.setEnd(textNode, textLength);
-                                            selection?.removeAllRanges();
-                                            selection?.addRange(range);
-                                        }
-
-                                        // Reset the clicked flag after a short delay
-                                        setTimeout(() => {
-                                            titleElement.dataset.clicked = "";
-                                        }, 300);
-                                    }
                                 }}
                                 className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
                                 data-placeholder={activeItem?.type === 'material' ? 'New learning material' : 'New quiz'}
@@ -971,16 +947,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     <div
                         className="flex-1 overflow-y-auto dialog-content-editor"
                         style={{ height: 'calc(100vh - 65px)' }} // Adjust height to account for header
-                        onClick={(e) => {
-                            // Ensure the click event doesn't bubble up
-                            e.stopPropagation();
-
-                            // Only focus the editor if in editable mode
-                            if (activeItem?.status !== 'published' || isEditMode) {
-                                // Focus the editor
-                                focusEditor();
-                            }
-                        }}
                     >
                         {activeItem?.type === 'material' ? (
                             <DynamicLearningMaterialEditor

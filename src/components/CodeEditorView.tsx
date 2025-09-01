@@ -1106,7 +1106,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 if (isCmdCtrl && key === 'v') {
                     e.preventDefault();
                     e.stopPropagation();
-
+                    
                     setToastData({
                         title: 'Not allowed',
                         description: 'Pasting the answer is disabled for this question',
