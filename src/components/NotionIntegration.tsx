@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { RefreshCcw, Unlink } from "lucide-react";
+import Tooltip from "./Tooltip";
+import { RefreshCcw, Unlink, Info } from "lucide-react";
 import { compareNotionBlocks, fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
 import Toast from "./Toast";
 
@@ -25,6 +26,7 @@ interface ButtonProps {
   textColor?: string;
   className?: string;
   icon?: React.ReactNode;
+  tooltip?: boolean;
 }
 
 // Notion icon component
@@ -44,13 +46,14 @@ const Button = ({
   bgColor,
   textColor = "text-white",
   className = "",
-  icon
+  icon,
+  tooltip = false
 }: ButtonProps) => {
   return (
     <button
       onClick={onClick}
       disabled={disabled || isLoading}
-      className={`px-3 py-2 ${bgColor} ${textColor} rounded-full font-light text-sm hover:opacity-80 transition ${isLoading ? 'opacity-70' : ''} ${className} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      className={`px-3 py-2 ${bgColor} ${textColor} rounded-full font-light text-sm transition ${isLoading ? 'opacity-70' : ''} ${className} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
     >
       {isLoading ? (
         <div className="flex items-center">
@@ -61,6 +64,9 @@ const Button = ({
         <div className="flex items-center">
           {icon && <span className="mr-2">{icon}</span>}
           {normalText}
+            {tooltip && <Tooltip content="You can only add pages where you have full access. If you want to add pages where you don't have full access, either ask for full access or get someone who has the full access to connect the notion page with this question." position="bottom" tooltipWidth="400px" className="">
+              <Info className="w-4 h-4 text-black cursor-help ml-2" />
+            </Tooltip>}
         </div>
       )}
     </button>
@@ -621,16 +627,19 @@ export default function NotionIntegration({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <Button
-            onClick={handleConnectNotion}
-            disabled={loading}
-            isLoading={isConnecting}
-            loadingText="Connecting..."
-            normalText="Connect Notion"
-            bgColor="bg-white"
-            textColor="text-black"
-            icon={<NotionIcon className="w-4 h-4" />}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleConnectNotion}
+              disabled={loading}
+              isLoading={isConnecting}
+              loadingText="Connecting..."
+              normalText="Connect Notion"
+              bgColor="bg-white"
+              textColor="text-black"
+              icon={<NotionIcon className="w-4 h-4" />}
+              tooltip={true}
+            />
+          </div>
         </div>
 
         {/* Toast component - ensure it's always rendered when needed */}
@@ -680,16 +689,19 @@ export default function NotionIntegration({
               </div>
             </div>
 
-            <Button
-              onClick={handleAddMorePages}
-              disabled={loading}
-              isLoading={isConnecting}
-              loadingText="Connecting..."
-              normalText="Add more pages"
-              bgColor="bg-white"
-              textColor="text-black"
-              icon={<NotionIcon className="w-4 h-4" />}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleAddMorePages}
+                disabled={loading}
+                isLoading={isConnecting}
+                loadingText="Connecting..."
+                normalText="Add more pages"
+                bgColor="bg-white"
+                textColor="text-black"
+                icon={<NotionIcon className="w-4 h-4" />}
+                tooltip={true}
+              />
+            </div>
           </>
         )}
 
