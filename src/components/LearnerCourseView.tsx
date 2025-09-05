@@ -34,6 +34,9 @@ interface LearnerCourseViewProps {
     isTestMode?: boolean;
     isAdminView?: boolean;
     learnerName?: string;
+    taskId?: string | null;
+    questionId?: string | null;
+    onUpdateTaskAndQuestionIdInUrl?: (taskId: string | null, questionId: string | null) => void;
 }
 
 export default function LearnerCourseView({
@@ -48,6 +51,9 @@ export default function LearnerCourseView({
     learnerId = '',
     isAdminView = false,
     learnerName = '',
+    taskId = null,
+    questionId = null,
+    onUpdateTaskAndQuestionIdInUrl = () => { },
 }: LearnerCourseViewProps) {
     // Get user from auth context
     const { user } = useAuth();
@@ -212,6 +218,11 @@ export default function LearnerCourseView({
         // Reset history entry flag when dialog is closed
         hasAddedHistoryEntryRef.current = false;
 
+        // Clear URL parameters
+        if (onUpdateTaskAndQuestionIdInUrl) {
+            onUpdateTaskAndQuestionIdInUrl(null, null);
+        }
+
         // Call the onDialogClose callback if provided
         if (onDialogClose) {
             onDialogClose();
@@ -282,6 +293,11 @@ export default function LearnerCourseView({
     // Execute question activation (without checks)
     const executeActivateQuestion = (questionId: string) => {
         setActiveQuestionId(questionId);
+
+        // Update URL with current taskId and new questionId
+        if (onUpdateTaskAndQuestionIdInUrl) {
+            onUpdateTaskAndQuestionIdInUrl(activeItem.id, questionId);
+        }
     };
 
     // Function to open a task item and fetch its details
@@ -355,8 +371,7 @@ export default function LearnerCourseView({
                     questions: formattedQuestions
                 };
 
-                // Set active question ID if provided, otherwise set to first question
-                if (questionId) {
+                if (questionId && formattedQuestions.some(q => String(q.id) === String(questionId))) {
                     setActiveQuestionId(questionId);
                 } else if (formattedQuestions.length > 0) {
                     setActiveQuestionId(formattedQuestions[0].id);
@@ -368,6 +383,11 @@ export default function LearnerCourseView({
             setActiveItem(updatedItem);
             setActiveModuleId(moduleId);
             setIsDialogOpen(true);
+
+            // Update URL with taskId and questionId
+            if (onUpdateTaskAndQuestionIdInUrl) {
+                onUpdateTaskAndQuestionIdInUrl(itemId, questionId || null);
+            }
         } catch (error) {
             console.error("Error fetching task:", error);
             // Still open dialog with existing item data if fetch fails
@@ -383,7 +403,16 @@ export default function LearnerCourseView({
                 // Set first question as active if it's a quiz
                 if ((item.type === 'quiz') &&
                     item.questions && item.questions.length > 0) {
-                    setActiveQuestionId(questionId || item.questions[0].id);
+                    if (questionId && item.questions.some(q => String(q.id) === String(questionId))) {
+                        setActiveQuestionId(questionId);
+                    } else {
+                        setActiveQuestionId(item.questions[0].id);
+                    }
+                }
+
+                // Update URL with taskId and questionId
+                if (onUpdateTaskAndQuestionIdInUrl) {
+                    onUpdateTaskAndQuestionIdInUrl(itemId, questionId || null);
                 }
             }
         } finally {
@@ -415,7 +444,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex < activeItem.questions.length - 1) {
                 // Go to next question
                 const nextQuestion = activeItem.questions[currentIndex + 1];
@@ -464,7 +493,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex > 0) {
                 // Go to previous question
                 const prevQuestion = activeItem.questions[currentIndex - 1];
@@ -561,7 +590,7 @@ export default function LearnerCourseView({
             } else {
                 // For multi-question quiz, check if all questions are now completed
                 const areAllQuestionsCompleted = allQuestions.every(
-                    (q: any) => completedQuestions[q.id] || q.id === questionId
+                    (q: any) => completedQuestions[q.id] || String(q.id) === String(questionId)
                 );
 
                 if (areAllQuestionsCompleted) {
@@ -676,7 +705,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex > 0) {
                 // Not the first question, so return false
                 return false;
@@ -700,7 +729,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex < activeItem.questions.length - 1) {
                 // Not the last question, so return false
                 return false;
@@ -739,7 +768,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex > 0) {
                 // Return previous question info
                 return {
@@ -775,7 +804,7 @@ export default function LearnerCourseView({
             activeItem.questions.length > 1 &&
             activeQuestionId) {
 
-            const currentIndex = activeItem.questions.findIndex((q: any) => q.id === activeQuestionId);
+            const currentIndex = activeItem.questions.findIndex((q: any) => String(q.id) === String(activeQuestionId));
             if (currentIndex < activeItem.questions.length - 1) {
                 // Return next question info
                 return {
@@ -917,6 +946,22 @@ export default function LearnerCourseView({
             }
         }
     }, [modules]);
+
+    // Handle taskId and questionId URL parameters
+    useEffect(() => {
+        if (taskId && modules.length > 0) {
+            // Find the module containing this item
+            for (const module of modules) {
+                const item = module.items.find(i => i.id === taskId);
+                if (item) {
+                    openTaskItem(module.id, taskId, questionId || undefined);
+                    break;
+                }
+            }
+        } else if (!taskId) {
+            setIsDialogOpen(false);
+        }
+    }, [taskId, questionId, modules.length]);
 
     // Toggle sidebar visibility for mobile
     const toggleSidebar = () => {
@@ -1087,7 +1132,7 @@ export default function LearnerCourseView({
                                                     {activeItem.questions.map((question: any, index: number) => (
                                                         <div
                                                             key={question.id}
-                                                            className={`px-4 py-2 cursor-pointer flex items-center ${question.id === activeQuestionId
+                                                            className={`px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId)
                                                                 ? "bg-[#222222] border-l-2 border-green-500"
                                                                 : completedQuestions[question.id]
                                                                     ? "border-l-2 border-green-500 text-green-500"

@@ -30,6 +30,9 @@ interface LearnerCohortViewProps {
     courses?: Course[];
     onCourseSelect?: (index: number) => void;
     activeCourseIndex?: number;
+    taskId?: string | null;
+    questionId?: string | null;
+    onUpdateTaskAndQuestionIdInUrl?: (taskId: string | null, questionId: string | null) => void;
 }
 
 interface StreakData {
@@ -49,6 +52,9 @@ export default function LearnerCohortView({
     courses = [],
     onCourseSelect,
     activeCourseIndex = 0,
+    taskId = null,
+    questionId = null,
+    onUpdateTaskAndQuestionIdInUrl = () => {},
 }: LearnerCohortViewProps) {
     // Add state to manage completed tasks and questions
     const [localCompletedTaskIds, setLocalCompletedTaskIds] = useState<Record<string, boolean>>(completedTaskIds);
@@ -416,6 +422,9 @@ export default function LearnerCohortView({
                             onTaskComplete={handleTaskComplete}
                             onQuestionComplete={handleQuestionComplete}
                             onDialogClose={handleDialogClose}
+                            taskId={taskId}
+                            questionId={questionId}
+                            onUpdateTaskAndQuestionIdInUrl={onUpdateTaskAndQuestionIdInUrl}
                         />
                     </div>
                 </div>

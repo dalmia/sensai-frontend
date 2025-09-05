@@ -72,7 +72,7 @@ export default function LearnerQuizView({
     // Update current question index when currentQuestionId changes
     useEffect(() => {
         if (currentQuestionId && questions.length > 0) {
-            const index = questions.findIndex(q => q.id === currentQuestionId);
+            const index = questions.findIndex(q => String(q.id) === String(currentQuestionId));
             if (index !== -1) {
                 setCurrentQuestionIndex(index);
                 // Reset to chat view when changing questions
@@ -1691,7 +1691,7 @@ export default function LearnerQuizView({
 
     // Set initial showLearnerView based on isAdminView
     useEffect(() => {
-        const currentQuestion = questions.find(q => q.id === currentQuestionId);
+        const currentQuestion = questions.find(q => String(q.id) === String(currentQuestionId));
         if (!isAdminView && currentQuestion?.config?.responseType === 'exam') {
             setShowLearnerView(true);
         }

@@ -46,6 +46,7 @@ interface CourseItemDialogProps {
     isOpen: boolean;
     activeItem: any; // Using any for now, should be properly typed
     activeModuleId: string | null;
+    activeQuestionId?: string | null;
     isEditMode: boolean;
     isPreviewMode: boolean;
     showPublishConfirmation: boolean;
@@ -59,6 +60,7 @@ interface CourseItemDialogProps {
     onCancelEditMode: () => void;
     onEnableEditMode: () => void;
     onQuizContentChange: (questions: QuizQuestion[]) => void;
+    onQuestionChange?: (questionId: string) => void;
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
     courseId?: string; // Add courseId prop for learning materials
@@ -68,6 +70,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     isOpen,
     activeItem,
     activeModuleId,
+    activeQuestionId,
     isEditMode,
     isPreviewMode,
     showPublishConfirmation,
@@ -81,6 +84,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     onCancelEditMode,
     onEnableEditMode,
     onQuizContentChange,
+    onQuestionChange,
     focusEditor,
     schoolId,
     courseId,
@@ -183,7 +187,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             // Create interval to monitor for changes and push history state only once
             window.setInterval(() => {
-                const hasChanges = activeItem.type === 'material'
+                if (!activeItem) return;
+
+                const hasChanges = activeItem?.type === 'material'
                     ? (learningMaterialEditorRef.current?.hasChanges() || false)
                     : (quizEditorRef.current?.hasChanges() || false);
 
@@ -208,11 +214,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 activeItem.status === 'draft') {
 
                 // Reset to false when dialog opens for draft quizzes
-                setHasQuizQuestions(false);
+                // setHasQuizQuestions(false);
 
                 // Also ensure activeItem.questions is cleared
-                console.log('Clearing questions for draft quiz on dialog open');
-                activeItem.questions = [];
+                // console.log('Clearing questions for draft quiz on dialog open');
+                // activeItem.questions = [];
             } else if (activeItem &&
                 activeItem.type === 'quiz' &&
                 activeItem.status === 'published') {
@@ -252,8 +258,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Check if there are actual changes
-                const hasChanges = activeItem.type === 'material'
+                const hasChanges = activeItem?.type === 'material'
                     ? learningMaterialEditorRef.current?.hasChanges() || false
                     : quizEditorRef.current?.hasChanges() || false;
 
@@ -270,7 +275,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 } else {
                     // For draft items
                     // Check if the editor/quiz has any content using the appropriate ref
-                    const hasContent = activeItem.type === 'material'
+
+                    const hasContent = activeItem?.type === 'material'
                         ? learningMaterialEditorRef.current?.hasContent() || false
                         : quizEditorRef.current?.hasContent() || false;
 
@@ -326,7 +332,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Add beforeunload event listener to prevent page reload/close with unsaved changes
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            const hasChanges = activeItem.type === 'material'
+            const hasChanges = activeItem?.type === 'material'
                 ? learningMaterialEditorRef.current?.hasChanges() || false
                 : quizEditorRef.current?.hasChanges() || false;
             // Only show warning if there are actual unsaved changes
@@ -348,7 +354,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Handle browser back/forward navigation
     useEffect(() => {
         const handlePopState = (e: PopStateEvent) => {
-            const hasChanges = activeItem.type === 'material'
+
+            const hasChanges = activeItem?.type === 'material'
                 ? learningMaterialEditorRef.current?.hasChanges() || false
                 : quizEditorRef.current?.hasChanges() || false;
             // Prevent navigation if user is in edit mode, the item is a draft, or if there are unsaved changes
@@ -1032,6 +1039,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
+                                currentQuestionId={activeQuestionId || undefined}
+                                onQuestionChange={onQuestionChange}
                                 onChange={(questions) => {
                                     // Track if there are questions for publish/preview button visibility
                                     setHasQuizQuestions(questions.length > 0);

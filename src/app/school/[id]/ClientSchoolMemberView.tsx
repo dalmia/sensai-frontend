@@ -31,9 +31,11 @@ interface Course {
 export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    // Get course_id and cohort_id from query parameters
+    // Get course_id, cohort_id, taskId, and questionId from query parameters
     const defaultCourseId = searchParams.get('course_id');
     const defaultCohortId = searchParams.get('cohort_id');
+    const taskId = searchParams.get('taskId');
+    const questionId = searchParams.get('questionId');
 
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const { schools } = useSchools();
@@ -296,6 +298,24 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
         router.replace(`/school/${slug}?${params.toString()}`, { scroll: false });
     };
 
+    // Utility function to handle URL manipulation for taskId and questionId
+    const updateTaskAndQuestionIdInUrl = (taskId: string | null, questionId: string | null) => {
+        const url = new URL(window.location.href);
+        if (taskId) {
+            url.searchParams.set('taskId', taskId);
+        } else {
+            url.searchParams.delete('taskId');
+        }
+
+        if (questionId) {
+            url.searchParams.set('questionId', questionId);
+        } else {
+            url.searchParams.delete('questionId');
+        }
+
+        router.push(url.pathname + url.search, { scroll: false });
+    };
+
     // Keep the original handleCohortSelect function for the Header component
     const handleCohortSelect = (cohort: Cohort) => {
         setActiveCohort(cohort);
@@ -522,6 +542,9 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 courses={courses}
                                                                 onCourseSelect={handleCourseSelect}
                                                                 activeCourseIndex={activeCourseIndex}
+                                                                taskId={taskId}
+                                                                questionId={questionId}
+                                                                onUpdateTaskAndQuestionIdInUrl={updateTaskAndQuestionIdInUrl}
                                                             />
                                                         )}
                                                     </div>
