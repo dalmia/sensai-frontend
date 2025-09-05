@@ -34,6 +34,7 @@ interface CourseModuleListProps {
     isDialogOpen?: boolean;
     activeItem?: ModuleItem | null;
     activeModuleId?: string | null;
+    activeQuestionId?: string | null;
     isEditMode?: boolean;
     isPreviewMode?: boolean;
     showPublishConfirmation?: boolean;
@@ -45,6 +46,7 @@ interface CourseModuleListProps {
     enableEditMode?: () => void;
     handleQuizContentChange?: (questions: QuizQuestion[]) => void;
     setShowPublishConfirmation?: (show: boolean) => void;
+    onQuestionChange?: (questionId: string) => void;
     onDuplicateItem?: (moduleId: string, taskData: any, ordering: number) => Promise<void>;
 }
 
@@ -74,6 +76,7 @@ export default function CourseModuleList({
     isDialogOpen = false,
     activeItem = null,
     activeModuleId = null,
+    activeQuestionId = null,
     isEditMode = false,
     isPreviewMode = false,
     showPublishConfirmation = false,
@@ -85,6 +88,7 @@ export default function CourseModuleList({
     enableEditMode = () => { },
     handleQuizContentChange = () => { },
     setShowPublishConfirmation = () => { },
+    onQuestionChange = () => { },
     onDuplicateItem,
 }: CourseModuleListProps) {
 
@@ -999,6 +1003,7 @@ export default function CourseModuleList({
                 isOpen={isDialogOpen}
                 activeItem={activeItem}
                 activeModuleId={activeModuleId}
+                activeQuestionId={activeQuestionId}
                 isEditMode={isEditMode}
                 isPreviewMode={isPreviewMode}
                 showPublishConfirmation={showPublishConfirmation}
@@ -1012,6 +1017,7 @@ export default function CourseModuleList({
                 onCancelEditMode={cancelEditMode}
                 onEnableEditMode={enableEditMode}
                 onQuizContentChange={handleQuizContentChange}
+                onQuestionChange={onQuestionChange}
                 focusEditor={focusEditor}
                 schoolId={schoolId}
                 courseId={courseId}

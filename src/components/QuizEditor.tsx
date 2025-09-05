@@ -707,6 +707,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 setCurrentQuestionIndex(i);
                 setActiveEditorTab('question');
                 highlightField('title');
+                updateCurrentQuestionId(question.id);
 
                 // Notify parent about validation error
                 if (onValidationError) {
@@ -726,6 +727,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                 // Highlight the question field
                 highlightField('question');
+                updateCurrentQuestionId(question.id);
 
                 // Notify parent about validation error
                 if (onValidationError) {
@@ -746,7 +748,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     // Highlight the coding language field
                     highlightField('codingLanguage');
-
+                    updateCurrentQuestionId(question.id);
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
@@ -769,6 +771,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     // Highlight the answer field
                     highlightField('answer');
+                    updateCurrentQuestionId(question.id);
 
                     // Notify parent about validation error
                     if (onValidationError) {
@@ -788,6 +791,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     setCurrentQuestionIndex(i);
                     setActiveEditorTab('scorecard');
 
+                    updateCurrentQuestionId(question.id);
+
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
@@ -802,7 +807,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 if (question.config.scorecardData) {
                     // Navigate to the question with the problematic scorecard first
                     setCurrentQuestionIndex(i);
-
+                    updateCurrentQuestionId(question.id);
+                    
                     // Use the shared validation function for scorecards
                     const isValid = validateScorecardCriteria(
                         question.config.scorecardData,
@@ -1259,6 +1265,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         executeAddQuestion();
     }, [questions, onChange]);
 
+    const updateCurrentQuestionId = (questionId: string) => {
+        if (onQuestionChange) {
+            onQuestionChange(questionId);
+        }
+    };
+
     // Extract the actual add question logic to a separate function
     const executeAddQuestion = useCallback(() => {
         // Get the previous question's configuration if available
@@ -1332,10 +1344,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             onChange(updatedQuestions);
         }
 
+        updateCurrentQuestionId(newQuestion.id);
+
         setActiveEditorTab('question');
 
         // Removed slash menu opening after adding a new question
-    }, [questions, onChange]);
+    }, [questions, onChange, onQuestionChange]);
 
     // Navigate to previous question
     const goToPreviousQuestion = useCallback(() => {
@@ -2615,7 +2629,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             isEditMode={!readOnly}
                                                             editorContent={currentQuestionContent}
                                                             loading={isLoadingIntegration}
-                                                            onSaveDraft={() => updateDraftQuiz(null, 'draft')}
+                                                            onSaveDraft={() => {
+                                                                if (status === 'draft') {
+                                                                    updateDraftQuiz(null, 'draft');
+                                                                }
+                                                            }}
                                                             status={status}
                                                             storedBlocks={integrationBlocks}
                                                             onContentUpdate={(updatedContent) => {
