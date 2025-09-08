@@ -1,33 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth";
+import { useIntegration } from "@/context/IntegrationContext";
 import ConfirmationDialog from "./ConfirmationDialog";
-import Tooltip from "./Tooltip";
-import { RefreshCcw, Unlink, Info } from "lucide-react";
+import IntegrationButton from "./IntegrationButton";
+import { RefreshCcw, Unlink } from "lucide-react";
 import { compareNotionBlocks, fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
 import Toast from "./Toast";
-
-interface IntegrationPage {
-  id: string;
-  object: "page";
-  properties?: {
-    title?: { title: { plain_text: string }[] };
-  };
-}
-
-interface ButtonProps {
-  onClick: (e?: React.MouseEvent) => void | Promise<void>;
-  disabled?: boolean;
-  isLoading?: boolean;
-  loadingText: string;
-  normalText: string;
-  bgColor: string;
-  textColor?: string;
-  className?: string;
-  icon?: React.ReactNode;
-  tooltip?: boolean;
-}
 
 // Notion icon component
 const NotionIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -35,43 +14,6 @@ const NotionIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
     <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632" />
   </svg>
 );
-
-// Reusable loading button component
-const Button = ({
-  onClick,
-  disabled = false,
-  isLoading = false,
-  loadingText,
-  normalText,
-  bgColor,
-  textColor = "text-white",
-  className = "",
-  icon,
-  tooltip = false
-}: ButtonProps) => {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || isLoading}
-      className={`px-3 py-2 ${bgColor} ${textColor} rounded-full font-light text-sm transition ${isLoading ? 'opacity-70' : ''} ${className} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      {isLoading ? (
-        <div className="flex items-center">
-          <div className={`w-4 h-4 border-2 ${textColor === 'text-black' ? 'border-black' : 'border-white'} border-t-transparent rounded-full animate-spin mr-2`}></div>
-          {loadingText}
-        </div>
-      ) : (
-        <div className="flex items-center">
-          {icon && <span className="mr-2">{icon}</span>}
-          {normalText}
-            {tooltip && <Tooltip content="You can only add those Notion pages where you have full access. If you want to add a page that you don't have full access to, either request your Notion admin for full access or ask someone with full access to connect that notion page with this question. Once that page is connected, you will be able to view it here." position="bottom" tooltipWidth="400px" className="">
-              <Info className="w-4 h-4 text-black cursor-pointer ml-2" />
-            </Tooltip>}
-        </div>
-      )}
-    </button>
-  );
-};
 
 interface IntegrationProps {
   onPageSelect?: (pageId: string, pageTitle: string) => Promise<{ hasNestedPages?: boolean } | void>;
@@ -110,22 +52,29 @@ export default function NotionIntegration({
   onContentUpdate,
   onLoadingChange
 }: IntegrationProps) {
-  const { user } = useAuth();
-  const [pages, setPages] = useState<IntegrationPage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isIntegrationCheckComplete, setIsIntegrationCheckComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    hasIntegration,
+    isLoading: contextIsLoading,
+    isIntegrationCheckComplete,
+    error: contextError,
+    pages,
+    isLoadingPages,
+    noPagesFound,
+    showDropdown,
+    isConnecting,
+    isOAuthCallbackComplete,
+    connectIntegration,
+    setShowDropdown
+  } = useIntegration();
+
+  // Local state for component-specific functionality
   const [showSyncNotice, setShowSyncNotice] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasCheckedForNotionUpdates, setHasCheckedForNotionUpdates] = useState(false);
-  const [hasIntegration, setHasIntegration] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>();
   const [selectedPageTitle, setSelectedPageTitle] = useState<string | undefined>();
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [noPagesFound, setNoPagesFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Add state for confirmation dialog
   const [showOverwriteConfirmation, setShowOverwriteConfirmation] = useState(false);
@@ -138,26 +87,6 @@ export default function NotionIntegration({
   const [toastMessage, setToastMessage] = useState("");
   const [toastEmoji, setToastEmoji] = useState("⚠️");
 
-  const checkIntegration = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/?user_id=${user.id}`);
-      if (response.ok) {
-        const integrations = await response.json();
-        const notionIntegration = integrations.find((integration: { integration_type: string; access_token: string; id: number }) => integration.integration_type === 'notion');
-        if (notionIntegration) {
-          setHasIntegration(true);
-          setAccessToken(notionIntegration.access_token);
-          setNoPagesFound(false);
-          setError(null);
-        }
-      }
-    } catch (err) {
-      console.error('Error checking integration:', err);
-    } finally {
-      setIsLoading(false);
-      setIsIntegrationCheckComplete(true);
-    }
-  };
 
   // Check for existing integration block in editor content
   useEffect(() => {
@@ -189,89 +118,12 @@ export default function NotionIntegration({
     }
   }, [showToast]);
 
-  // Check if user has integration and handle OAuth callback
+  // Show no pages toast when OAuth callback is complete and no pages are found
   useEffect(() => {
-    if (!user?.id) return;
-
-    // Check for OAuth callback parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-
-    if (accessToken) {
-      // Create the integration
-      const createIntegration = async () => {
-        setIsConnecting(true);
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: user.id,
-              integration_type: 'notion',
-              access_token: accessToken,
-            }),
-          });
-
-          if (response.ok) {
-            // Refresh integration status
-            checkIntegration();
-          } else {
-            console.error('Failed to create integration');
-          }
-        } catch (err) {
-          console.error('Error creating integration:', err);
-        } finally {
-          setIsConnecting(false);
-          // Clear URL parameters and refresh integration status
-          const url = new URL(window.location.href);
-          url.searchParams.delete('access_token');
-          window.history.replaceState({}, document.title, url.pathname + url.search);
-        }
-      };
-
-      createIntegration();
-    } else {
-      // Check existing integration
-      checkIntegration();
+    if (isOAuthCallbackComplete && noPagesFound && !isLoadingPages) {
+      showNoPagesToast();
     }
-
-  }, [user?.id]);
-
-  // Fetch pages when we have an access token
-  useEffect(() => {
-    if (!accessToken) return;
-
-    const fetchPages = async () => {
-      setIsLoading(true);
-      setError(null);
-      setNoPagesFound(false); // Reset no pages found state
-
-      try {
-        const response = await fetch(`/api/integrations/fetchPages?token=${encodeURIComponent(accessToken)}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setPages(data.pages || []);
-          setShowDropdown(true);
-          if (data.pages && data.pages.length === 0) {
-            setNoPagesFound(true);
-            showNoPagesToast()
-          }
-        } else {
-          setError(data.error || 'Failed to fetch pages');
-          setNoPagesFound(true); // Set to true if API returns an error
-        }
-      } catch (err) {
-        setError('Failed to fetch pages');
-        setNoPagesFound(true); // Set to true on network error
-        console.error('Error fetching pages:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPages();
-  }, [accessToken]);
+  }, [isOAuthCallbackComplete, noPagesFound, isLoadingPages]);
 
   const handleConnectNotion = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -285,11 +137,7 @@ export default function NotionIntegration({
       }
     }
 
-    setIsConnecting(true);
-    const NOTION_CLIENT_ID = process.env.NEXT_PUBLIC_NOTION_CLIENT_ID || "";
-    const currentUrl = window.location.href;
-    const NOTION_AUTH_URL = `https://api.notion.com/v1/oauth/authorize?owner=user&client_id=${NOTION_CLIENT_ID}&response_type=code&state=${encodeURIComponent(currentUrl)}`;
-    window.location.href = NOTION_AUTH_URL;
+    await connectIntegration();
   };
 
   const handleAddMorePages = async (e?: React.MouseEvent) => {
@@ -325,7 +173,9 @@ export default function NotionIntegration({
   const handlePageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation();
     const pageId = e.target.value;
-    setIsLoading(true);
+    if (onLoadingChange) {
+      onLoadingChange(true);
+    }
     if (pageId) {
       const selectedPage = pages.find(page => page.id === pageId);
       const pageTitle = selectedPage?.properties?.title?.title?.[0]?.plain_text || "New page";
@@ -346,7 +196,9 @@ export default function NotionIntegration({
         if (onPageSelect) {
           const result = await onPageSelect(pageId, pageTitle);
           if (result && result.hasNestedPages) {
-              setIsLoading(false);
+            if (onLoadingChange) {
+              onLoadingChange(false);
+            }
               showNestedPagesToast();
               setSelectedPageId(undefined);
               setSelectedPageTitle(undefined);
@@ -358,7 +210,9 @@ export default function NotionIntegration({
       setSelectedPageId("");
       setSelectedPageTitle("");
     }
-    setIsLoading(false);
+    if (onLoadingChange) {
+      onLoadingChange(false);
+    }
   };
 
   // Function to show toast for nested pages error
@@ -454,7 +308,7 @@ export default function NotionIntegration({
       const integrationBlock = editorContent.find(block => block.type === 'notion');
       if (!integrationBlock) return;
 
-      const result = await fetchIntegrationBlocks(integrationBlock);
+      const result = await fetchIntegrationBlocks(integrationBlock as Parameters<typeof fetchIntegrationBlocks>[0]);
 
       if (result.error) {
         setError(result.error);
@@ -505,7 +359,6 @@ export default function NotionIntegration({
 
       const checkForUpdates = async () => {
         try {
-          setIsLoading(true);
           if (onLoadingChange) {
             onLoadingChange(true);
           }
@@ -535,7 +388,6 @@ export default function NotionIntegration({
             } else {
               setError('This page now contains sub-pages or databases which are not supported for syncing');
             }
-            setIsLoading(false);
             setHasCheckedForNotionUpdates(true);
             return;
           }
@@ -582,7 +434,6 @@ export default function NotionIntegration({
         } catch (error) {
           setHasCheckedForNotionUpdates(true);
         } finally {
-          setIsLoading(false);
           if (onLoadingChange) {
             onLoadingChange(false);
           }
@@ -590,7 +441,7 @@ export default function NotionIntegration({
       };
       checkForUpdates();
     }
-  }, [isEditMode, selectedPageId, storedBlocks, hasCheckedForNotionUpdates, status, editorContent, storedBlocks, onContentUpdate, onLoadingChange]);
+  }, [isEditMode, selectedPageId, selectedPageTitle, storedBlocks, hasCheckedForNotionUpdates, status, editorContent, onContentUpdate, onLoadingChange]);
 
   // Don't show anything if not in edit mode
   if (!isEditMode) {
@@ -603,7 +454,7 @@ export default function NotionIntegration({
   }
 
   // Show loading state when fetching pages
-  if (isLoading && hasIntegration) {
+  if ((contextIsLoading || isLoadingPages) && hasIntegration) {
     return (
       <div
         className={`flex items-center gap-3 ml-16 ${className}`}
@@ -628,7 +479,7 @@ export default function NotionIntegration({
           onMouseDown={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-2">
-            <Button
+            <IntegrationButton
               onClick={handleConnectNotion}
               disabled={loading}
               isLoading={isConnecting}
@@ -690,7 +541,7 @@ export default function NotionIntegration({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
+              <IntegrationButton
                 onClick={handleAddMorePages}
                 disabled={loading}
                 isLoading={isConnecting}
@@ -721,7 +572,7 @@ export default function NotionIntegration({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
+                <IntegrationButton
                   onClick={handleUnlinkPage}
                   disabled={loading}
                   isLoading={isUnlinking}
@@ -732,7 +583,7 @@ export default function NotionIntegration({
                   className="text-xs px-2 py-1"
                 />
                 {showSyncNotice && isEditMode && (
-                  <Button
+                  <IntegrationButton
                     onClick={handleSyncNotionBlocks}
                     disabled={isSyncing}
                     isLoading={isSyncing}
@@ -761,8 +612,8 @@ export default function NotionIntegration({
             )}
 
             {/* Sync notice for edit mode - only show in published status */}
-            {error && (
-              <div className="text-sm text-red-400 mt-3">{error}</div>
+            {(contextError || error) && (
+              <div className="text-sm text-red-400 mt-3">{contextError || error}</div>
             )}
 
             {/* Sync notice for edit mode - only show in published status */}

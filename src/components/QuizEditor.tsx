@@ -1538,7 +1538,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 }
 
                 // Return the formatted question object for all questions, not just those with scorecards
-                return {
+
+                // Only include ID if it's a database question
+                const questionData: any = {
                     blocks: question.content,
                     answer: question.config.correctAnswer || [],
                     input_type: inputType,
@@ -1553,6 +1555,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     title: question.config.title,
                     settings: question.config.settings,
                 };
+
+                // Include ID only for database questions
+                if (question.id && !question.id.includes('question-')) {
+                    questionData.id = question.id;
+                }
+
+                return questionData;
             });
 
             // Make POST request to update the quiz
