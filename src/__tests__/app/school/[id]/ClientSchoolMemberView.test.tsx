@@ -50,7 +50,8 @@ jest.mock('@/components/LearnerCohortView', () => {
         onCourseSelect,
         activeCourseIndex,
         completedTaskIds,
-        completedQuestionIds
+        completedQuestionIds,
+        onUpdateTaskAndQuestionIdInUrl
     }: any) {
         return (
             <div data-testid="learner-cohort-view">
@@ -67,6 +68,28 @@ jest.mock('@/components/LearnerCohortView', () => {
                     >
                         Select Course 1
                     </button>
+                )}
+                {onUpdateTaskAndQuestionIdInUrl && (
+                    <>
+                        <button
+                            data-testid="update-url-both"
+                            onClick={() => onUpdateTaskAndQuestionIdInUrl('task-123', 'question-456')}
+                        >
+                            Update URL with both IDs
+                        </button>
+                        <button
+                            data-testid="clear-url-ids"
+                            onClick={() => onUpdateTaskAndQuestionIdInUrl(null, null)}
+                        >
+                            Clear URL IDs
+                        </button>
+                        <button
+                            data-testid="update-task-only"
+                            onClick={() => onUpdateTaskAndQuestionIdInUrl('task-789', null)}
+                        >
+                            Update only taskId
+                        </button>
+                    </>
                 )}
             </div>
         );
@@ -1140,6 +1163,101 @@ describe('Mentor and Batch Logic', () => {
             expect(screen.getByTestId('learner-cohort-view')).toBeInTheDocument();
             // Should not render MentorCohortView
             expect(screen.queryByTestId('mentor-cohort-view')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('URL Task and Question ID Management', () => {
+        beforeEach(() => {
+            (useAuth as jest.Mock).mockReturnValue({
+                user: { id: 'user-1' },
+                isAuthenticated: true,
+                isLoading: false
+            });
+
+            (useSchools as jest.Mock).mockReturnValue({
+                schools: []
+            });
+
+            // Mock window.location
+            Object.defineProperty(window, 'location', {
+                writable: true,
+                value: {
+                    href: 'http://localhost:3000/school/test-school?cohort_id=1&course_id=1'
+                }
+            });
+
+            // Mock successful API responses for setup
+            (fetch as jest.MockedFunction<typeof fetch>)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        id: '1',
+                        name: 'Test School',
+                        slug: 'test-school'
+                    })
+                } as Response)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve([
+                        { id: 1, name: 'Cohort 1', joined_at: '2024-01-01', role: 'learner' }
+                    ])
+                } as Response)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve([
+                        { id: 1, name: 'Course 1', milestones: [] }
+                    ])
+                } as Response);
+        });
+
+        it('should set taskId and questionId in URL when both are provided', async () => {
+            render(<ClientSchoolMemberView slug="test-school" />);
+
+            await waitFor(() => {
+                const updateButton = screen.getByTestId('update-url-both');
+                fireEvent.click(updateButton);
+
+                expect(mockPush).toHaveBeenCalledWith(
+                    '/school/test-school?cohort_id=1&course_id=1&taskId=task-123&questionId=question-456',
+                    { scroll: false }
+                );
+            });
+        });
+
+        it('should remove taskId and questionId from URL when both are null', async () => {
+            // Set initial URL with existing taskId and questionId
+            Object.defineProperty(window, 'location', {
+                writable: true,
+                value: {
+                    href: 'http://localhost:3000/school/test-school?cohort_id=1&course_id=1&taskId=old-task&questionId=old-question'
+                }
+            });
+
+            render(<ClientSchoolMemberView slug="test-school" />);
+
+            await waitFor(() => {
+                const clearButton = screen.getByTestId('clear-url-ids');
+                fireEvent.click(clearButton);
+
+                expect(mockPush).toHaveBeenCalledWith(
+                    '/school/test-school?cohort_id=1&course_id=1',
+                    { scroll: false }
+                );
+            });
+        });
+
+        it('should set only taskId in URL when questionId is null', async () => {
+            render(<ClientSchoolMemberView slug="test-school" />);
+
+            await waitFor(() => {
+                const updateButton = screen.getByTestId('update-task-only');
+                fireEvent.click(updateButton);
+
+                expect(mockPush).toHaveBeenCalledWith(
+                    '/school/test-school?cohort_id=1&course_id=1&taskId=task-789',
+                    { scroll: false }
+                );
+            });
         });
     });
 }); 

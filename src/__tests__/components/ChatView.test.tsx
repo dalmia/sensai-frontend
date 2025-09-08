@@ -527,4 +527,290 @@ describe('Additional ChatView coverage', () => {
     });
 });
 
-// NEW TESTS FOR FULL COVERAGE END 
+// NEW TESTS FOR FULL COVERAGE END
+
+describe('ChatView Copy/Paste Functionality', () => {
+    const baseProps = {
+        currentChatHistory: [],
+        isAiResponding: false,
+        showPreparingReport: false,
+        isChatHistoryLoaded: true,
+        isTestMode: false,
+        taskType: 'quiz' as const,
+        isSubmitting: false,
+        currentAnswer: 'test content',
+        handleInputChange: jest.fn(),
+        handleSubmitAnswer: jest.fn(),
+        handleAudioSubmit: jest.fn(),
+        handleViewScorecard: jest.fn(),
+        completedQuestionIds: {},
+    } as any;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Mock window.getSelection
+        Object.defineProperty(window, 'getSelection', {
+            writable: true,
+            value: jest.fn(),
+        });
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('onCopy handler stores copied content when selection exists', async () => {
+        const mockSelection = {
+            toString: jest.fn().mockReturnValue('copied text')
+        };
+        (window.getSelection as jest.Mock).mockReturnValue(mockSelection);
+
+        await act(async () => {
+            render(<ChatView {...baseProps} />);
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Trigger the onCopy event
+        fireEvent.copy(textarea);
+
+        // Verify that window.getSelection was called
+        expect(window.getSelection).toHaveBeenCalled();
+        expect(mockSelection.toString).toHaveBeenCalled();
+    });
+
+    it('onCopy handler does nothing when no selection exists', async () => {
+        const mockSelection = {
+            toString: jest.fn().mockReturnValue('')
+        };
+        (window.getSelection as jest.Mock).mockReturnValue(mockSelection);
+
+        await act(async () => {
+            render(<ChatView {...baseProps} />);
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Trigger the onCopy event
+        fireEvent.copy(textarea);
+
+        // Verify that window.getSelection was called but no content stored
+        expect(window.getSelection).toHaveBeenCalled();
+        expect(mockSelection.toString).toHaveBeenCalled();
+    });
+
+    it('onCopy handler does nothing when getSelection returns null', async () => {
+        (window.getSelection as jest.Mock).mockReturnValue(null);
+
+        await act(async () => {
+            render(<ChatView {...baseProps} />);
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Trigger the onCopy event
+        fireEvent.copy(textarea);
+
+        // Verify that window.getSelection was called
+        expect(window.getSelection).toHaveBeenCalled();
+    });
+
+    it('onPaste allows paste when disableCopyPaste is false', async () => {
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    currentQuestionConfig={{
+                        inputType: 'text',
+                        settings: { allowCopyPaste: true }
+                    }}
+                />
+            );
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Create a mock paste event
+        const pasteEvent = new Event('paste', { bubbles: true });
+        Object.defineProperty(pasteEvent, 'clipboardData', {
+            value: {
+                getData: jest.fn().mockReturnValue('pasted content')
+            }
+        });
+
+        // Trigger the onPaste event - should not be prevented
+        fireEvent(textarea, pasteEvent);
+
+        // Event should not be prevented
+        expect(pasteEvent.defaultPrevented).toBe(false);
+    });
+
+    it('onPaste allows same-window paste when disableCopyPaste is true', async () => {
+        // First, simulate copying content
+        const mockSelection = {
+            toString: jest.fn().mockReturnValue('same window content')
+        };
+        (window.getSelection as jest.Mock).mockReturnValue(mockSelection);
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    currentQuestionConfig={{
+                        inputType: 'text',
+                        settings: { allowCopyPaste: false }
+                    }}
+                />
+            );
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // First copy some content
+        fireEvent.copy(textarea);
+
+        // Now try to paste the same content
+        const pasteEvent = new Event('paste', { bubbles: true });
+        Object.defineProperty(pasteEvent, 'clipboardData', {
+            value: {
+                getData: jest.fn().mockReturnValue('same window content')
+            }
+        });
+
+        // Trigger the onPaste event - should be allowed
+        fireEvent(textarea, pasteEvent);
+
+        // Event should not be prevented since it's same-window content
+        expect(pasteEvent.defaultPrevented).toBe(false);
+    });
+
+    it('onPaste prevents external paste and shows toast when disableCopyPaste is true', async () => {
+        jest.useFakeTimers();
+
+        // First, simulate copying different content
+        const mockSelection = {
+            toString: jest.fn().mockReturnValue('internal content')
+        };
+        (window.getSelection as jest.Mock).mockReturnValue(mockSelection);
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    currentQuestionConfig={{
+                        inputType: 'text',
+                        settings: { allowCopyPaste: false }
+                    }}
+                />
+            );
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // First copy some content
+        fireEvent.copy(textarea);
+
+        // Now try to paste different (external) content
+        const pasteEvent = new Event('paste', { bubbles: true });
+        const preventDefault = jest.fn();
+        Object.defineProperty(pasteEvent, 'preventDefault', { value: preventDefault });
+        Object.defineProperty(pasteEvent, 'clipboardData', {
+            value: {
+                getData: jest.fn().mockReturnValue('external content')
+            }
+        });
+
+        // Trigger the onPaste event
+        fireEvent(textarea, pasteEvent);
+
+        // Event should be prevented
+        expect(preventDefault).toHaveBeenCalled();
+
+        // Toast should be displayed
+        await waitFor(() => {
+            expect(screen.getByText('Not allowed')).toBeInTheDocument();
+            expect(screen.getByText('Pasting the answer is disabled for this question')).toBeInTheDocument();
+        });
+
+        // Auto-hide toast after 3 seconds
+        await act(async () => {
+            jest.advanceTimersByTime(3500);
+        });
+
+        await waitFor(() => {
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+        });
+
+        jest.useRealTimers();
+    });
+
+    it('onPaste prevents paste when no previous copy was made and disableCopyPaste is true', async () => {
+        jest.useFakeTimers();
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    currentQuestionConfig={{
+                        inputType: 'text',
+                        settings: { allowCopyPaste: false }
+                    }}
+                />
+            );
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Try to paste without copying anything first
+        const pasteEvent = new Event('paste', { bubbles: true });
+        const preventDefault = jest.fn();
+        Object.defineProperty(pasteEvent, 'preventDefault', { value: preventDefault });
+        Object.defineProperty(pasteEvent, 'clipboardData', {
+            value: {
+                getData: jest.fn().mockReturnValue('external content')
+            }
+        });
+
+        // Trigger the onPaste event
+        fireEvent(textarea, pasteEvent);
+
+        // Event should be prevented since no lastCopiedContent exists
+        expect(preventDefault).toHaveBeenCalled();
+
+        // Toast should be displayed
+        await waitFor(() => {
+            expect(screen.getByText('Not allowed')).toBeInTheDocument();
+            expect(screen.getByText('Pasting the answer is disabled for this question')).toBeInTheDocument();
+        });
+
+        jest.useRealTimers();
+    });
+
+    it('handles missing clipboardData in paste event', async () => {
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    currentQuestionConfig={{
+                        inputType: 'text',
+                        settings: { allowCopyPaste: false }
+                    }}
+                />
+            );
+        });
+
+        const textarea = screen.getByPlaceholderText('Type your answer here');
+
+        // Create paste event without clipboardData
+        const pasteEvent = new Event('paste', { bubbles: true });
+        const preventDefault = jest.fn();
+        Object.defineProperty(pasteEvent, 'preventDefault', { value: preventDefault });
+        // No clipboardData property
+
+        // Trigger the onPaste event
+        fireEvent(textarea, pasteEvent);
+
+        // Should still prevent the event when disableCopyPaste is true
+        expect(preventDefault).toHaveBeenCalled();
+    });
+}); 

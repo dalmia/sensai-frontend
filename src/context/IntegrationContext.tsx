@@ -78,15 +78,12 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
                     setAccessToken(integration.access_token);
                     setNoPagesFound(false);
                     setError(null);
-                    console.log('Integration found');
-                    console.log("access: ", integration.access_token)
                 } else {
                     setHasIntegration(false);
                     setAccessToken(null);
                 }
             }
-        } catch (err) {
-            console.error('Error checking integration:', err);
+        } catch {
             setError('Failed to check integration status');
         } finally {
             setIsLoading(false);
@@ -110,13 +107,10 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
                 setShowDropdown(true);
                 if (data.pages && data.pages.length === 0) {
                     setNoPagesFound(true);
-                    console.log('No pages found');
                 }
             } else {
                 setError(data.error || 'Failed to fetch pages');
                 setNoPagesFound(true);
-                console.log('Failed to fetch pages');
-                console.log(data.error);
             }
         } catch (err) {
             setError('Failed to fetch pages');
@@ -162,8 +156,7 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
             } else {
                 setError('Failed to disconnect Integration');
             }
-        } catch (err) {
-            console.error('Error disconnecting Integration:', err);
+        } catch {
             setError('Failed to disconnect Integration');
         } finally {
             setIsLoading(false);
@@ -199,11 +192,9 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
                         // Mark OAuth callback as complete
                         setIsOAuthCallbackComplete(true);
                     } else {
-                        console.error('Failed to create integration');
                         setError('Failed to create integration');
                     }
-                } catch (err) {
-                    console.error('Error creating integration:', err);
+                } catch {
                     setError('Failed to create integration');
                 } finally {
                     setIsConnecting(false);
