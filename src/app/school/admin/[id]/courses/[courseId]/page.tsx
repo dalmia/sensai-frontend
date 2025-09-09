@@ -649,7 +649,12 @@ export default function CreateCourse() {
         setIsEditMode(false);
         setActiveQuestionId(questionId || null);
 
-        updateTaskAndQuestionIdInUrl(itemId, questionId || null);
+        // Only update URL if the parameters are different from current URL
+        const currentTaskId = searchParams.get('taskId');
+        const currentQuestionId = searchParams.get('questionId');
+        if (currentTaskId !== itemId || currentQuestionId !== (questionId || null)) {
+            updateTaskAndQuestionIdInUrl(itemId, questionId || null);
+        }
 
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
@@ -693,7 +698,12 @@ export default function CreateCourse() {
     // Handle question change in quiz editor
     const handleQuestionChange = (questionId: string) => {
         setActiveQuestionId(questionId);
-        updateTaskAndQuestionIdInUrl(activeItem?.id || null, questionId);
+
+        // Only update URL if the questionId is different from current URL
+        const currentQuestionId = searchParams.get('questionId');
+        if (currentQuestionId !== questionId) {
+            updateTaskAndQuestionIdInUrl(activeItem?.id || null, questionId);
+        }
     };
 
     // Close the dialog

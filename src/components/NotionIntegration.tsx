@@ -441,7 +441,7 @@ export default function NotionIntegration({
       };
       checkForUpdates();
     }
-  }, [isEditMode, selectedPageId, selectedPageTitle, storedBlocks, hasCheckedForNotionUpdates, status, editorContent, onContentUpdate, onLoadingChange]);
+  }, [isEditMode, selectedPageId, storedBlocks, hasCheckedForNotionUpdates, status]);
 
   // Don't show anything if not in edit mode
   if (!isEditMode) {
