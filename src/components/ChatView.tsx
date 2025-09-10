@@ -639,7 +639,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                             }
                                                         }}
                                                         onCut={() => {
-                                                            // Store the c content for same-window paste functionality
+                                                            // Store the cut content for same-window paste functionality
                                                             const selection = window.getSelection();
                                                             if (selection && selection.toString()) {
                                                                 setLastCopiedContent(selection.toString());
