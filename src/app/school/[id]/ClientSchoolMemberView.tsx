@@ -14,6 +14,7 @@ import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
 import MentorCohortView from "@/components/MentorCohortView";
 import MemberSchoolViewHeader from '@/components/MemberSchoolViewHeader';
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 
 interface School {
     id: number;
@@ -298,24 +299,6 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
         router.replace(`/school/${slug}?${params.toString()}`, { scroll: false });
     };
 
-    // Utility function to handle URL manipulation for taskId and questionId
-    const updateTaskAndQuestionIdInUrl = (taskId: string | null, questionId: string | null) => {
-        const url = new URL(window.location.href);
-        if (taskId) {
-            url.searchParams.set('taskId', taskId);
-        } else {
-            url.searchParams.delete('taskId');
-        }
-
-        if (questionId) {
-            url.searchParams.set('questionId', questionId);
-        } else {
-            url.searchParams.delete('questionId');
-        }
-
-        router.push(url.pathname + url.search, { scroll: false });
-    };
-
     // Keep the original handleCohortSelect function for the Header component
     const handleCohortSelect = (cohort: Cohort) => {
         setActiveCohort(cohort);
@@ -544,7 +527,10 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 activeCourseIndex={activeCourseIndex}
                                                                 taskId={taskId}
                                                                 questionId={questionId}
-                                                                onUpdateTaskAndQuestionIdInUrl={updateTaskAndQuestionIdInUrl}
+                                                                onUpdateTaskAndQuestionIdInUrl={
+                                                                    (taskId, questionId) => 
+                                                                        updateTaskAndQuestionIdInUrl(router, taskId, questionId)
+                                                                }
                                                             />
                                                         )}
                                                     </div>

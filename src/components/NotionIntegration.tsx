@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useIntegration } from "@/context/IntegrationContext";
 import ConfirmationDialog from "./ConfirmationDialog";
-import IntegrationButton from "./IntegrationButton";
+import ConnectNotionButton from "./ConnectNotionButton";
 import { RefreshCcw, Unlink } from "lucide-react";
 import { compareNotionBlocks, fetchIntegrationBlocks } from "@/lib/utils/integrationUtils";
 import Toast from "./Toast";
@@ -54,7 +54,7 @@ export default function NotionIntegration({
 }: IntegrationProps) {
   const {
     hasIntegration,
-    isLoading: contextIsLoading,
+    isLoading: isCheckingIntegration,
     isIntegrationCheckComplete,
     error: contextError,
     pages,
@@ -454,7 +454,7 @@ export default function NotionIntegration({
   }
 
   // Show loading state when fetching pages
-  if ((contextIsLoading || isLoadingPages) && hasIntegration) {
+  if ((isCheckingIntegration || isLoadingPages) && hasIntegration) {
     return (
       <div
         className={`flex items-center gap-3 ml-16 ${className}`}
@@ -479,7 +479,7 @@ export default function NotionIntegration({
           onMouseDown={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-2">
-            <IntegrationButton
+            <ConnectNotionButton
               onClick={handleConnectNotion}
               disabled={loading}
               isLoading={isConnecting}
@@ -541,7 +541,7 @@ export default function NotionIntegration({
             </div>
 
             <div className="flex items-center gap-2">
-              <IntegrationButton
+              <ConnectNotionButton
                 onClick={handleAddMorePages}
                 disabled={loading}
                 isLoading={isConnecting}
@@ -572,7 +572,7 @@ export default function NotionIntegration({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <IntegrationButton
+                <ConnectNotionButton
                   onClick={handleUnlinkPage}
                   disabled={loading}
                   isLoading={isUnlinking}
@@ -583,7 +583,7 @@ export default function NotionIntegration({
                   className="text-xs px-2 py-1"
                 />
                 {showSyncNotice && isEditMode && (
-                  <IntegrationButton
+                  <ConnectNotionButton
                     onClick={handleSyncNotionBlocks}
                     disabled={isSyncing}
                     isLoading={isSyncing}

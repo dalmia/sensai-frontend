@@ -17,6 +17,7 @@ import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
 import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
 import SettingsDialog from "@/components/SettingsDialog";
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -337,24 +338,6 @@ export default function CreateCourse() {
         }
     };
 
-    // Utility function to handle URL manipulation for taskId and questionId
-    const updateTaskAndQuestionIdInUrl = (taskId: string | null, questionId: string | null) => {
-        const url = new URL(window.location.href);
-        if (taskId) {
-            url.searchParams.set('taskId', taskId);
-        } else {
-            url.searchParams.delete('taskId');
-        }
-
-        if (questionId) {
-            url.searchParams.set('questionId', questionId);
-        } else {
-            url.searchParams.delete('questionId');
-        }
-
-        router.push(url.pathname + url.search, { scroll: false });
-    };
-
     const updateModuleTitle = (id: string, title: string) => {
         setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, title } : module
@@ -424,7 +407,7 @@ export default function CreateCourse() {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
-        updateTaskAndQuestionIdInUrl(newItem.id, null);
+        updateTaskAndQuestionIdInUrl(router, newItem.id, null);
 
         setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
@@ -649,12 +632,7 @@ export default function CreateCourse() {
         setIsEditMode(false);
         setActiveQuestionId(questionId || null);
 
-        // Only update URL if the parameters are different from current URL
-        const currentTaskId = searchParams.get('taskId');
-        const currentQuestionId = searchParams.get('questionId');
-        if (currentTaskId !== itemId || currentQuestionId !== (questionId || null)) {
-            updateTaskAndQuestionIdInUrl(itemId, questionId || null);
-        }
+        updateTaskAndQuestionIdInUrl(router, itemId, questionId);
 
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
@@ -702,14 +680,14 @@ export default function CreateCourse() {
         // Only update URL if the questionId is different from current URL
         const currentQuestionId = searchParams.get('questionId');
         if (currentQuestionId !== questionId) {
-            updateTaskAndQuestionIdInUrl(activeItem?.id || null, questionId);
+            updateTaskAndQuestionIdInUrl(router, activeItem?.id, questionId);
         }
     };
 
     // Close the dialog
     const closeDialog = () => {
         // Clean up the URL (remove taskId and questionId)
-        updateTaskAndQuestionIdInUrl(null, null);
+        updateTaskAndQuestionIdInUrl(router, null, null);
 
         setIsDialogOpen(false);
         setActiveItem(null);

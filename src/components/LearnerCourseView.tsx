@@ -954,7 +954,7 @@ export default function LearnerCourseView({
             for (const module of modules) {
                 const item = module.items.find(i => i.id === taskId);
                 if (item) {
-                    openTaskItem(module.id, taskId, questionId || undefined);
+                    openTaskItem(module.id, taskId, questionId);
                     break;
                 }
             }
@@ -1275,7 +1275,7 @@ export default function LearnerCourseView({
                                                     questions={activeItem.questions || []}
                                                     readOnly={true}
                                                     viewOnly={viewOnly}
-                                                    currentQuestionId={activeQuestionId || undefined}
+                                                    currentQuestionId={activeQuestionId}
                                                     onQuestionChange={activateQuestion}
                                                     onSubmitAnswer={handleQuizAnswerSubmit}
                                                     userId={userId}

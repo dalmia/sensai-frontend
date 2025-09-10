@@ -208,18 +208,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             setShowToast(false);
 
             // When dialog opens, ensure hasQuizQuestions is correctly initialized
-            // For draft quizzes, always start with false (no questions)
             if (activeItem &&
-                activeItem.type === 'quiz' &&
-                activeItem.status === 'draft') {
-
-                // Reset to false when dialog opens for draft quizzes
-                // setHasQuizQuestions(false);
-
-                // Also ensure activeItem.questions is cleared
-                // console.log('Clearing questions for draft quiz on dialog open');
-                // activeItem.questions = [];
-            } else if (activeItem &&
                 activeItem.type === 'quiz' &&
                 activeItem.status === 'published') {
 
@@ -1039,7 +1028,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
-                                currentQuestionId={activeQuestionId || undefined}
+                                currentQuestionId={activeQuestionId}
                                 onQuestionChange={onQuestionChange}
                                 onChange={(questions) => {
                                     // Track if there are questions for publish/preview button visibility

@@ -16,7 +16,7 @@ interface ButtonProps {
     tooltip?: boolean;
 }
 
-export default function IntegrationButton({
+export default function ConnectNotionButton({
     onClick,
     disabled = false,
     isLoading = false,

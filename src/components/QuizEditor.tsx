@@ -1538,8 +1538,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 }
 
                 // Return the formatted question object for all questions, not just those with scorecards
-
-                // Only include ID if it's a database question
                 const questionData: any = {
                     blocks: question.content,
                     answer: question.config.correctAnswer || [],
@@ -1556,7 +1554,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     settings: question.config.settings,
                 };
 
-                // Include ID only for database questions
+                // Include ID only for existing questions being updated
                 if (question.id && !question.id.includes('question-')) {
                     questionData.id = question.id;
                 }
