@@ -158,14 +158,15 @@ export default function CreateCourse() {
             for (const module of modules) {
                 const item = module.items.find(i => i.id === taskId);
                 if (item) {
-                    openItemDialog(module.id, taskId, questionId);
+                    const preserveEdit = isDialogOpen && activeItem?.id === taskId;
+                    openItemDialog(module.id, taskId, questionId, { preserveEditMode: preserveEdit });
                     break;
                 }
             }
         } else if (!taskId) {
             setIsDialogOpen(false);
         }
-    }, [taskId, modules.length]);
+    }, [taskId, questionId, modules.length, isDialogOpen, activeItem]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
@@ -622,14 +623,22 @@ export default function CreateCourse() {
     };
 
     // Open the dialog for editing a learning material or quiz
-    const openItemDialog = (moduleId: string, itemId: string, questionId?: string | null) => {
+    const openItemDialog = (
+        moduleId: string,
+        itemId: string,
+        questionId?: string | null,
+        options?: { preserveEditMode?: boolean }
+    ) => {
         const module = modules.find(m => m.id === moduleId);
         if (!module) return;
 
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
-        setIsEditMode(false);
+        // When navigating between questions for a published quiz, preserve current edit mode
+        if (!options?.preserveEditMode) {
+            setIsEditMode(false);
+        }
         setActiveQuestionId(questionId || null);
 
         updateTaskAndQuestionIdInUrl(router, itemId, questionId);
