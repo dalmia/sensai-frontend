@@ -1103,11 +1103,11 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
         }
 
         if (editor && disableCopyPaste) {
-            // Listen for copy operations using onKeyDown for Cmd/Ctrl+C
+            // Listen for copy operations using onKeyDown for Cmd/Ctrl+C and Cmd/Ctrl+X
             const copyKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
                 const key = (e.browserEvent?.key || '').toLowerCase();
-                if (isCmdCtrl && key === 'c') {
+                if (isCmdCtrl && (key === 'c' || key === 'x')) {
                     const selection = editor.getSelection();
                     if (selection) {
                         const selectedText = editor.getModel()?.getValueInRange(selection) || '';
@@ -1448,4 +1448,5 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     );
 });
 
+CodeEditorView.displayName = 'CodeEditorView';
 export default CodeEditorView; 

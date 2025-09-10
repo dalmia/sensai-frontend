@@ -532,7 +532,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             responseType={currentQuestionConfig?.responseType}
                         />
                     ) : (
-                        <div className="flex-1 overflow-y-auto messages-container">
+                        <div
+                            className="flex-1 overflow-y-auto messages-container"
+                            onCopy={() => {
+                                const selection = window.getSelection();
+                                if (selection && selection.toString()) {
+                                    setLastCopiedContent(selection.toString());
+                                }
+                            }}
+                        >
                             <ChatHistoryView
                                 chatHistory={currentChatHistory}
                                 onViewScorecard={handleViewScorecard}
@@ -616,6 +624,13 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                         }}
                                                         onCopy={() => {
                                                             // Store the copied content for same-window paste functionality
+                                                            const selection = window.getSelection();
+                                                            if (selection && selection.toString()) {
+                                                                setLastCopiedContent(selection.toString());
+                                                            }
+                                                        }}
+                                                        onCut={() => {
+                                                            // Store the c content for same-window paste functionality
                                                             const selection = window.getSelection();
                                                             if (selection && selection.toString()) {
                                                                 setLastCopiedContent(selection.toString());
