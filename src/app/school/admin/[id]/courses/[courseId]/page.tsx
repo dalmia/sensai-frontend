@@ -17,6 +17,7 @@ import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
 import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
 import SettingsDialog from "@/components/SettingsDialog";
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -52,6 +53,7 @@ export default function CreateCourse() {
     const [modules, setModules] = useState<Module[]>([]);
     const [activeItem, setActiveItem] = useState<ModuleItem | null>(null);
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+    const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -135,6 +137,7 @@ export default function CreateCourse() {
     const [selectedCohortForSettings, setSelectedCohortForSettings] = useState<any | null>(null);
 
     const taskId = searchParams.get('taskId');
+    const questionId = searchParams.get('questionId');
 
     // Update the refs whenever the state changes
     useEffect(() => {
@@ -155,14 +158,15 @@ export default function CreateCourse() {
             for (const module of modules) {
                 const item = module.items.find(i => i.id === taskId);
                 if (item) {
-                    openItemDialog(module.id, taskId);
+                    const preserveEdit = isDialogOpen && activeItem?.id === taskId;
+                    openItemDialog(module.id, taskId, questionId, { preserveEditMode: preserveEdit });
                     break;
                 }
             }
         } else if (!taskId) {
             setIsDialogOpen(false);
         }
-    }, [taskId, modules.length]);
+    }, [taskId, questionId, modules.length, isDialogOpen, activeItem]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
@@ -335,17 +339,6 @@ export default function CreateCourse() {
         }
     };
 
-    // Utility function to handle URL manipulation for taskId
-    const updateTaskIdInUrl = (taskId: string | null) => {
-        const url = new URL(window.location.href);
-        if (taskId) {
-            url.searchParams.set('taskId', taskId);
-        } else {
-            url.searchParams.delete('taskId');
-        }
-        router.push(url.pathname + url.search, { scroll: false });
-    };
-
     const updateModuleTitle = (id: string, title: string) => {
         setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, title } : module
@@ -415,7 +408,7 @@ export default function CreateCourse() {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
-        updateTaskIdInUrl(newItem.id);
+        updateTaskAndQuestionIdInUrl(router, newItem.id, null);
 
         setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
@@ -630,16 +623,25 @@ export default function CreateCourse() {
     };
 
     // Open the dialog for editing a learning material or quiz
-    const openItemDialog = (moduleId: string, itemId: string) => {
+    const openItemDialog = (
+        moduleId: string,
+        itemId: string,
+        questionId?: string | null,
+        options?: { preserveEditMode?: boolean }
+    ) => {
         const module = modules.find(m => m.id === moduleId);
         if (!module) return;
 
         const item = module.items.find(i => i.id === itemId);
         if (!item) return;
 
-        setIsEditMode(false);
+        // When navigating between questions for a published quiz, preserve current edit mode
+        if (!options?.preserveEditMode) {
+            setIsEditMode(false);
+        }
+        setActiveQuestionId(questionId || null);
 
-        updateTaskIdInUrl(itemId);
+        updateTaskAndQuestionIdInUrl(router, itemId, questionId);
 
         // Ensure quiz items have questions property initialized
         if (item.type === 'quiz' && !item.questions) {
@@ -680,14 +682,26 @@ export default function CreateCourse() {
         }
     };
 
+    // Handle question change in quiz editor
+    const handleQuestionChange = (questionId: string) => {
+        setActiveQuestionId(questionId);
+
+        // Only update URL if the questionId is different from current URL
+        const currentQuestionId = searchParams.get('questionId');
+        if (currentQuestionId !== questionId) {
+            updateTaskAndQuestionIdInUrl(router, activeItem?.id, questionId);
+        }
+    };
+
     // Close the dialog
     const closeDialog = () => {
-        // Clean up the URL (remove taskId)
-        updateTaskIdInUrl(null);
+        // Clean up the URL (remove taskId and questionId)
+        updateTaskAndQuestionIdInUrl(router, null, null);
 
         setIsDialogOpen(false);
         setActiveItem(null);
         setActiveModuleId(null);
+        setActiveQuestionId(null);
         setIsEditMode(false);
     };
 
@@ -2017,6 +2031,7 @@ export default function CreateCourse() {
                             isDialogOpen={isDialogOpen}
                             activeItem={activeItem}
                             activeModuleId={activeModuleId}
+                            activeQuestionId={activeQuestionId}
                             isEditMode={isEditMode}
                             isPreviewMode={isPreviewMode}
                             showPublishConfirmation={showPublishConfirmation}
@@ -2028,6 +2043,7 @@ export default function CreateCourse() {
                             enableEditMode={enableEditMode}
                             handleQuizContentChange={handleQuizContentChange}
                             setShowPublishConfirmation={setShowPublishConfirmation}
+                            onQuestionChange={handleQuestionChange}
                             schoolId={schoolId}
                             courseId={courseId}
                             onDuplicateItem={handleDuplicateItem}

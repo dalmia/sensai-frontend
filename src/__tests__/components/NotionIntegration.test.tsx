@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import NotionIntegration from '../../components/NotionIntegration';
+import { IntegrationProvider } from '../../context/IntegrationContext';
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -71,6 +72,13 @@ Object.defineProperty(window, 'history', {
   writable: true
 });
 
+// Test wrapper component
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <IntegrationProvider>
+    {children}
+  </IntegrationProvider>
+);
+
 describe('NotionIntegration', () => {
   const mockOnPageSelect = jest.fn();
   const mockOnPageRemove = jest.fn();
@@ -84,11 +92,13 @@ describe('NotionIntegration', () => {
   describe('Component Rendering', () => {
     it('should not render when not in edit mode', () => {
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={false}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       expect(screen.queryByText('Connect Notion')).not.toBeInTheDocument();
@@ -100,11 +110,13 @@ describe('NotionIntegration', () => {
       );
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       // Should not show anything until integration check is complete
@@ -122,11 +134,13 @@ describe('NotionIntegration', () => {
         .mockImplementation(() => new Promise(() => { })); // Never resolves for page fetch
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       // Wait for integration check to complete and loading state to appear
@@ -154,11 +168,13 @@ describe('NotionIntegration', () => {
         .mockImplementation(() => new Promise(() => { })); // Never resolves for page fetch
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       // Wait for integration check to complete and loading state to appear
@@ -185,11 +201,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -201,11 +219,13 @@ describe('NotionIntegration', () => {
       (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -230,11 +250,13 @@ describe('NotionIntegration', () => {
         });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -267,11 +289,13 @@ describe('NotionIntegration', () => {
         });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -301,11 +325,13 @@ describe('NotionIntegration', () => {
         });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -337,11 +363,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -363,12 +391,14 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           onSaveDraft={mockOnSaveDraft}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -397,12 +427,14 @@ describe('NotionIntegration', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           onSaveDraft={mockOnSaveDraft}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -482,11 +514,13 @@ describe('NotionIntegration', () => {
 
     it('should show dropdown with pages when integration exists', async () => {
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -499,11 +533,13 @@ describe('NotionIntegration', () => {
 
     it('should handle page selection without existing content', async () => {
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -520,11 +556,13 @@ describe('NotionIntegration', () => {
 
     it('should handle page selection with empty value (else branch)', async () => {
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -548,12 +586,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithContent}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -579,12 +619,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithContent}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -616,12 +658,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithContent}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -686,12 +730,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -714,12 +760,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -748,12 +796,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -790,12 +840,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={asyncMockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -832,12 +884,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={errorMockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -872,12 +926,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -905,11 +961,13 @@ describe('NotionIntegration', () => {
     it('should handle Add more pages button click', async () => {
       // Don't provide editorContent so selectedPageId is not set
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -948,11 +1006,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1026,12 +1086,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithMultipleBlocks}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1060,12 +1122,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithIntegration}
         />
+        </TestWrapper>
       );
 
       // When there's an integration block, the component shows the connected state
@@ -1089,12 +1153,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithNoContentArray}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1139,11 +1205,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1179,11 +1247,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1221,11 +1291,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1263,11 +1335,13 @@ describe('NotionIntegration', () => {
       });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelect}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -1348,7 +1422,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1367,6 +1442,7 @@ describe('NotionIntegration', () => {
             storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
             status="published"
           />
+          </TestWrapper>
         );
 
         // Wait for the component to load and show the sync button
@@ -1394,7 +1470,8 @@ describe('NotionIntegration', () => {
         const mockOnLoadingChange = jest.fn();
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1402,6 +1479,7 @@ describe('NotionIntegration', () => {
             onLoadingChange={mockOnLoadingChange}
             editorContent={[]}
           />
+          </TestWrapper>
         );
 
         expect(mockOnContentUpdate).not.toHaveBeenCalled();
@@ -1410,7 +1488,8 @@ describe('NotionIntegration', () => {
 
       it('should not sync when onContentUpdate is missing', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1425,6 +1504,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not throw any errors
@@ -1436,7 +1516,8 @@ describe('NotionIntegration', () => {
         const mockOnLoadingChange = jest.fn();
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1450,6 +1531,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         expect(mockOnContentUpdate).not.toHaveBeenCalled();
@@ -1467,7 +1549,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1484,6 +1567,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         expect(mockOnContentUpdate).not.toHaveBeenCalled();
@@ -1501,7 +1585,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1518,6 +1603,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         expect(mockOnContentUpdate).not.toHaveBeenCalled();
@@ -1536,7 +1622,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1553,6 +1640,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // The sync functionality would be triggered by a button click
@@ -1568,7 +1656,8 @@ describe('NotionIntegration', () => {
         fetchIntegrationBlocks.mockRejectedValue(new Error('Network error'));
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1585,6 +1674,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         expect(mockOnContentUpdate).not.toHaveBeenCalled();
@@ -1635,7 +1725,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1654,6 +1745,7 @@ describe('NotionIntegration', () => {
             status="published"
             storedBlocks={[{ type: 'paragraph' }]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to load
@@ -1719,7 +1811,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1738,6 +1831,7 @@ describe('NotionIntegration', () => {
             status="published"
             storedBlocks={[{ type: 'paragraph' }]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to load and show sync notice
@@ -1809,7 +1903,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1828,6 +1923,7 @@ describe('NotionIntegration', () => {
             status="published"
             storedBlocks={[{ type: 'paragraph' }]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to load and show sync notice
@@ -1895,7 +1991,8 @@ describe('NotionIntegration', () => {
         }).mockRejectedValueOnce(new Error('Network error occurred'));
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1914,6 +2011,7 @@ describe('NotionIntegration', () => {
             status="published"
             storedBlocks={[{ type: 'paragraph' }]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to load and show sync notice
@@ -1938,7 +2036,8 @@ describe('NotionIntegration', () => {
     describe('Sync Notice useEffect', () => {
       it('should not check for updates when not in edit mode', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={false}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1955,6 +2054,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when not in edit mode
@@ -1963,7 +2063,8 @@ describe('NotionIntegration', () => {
 
       it('should not check for updates when selectedPageId is missing', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1971,6 +2072,7 @@ describe('NotionIntegration', () => {
             status="published"
             editorContent={[]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no page is selected
@@ -1979,7 +2081,8 @@ describe('NotionIntegration', () => {
 
       it('should not check for updates when storedBlocks is empty', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -1996,6 +2099,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no stored blocks
@@ -2004,7 +2108,8 @@ describe('NotionIntegration', () => {
 
       it('should not check for updates when already checked', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2021,6 +2126,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when already checked
@@ -2029,7 +2135,8 @@ describe('NotionIntegration', () => {
 
       it('should not check for updates when status is not published', async () => {
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2046,6 +2153,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when status is draft
@@ -2060,7 +2168,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2074,6 +2183,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no integration block found
@@ -2088,7 +2198,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2105,6 +2216,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when fetch fails
@@ -2119,7 +2231,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2136,6 +2249,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no blocks returned
@@ -2154,7 +2268,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2171,6 +2286,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should show sync notice when blocks have changed
@@ -2191,7 +2307,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2208,6 +2325,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should show sync notice when title has changed
@@ -2228,7 +2346,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2245,6 +2364,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no changes detected
@@ -2258,7 +2378,8 @@ describe('NotionIntegration', () => {
         fetchIntegrationBlocks.mockRejectedValue(new Error('Network error'));
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2275,6 +2396,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when fetch throws error
@@ -2291,7 +2413,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2308,6 +2431,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when fetch returns error
@@ -2327,7 +2451,8 @@ describe('NotionIntegration', () => {
         const mockOnContentUpdate = jest.fn();
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2345,6 +2470,7 @@ describe('NotionIntegration', () => {
             ]}
             onContentUpdate={mockOnContentUpdate}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to process the nested pages
@@ -2364,7 +2490,8 @@ describe('NotionIntegration', () => {
         const mockOnContentUpdate = jest.fn();
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2382,6 +2509,7 @@ describe('NotionIntegration', () => {
             ]}
             onContentUpdate={mockOnContentUpdate}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to automatically update content
@@ -2401,7 +2529,8 @@ describe('NotionIntegration', () => {
         const mockOnContentUpdate = jest.fn();
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2419,6 +2548,7 @@ describe('NotionIntegration', () => {
             ]}
             onContentUpdate={mockOnContentUpdate}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to process the title update
@@ -2439,7 +2569,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2456,6 +2587,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to show sync notice due to changes
@@ -2476,7 +2608,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2493,6 +2626,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Wait for the component to show sync notice due to title change
@@ -2513,7 +2647,8 @@ describe('NotionIntegration', () => {
         });
 
         render(
-          <NotionIntegration
+          <TestWrapper>
+            <NotionIntegration
             isEditMode={true}
             onPageSelect={mockOnPageSelect}
             onPageRemove={mockOnPageRemove}
@@ -2530,6 +2665,7 @@ describe('NotionIntegration', () => {
               }
             ]}
           />
+          </TestWrapper>
         );
 
         // Should not show sync notice when no changes detected
@@ -2595,11 +2731,13 @@ describe('NotionIntegration', () => {
       const mockOnPageSelectWithNestedPages = jest.fn().mockResolvedValue({ hasNestedPages: true });
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelectWithNestedPages}
           onPageRemove={mockOnPageRemove}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -2633,12 +2771,14 @@ describe('NotionIntegration', () => {
       ];
 
       render(
-        <NotionIntegration
+        <TestWrapper>
+          <NotionIntegration
           isEditMode={true}
           onPageSelect={mockOnPageSelectWithNestedPages}
           onPageRemove={mockOnPageRemove}
           editorContent={editorContentWithContent}
         />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -2665,6 +2805,339 @@ describe('NotionIntegration', () => {
         expect(screen.getByText('Nested page not supported')).toBeInTheDocument();
         expect(screen.getByText('This page contains nested pages or databases which are not supported. Please select a different page.')).toBeInTheDocument();
       }, { timeout: 3000 });
+    });
+  });
+
+  describe('onLoadingChange Callback Tests', () => {
+    it('should call onLoadingChange during page selection', async () => {
+      const mockOnLoadingChange = jest.fn();
+      const mockOnPageSelect = jest.fn().mockResolvedValue({});
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ([{ integration_type: 'notion', access_token: 'test-token' }])
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ pages: [{ id: 'page-1', properties: { title: { title: [{ plain_text: 'Test Page' }] } } }] })
+        });
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+          />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
+      });
+
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'page-1' } });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+
+      expect(mockOnLoadingChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('should call onLoadingChange when page selection has nested pages', async () => {
+      const mockOnLoadingChange = jest.fn();
+      const mockOnPageSelect = jest.fn().mockResolvedValue({ hasNestedPages: true });
+
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ([{ integration_type: 'notion', access_token: 'test-token' }])
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ pages: [{ id: 'page-1', properties: { title: { title: [{ plain_text: 'Test Page' }] } } }] })
+        });
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={mockOnPageSelect}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+          />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
+      });
+
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'page-1' } });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+
+      expect(mockOnLoadingChange).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('setHasCheckedForNotionUpdates Error Scenarios', () => {
+    it('should set hasCheckedForNotionUpdates when integration block is not found', async () => {
+      const mockOnLoadingChange = jest.fn();
+
+      // Need to provide a selectedPageId to trigger the useEffect
+      const editorContentWithoutIntegration = [
+        {
+          type: 'paragraph',
+          props: {},
+          content: [{ text: 'Regular content' }]
+        }
+      ];
+
+      // First render with notion integration to set selectedPageId, then change editor content
+      const { rerender } = render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={[{
+              type: 'notion',
+              props: {
+                integration_type: 'notion',
+                resource_id: 'page-123',
+                resource_name: 'Test Page'
+              }
+            }]}
+            status="published"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Now rerender with content that doesn't have notion integration
+      rerender(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={editorContentWithoutIntegration}
+            status="published"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for the useEffect to run and complete
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('should set hasCheckedForNotionUpdates when fetchIntegrationBlocks returns error', async () => {
+      const mockOnLoadingChange = jest.fn();
+
+      const { fetchIntegrationBlocks } = require('@/lib/utils/integrationUtils');
+      fetchIntegrationBlocks.mockResolvedValue({
+        error: 'Failed to fetch blocks'
+      });
+
+      const editorContentWithIntegration = [
+        {
+          type: 'notion',
+          props: {
+            integration_type: 'notion',
+            resource_id: 'page-123',
+            resource_name: 'Test Page'
+          }
+        }
+      ];
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={editorContentWithIntegration}
+            status="published"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for the useEffect to run and complete
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('should set hasCheckedForNotionUpdates when fetchIntegrationBlocks returns hasNestedPages', async () => {
+      const mockOnLoadingChange = jest.fn();
+      const mockOnContentUpdate = jest.fn();
+
+      const { fetchIntegrationBlocks } = require('@/lib/utils/integrationUtils');
+      fetchIntegrationBlocks.mockResolvedValue({
+        hasNestedPages: true
+      });
+
+      const editorContentWithIntegration = [
+        {
+          type: 'notion',
+          props: {
+            integration_type: 'notion',
+            resource_id: 'page-123',
+            resource_name: 'Test Page'
+          }
+        }
+      ];
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            onContentUpdate={mockOnContentUpdate}
+            editorContent={editorContentWithIntegration}
+            status="draft"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for the useEffect to run and complete
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+
+      // Verify that onContentUpdate was called with empty array for nested pages (only in draft status)
+      await waitFor(() => {
+        expect(mockOnContentUpdate).toHaveBeenCalledWith([]);
+      });
+    });
+
+    it('should set hasCheckedForNotionUpdates when fetchIntegrationBlocks throws an error', async () => {
+      const mockOnLoadingChange = jest.fn();
+
+      const { fetchIntegrationBlocks } = require('@/lib/utils/integrationUtils');
+      fetchIntegrationBlocks.mockRejectedValue(new Error('Network error'));
+
+      const editorContentWithIntegration = [
+        {
+          type: 'notion',
+          props: {
+            integration_type: 'notion',
+            resource_id: 'page-123',
+            resource_name: 'Test Page'
+          }
+        }
+      ];
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            editorContent={editorContentWithIntegration}
+            status="published"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Old content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for the useEffect to run and complete
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('should set hasCheckedForNotionUpdates after successful comparison', async () => {
+      const mockOnLoadingChange = jest.fn();
+      const mockOnContentUpdate = jest.fn();
+
+      const { fetchIntegrationBlocks, compareNotionBlocks } = require('@/lib/utils/integrationUtils');
+      fetchIntegrationBlocks.mockResolvedValue({
+        blocks: [{ type: 'paragraph', content: [{ text: 'Same content' }] }],
+        title: 'Same Title'
+      });
+      compareNotionBlocks.mockReturnValue(false); // No changes
+
+      const editorContentWithIntegration = [
+        {
+          type: 'notion',
+          props: {
+            integration_type: 'notion',
+            resource_id: 'page-123',
+            resource_name: 'Same Title'
+          }
+        }
+      ];
+
+      render(
+        <TestWrapper>
+          <NotionIntegration
+            isEditMode={true}
+            onPageSelect={jest.fn()}
+            onPageRemove={jest.fn()}
+            onLoadingChange={mockOnLoadingChange}
+            onContentUpdate={mockOnContentUpdate}
+            editorContent={editorContentWithIntegration}
+            status="published"
+            storedBlocks={[{ type: 'paragraph', content: [{ text: 'Same content' }] }]}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for the useEffect to run and complete
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(true);
+      });
+
+      await waitFor(() => {
+        expect(mockOnLoadingChange).toHaveBeenCalledWith(false);
+      });
+
+      // Should not show sync notice since there are no changes
+      expect(screen.queryByText('Content has been updated in Notion')).not.toBeInTheDocument();
     });
   });
 }); 

@@ -14,6 +14,7 @@ import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
 import MentorCohortView from "@/components/MentorCohortView";
 import MemberSchoolViewHeader from '@/components/MemberSchoolViewHeader';
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 
 interface School {
     id: number;
@@ -31,9 +32,11 @@ interface Course {
 export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    // Get course_id and cohort_id from query parameters
+    // Get course_id, cohort_id, taskId, and questionId from query parameters
     const defaultCourseId = searchParams.get('course_id');
     const defaultCohortId = searchParams.get('cohort_id');
+    const taskId = searchParams.get('taskId');
+    const questionId = searchParams.get('questionId');
 
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const { schools } = useSchools();
@@ -522,6 +525,12 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 courses={courses}
                                                                 onCourseSelect={handleCourseSelect}
                                                                 activeCourseIndex={activeCourseIndex}
+                                                                taskId={taskId}
+                                                                questionId={questionId}
+                                                                onUpdateTaskAndQuestionIdInUrl={
+                                                                    (taskId, questionId) => 
+                                                                        updateTaskAndQuestionIdInUrl(router, taskId, questionId)
+                                                                }
                                                             />
                                                         )}
                                                     </div>

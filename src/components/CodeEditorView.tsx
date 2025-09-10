@@ -506,6 +506,9 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     // Check if we're on a mobile device
     const [isMobileView, setIsMobileView] = useState<boolean>(false);
 
+    // Add state to keep track of the last copied code
+    const [lastCopiedCode, setLastCopiedCode] = useState<string>('');
+
     // Effect to detect mobile devices
     useEffect(() => {
         const checkMobileView = () => {
@@ -1100,21 +1103,67 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
         }
 
         if (editor && disableCopyPaste) {
-            keydownDisposableRef.current = editor.onKeyDown((e: IKeyboardEvent) => {
+            // Listen for copy operations using onKeyDown for Cmd/Ctrl+C and Cmd/Ctrl+X
+            const copyKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
+                const isCmdCtrl = e.ctrlKey || e.metaKey;
+                const key = (e.browserEvent?.key || '').toLowerCase();
+                if (isCmdCtrl && (key === 'c' || key === 'x')) {
+                    const selection = editor.getSelection();
+                    if (selection) {
+                        const selectedText = editor.getModel()?.getValueInRange(selection) || '';
+                        if (selectedText) {
+                            setLastCopiedCode(selectedText);
+                        }
+                    }
+                }
+            });
+
+            const pasteKeyDownDisposable = editor.onKeyDown((e: IKeyboardEvent) => {
                 const isCmdCtrl = e.ctrlKey || e.metaKey;
                 const key = (e.browserEvent?.key || '').toLowerCase();
                 if (isCmdCtrl && key === 'v') {
+                    // Prevent the default paste behavior
                     e.preventDefault();
                     e.stopPropagation();
-                    
-                    setToastData({
-                        title: 'Not allowed',
-                        description: 'Pasting the answer is disabled for this question',
-                        emoji: '🚫'
+
+                    navigator.clipboard.readText().then((clipboardText) => {
+                        // Check if the pasted content matches the last copied content
+                        if (clipboardText === lastCopiedCode) {
+                            const selection = editor.getSelection();
+                            if (selection) {
+                                editor.executeEdits('paste', [{
+                                    range: selection,
+                                    text: clipboardText
+                                }]);
+                            }
+                        } else {
+                            // Show toast message for external paste attempts
+                            setToastData({
+                                title: 'Not allowed',
+                                description: 'Pasting the answer is disabled for this question',
+                                emoji: '🚫'
+                            });
+                            setShowToast(true);
+                        }
+                    }).catch(() => {
+                    // If clipboard access fails, show toast anyway
+                        setToastData({
+                            title: 'Not allowed',
+                            description: 'Pasting the answer is disabled for this question',
+                            emoji: '🚫'
+                        });
+                        setShowToast(true);
                     });
-                    setShowToast(true);
                 }
             });
+
+            // Store disposables for cleanup
+            keydownDisposableRef.current = {
+                dispose: () => {
+                    copyKeyDownDisposable.dispose();
+                    pasteKeyDownDisposable.dispose();
+                }
+            };
         }
     };
 
@@ -1135,7 +1184,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 keydownDisposableRef.current = null;
             }
         };
-    }, [disableCopyPaste]);
+    }, [disableCopyPaste, lastCopiedCode]);
 
     // Get the correct Monaco editor language based on active language
     const getMonacoLanguage = (lang: string) => {
