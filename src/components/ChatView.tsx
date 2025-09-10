@@ -540,6 +540,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                     setLastCopiedContent(selection.toString());
                                 }
                             }}
+                            onCut={() => {
+                                const selection = window.getSelection();
+                                if (selection && selection.toString()) {
+                                    setLastCopiedContent(selection.toString());
+                                    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                                        navigator.clipboard.writeText(selection.toString()).catch(() => { });
+                                    }
+                                }
+                            }}
                         >
                             <ChatHistoryView
                                 chatHistory={currentChatHistory}

@@ -1448,5 +1448,4 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     );
 });
 
-CodeEditorView.displayName = 'CodeEditorView';
 export default CodeEditorView; 
