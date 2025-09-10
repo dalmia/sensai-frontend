@@ -961,7 +961,7 @@ export default function LearnerCourseView({
         } else if (!taskId) {
             setIsDialogOpen(false);
         }
-    }, [taskId, questionId, modules.length]);
+    }, [taskId, modules.length]);
 
     // Toggle sidebar visibility for mobile
     const toggleSidebar = () => {
