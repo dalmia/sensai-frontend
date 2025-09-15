@@ -32,7 +32,6 @@ interface IntegrationProps {
       text?: string;
     }>;
   }>;
-  onSaveDraft?: () => void | Promise<void>;
   status?: string;
   storedBlocks?: any[];
   onContentUpdate?: (updatedContent: any[]) => void;
@@ -46,7 +45,6 @@ export default function NotionIntegration({
   isEditMode = false,
   editorContent = [],
   loading = false,
-  onSaveDraft,
   status = "draft",
   storedBlocks = [],
   onContentUpdate,
@@ -127,22 +125,12 @@ export default function NotionIntegration({
 
   const handleConnectNotion = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-
-    // Save draft before connecting
-    if (onSaveDraft) {
-      try {
-        await onSaveDraft();
-      } catch (error) {
-        console.error('Error saving draft before connecting:', error);
-      }
-    }
-
     await connectIntegration();
   };
 
   const handleAddMorePages = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    await handleConnectNotion(e);
+    await connectIntegration();
   };
 
   // Function to check if there are existing blocks that would be overwritten

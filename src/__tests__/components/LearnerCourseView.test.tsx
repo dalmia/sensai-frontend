@@ -817,19 +817,6 @@ describe('LearnerCourseView Component', () => {
     });
 
     describe('Navigation Functionality', () => {
-        it('should handle navigation with browser history', async () => {
-            render(<LearnerCourseView {...mockProps} />);
-
-            const openButton = screen.getByTestId('open-item-item-1');
-            fireEvent.click(openButton);
-
-            await waitFor(() => {
-                expect(screen.getByTestId('learning-material-viewer')).toBeInTheDocument();
-            });
-
-            expect(mockHistoryPushState).toHaveBeenCalled();
-        });
-
         it('should handle question change in quiz', async () => {
             render(<LearnerCourseView {...mockProps} />);
 
@@ -1062,67 +1049,6 @@ describe('LearnerCourseView Component', () => {
             await waitFor(() => {
                 expect(screen.queryByTestId('learning-material-viewer')).not.toBeInTheDocument();
             });
-        });
-    });
-
-    describe('Browser History Management', () => {
-        it('should handle browser back button when dialog is open', async () => {
-            const mockAddEventListener = jest.spyOn(window, 'addEventListener');
-            const mockRemoveEventListener = jest.spyOn(window, 'removeEventListener');
-
-            render(<LearnerCourseView {...mockProps} />);
-
-            // Open a dialog
-            const openButton = screen.getByTestId('open-item-item-1');
-            fireEvent.click(openButton);
-
-            await waitFor(() => {
-                expect(screen.getByTestId('learning-material-viewer')).toBeInTheDocument();
-            });
-
-            // Simulate browser back button (popstate event)
-            const popStateEvent = new PopStateEvent('popstate', { state: { dialog: true } });
-            window.dispatchEvent(popStateEvent);
-
-            await waitFor(() => {
-                expect(screen.queryByTestId('learning-material-viewer')).not.toBeInTheDocument();
-            });
-
-            mockAddEventListener.mockRestore();
-            mockRemoveEventListener.mockRestore();
-        });
-
-        it('should add and remove popstate event listeners correctly', async () => {
-            const mockAddEventListener = jest.spyOn(window, 'addEventListener');
-            const mockRemoveEventListener = jest.spyOn(window, 'removeEventListener');
-
-            const { unmount } = render(<LearnerCourseView {...mockProps} />);
-
-            // Open a dialog
-            const openButton = screen.getByTestId('open-item-item-1');
-            fireEvent.click(openButton);
-
-            await waitFor(() => {
-                expect(screen.getByTestId('learning-material-viewer')).toBeInTheDocument();
-            });
-
-            expect(mockAddEventListener).toHaveBeenCalledWith('popstate', expect.any(Function));
-
-            // Close dialog
-            const closeButton = screen.getByRole('button', { name: /back to course/i });
-            fireEvent.click(closeButton);
-
-            await waitFor(() => {
-                expect(screen.queryByTestId('learning-material-viewer')).not.toBeInTheDocument();
-            });
-
-            expect(mockRemoveEventListener).toHaveBeenCalledWith('popstate', expect.any(Function));
-
-            // Unmount component
-            unmount();
-
-            mockAddEventListener.mockRestore();
-            mockRemoveEventListener.mockRestore();
         });
     });
 

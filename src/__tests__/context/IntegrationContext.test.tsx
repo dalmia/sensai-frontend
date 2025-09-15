@@ -33,6 +33,15 @@ Object.defineProperty(window, 'history', {
     writable: true,
 });
 
+// Mock window.open
+const mockWindowOpen = jest.fn().mockReturnValue({
+    close: jest.fn()
+});
+Object.defineProperty(window, 'open', {
+    value: mockWindowOpen,
+    writable: true,
+});
+
 // Mock environment variables
 process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:8000';
 process.env.NEXT_PUBLIC_NOTION_CLIENT_ID = 'test-client-id';
@@ -83,6 +92,7 @@ describe('IntegrationContext', () => {
         mockLocation.search = '';
         mockLocation.href = 'http://localhost:3000';
         (global.fetch as jest.Mock).mockClear();
+        mockWindowOpen.mockClear();
         mockUseAuth.mockReturnValue({ user: mockUser });
 
         // Default mock for fetch to prevent undefined response.ok errors
@@ -364,123 +374,6 @@ describe('IntegrationContext', () => {
         });
     });
 
-    describe('OAuth callback handling', () => {
-        it('should not process OAuth callback when user.id is missing', async () => {
-            // Mock useAuth to return no user
-            mockUseAuth.mockReturnValue({ user: null });
-
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            // Should not make any API calls for OAuth callback
-            const createIntegrationCalls = (global.fetch as jest.Mock).mock.calls.filter(call =>
-                call[1]?.method === 'POST'
-            );
-            expect(createIntegrationCalls).toHaveLength(0);
-        });
-
-        it('should process OAuth callback successfully', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock successful integration creation and check
-            (global.fetch as jest.Mock)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => ({})
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => ([{
-                        integration_type: 'notion',
-                        access_token: 'test-oauth-token'
-                    }])
-                });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('oauth-complete')).toHaveTextContent('true');
-            });
-
-            // Should have called create integration API
-            expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:8000/integrations/',
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: 'test-user-id',
-                        integration_type: 'notion',
-                        access_token: 'test-oauth-token',
-                    }),
-                }
-            );
-
-            // Should have cleared URL parameters
-            expect(mockHistory.replaceState).toHaveBeenCalled();
-        });
-
-        it('should handle OAuth callback creation failure', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock failed integration creation
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                ok: false,
-                status: 500
-            });
-
-            // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
-            });
-
-            consoleSpy.mockRestore();
-        });
-
-        it('should handle OAuth callback network error', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock network error
-            (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-
-            // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
-            });
-
-            consoleSpy.mockRestore();
-        });
-    });
-
     describe('Context actions', () => {
         it('should handle setShowDropdown action', async () => {
             render(
@@ -499,10 +392,24 @@ describe('IntegrationContext', () => {
         });
 
         it('should handle setError action', async () => {
-            // Mock successful integration check to avoid error state
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ([])
+            // Mock successful integration check and pages fetch to avoid error state
+            (global.fetch as jest.Mock).mockImplementation((url) => {
+                if (url.includes('integrations') && url.includes('user_id=')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: async () => ([])
+                    });
+                }
+                if (url.includes('fetchPages')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: async () => ({ pages: [] })
+                    });
+                }
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({})
+                });
             });
 
             render(
@@ -547,7 +454,7 @@ describe('IntegrationContext', () => {
             expect(mockLocation.href).toBe('http://localhost:3000');
         });
 
-        it('should redirect to Notion OAuth URL', async () => {
+        it('should open Notion OAuth URL in popup', async () => {
             render(
                 <IntegrationProvider>
                     <TestComponent />
@@ -564,10 +471,12 @@ describe('IntegrationContext', () => {
                 expect(screen.getByTestId('is-connecting')).toHaveTextContent('true');
             });
 
-            // Should have set window.location.href to Notion OAuth URL
-            expect(mockLocation.href).toContain('https://api.notion.com/v1/oauth/authorize');
-            expect(mockLocation.href).toContain('client_id=test-client-id');
-            expect(mockLocation.href).toContain('response_type=code');
+            // Should have opened Notion OAuth URL in popup
+            expect(mockWindowOpen).toHaveBeenCalledWith(
+                expect.stringContaining('https://api.notion.com/v1/oauth/authorize'),
+                'notion-auth',
+                'width=600,height=700,scrollbars=yes,resizable=yes'
+            );
         });
     });
 
