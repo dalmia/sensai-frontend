@@ -6,6 +6,13 @@ import { QuizQuestion, ChatMessage, ScorecardItem } from '../../types/quiz';
 
 // Mock CSS imports
 jest.mock('@blocknote/core/fonts/inter.css', () => ({}), { virtual: true });
+// Mock indexedDB draft utils
+jest.mock('@/lib/utils/indexedDB', () => ({
+    getDraft: jest.fn(async () => null),
+    setDraft: jest.fn(async () => undefined),
+    deleteDraft: jest.fn(async () => undefined),
+}));
+
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
@@ -378,6 +385,32 @@ describe('LearnerQuizView Component', () => {
         it('applies custom className', () => {
             render(<LearnerQuizView {...defaultProps} className="custom-class" />);
             expect(document.querySelector('.custom-class')).toBeInTheDocument();
+        });
+    });
+
+    describe('Draft loading for current question', () => {
+        it('loads and sets saved draft for text input question', async () => {
+            const { getDraft } = require('@/lib/utils/indexedDB');
+            getDraft.mockResolvedValueOnce('saved draft answer');
+
+            render(<LearnerQuizView {...defaultProps} currentQuestionId="q1" />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('answer-input')).toHaveValue('saved draft answer');
+            });
+        });
+
+        it('clears answer when no draft exists', async () => {
+            const { getDraft } = require('@/lib/utils/indexedDB');
+            getDraft.mockResolvedValueOnce(null);
+
+            // Start with a non-empty value first
+            render(<LearnerQuizView {...defaultProps} currentQuestionId="q1" />);
+
+            await waitFor(() => {
+                // After effect, since draft is null, it should be empty string
+                expect(screen.getByTestId('answer-input')).toHaveValue('');
+            });
         });
     });
 

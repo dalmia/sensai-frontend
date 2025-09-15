@@ -34,11 +34,15 @@ jest.mock('@monaco-editor/react', () => ({
         // Trigger onMount immediately with our fake editor
         onMount?.(fakeEditor, {});
         return (
-            <textarea
-                data-testid="monaco-editor"
-                value={value}
-                onChange={(e) => onChange?.(e.target.value)}
-            />
+            <div>
+                <textarea
+                    data-testid="monaco-editor"
+                    value={value}
+                    onChange={(e) => onChange?.(e.target.value)}
+                />
+                {/* Test helper to trigger undefined change */}
+                <button data-testid="trigger-undefined-change" onClick={() => onChange?.(undefined)}>U</button>
+            </div>
         );
     },
 }));
@@ -74,6 +78,48 @@ describe('CodeEditorView (integration)', () => {
                 return Promise.resolve({ ok: true, json: () => Promise.resolve({ status_id: 3, stdout: 'OK' }) });
             }
             return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+        });
+    });
+
+    it('calls onCodeChange with merged code when handleCodeChange receives value', async () => {
+        const onCodeChange = jest.fn();
+        render(
+            <CodeEditorView
+                languages={['javascript']}
+                initialCode={{ javascript: 'console.log(1);' }}
+                handleCodeSubmit={jest.fn()}
+                onCodeRun={jest.fn()}
+                onCodeChange={onCodeChange}
+            />
+        );
+
+        // Simulate typing in editor textarea which triggers onChange with a string
+        const editor = screen.getByTestId('monaco-editor');
+        fireEvent.change(editor, { target: { value: 'console.log(2);' } });
+
+        await waitFor(() => {
+            expect(onCodeChange).toHaveBeenCalledWith({ javascript: 'console.log(2);' });
+        });
+    });
+
+    it('does not call onCodeChange when handleCodeChange receives undefined', async () => {
+        const onCodeChange = jest.fn();
+        render(
+            <CodeEditorView
+                languages={['javascript']}
+                initialCode={{ javascript: 'console.log(1);' }}
+                handleCodeSubmit={jest.fn()}
+                onCodeRun={jest.fn()}
+                onCodeChange={onCodeChange}
+            />
+        );
+
+        // Click helper button to emit undefined to onChange
+        fireEvent.click(screen.getByTestId('trigger-undefined-change'));
+
+        // Give event loop a tick
+        await waitFor(() => {
+            expect(onCodeChange).not.toHaveBeenCalled();
         });
     });
 

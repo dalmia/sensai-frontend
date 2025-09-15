@@ -37,6 +37,7 @@ jest.mock('next/dynamic', () => {
                 return (
                     <div data-testid="learner-quiz-view">
                         Learner Quiz View
+                        <div data-testid="current-question-id">{props.currentQuestionId ?? ''}</div>
                         <button
                             data-testid="submit-quiz-answer"
                             onClick={() => {
@@ -1560,6 +1561,74 @@ describe('LearnerCourseView Component', () => {
             // Then show content
             await waitFor(() => {
                 expect(screen.getByTestId('learning-material-viewer')).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('URL questionId synchronization', () => {
+        it('updates active question when questionId URL param changes for the same task', async () => {
+            const initialProps = {
+                ...mockProps,
+                // Open the quiz directly via URL params
+                taskId: 'item-2',
+                questionId: 'q1',
+            } as any;
+
+            const { rerender } = render(<LearnerCourseView {...initialProps} />);
+
+            // Wait for quiz to open
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-quiz-view')).toBeInTheDocument();
+            });
+
+            // Should reflect q1 initially
+            expect(screen.getByTestId('current-question-id').textContent).toBe('q1');
+
+            // Change only questionId while keeping same taskId
+            const updatedProps = {
+                ...mockProps,
+                taskId: 'item-2',
+                questionId: 'q2',
+            } as any;
+
+            rerender(<LearnerCourseView {...updatedProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-quiz-view')).toBeInTheDocument();
+                expect(screen.getByTestId('current-question-id').textContent).toBe('q2');
+            });
+        });
+
+        it('does not update active question when taskId differs from the active item', async () => {
+            const initialProps = {
+                ...mockProps,
+                taskId: 'item-2',
+                questionId: 'q1',
+            } as any;
+
+            const { rerender } = render(<LearnerCourseView {...initialProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('learner-quiz-view')).toBeInTheDocument();
+            });
+            expect(screen.getByTestId('current-question-id').textContent).toBe('q1');
+
+            // Now provide a different taskId along with a new questionId
+            // Since activeItem.id !== taskId, the effect should not set the question
+            const mismatchedTaskProps = {
+                ...mockProps,
+                taskId: 'non-existent-task',
+                questionId: 'q2',
+            } as any;
+
+            rerender(<LearnerCourseView {...mismatchedTaskProps} />);
+
+            // Quiz should still be mounted (since active state didn't change) and question should remain q1
+            await waitFor(() => {
+                const quiz = screen.queryByTestId('learner-quiz-view');
+                if (quiz) {
+                    expect(screen.getByTestId('current-question-id').textContent).toBe('q1');
+                }
             });
         });
     });
