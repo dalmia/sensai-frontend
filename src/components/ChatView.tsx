@@ -126,30 +126,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     // Track autosave state separately (no UI needed)
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Add beforeunload event listener to prevent page reload/close with unsaved changes
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // Only check for unsaved changes if inputType is text
-            if (currentQuestionConfig?.inputType !== 'text') {
-                return;
-            }
-
-            // Only show warning if there are actual unsaved changes
-            if (currentAnswer.trim().length > 0) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-            }
-        };
-
-        // Add the event listener
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        // Clean up the event listener
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [currentAnswer, currentQuestionConfig?.inputType]);
-
     // Update view state when question config changes
     useEffect(() => {
         // Don't set viewing code in viewOnly mode

@@ -19,6 +19,7 @@ import { BlockList } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import Toast from "./Toast";
+import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
 
 // Add interface for mobile view mode
 export interface MobileViewMode {
@@ -501,6 +502,27 @@ export default function LearnerQuizView({
         return () => clearTimeout(timer);
     }, [currentQuestionIndex]);
 
+    // Load draft for current question on change
+    useEffect(() => {
+        const loadDraft = async () => {
+            const currentQ = validQuestions[currentQuestionIndex];
+            if (!currentQ) return;
+            if (currentQ.config?.inputType !== 'text') return;
+            try {
+                const key = String(currentQ.id);
+                const draft = await getDraft(key);
+                if (typeof draft === 'string') {
+                    setCurrentAnswer(draft);
+                    currentAnswerRef.current = draft;
+                } else {
+                    setCurrentAnswer('');
+                    currentAnswerRef.current = '';
+                }
+            } catch { }
+        };
+        loadDraft();
+    }, [currentQuestionIndex, validQuestions]);
+
     // Effect to log and validate questions when they change
     useEffect(() => {
         if (validQuestions.length > 0 && currentQuestionIndex >= validQuestions.length) {
@@ -598,7 +620,14 @@ export default function LearnerQuizView({
         const newValue = e.target.value;
         setCurrentAnswer(newValue);
         currentAnswerRef.current = newValue;
-    }, []); // No dependencies to ensure stability
+        try {
+            const currentQ = validQuestions[currentQuestionIndex];
+            if (currentQ?.config?.inputType === 'text') {
+                const key = String(currentQ.id);
+                setDraft(key, newValue || '');
+            }
+        } catch { }
+    }, [currentQuestionIndex, validQuestions]);
 
     // Function to store chat history in backend
     const storeChatHistory = useCallback(async (questionId: string, userMessage: ChatMessage, aiResponse: AIResponse) => {
@@ -1280,6 +1309,15 @@ export default function LearnerQuizView({
             return;
         }
 
+        // Remove draft before submit for text input questions
+        try {
+            const currentQ = validQuestions[currentQuestionIndex];
+            if (currentQ?.config?.inputType === 'text') {
+                const key = String(currentQ.id);
+                deleteDraft(key);
+            }
+        } catch { }
+
         // Use the shared processing function for non-exam questions
         processUserResponse(answer, responseType);
     }, [processUserResponse, validQuestions, currentQuestionIndex]);
@@ -1287,6 +1325,13 @@ export default function LearnerQuizView({
     // Handle exam submission confirmation
     const handleExamSubmissionConfirm = useCallback(() => {
         if (pendingExamSubmission) {
+            try {
+                const currentQ = validQuestions[currentQuestionIndex];
+                if (currentQ?.config?.inputType === 'text') {
+                    const key = String(currentQ.id);
+                    deleteDraft(key);
+                }
+            } catch { }
             processUserResponse(
                 pendingExamSubmission.responseContent,
                 pendingExamSubmission.responseType,
