@@ -281,6 +281,90 @@ describe('CourseModuleList Component', () => {
     });
 
     describe('View-mode behaviour', () => {
+        it('passes first questionId from completedQuestionIds to onOpenItem for quiz', () => {
+            const onOpenItem = jest.fn();
+
+            const modulesWithQuiz = [
+                {
+                    id: '1',
+                    title: 'Module',
+                    items: [
+                        {
+                            id: 'quiz-1',
+                            title: 'Quiz Task',
+                            type: 'quiz' as const,
+                            position: 0,
+                            status: 'published',
+                            numQuestions: 3,
+                            questions: [],
+                            scheduled_publish_at: null,
+                        },
+                    ],
+                    position: 1,
+                    isExpanded: true,
+                },
+            ];
+
+            render(
+                <CourseModuleList
+                    {...defaultProps}
+                    modules={modulesWithQuiz}
+                    mode="view"
+                    expandedModules={{ '1': true }}
+                    onOpenItem={onOpenItem}
+                    completedQuestionIds={{ 'quiz-1': { '943': false, '944': false, '945': false } }}
+                />
+            );
+
+            // Click the quiz item
+            const quizEl = screen.getByTestId('module-item-quiz-1');
+            fireEvent.click(quizEl);
+
+            // Should pass the first question id ('943') as third arg
+            expect(onOpenItem).toHaveBeenCalledWith('1', 'quiz-1', '943');
+        });
+
+        it('calls onOpenItem without questionId when none available', () => {
+            const onOpenItem = jest.fn();
+
+            const modulesWithQuiz = [
+                {
+                    id: '1',
+                    title: 'Module',
+                    items: [
+                        {
+                            id: 'quiz-1',
+                            title: 'Quiz Task',
+                            type: 'quiz' as const,
+                            position: 0,
+                            status: 'published',
+                            numQuestions: 0,
+                            questions: [],
+                            scheduled_publish_at: null,
+                        },
+                    ],
+                    position: 1,
+                    isExpanded: true,
+                },
+            ];
+
+            render(
+                <CourseModuleList
+                    {...defaultProps}
+                    modules={modulesWithQuiz}
+                    mode="view"
+                    expandedModules={{ '1': true }}
+                    onOpenItem={onOpenItem}
+                    completedQuestionIds={{}}
+                />
+            );
+
+            const quizEl = screen.getByTestId('module-item-quiz-1');
+            fireEvent.click(quizEl);
+
+            // Third argument should be undefined when no question ids are present
+            expect(onOpenItem).toHaveBeenCalledWith('1', 'quiz-1', undefined);
+        });
         it('shows progress bar and locks a future module', () => {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
