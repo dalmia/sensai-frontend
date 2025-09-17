@@ -531,8 +531,6 @@ export default function CourseModuleList({
         }
     };
 
-    console.log("modules: ", modules)
-
     return (
         <>
             <div className="space-y-2">
