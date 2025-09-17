@@ -113,6 +113,19 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     // Store the previous state for comparison
     const prevStateRef = useRef<CodeViewState | null>(null);
 
+    // Handle save functionality
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Unified toast state for all notifications
+    const [toastData, setToastData] = useState({
+        title: '',
+        description: '',
+        emoji: ''
+    });
+
+    // Track autosave state separately (no UI needed)
+    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
     // Update view state when question config changes
     useEffect(() => {
         // Don't set viewing code in viewOnly mode
@@ -133,8 +146,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             setIsViewingCode(prev => !prev);
         }
     }));
-
-
 
     // Extract code from chat history for coding questions
     useEffect(() => {
@@ -409,7 +420,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
 
         // Submit on Enter key without shift key
-        if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim()) {
+        if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim() && !isSubmitting && !isAiResponding) {
             e.preventDefault(); // Prevent new line
             handleSubmitAnswer();
         }
@@ -428,17 +439,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     };
 
-    // Handle save functionality
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Unified toast state for all notifications
-    const [toastData, setToastData] = useState({
-        title: '',
-        description: '',
-        emoji: ''
-    });
-
-    const handleSave = async () => {
+    // Save code functionality
+    const saveCode = async ({ showToast }: { showToast: boolean }) => {
         if (!codeEditorRef.current || !currentQuestionId || isSaving) {
             return;
         }
@@ -456,6 +458,13 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         // Only save if there's actual code content
         if (codeDrafts.length === 0 || codeDrafts.every(draft => !draft.value.trim())) {
             setIsSaving(false);
+            if (showToast) {
+                setToastData({
+                    title: 'No code to save',
+                    description: 'Please write some code to save',
+                    emoji: '🚫'
+                });
+            }
             return;
         }
 
@@ -478,20 +487,34 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                 throw new Error('Failed to save code');
             }
 
-            console.log('here')
-
-            // Show success toast
-            setToastData({
-                title: 'Code Saved',
-                description: 'The code will be restored when you return to this question',
-                emoji: '✅'
-            });
+            if (showToast) {
+                setToastData({
+                    title: 'Code Saved',
+                    description: 'The code will be restored when you return to this question',
+                    emoji: '✅'
+                });
+            }
         } catch (error) {
             console.error('Error saving code:', error);
             // Optionally show error feedback
         } finally {
-            setIsSaving(false);
+            setTimeout(() => {
+                setIsSaving(false);
+            }, 1000);
         }
+    };
+
+    // Handle save button click
+    const handleSave = async () => {
+        await saveCode({ showToast: true });
+    };
+
+    // Handle autosave functionality
+    const handleAutoSave = async () => {
+        if (!codeEditorRef.current || !currentQuestionId || isSaving) {
+            return;
+        }
+        await saveCode({ showToast: false });
     };
 
     // Auto-hide toast after 3 seconds
@@ -517,6 +540,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
                     disableCopyPaste={disableCopyPaste}
+                    onCodeChange={() => {
+                        // Debounce autosave to run 1s after typing stops
+                        if (autoSaveTimerRef.current) {
+                            clearTimeout(autoSaveTimerRef.current);
+                        }
+                        autoSaveTimerRef.current = setTimeout(() => {
+                            handleAutoSave();
+                        }, 1000);
+                    }}
                 />
             );
         } else {
@@ -854,14 +886,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className={`px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors cursor-pointer flex items-center ${isSaving ? 'opacity-75' : ''}`}
+                            className={`px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors flex items-center ${isSaving ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 {isSaving ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                 ) : (
                                     <Save size={16} className="mr-2" />
                                 )}
-                                <span>Save</span>
+                            <span>{isSaving ? 'Saving...' : 'Save'}</span>
                             </button>
                         )}
 

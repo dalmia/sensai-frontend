@@ -6,10 +6,11 @@ export async function GET(req: NextRequest) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  // Handle OAuth errors by redirecting back to state
+  // Handle OAuth errors or cancellation by redirecting back to state
   if (error || !code) {
     if (state) {
-      return NextResponse.redirect(state);
+      const redirectUrl = error ? `${state}&error=${encodeURIComponent(error)}` : `${state}&error=access_denied`;
+      return NextResponse.redirect(redirectUrl);
     }
     return NextResponse.json({ error: "Missing code and no state to redirect to" }, { status: 400 });
   }

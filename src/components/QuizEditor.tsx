@@ -2636,11 +2636,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             isEditMode={!readOnly}
                                                             editorContent={currentQuestionContent}
                                                             loading={isLoadingIntegration}
-                                                            onSaveDraft={() => {
-                                                                if (status === 'draft') {
-                                                                    updateDraftQuiz(null, 'draft');
-                                                                }
-                                                            }}
                                                             status={status}
                                                             storedBlocks={integrationBlocks}
                                                             onContentUpdate={(updatedContent) => {

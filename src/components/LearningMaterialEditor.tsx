@@ -524,7 +524,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         isEditMode={!readOnly}
                         editorContent={editorContent}
                         loading={isLoadingIntegration}
-                        onSaveDraft={handleSave}
                         status={taskData?.status}
                         storedBlocks={integrationBlocks}
                         onContentUpdate={(updatedContent) => {

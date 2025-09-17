@@ -33,6 +33,15 @@ Object.defineProperty(window, 'history', {
     writable: true,
 });
 
+// Mock window.open
+const mockWindowOpen = jest.fn().mockReturnValue({
+    close: jest.fn()
+});
+Object.defineProperty(window, 'open', {
+    value: mockWindowOpen,
+    writable: true,
+});
+
 // Mock environment variables
 process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:8000';
 process.env.NEXT_PUBLIC_NOTION_CLIENT_ID = 'test-client-id';
@@ -83,7 +92,12 @@ describe('IntegrationContext', () => {
         mockLocation.search = '';
         mockLocation.href = 'http://localhost:3000';
         (global.fetch as jest.Mock).mockClear();
-        mockUseAuth.mockReturnValue({ user: mockUser });
+        mockWindowOpen.mockClear();
+        mockUseAuth.mockReturnValue({
+            user: mockUser,
+            isAuthenticated: true,
+            isLoading: false
+        });
 
         // Default mock for fetch to prevent undefined response.ok errors
         (global.fetch as jest.Mock).mockResolvedValue({
@@ -137,7 +151,11 @@ describe('IntegrationContext', () => {
     describe('disconnectIntegration function', () => {
         it('should not proceed when user.id is missing', async () => {
             // Mock useAuth to return no user
-            mockUseAuth.mockReturnValue({ user: null });
+            mockUseAuth.mockReturnValue({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false
+            });
 
             render(
                 <IntegrationProvider>
@@ -364,123 +382,6 @@ describe('IntegrationContext', () => {
         });
     });
 
-    describe('OAuth callback handling', () => {
-        it('should not process OAuth callback when user.id is missing', async () => {
-            // Mock useAuth to return no user
-            mockUseAuth.mockReturnValue({ user: null });
-
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            // Should not make any API calls for OAuth callback
-            const createIntegrationCalls = (global.fetch as jest.Mock).mock.calls.filter(call =>
-                call[1]?.method === 'POST'
-            );
-            expect(createIntegrationCalls).toHaveLength(0);
-        });
-
-        it('should process OAuth callback successfully', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock successful integration creation and check
-            (global.fetch as jest.Mock)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => ({})
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => ([{
-                        integration_type: 'notion',
-                        access_token: 'test-oauth-token'
-                    }])
-                });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('oauth-complete')).toHaveTextContent('true');
-            });
-
-            // Should have called create integration API
-            expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:8000/integrations/',
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: 'test-user-id',
-                        integration_type: 'notion',
-                        access_token: 'test-oauth-token',
-                    }),
-                }
-            );
-
-            // Should have cleared URL parameters
-            expect(mockHistory.replaceState).toHaveBeenCalled();
-        });
-
-        it('should handle OAuth callback creation failure', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock failed integration creation
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                ok: false,
-                status: 500
-            });
-
-            // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
-            });
-
-            consoleSpy.mockRestore();
-        });
-
-        it('should handle OAuth callback network error', async () => {
-            // Set OAuth callback parameters
-            mockLocation.search = '?access_token=test-oauth-token';
-
-            // Mock network error
-            (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-
-            // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-
-            render(
-                <IntegrationProvider>
-                    <TestComponent />
-                </IntegrationProvider>
-            );
-
-            await waitFor(() => {
-                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
-            });
-
-            consoleSpy.mockRestore();
-        });
-    });
-
     describe('Context actions', () => {
         it('should handle setShowDropdown action', async () => {
             render(
@@ -499,10 +400,24 @@ describe('IntegrationContext', () => {
         });
 
         it('should handle setError action', async () => {
-            // Mock successful integration check to avoid error state
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ([])
+            // Mock successful integration check and pages fetch to avoid error state
+            (global.fetch as jest.Mock).mockImplementation((url) => {
+                if (url.includes('integrations') && url.includes('user_id=')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: async () => ([])
+                    });
+                }
+                if (url.includes('fetchPages')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: async () => ({ pages: [] })
+                    });
+                }
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({})
+                });
             });
 
             render(
@@ -529,7 +444,11 @@ describe('IntegrationContext', () => {
     describe('connectIntegration function', () => {
         it('should not proceed when user.id is missing', async () => {
             // Mock useAuth to return no user
-            mockUseAuth.mockReturnValue({ user: null });
+            mockUseAuth.mockReturnValue({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false
+            });
 
             render(
                 <IntegrationProvider>
@@ -547,7 +466,7 @@ describe('IntegrationContext', () => {
             expect(mockLocation.href).toBe('http://localhost:3000');
         });
 
-        it('should redirect to Notion OAuth URL', async () => {
+        it('should open Notion OAuth URL in popup', async () => {
             render(
                 <IntegrationProvider>
                     <TestComponent />
@@ -564,10 +483,411 @@ describe('IntegrationContext', () => {
                 expect(screen.getByTestId('is-connecting')).toHaveTextContent('true');
             });
 
-            // Should have set window.location.href to Notion OAuth URL
-            expect(mockLocation.href).toContain('https://api.notion.com/v1/oauth/authorize');
-            expect(mockLocation.href).toContain('client_id=test-client-id');
-            expect(mockLocation.href).toContain('response_type=code');
+            // Should have opened Notion OAuth URL in popup
+            expect(mockWindowOpen).toHaveBeenCalledWith(
+                expect.stringContaining('https://api.notion.com/v1/oauth/authorize'),
+                'notion-auth',
+                'width=600,height=700,scrollbars=yes,resizable=yes'
+            );
+        });
+
+        it('should handle popup blocked error', async () => {
+            // Mock window.open to return null (popup blocked)
+            const originalOpen = window.open;
+            Object.defineProperty(window, 'open', {
+                value: jest.fn().mockReturnValue(null),
+                writable: true,
+            });
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('error')).toHaveTextContent('Please allow popups for this site to connect to Notion');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
+
+            // Restore original window.open
+            Object.defineProperty(window, 'open', {
+                value: originalOpen,
+                writable: true,
+            });
+        });
+    });
+
+    describe('messageListener in connectIntegration', () => {
+        let mockAddEventListener: jest.SpyInstance;
+        let mockRemoveEventListener: jest.SpyInstance;
+        let mockPostMessage: jest.SpyInstance;
+
+        beforeEach(() => {
+            mockAddEventListener = jest.spyOn(window, 'addEventListener');
+            mockRemoveEventListener = jest.spyOn(window, 'removeEventListener');
+            mockPostMessage = jest.spyOn(window, 'postMessage');
+        });
+
+        afterEach(() => {
+            mockAddEventListener.mockRestore();
+            mockRemoveEventListener.mockRestore();
+            mockPostMessage.mockRestore();
+        });
+
+        it('should ignore messages from different origins', async () => {
+            // Mock successful integration creation
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({})
+            });
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            expect(mockAddEventListener).toHaveBeenCalledWith('message', expect.any(Function));
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate message from different origin
+            const mockEvent = {
+                origin: 'https://malicious-site.com',
+                data: { type: 'NOTION_AUTH_SUCCESS', accessToken: 'fake-token' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            messageListener(mockEvent);
+
+            // Should not have called handleAuthSuccess or removed listener
+            expect(mockRemoveEventListener).not.toHaveBeenCalled();
+            expect(screen.getByTestId('has-integration')).toHaveTextContent('false');
+        });
+
+        it('should handle NOTION_AUTH_SUCCESS message', async () => {
+            // Mock successful integration creation
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({})
+            });
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate successful auth message from same origin
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_SUCCESS', accessToken: 'test-token-123' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            // Should have called handleAuthSuccess and removed listener
+            await waitFor(() => {
+                expect(screen.getByTestId('has-integration')).toHaveTextContent('true');
+                expect(screen.getByTestId('access-token')).toHaveTextContent('test-token-123');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
+
+            expect(mockRemoveEventListener).toHaveBeenCalledWith('message', messageListener);
+        });
+
+        it('should handle NOTION_AUTH_ERROR message with error', async () => {
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate error auth message from same origin
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_ERROR', error: 'User cancelled authorization' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            // Should have set error and removed listener
+            await waitFor(() => {
+                expect(screen.getByTestId('error')).toHaveTextContent('User cancelled authorization');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
+
+            expect(mockRemoveEventListener).toHaveBeenCalledWith('message', messageListener);
+        });
+
+        it('should handle NOTION_AUTH_ERROR message without error (fallback)', async () => {
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate error auth message from same origin without error field
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_ERROR' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            // Should have set default error and removed listener
+            await waitFor(() => {
+                expect(screen.getByTestId('error')).toHaveTextContent('Authentication failed');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
+
+            expect(mockRemoveEventListener).toHaveBeenCalledWith('message', messageListener);
+        });
+
+        it('should ignore unknown message types', async () => {
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate unknown message type from same origin
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'UNKNOWN_MESSAGE_TYPE', someData: 'test' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            messageListener(mockEvent);
+
+            // Should not have changed state or removed listener
+            expect(screen.getByTestId('has-integration')).toHaveTextContent('false');
+            expect(screen.getByTestId('error')).toHaveTextContent('null');
+            expect(screen.getByTestId('is-connecting')).toHaveTextContent('true');
+            expect(mockRemoveEventListener).not.toHaveBeenCalled();
+        });
+
+        it('should close popup on successful auth', async () => {
+            const mockPopup = {
+                close: jest.fn()
+            };
+            mockWindowOpen.mockReturnValue(mockPopup);
+
+            // Mock successful integration creation
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({})
+            });
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate successful auth message
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_SUCCESS', accessToken: 'test-token-123' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            // Should have closed the popup
+            expect(mockPopup.close).toHaveBeenCalled();
+        });
+
+        it('should close popup on auth error', async () => {
+            const mockPopup = {
+                close: jest.fn()
+            };
+            mockWindowOpen.mockReturnValue(mockPopup);
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            // Get the message listener that was added
+            const messageListener = mockAddEventListener.mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            // Simulate error auth message
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_ERROR', error: 'User cancelled' }
+            } as MessageEvent;
+
+            // Call the listener directly
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            // Should have closed the popup
+            expect(mockPopup.close).toHaveBeenCalled();
+        });
+
+        it('should set error when creating integration returns non-ok (handleAuthSuccess else path)', async () => {
+            // Mock POST to create integration -> ok: false
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: false,
+                json: async () => ({})
+            });
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            const messageListener = (window.addEventListener as jest.SpyInstance).mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_SUCCESS', accessToken: 'bad-token' }
+            } as MessageEvent;
+
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
+        });
+
+        it('should set error when creating integration throws (handleAuthSuccess catch path)', async () => {
+            // Mock POST to create integration -> throws
+            (global.fetch as jest.Mock).mockRejectedValue(new Error('network down'));
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            const connectBtn = screen.getByTestId('connect-integration');
+
+            await act(async () => {
+                connectBtn.click();
+            });
+
+            const messageListener = (window.addEventListener as jest.SpyInstance).mock.calls.find(
+                call => call[0] === 'message'
+            )?.[1];
+
+            const mockEvent = {
+                origin: window.location.origin,
+                data: { type: 'NOTION_AUTH_SUCCESS', accessToken: 'any-token' }
+            } as MessageEvent;
+
+            await act(async () => {
+                messageListener(mockEvent);
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('error')).toHaveTextContent('Failed to create integration');
+                expect(screen.getByTestId('is-connecting')).toHaveTextContent('false');
+            });
         });
     });
 
@@ -626,6 +946,72 @@ describe('IntegrationContext', () => {
                 expect(screen.getByTestId('has-integration')).toHaveTextContent('true');
                 expect(screen.getByTestId('error')).toHaveTextContent('Pages fetch failed');
                 expect(screen.getByTestId('no-pages-found')).toHaveTextContent('true');
+            });
+        });
+    });
+
+    describe('OAuth popup callback postMessage', () => {
+        let originalOpener: any;
+        let originalClose: any;
+
+        beforeEach(() => {
+            originalOpener = (window as any).opener;
+            originalClose = (window as any).close;
+            Object.defineProperty(window, 'close', { value: jest.fn(), writable: true });
+        });
+
+        afterEach(() => {
+            Object.defineProperty(window, 'opener', { value: originalOpener, writable: true });
+            Object.defineProperty(window, 'close', { value: originalClose, writable: true });
+        });
+
+        it('posts NOTION_AUTH_SUCCESS with token and closes when access_token param exists', async () => {
+            const postMessage = jest.fn();
+            Object.defineProperty(window, 'opener', { value: { postMessage }, writable: true });
+
+            // Set URL to include access_token
+            mockLocation.search = '?access_token=test-success-token';
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            await waitFor(() => {
+                expect(postMessage).toHaveBeenCalledWith(
+                    {
+                        type: 'NOTION_AUTH_SUCCESS',
+                        accessToken: 'test-success-token'
+                    },
+                    window.location.origin
+                );
+                expect(window.close).toHaveBeenCalled();
+            });
+        });
+
+        it('posts NOTION_AUTH_ERROR mapped message and closes when error param exists', async () => {
+            const postMessage = jest.fn();
+            Object.defineProperty(window, 'opener', { value: { postMessage }, writable: true });
+
+            // Set URL to include error
+            mockLocation.search = '?error=access_denied';
+
+            render(
+                <IntegrationProvider>
+                    <TestComponent />
+                </IntegrationProvider>
+            );
+
+            await waitFor(() => {
+                expect(postMessage).toHaveBeenCalledWith(
+                    {
+                        type: 'NOTION_AUTH_ERROR',
+                        error: 'Authorization was cancelled'
+                    },
+                    window.location.origin
+                );
+                expect(window.close).toHaveBeenCalled();
             });
         });
     });

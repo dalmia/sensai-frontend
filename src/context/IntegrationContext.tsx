@@ -121,6 +121,38 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
         }
     }, [accessToken]);
 
+    const handleAuthSuccess = useCallback(async (accessToken: string) => {
+        if (!user?.id) return;
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    integration_type: 'notion',
+                    access_token: accessToken,
+                }),
+            });
+
+            if (response.ok) {
+                setHasIntegration(true);
+                setAccessToken(accessToken);
+                setNoPagesFound(false);
+                setError(null);
+                setIsOAuthCallbackComplete(true);
+                setIsConnecting(false);
+                await fetchPages();
+            } else {
+                setError('Failed to create integration');
+                setIsConnecting(false);
+            }
+        } catch {
+            setError('Failed to create integration');
+            setIsConnecting(false);
+        }
+    }, [user?.id, fetchPages]);
+
     const connectIntegration = useCallback(async () => {
         if (!user?.id) return;
 
@@ -129,8 +161,35 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
         const currentUrl = window.location.href;
         const notionAuthUrl = `https://api.notion.com/v1/oauth/authorize?owner=user&client_id=${NOTION_CLIENT_ID}&response_type=code&state=${encodeURIComponent(currentUrl)}`;
 
-        window.location.href = notionAuthUrl;
-    }, [user?.id]);
+        // Open Notion auth in a new tab
+        const popup = window.open(notionAuthUrl, 'notion-auth', 'width=600,height=700,scrollbars=yes,resizable=yes');
+
+        if (!popup) {
+            setError('Please allow popups for this site to connect to Notion');
+            setIsConnecting(false);
+            return;
+        }
+
+        // Listen for messages from the popup
+        const messageListener = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data.type === 'NOTION_AUTH_SUCCESS') {
+                const { accessToken } = event.data;
+                handleAuthSuccess(accessToken);
+                popup.close();
+                window.removeEventListener('message', messageListener);
+            } else if (event.data.type === 'NOTION_AUTH_ERROR') {
+                const { error } = event.data;
+                setError(error || 'Authentication failed');
+                popup.close();
+                window.removeEventListener('message', messageListener);
+                setIsConnecting(false);
+            }
+        };
+
+        window.addEventListener('message', messageListener);
+    }, [user?.id, handleAuthSuccess]);
 
     const disconnectIntegration = useCallback(async () => {
         if (!user?.id || !accessToken) return;
@@ -170,42 +229,25 @@ export const IntegrationProvider: React.FC<IntegrationProviderProps> = ({ childr
         // Check for OAuth callback parameters
         const urlParams = new URLSearchParams(window.location.search);
         const accessToken = urlParams.get('access_token');
+        const error = urlParams.get('error');
 
         if (accessToken) {
-            // Create the integration
-            const createIntegration = async () => {
-                setIsConnecting(true);
-                try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/integrations/`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: user.id,
-                            integration_type: 'notion',
-                            access_token: accessToken,
-                        }),
-                    });
-
-                    if (response.ok) {
-                        // Refresh integration status
-                        await checkIntegration();
-                        // Mark OAuth callback as complete
-                        setIsOAuthCallbackComplete(true);
-                    } else {
-                        setError('Failed to create integration');
-                    }
-                } catch {
-                    setError('Failed to create integration');
-                } finally {
-                    setIsConnecting(false);
-                    // Clear URL parameters
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('access_token');
-                    window.history.replaceState({}, document.title, url.pathname + url.search);
-                }
-            };
-
-            createIntegration();
+            if (window.opener) {
+                window.opener.postMessage({
+                    type: 'NOTION_AUTH_SUCCESS',
+                    accessToken: accessToken
+                }, window.location.origin);
+                window.close();
+            }
+        } else if (error) {
+            // Handle OAuth error in popup
+            if (window.opener) {
+                window.opener.postMessage({
+                    type: 'NOTION_AUTH_ERROR',
+                    error: error === 'access_denied' ? 'Authorization was cancelled' : error
+                }, window.location.origin);
+                window.close();
+            }
         } else {
             // Check existing integration
             checkIntegration();

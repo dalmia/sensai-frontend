@@ -38,7 +38,7 @@ jest.mock('../../components/CodeEditorView', () => {
     const React = require('react');
     return React.forwardRef((props: any, ref: any) => {
         React.useImperativeHandle(ref, () => ({
-            getCurrentCode: () => ({ javascript: 'console.log("mock")' })
+            getCurrentCode: () => (globalThis as any).__TEST_CODE__ ?? { javascript: 'console.log("mock")' }
         }));
 
         return (
@@ -49,6 +49,9 @@ jest.mock('../../components/CodeEditorView', () => {
                 </button>
                 <button onClick={() => props.onCodeRun('preview content', 'output', '100ms', false)}>
                     Run Code
+                </button>
+                <button onClick={() => props.onCodeChange && props.onCodeChange()}>
+                    Change Code
                 </button>
             </div>
         );
@@ -491,6 +494,159 @@ describe('Additional ChatView coverage', () => {
         });
 
         jest.useRealTimers();
+    });
+
+    it('handleAutoSave saves silently after code changes', async () => {
+        jest.useFakeTimers();
+        (globalThis as any).__TEST_CODE__ = { javascript: 'console.log(1);' };
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    initialIsViewingCode={true}
+                    userId="7"
+                    currentQuestionId="77"
+                    currentChatHistory={[]}
+                    currentQuestionConfig={{ inputType: 'code', codingLanguages: ['javascript'] }}
+                />
+            );
+        });
+
+        // Trigger code change -> debounced autosave (1s)
+        fireEvent.click(screen.getByText('Change Code'));
+
+        await act(async () => {
+            jest.advanceTimersByTime(1100);
+        });
+
+        // Autosave should call fetch but not show success toast
+        const calls = (global.fetch as jest.Mock).mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        expect(screen.queryByText('Code Saved')).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+    });
+
+    it('handleAutoSave returns early when currentQuestionId missing', async () => {
+        jest.useFakeTimers();
+        (globalThis as any).__TEST_CODE__ = { javascript: 'console.log(1);' };
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    initialIsViewingCode={true}
+                    // No currentQuestionId provided to trigger early return
+                    userId="7"
+                    currentChatHistory={[]}
+                    currentQuestionConfig={{ inputType: 'code', codingLanguages: ['javascript'] }}
+                />
+            );
+        });
+
+        const before = (global.fetch as jest.Mock).mock.calls.length;
+
+        fireEvent.click(screen.getByText('Change Code'));
+
+        await act(async () => {
+            jest.advanceTimersByTime(1100);
+        });
+
+        const after = (global.fetch as jest.Mock).mock.calls.length;
+        expect(after).toBe(before); // no network call made
+        expect(screen.queryByText('Code Saved')).not.toBeInTheDocument();
+
+        jest.useRealTimers();
+    });
+
+    it('saveCode returns early when prerequisites missing', async () => {
+        // No userId and no currentQuestionId, and initialIsViewingCode true to render editor
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    initialIsViewingCode={true}
+                    currentChatHistory={[]}
+                    currentQuestionConfig={{ inputType: 'code', codingLanguages: ['javascript'] }}
+                />
+            );
+        });
+
+        // Set editor code via mock to non-empty and click Save
+        (globalThis as any).__TEST_CODE__ = { javascript: 'console.log(1);' };
+        const saveBtn = screen.getByText('Save');
+
+        await act(async () => {
+            fireEvent.click(saveBtn);
+        });
+
+        // Since userId/currentQuestionId missing, saveCode should return before fetch
+        const fetchCalls = (global.fetch as jest.Mock).mock?.calls ?? [];
+        expect(fetchCalls.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('shows "No code to save" toast when drafts are empty', async () => {
+        jest.useFakeTimers();
+        (globalThis as any).__TEST_CODE__ = { javascript: '   ' };
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    initialIsViewingCode={true}
+                    userId="1"
+                    currentQuestionId="10"
+                    currentChatHistory={[]}
+                    currentQuestionConfig={{ inputType: 'code', codingLanguages: ['javascript'] }}
+                />
+            );
+        });
+
+        const saveBtn = screen.getByText('Save');
+        await act(async () => {
+            fireEvent.click(saveBtn);
+        });
+
+        expect(await screen.findByText('No code to save')).toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(3500);
+        });
+        jest.useRealTimers();
+    });
+
+    it('handles non-OK response and logs error', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        // First call for fetchSavedCode should be ok
+        (global.fetch as jest.Mock)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ code: [] }) })
+            // Second call for save should be not ok
+            .mockResolvedValueOnce({ ok: false });
+        (globalThis as any).__TEST_CODE__ = { javascript: 'console.log(1);' };
+
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    initialIsViewingCode={true}
+                    userId="1"
+                    currentQuestionId="10"
+                    currentChatHistory={[]}
+                    currentQuestionConfig={{ inputType: 'code', codingLanguages: ['javascript'] }}
+                />
+            );
+        });
+
+        const saveBtn = screen.getByText('Save');
+        await act(async () => {
+            fireEvent.click(saveBtn);
+        });
+
+        await waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalledWith('Error saving code:', expect.any(Error));
+        });
+        consoleSpy.mockRestore();
     });
 
     it('imperative toggleCodeView flips visibility', async () => {

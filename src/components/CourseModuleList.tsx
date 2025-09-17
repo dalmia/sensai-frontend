@@ -12,7 +12,7 @@ interface CourseModuleListProps {
     modules: Module[];
     mode: 'edit' | 'view'; // 'edit' for teacher editing, 'view' for learner viewing
     onToggleModule: (moduleId: string) => void;
-    onOpenItem?: (moduleId: string, itemId: string) => void;
+    onOpenItem?: (moduleId: string, itemId: string, questionId?: string) => void;
     onMoveItemUp?: (moduleId: string, itemId: string) => void;
     onMoveItemDown?: (moduleId: string, itemId: string) => void;
     onDeleteItem?: (moduleId: string, itemId: string) => void;
@@ -767,7 +767,17 @@ export default function CourseModuleList({
                                                 className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""
                                                     } ${item.isGenerating ? "opacity-40 pointer-events-none" : ""
                                                     }`}
-                                                onClick={() => onOpenItem && !item.isGenerating && onOpenItem(module.id, item.id)}
+                                                onClick={() => {
+                                                    if (!onOpenItem || item.isGenerating) return;
+                                                    let questionId: string | undefined = undefined;
+                                                    if (item.type === 'quiz' && completedQuestionIds[item.id]) {
+                                                        const questionIds = Object.keys(completedQuestionIds[item.id]);
+                                                        if (questionIds.length > 0) {
+                                                            questionId = questionIds[0];
+                                                        }
+                                                    }
+                                                    onOpenItem(module.id, item.id, questionId);
+                                                }}
                                             >
                                                 <div className={`flex items-center justify-center mr-4 sm:mr-2 ${completedItems[item.id]
                                                     ? "opacity-50"

@@ -174,30 +174,6 @@ export default function LearnerCourseView({
         }));
     };
 
-    // Handle browser history for dialog
-    useEffect(() => {
-        // Handler for back button
-        const handlePopState = (event: PopStateEvent) => {
-            // If dialog is open, close it
-            if (isDialogOpen) {
-                event.preventDefault();
-                closeDialog();
-            }
-        };
-
-        // If dialog is opened, add history entry
-        if (isDialogOpen && !hasAddedHistoryEntryRef.current) {
-            window.history.pushState({ dialog: true }, "");
-            hasAddedHistoryEntryRef.current = true;
-            window.addEventListener("popstate", handlePopState);
-        }
-
-        // Cleanup
-        return () => {
-            window.removeEventListener("popstate", handlePopState);
-        };
-    }, [isDialogOpen]);
-
     // Function to close the dialog
     const closeDialog = () => {
         // If AI is responding, show confirmation dialog
@@ -962,6 +938,15 @@ export default function LearnerCourseView({
             setIsDialogOpen(false);
         }
     }, [taskId, modules.length]);
+
+    // Handle questionId URL parameter
+    useEffect(() => {
+        if (!questionId) return;
+        // Only update if the same task is already active
+        if (activeItem?.id === taskId) {
+            setActiveQuestionId(questionId);
+        }
+    }, [questionId, activeItem?.id, taskId]);
 
     // Toggle sidebar visibility for mobile
     const toggleSidebar = () => {

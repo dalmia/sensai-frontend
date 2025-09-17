@@ -10,6 +10,7 @@ interface CodeEditorViewProps {
     handleCodeSubmit: (code: Record<string, string>) => void;
     onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
     disableCopyPaste?: boolean;
+    onCodeChange?: (code: Record<string, string>) => void;
 }
 
 // Add interface for the ref methods
@@ -412,6 +413,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     handleCodeSubmit,
     onCodeRun,
     disableCopyPaste = false,
+    onCodeChange,
 }, ref) => {
     // Check if React is in the original languages array
     const hasReact = languages.some(lang =>
@@ -547,10 +549,16 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     // Handle code change for the active language
     const handleCodeChange = (value: string | undefined) => {
         if (value !== undefined) {
-            setCode(prevCode => ({
-                ...prevCode,
-                [activeLanguage]: value
-            }));
+            setCode(prevCode => {
+                const nextCode = {
+                    ...prevCode,
+                    [activeLanguage]: value
+                };
+                if (onCodeChange) {
+                    onCodeChange(nextCode);
+                }
+                return nextCode;
+            });
         }
     };
 
