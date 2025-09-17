@@ -505,11 +505,11 @@ export default function LearnerQuizView({
     // Load draft for current question on change
     useEffect(() => {
         const loadDraft = async () => {
-            const currentQ = validQuestions[currentQuestionIndex];
-            if (!currentQ) return;
-            if (currentQ.config?.inputType !== 'text') return;
+            const currentQuestion = validQuestions[currentQuestionIndex];
+            if (!currentQuestion) return;
+            if (currentQuestion.config?.inputType !== 'text') return;
             try {
-                const key = String(currentQ.id);
+                const key = String(currentQuestion.id);
                 const draft = await getDraft(key);
                 if (typeof draft === 'string') {
                     setCurrentAnswer(draft);
@@ -621,9 +621,9 @@ export default function LearnerQuizView({
         setCurrentAnswer(newValue);
         currentAnswerRef.current = newValue;
         try {
-            const currentQ = validQuestions[currentQuestionIndex];
-            if (currentQ?.config?.inputType === 'text') {
-                const key = String(currentQ.id);
+            const currentQuestion = validQuestions[currentQuestionIndex];
+            if (currentQuestion?.config?.inputType === 'text') {
+                const key = String(currentQuestion.id);
                 setDraft(key, newValue || '');
             }
         } catch { }
@@ -1311,9 +1311,9 @@ export default function LearnerQuizView({
 
         // Remove draft before submit for text input questions
         try {
-            const currentQ = validQuestions[currentQuestionIndex];
-            if (currentQ?.config?.inputType === 'text') {
-                const key = String(currentQ.id);
+            const currentQuestion = validQuestions[currentQuestionIndex];
+            if (currentQuestion?.config?.inputType === 'text') {
+                const key = String(currentQuestion.id);
                 deleteDraft(key);
             }
         } catch { }
@@ -1326,9 +1326,9 @@ export default function LearnerQuizView({
     const handleExamSubmissionConfirm = useCallback(() => {
         if (pendingExamSubmission) {
             try {
-                const currentQ = validQuestions[currentQuestionIndex];
-                if (currentQ?.config?.inputType === 'text') {
-                    const key = String(currentQ.id);
+                const currentQuestion = validQuestions[currentQuestionIndex];
+                if (currentQuestion?.config?.inputType === 'text') {
+                    const key = String(currentQuestion.id);
                     deleteDraft(key);
                 }
             } catch { }
