@@ -694,7 +694,7 @@ export default function LearnerQuizView({
         };
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId || '')}&questionId=${encodeURIComponent(String(questionId))}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
