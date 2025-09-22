@@ -285,7 +285,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     // Update the questions with the fetched data
                     if (data && data.questions && data.questions.length > 0) {
                         // If no currentQuestionId specified, push first question id to URL
-                        if (!currentQuestionId && data.questions.length > 0 && taskId) {
+                        if (!currentQuestionId && taskId) {
                             try {
                                 // Replace current history entry to avoid adding an extra entry when updating URL next
                                 if (typeof window !== 'undefined') {
@@ -293,7 +293,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                                 updateTaskAndQuestionIdInUrl(router, String(taskId), String(data.questions[0].id));
                             } catch {
-                                console.error('Failed to update questionId in URL');
+                                // noop
                             }
                         }
 
