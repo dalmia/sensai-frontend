@@ -682,6 +682,43 @@ export default function CreateCourse() {
         }
     };
 
+    const handleOpenItem = async (
+        moduleId: string,
+        itemId: string,
+        questionId?: string | null
+    ) => {
+        if (questionId) {
+            openItemDialog(moduleId, itemId, questionId);
+            return;
+        }
+
+        const module = modules.find(m => m.id === moduleId);
+        const item = module?.items.find(i => i.id === itemId);
+
+        if (item && item.type === 'quiz' && item.questions && item.questions.length > 0) {
+            const questionId = item.questions[0].id;
+            openItemDialog(moduleId, itemId, questionId);
+            return;
+        }
+
+        if (item && item.type === 'quiz') {
+            try {
+                const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${itemId}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const questions = data?.questions;
+                    const questionId = Array.isArray(questions) && questions[0]?.id ? questions[0].id.toString() : null;
+                    openItemDialog(moduleId, itemId, questionId);
+                    return;
+                }
+            } catch {
+                console.error('Failed to fetch quiz details for question id');
+            }
+        }
+
+        openItemDialog(moduleId, itemId, null);
+    };
+
     // Handle question change in quiz editor
     const handleQuestionChange = (questionId: string) => {
         setActiveQuestionId(questionId);
@@ -2016,7 +2053,7 @@ export default function CreateCourse() {
                             modules={modules}
                             mode="edit"
                             onToggleModule={toggleModule}
-                            onOpenItem={openItemDialog}
+                            onOpenItem={handleOpenItem}
                             onMoveItemUp={moveItemUp}
                             onMoveItemDown={moveItemDown}
                             onDeleteItem={deleteItem}
