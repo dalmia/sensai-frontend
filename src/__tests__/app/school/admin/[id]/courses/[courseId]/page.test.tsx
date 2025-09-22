@@ -40,7 +40,7 @@ jest.mock('@/components/layout/header', () => ({
 }));
 
 jest.mock('@/components/CourseModuleList', () =>
-    ({ modules, onToggleModule, onAddLearningMaterial, onAddQuiz, onMoveModuleUp, onMoveModuleDown, onDeleteModule, onEditModuleTitle, saveModuleTitle, cancelModuleEditing, onOpenItem }: any) => (
+    ({ modules, onToggleModule, onAddLearningMaterial, onAddQuiz, onMoveModuleUp, onMoveModuleDown, onDeleteModule, onEditModuleTitle, saveModuleTitle, cancelModuleEditing }: any) => (
         <div data-testid="course-module-list">
             {modules?.map((module: any) => (
                 <div key={module.id} data-testid={`module-${module.id}`}>
@@ -98,28 +98,6 @@ jest.mock('@/components/CourseModuleList', () =>
                         data-testid={`cancel-module-editing-${module.id}`}
                     >
                         Cancel Editing
-                    </button>
-                    {/* Test hooks to simulate onOpenItem with different scenarios */}
-                    <button
-                        onClick={() => onOpenItem?.(modules?.[0]?.id, modules?.[0]?.items?.[0]?.id, 'provided-qid')}
-                        data-testid={`trigger-open-item-with-qid-${module.id}`}
-                    >
-                        TriggerOpenWithQid
-                    </button>
-                    <button
-                        onClick={() => onOpenItem?.(modules?.[0]?.id, modules?.[0]?.items?.[0]?.id)}
-                        data-testid={`trigger-open-item-no-qid-${module.id}`}
-                    >
-                        TriggerOpenNoQid
-                    </button>
-                    <button
-                        onClick={() => {
-                            const quizItem = (module.items || []).find((it: any) => it.type === 'quiz');
-                            if (quizItem) onOpenItem?.(module.id, quizItem.id);
-                        }}
-                        data-testid={`trigger-open-quiz-${module.id}`}
-                    >
-                        TriggerOpenQuiz
                     </button>
                 </div>
             ))}
@@ -360,27 +338,6 @@ describe('CreateCourse Page', () => {
             });
     };
 
-    const setupSuccessfulFetchesWithQuizDetail = (questions: any[] = [{ id: 'q-1' }]) => {
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve(mockCourseData)
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve([])
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve({ slug: 'test-school' })
-            })
-            // fetch quiz details fallback GET /tasks/{itemId}
-            .mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve({ questions })
-            });
-    };
-
     const setupSuccessfulFetchesForPreview = () => {
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
@@ -405,180 +362,6 @@ describe('CreateCourse Page', () => {
         });
 
         expect(screen.getByTestId('header')).toBeInTheDocument();
-    });
-
-    describe('handleOpenItem behavior (admin)', () => {
-        it('opens with provided questionId directly', async () => {
-            setupSuccessfulFetches();
-
-            await act(async () => {
-                render(<CreateCourse />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
-            });
-
-            // Trigger onOpenItem with an explicit questionId
-            const triggerBtn = screen.getByTestId('trigger-open-item-with-qid-1');
-            await act(async () => {
-                fireEvent.click(triggerBtn);
-            });
-
-            // Should push URL with both taskId and provided questionId
-            expect(mockPush).toHaveBeenCalledWith(
-                expect.stringContaining('questionId=provided-qid'),
-                { scroll: false }
-            );
-        });
-
-        it('opens and uses first item.questions[0].id when available locally', async () => {
-            // inject local questions into transformed modules
-            const modulesWithQuestions = JSON.parse(JSON.stringify(mockTransformedModules));
-            modulesWithQuestions[0].items[1].questions = [{ id: 'local-q-1' }];
-            require('@/lib/course').transformMilestonesToModules.mockReturnValue(modulesWithQuestions);
-
-            setupSuccessfulFetches();
-
-            await act(async () => {
-                render(<CreateCourse />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
-            });
-
-            const triggerBtn = screen.getByTestId('trigger-open-quiz-1');
-            await act(async () => {
-                fireEvent.click(triggerBtn);
-            });
-
-            expect(mockPush).toHaveBeenCalledWith(
-                expect.stringContaining('questionId=local-q-1'),
-                { scroll: false }
-            );
-        });
-
-        it('opens and fetches quiz detail to derive first question id when missing', async () => {
-            // Ensure initial modules have empty questions array
-            const modulesEmptyQuestions = JSON.parse(JSON.stringify(mockTransformedModules));
-            modulesEmptyQuestions[0].items[1].questions = [];
-            require('@/lib/course').transformMilestonesToModules.mockReturnValue(modulesEmptyQuestions);
-
-            setupSuccessfulFetchesWithQuizDetail([{ id: 'remote-q-99' }]);
-
-            await act(async () => {
-                render(<CreateCourse />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
-            });
-
-            const triggerBtn = screen.getByTestId('trigger-open-quiz-1');
-            await act(async () => {
-                fireEvent.click(triggerBtn);
-            });
-
-            expect(mockPush).toHaveBeenCalledWith(
-                expect.stringContaining('questionId=remote-q-99'),
-                { scroll: false }
-            );
-        });
-
-        const setupSuccessfulFetchesWithQuizError = () => {
-            (global.fetch as jest.Mock)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve(mockCourseData)
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve([])
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve({ slug: 'test-school' })
-                })
-                // failing fetch for quiz details
-                .mockRejectedValueOnce(new Error('network error'));
-        };
-
-        const setupSuccessfulFetchesWithQuizNonOk = () => {
-            (global.fetch as jest.Mock)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve(mockCourseData)
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve([])
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: () => Promise.resolve({ slug: 'test-school' })
-                })
-                // non-ok fetch for quiz details
-                .mockResolvedValueOnce({ ok: false });
-        };
-
-        it('logs error and opens with null questionId when quiz fetch throws', async () => {
-            const modulesEmptyQuestions = JSON.parse(JSON.stringify(mockTransformedModules));
-            modulesEmptyQuestions[0].items[1].questions = [];
-            require('@/lib/course').transformMilestonesToModules.mockReturnValue(modulesEmptyQuestions);
-
-            setupSuccessfulFetchesWithQuizError();
-
-            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
-            mockPush.mockClear();
-
-            await act(async () => {
-                render(<CreateCourse />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
-            });
-
-            const triggerBtn = screen.getByTestId('trigger-open-quiz-1');
-            await act(async () => {
-                fireEvent.click(triggerBtn);
-            });
-
-            // Should push only taskId (no questionId)
-            const lastPushArg = mockPush.mock.calls[mockPush.mock.calls.length - 1][0];
-            expect(lastPushArg).toContain('taskId=task-2');
-            expect(lastPushArg).not.toContain('questionId=');
-
-            expect(errorSpy).toHaveBeenCalled();
-            errorSpy.mockRestore();
-        });
-
-        it('falls back to null questionId when quiz fetch returns non-ok', async () => {
-            const modulesEmptyQuestions = JSON.parse(JSON.stringify(mockTransformedModules));
-            modulesEmptyQuestions[0].items[1].questions = [];
-            require('@/lib/course').transformMilestonesToModules.mockReturnValue(modulesEmptyQuestions);
-
-            setupSuccessfulFetchesWithQuizNonOk();
-            mockPush.mockClear();
-
-            await act(async () => {
-                render(<CreateCourse />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
-            });
-
-            const triggerBtn = screen.getByTestId('trigger-open-quiz-1');
-            await act(async () => {
-                fireEvent.click(triggerBtn);
-            });
-
-            const lastPushArg = mockPush.mock.calls[mockPush.mock.calls.length - 1][0];
-            expect(lastPushArg).toContain('taskId=task-2');
-            expect(lastPushArg).not.toContain('questionId=');
-        });
     });
 
     it.skip('should show loading spinner initially', async () => {

@@ -48,6 +48,9 @@ import {
     handleIntegrationPageRemoval,
 } from "@/lib/utils/integrationUtils";
 
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
+import { useRouter } from "next/navigation";
+
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
@@ -158,7 +161,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 }, ref) => {
     // Get authenticated user ID
     const { user } = useAuth();
-
+    const router = useRouter();
     // For published quizzes: data is always fetched from the API
     // For draft quizzes: always start with empty questions
     // initialQuestions prop is no longer used
@@ -281,6 +284,19 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     // Update the questions with the fetched data
                     if (data && data.questions && data.questions.length > 0) {
+                        // If no currentQuestionId specified, push first question id to URL
+                        if (!currentQuestionId && data.questions.length > 0 && taskId) {
+                            try {
+                                // Replace current history entry to avoid adding an extra entry when updating URL next
+                                if (typeof window !== 'undefined') {
+                                    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+                                }
+                                updateTaskAndQuestionIdInUrl(router, String(taskId), String(data.questions[0].id));
+                            } catch {
+                                console.error('Failed to update questionId in URL');
+                            }
+                        }
+
                         const updatedQuestions = data.questions.map((question: APIQuestionResponse) => {
                             // Map API question type to local questionType
                             const questionType = question.type;
