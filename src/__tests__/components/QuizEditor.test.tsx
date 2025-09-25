@@ -308,7 +308,8 @@ jest.mock('@udus/notion-renderer/components', () => ({
                 </div>
             ))}
         </div>
-    )
+    ),
+    RenderConfig: ({ children }: any) => children
 }));
 
 // Mock @udus/notion-renderer styles

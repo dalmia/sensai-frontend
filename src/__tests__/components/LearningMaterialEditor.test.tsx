@@ -166,7 +166,8 @@ jest.mock('@udus/notion-renderer/components', () => ({
                 </div>
             ))}
         </div>
-    )
+    ),
+    RenderConfig: ({ children }: any) => children
 }));
 
 // Mock CSS imports for Notion renderer
