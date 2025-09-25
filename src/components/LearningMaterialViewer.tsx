@@ -19,7 +19,7 @@ import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
 
 // Add imports for Notion rendering
-import { BlockList } from "@udus/notion-renderer/components";
+import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
@@ -688,7 +688,9 @@ export default function LearningMaterialViewer({
                         {integrationBlocks.length > 0 ? (
                             <div className="bg-[#191919] text-white px-12 pb-6 rounded-lg">
                                 <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
-                                <BlockList blocks={integrationBlocks} />
+                                <RenderConfig theme="dark">
+                                    <BlockList blocks={integrationBlocks} />
+                                </RenderConfig>
                             </div>
                         ) : (
                             <BlockNoteEditor

@@ -38,7 +38,7 @@ import { useAuth } from "@/lib/auth";
 import NotionIntegration from "./NotionIntegration";
 
 // Add imports for Notion rendering
-import { BlockList } from "@udus/notion-renderer/components";
+import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
@@ -2679,9 +2679,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     ) : integrationBlocks.length > 0 ? (
                                                         <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                                             <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                            <div>
+                                                            <RenderConfig theme="dark">       
                                                                 <BlockList blocks={integrationBlocks} />
-                                                            </div>
+                                                            </RenderConfig>
                                                         </div>
                                                     ) : integrationBlock ? (
                                                         <div className="flex flex-col items-center justify-center h-64 text-center">

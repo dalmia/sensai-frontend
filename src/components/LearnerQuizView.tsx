@@ -15,7 +15,7 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
 
 // Add imports for Notion rendering
-import { BlockList } from "@udus/notion-renderer/components";
+import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import Toast from "./Toast";
@@ -2075,7 +2075,9 @@ export default function LearnerQuizView({
                             {integrationBlocks.length > 0 ? (
                                 <div className="bg-[#191919] text-white px-20 pr-0 pb-6 rounded-lg">
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                    <BlockList blocks={integrationBlocks} />
+                                    <RenderConfig theme="dark">
+                                        <BlockList blocks={integrationBlocks} />
+                                    </RenderConfig>
                                 </div>
                             ) : (
                                 <BlockNoteEditor
