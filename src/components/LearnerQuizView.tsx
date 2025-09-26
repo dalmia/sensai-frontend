@@ -980,7 +980,7 @@ export default function LearnerQuizView({
             }
 
             // Call the API with the appropriate request body for streaming response
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat/?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}&questionId=${encodeURIComponent(String(currentQuestionId))}`, {
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}&questionId=${encodeURIComponent(String(currentQuestionId))}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
