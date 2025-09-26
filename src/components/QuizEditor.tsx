@@ -38,7 +38,7 @@ import { useAuth } from "@/lib/auth";
 import NotionIntegration from "./NotionIntegration";
 
 // Add imports for Notion rendering
-import { BlockList } from "@udus/notion-renderer/components";
+import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
@@ -47,6 +47,9 @@ import {
     handleIntegrationPageSelection,
     handleIntegrationPageRemoval,
 } from "@/lib/utils/integrationUtils";
+
+import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
+import { useRouter } from "next/navigation";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -158,7 +161,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 }, ref) => {
     // Get authenticated user ID
     const { user } = useAuth();
-
+    const router = useRouter();
     // For published quizzes: data is always fetched from the API
     // For draft quizzes: always start with empty questions
     // initialQuestions prop is no longer used
@@ -281,6 +284,19 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     // Update the questions with the fetched data
                     if (data && data.questions && data.questions.length > 0) {
+                        // If no currentQuestionId specified, push first question id to URL
+                        if (!currentQuestionId && taskId) {
+                            try {
+                                // Replace current history entry to avoid adding an extra entry when updating URL next
+                                if (typeof window !== 'undefined') {
+                                    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+                                }
+                                updateTaskAndQuestionIdInUrl(router, String(taskId), String(data.questions[0].id));
+                            } catch {
+                                // noop
+                            }
+                        }
+
                         const updatedQuestions = data.questions.map((question: APIQuestionResponse) => {
                             // Map API question type to local questionType
                             const questionType = question.type;
@@ -2663,9 +2679,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     ) : integrationBlocks.length > 0 ? (
                                                         <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
                                                             <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                            <div>
+                                                            <RenderConfig theme="dark">       
                                                                 <BlockList blocks={integrationBlocks} />
-                                                            </div>
+                                                            </RenderConfig>
                                                         </div>
                                                     ) : integrationBlock ? (
                                                         <div className="flex flex-col items-center justify-center h-64 text-center">
