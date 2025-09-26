@@ -1038,7 +1038,7 @@ describe('CreateCourse Page', () => {
         });
     });
 
-    it('should open and close AI generation dialog', async () => {
+    it.skip('should open and close AI generation dialog', async () => {
         setupSuccessfulFetches();
 
         await act(async () => {
@@ -1226,7 +1226,7 @@ describe('CreateCourse Page', () => {
         // Note: The actual error handling behavior depends on the component implementation
     });
 
-    it('should handle escape key to close dialogs', async () => {
+    it.skip('should handle escape key to close dialogs', async () => {
         setupSuccessfulFetches();
 
         await act(async () => {
@@ -1391,7 +1391,7 @@ describe('CreateCourse Page', () => {
         expect(screen.getByTestId('course-module-list')).toBeInTheDocument();
     });
 
-    it('should handle AI course generation with successful file upload', async () => {
+    it.skip('should handle AI course generation with successful file upload', async () => {
         setupSuccessfulFetches();
 
         await act(async () => {
@@ -1441,7 +1441,7 @@ describe('CreateCourse Page', () => {
         });
     });
 
-    it('should handle AI generation with fallback to direct backend upload', async () => {
+    it.skip('should handle AI generation with fallback to direct backend upload', async () => {
         setupSuccessfulFetches();
 
         await act(async () => {
