@@ -29,7 +29,7 @@ jobs:
           context: .
           push: true
           tags: adalmia/sensai-frontend:dev
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -54,7 +54,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd sensai-frontend && git checkout ${{ github.ref }} && git pull origin ${{ github.ref }} && cp docker-compose.dev.yml ../ && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
+            cd sensai-frontend && git pull origin ${{ github.ref }} && git checkout ${{ github.ref }} && cp docker-compose.dev.yml ../ && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
 
       - name: Notify Slack on Success
         uses: slackapi/slack-github-action@v2.1.1
