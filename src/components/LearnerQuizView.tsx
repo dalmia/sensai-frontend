@@ -419,7 +419,8 @@ export default function LearnerQuizView({
 
                             // Extract scorecard if available
                             if (contentObj && contentObj.scorecard) {
-                                chatMessage.scorecard = contentObj.scorecard;
+                                // Convert scorecard dict to list format
+                                chatMessage.scorecard = convertScorecardToList(contentObj.scorecard);
                             }
 
                             // Extract is_correct if available
@@ -488,6 +489,24 @@ export default function LearnerQuizView({
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
+    };
+
+    // Helper function to convert new scorecard dict format to list format
+    const convertScorecardToList = (scorecardDict: any): ScorecardItem[] => {
+        if (!scorecardDict || typeof scorecardDict !== 'object') {
+            return [];
+        }
+
+        // Check if it's already in list format (backwards compatibility)
+        if (Array.isArray(scorecardDict)) {
+            return scorecardDict;
+        }
+
+        // Convert dict format to list format
+        return Object.entries(scorecardDict).map(([category, data]: [string, any]) => ({
+            category,
+            ...data
+        }));
     };
 
     // Effect to focus the input when the question changes
@@ -1004,7 +1023,7 @@ export default function LearnerQuizView({
                         try {
                             let accumulatedFeedback = "";
                             // Add a variable to collect the complete scorecard
-                            let completeScorecard = [];
+                            let completeScorecard: ScorecardItem[] = [];
                             // Add a flag to track if streaming is done
                             let streamingComplete = false;
 
@@ -1080,15 +1099,20 @@ export default function LearnerQuizView({
                                         }
 
                                         // Handle scorecard data when available
-                                        if (data.scorecard && data.scorecard.length > 0) {
-                                            // Show preparing report message if not already shown
-                                            if (!showPreparingReport && validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
-                                                setShowPreparingReport(true);
-                                            }
+                                        if (data.scorecard) {
+                                            // Convert scorecard dict to list format
+                                            const scorecardList = convertScorecardToList(data.scorecard);
+                                            
+                                            if (scorecardList.length > 0) {
+                                                // Show preparing report message if not already shown
+                                                if (!showPreparingReport && validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
+                                                    setShowPreparingReport(true);
+                                                }
 
-                                            // Instead of immediately updating the chat message,
-                                            // collect the scorecard data
-                                            completeScorecard = data.scorecard;
+                                                // Instead of immediately updating the chat message,
+                                                // collect the scorecard data
+                                                completeScorecard = scorecardList;
+                                            }
                                         }
 
                                         // Handle is_correct when available - for practice questions
