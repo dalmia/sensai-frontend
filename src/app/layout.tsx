@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
-  fallback: ["ui-monospace", "monospace"],
+  fallback: ["system-ui", "arial"],
 });
 
 export const metadata: Metadata = {
