@@ -1403,18 +1403,60 @@ export default function LearnerQuizView({
         }
     }, [processUserResponse]);
 
+    // Helper function to resample audio data to 8kHz
+    const resampleAudio = (audioBuffer: AudioBuffer, targetSampleRate: number = 8000) => {
+        const sourceSampleRate = audioBuffer.sampleRate;
+        const numChannels = audioBuffer.numberOfChannels;
+        const sourceLength = audioBuffer.length;
+        
+        // Calculate the target length based on the sample rate ratio
+        const ratio = sourceSampleRate / targetSampleRate;
+        const targetLength = Math.floor(sourceLength / ratio);
+        
+        // Create new audio buffer with target sample rate
+        const resampledBuffer = new AudioBuffer({
+            length: targetLength,
+            numberOfChannels: numChannels,
+            sampleRate: targetSampleRate
+        });
+        
+        // Resample each channel
+        for (let channel = 0; channel < numChannels; channel++) {
+            const sourceChannel = audioBuffer.getChannelData(channel);
+            const targetChannel = resampledBuffer.getChannelData(channel);
+            
+            // Simple linear interpolation resampling
+            for (let i = 0; i < targetLength; i++) {
+                const sourceIndex = i * ratio;
+                const sourceIndexFloor = Math.floor(sourceIndex);
+                const sourceIndexCeil = Math.min(sourceIndexFloor + 1, sourceLength - 1);
+                const fraction = sourceIndex - sourceIndexFloor;
+                
+                // Linear interpolation
+                const sample = sourceChannel[sourceIndexFloor] * (1 - fraction) + 
+                              sourceChannel[sourceIndexCeil] * fraction;
+                targetChannel[i] = sample;
+            }
+        }
+        
+        return resampledBuffer;
+    };
+
     // Helper function to convert AudioBuffer to WAV format
     const convertAudioBufferToWav = (audioBuffer: AudioBuffer) => {
-        const numOfChan = audioBuffer.numberOfChannels;
-        const length = audioBuffer.length * numOfChan * 2;
+        // Resample audio to 8kHz
+        const resampledBuffer = resampleAudio(audioBuffer, 8000);
+        
+        const numOfChan = resampledBuffer.numberOfChannels;
+        const length = resampledBuffer.length * numOfChan * 2;
         const buffer = new ArrayBuffer(44 + length);
         const view = new DataView(buffer);
-        const sampleRate = audioBuffer.sampleRate;
+        const sampleRate = 8000; // Fixed to 8kHz
         const channels = [];
 
-        // Extract channels
+        // Extract channels from resampled buffer
         for (let i = 0; i < numOfChan; i++) {
-            channels.push(audioBuffer.getChannelData(i));
+            channels.push(resampledBuffer.getChannelData(i));
         }
 
         // RIFF identifier
@@ -1431,7 +1473,7 @@ export default function LearnerQuizView({
         view.setUint16(20, 1, true);
         // Channel count
         view.setUint16(22, numOfChan, true);
-        // Sample rate
+        // Sample rate (8kHz)
         view.setUint32(24, sampleRate, true);
         // Byte rate (sample rate * block align)
         view.setUint32(28, sampleRate * numOfChan * 2, true);
@@ -1444,10 +1486,10 @@ export default function LearnerQuizView({
         // Data chunk length
         view.setUint32(40, length, true);
 
-        // Write PCM samples
+        // Write PCM samples from resampled buffer
         const offset = 44;
         let pos = 0;
-        for (let i = 0; i < audioBuffer.length; i++) {
+        for (let i = 0; i < resampledBuffer.length; i++) {
             for (let channel = 0; channel < numOfChan; channel++) {
                 // Clamp the value to -1.0 - 1.0 range and convert to 16-bit
                 const sample = Math.max(-1, Math.min(1, channels[channel][i]));
