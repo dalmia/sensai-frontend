@@ -1382,7 +1382,7 @@ export default function LearnerQuizView({
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
             // Convert AudioBuffer to WAV format
-            const wavBuffer = convertAudioBufferToWav(audioBuffer);
+            const wavBuffer = convertAudioBufferToWav(audioBuffer, 8000);
             const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
 
             // Convert the WAV blob to base64
@@ -1443,15 +1443,15 @@ export default function LearnerQuizView({
     };
 
     // Helper function to convert AudioBuffer to WAV format
-    const convertAudioBufferToWav = (audioBuffer: AudioBuffer) => {
+    const convertAudioBufferToWav = (audioBuffer: AudioBuffer, targetSampleRate: number = 8000) => {
         // Resample audio to 8kHz
-        const resampledBuffer = resampleAudio(audioBuffer, 8000);
+        const resampledBuffer = resampleAudio(audioBuffer, targetSampleRate);
         
         const numOfChan = resampledBuffer.numberOfChannels;
         const length = resampledBuffer.length * numOfChan * 2;
         const buffer = new ArrayBuffer(44 + length);
         const view = new DataView(buffer);
-        const sampleRate = 8000; // Fixed to 8kHz
+        const sampleRate = targetSampleRate;
         const channels = [];
 
         // Extract channels from resampled buffer
@@ -1473,7 +1473,7 @@ export default function LearnerQuizView({
         view.setUint16(20, 1, true);
         // Channel count
         view.setUint16(22, numOfChan, true);
-        // Sample rate (8kHz)
+        // Sample rate
         view.setUint32(24, sampleRate, true);
         // Byte rate (sample rate * block align)
         view.setUint32(28, sampleRate * numOfChan * 2, true);
