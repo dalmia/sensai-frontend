@@ -64,8 +64,6 @@ export default function TopPerformers({
                 };
             });
 
-            console.log(validPerformers);
-
             // const validPerformers = performersData.filter(performer => performer.streakDays > 0 || performer.tasksSolved > 0);
 
             // Get top performers but filter out those with 0 streak days
@@ -150,9 +148,7 @@ export default function TopPerformers({
         setIsRefreshing(true);
 
         try {
-            console.log("Refreshing leaderboard data...");
             await fetchPerformers();
-            console.log("Leaderboard refresh complete!");
         } catch (error) {
             console.error("Error refreshing leaderboard:", error);
         } finally {
