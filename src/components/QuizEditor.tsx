@@ -23,8 +23,11 @@ import Scorecard, { ScorecardHandle } from "./Scorecard";
 import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
+import { extractTextFromBlocks, hasBlocksContent } from "@/lib/utils/blockUtils";
 // Add import for LearningMaterialLinker
 import LearningMaterialLinker from "./LearningMaterialLinker";
+// Add import for KnowledgeBaseEditor
+import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 // Import Toast component
 import Toast from "./Toast";
 // Import Tooltip component
@@ -71,38 +74,6 @@ interface LearningMaterial {
 }
 
 // Helper function to extract text from all blocks in a BlockNote document
-export const extractTextFromBlocks = (blocks: any[]): string => {
-    if (!blocks || blocks.length === 0) return "";
-
-    return blocks.map(block => {
-        // Handle different block types
-        if (block.type === "paragraph") {
-            // For paragraph blocks, extract text content
-            return block.content ? block.content.map((item: any) =>
-                typeof item === 'string' ? item : (item.text || "")
-            ).join("") : "";
-        } else if (block.type === "heading") {
-            // For heading blocks, extract text content
-            return block.content ? block.content.map((item: any) =>
-                typeof item === 'string' ? item : (item.text || "")
-            ).join("") : "";
-        } else if (block.type === "bulletListItem" || block.type === "numberedListItem" || block.type === "checkListItem") {
-            // For list items, extract text content
-            return block.content ? block.content.map((item: any) =>
-                typeof item === 'string' ? item : (item.text || "")
-            ).join("") : "";
-        } else if (block.type === "codeBlock") {
-            // For code blocks, extract text content from content array
-            return block.content ? block.content.map((item: any) =>
-                typeof item === 'string' ? item : (item.text || "")
-            ).join("") : "";
-        } else if (block.text) {
-            // Fallback for blocks with direct text property
-            return block.text;
-        }
-        return "";
-    }).join("\n").trim();
-};
 
 /**
  * Extracts and formats knowledge base content for API calls.
@@ -550,33 +521,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
      * @param content The content blocks to validate
      * @returns True if content has non-empty text or contains media blocks, false otherwise
      */
-    const validateQuestionContent = useCallback((content: any[]) => {
-        if (!content || content.length === 0) {
-            return false;
-        }
-
-        // Check for integration blocks (Notion)
-        const integrationBlock = content.find(block => block.type === 'notion');
-        // If there's an integration block, it's considered valid content
-        if (integrationBlock && integrationBlock.content.length > 0) {
-            return true;
-        }
-
-        // Check for text content
-        const textContent = extractTextFromBlocks(content);
-        if (textContent.trim().length > 0) {
-            return true;
-        }
-
-        // If no text content, check if there are any media blocks (image, audio, video)
-        const hasMediaBlocks = content.some(block =>
-            block.type === 'image' ||
-            block.type === 'audio' ||
-            block.type === 'video'
-        );
-
-        return hasMediaBlocks;
-    }, []);
+    const validateQuestionContent = useCallback((content: any[]) => hasBlocksContent(content), []);
 
     /**
      * Validates if a question has a non-empty correct answer
@@ -1048,11 +993,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Function to set the correct answer editor reference
     const setCorrectAnswerEditorInstance = useCallback((editor: any) => {
         correctAnswerEditorRef.current = editor;
-    }, []);
-
-    // Function to set the knowledge base editor reference
-    const setKnowledgeBaseEditorInstance = useCallback((editor: any) => {
-        knowledgeBaseEditorRef.current = editor;
     }, []);
 
     // Handle content change for the current question - use useCallback to memoize
@@ -2734,112 +2674,44 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'knowledge' ? (
-                                            <div className="w-full h-full flex flex-row overflow-y-auto p-4">
-                                                {/* Left column with callout (20-30% width) */}
-                                                <div className="w-[20%]">
-                                                    <div className="bg-[#222222] p-3 rounded-md">
-                                                        <BookOpen size={16} className="text-amber-400 mb-2" />
-                                                        <div>
-                                                            <p className="text-gray-400 text-xs leading-tight mb-2">
-                                                                These resources are <span className="font-bold text-white">optional</span> and will <span className="font-bold text-white">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Right column with linker and editor (70-80% width) */}
-                                                <div className="w-[80%] flex flex-col">
-                                                    {readOnly &&
-                                                        (!currentQuestion?.config?.linkedMaterialIds?.length &&
-                                                            (!currentQuestion?.config?.knowledgeBaseBlocks?.length ||
-                                                                extractTextFromBlocks(currentQuestion?.config?.knowledgeBaseBlocks || []).trim().length === 0)) ? (
-                                                        <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-[#1A1A1A] h-full">
-                                                            <div className="max-w-md">
-                                                                <h3 className="text-xl font-light text-white mb-3">No knowledge base found</h3>
-                                                                <p className="text-gray-400 mb-6">
-                                                                    This question does not have any knowledge base attached to it
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-full">
-                                                            {/* Add learning material selection component */}
-                                                            <div className="mb-4 ml-12">
-                                                                <LearningMaterialLinker
-                                                                    courseId={courseId || ''}
-                                                                    linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
-                                                                    readOnly={readOnly}
-                                                                    onMaterialsChange={(linkedMaterialIds) => {
-                                                                        // Update the question config with the new linked material IDs
-                                                                        const updatedQuestions = [...questions];
-                                                                        const currentQuestion = updatedQuestions[currentQuestionIndex];
-                                                                        const currentConfig = currentQuestion.config || {};
-
-                                                                        updatedQuestions[currentQuestionIndex] = {
-                                                                            ...currentQuestion,
-                                                                            config: {
-                                                                                ...currentConfig,
-                                                                                linkedMaterialIds: linkedMaterialIds
-                                                                            }
-                                                                        };
-
-                                                                        setQuestions(updatedQuestions);
-
-                                                                        if (onChange) {
-                                                                            onChange(updatedQuestions);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </div>
-
-                                                            <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden relative z-0"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    // Ensure the knowledge base editor keeps focus
-                                                                    if (knowledgeBaseEditorRef.current) {
-                                                                        try {
-                                                                            // Try to focus the editor
-                                                                            knowledgeBaseEditorRef.current.focusEditor();
-                                                                        } catch (err) {
-                                                                            console.error("Error focusing knowledge base editor:", err);
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                onMouseDown={(e) => {
-                                                                    e.stopPropagation();
-                                                                }}
-                                                            >
-                                                                <BlockNoteEditor
-                                                                    key={`knowledge-base-editor-${currentQuestionIndex}`}
-                                                                    initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
-                                                                    onChange={(content) => {
-                                                                        // Store blocks
-                                                                        const updatedQuestions = [...questions];
-                                                                        updatedQuestions[currentQuestionIndex] = {
-                                                                            ...updatedQuestions[currentQuestionIndex],
-                                                                            config: {
-                                                                                ...updatedQuestions[currentQuestionIndex].config,
-                                                                                knowledgeBaseBlocks: content
-                                                                            }
-                                                                        };
-                                                                        setQuestions(updatedQuestions);
-
-                                                                        if (onChange) {
-                                                                            onChange(updatedQuestions);
-                                                                        }
-                                                                    }}
-                                                                    isDarkMode={isDarkMode}
-                                                                    readOnly={readOnly}
-                                                                    onEditorReady={setKnowledgeBaseEditorInstance}
-                                                                    className="knowledge-base-editor"
-                                                                    placeholder="Link existing materials using the button above or add new material here"
-                                                                    allowMedia={false}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                <KnowledgeBaseEditor
+                                                    knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                    linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
+                                                    courseId={courseId}
+                                                    readOnly={readOnly}
+                                                    isDarkMode={isDarkMode}
+                                                    onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
+                                                        // Update the question config with the new knowledge base blocks
+                                                        const updatedQuestions = [...questions];
+                                                        updatedQuestions[currentQuestionIndex] = {
+                                                            ...updatedQuestions[currentQuestionIndex],
+                                                            config: {
+                                                                ...updatedQuestions[currentQuestionIndex].config,
+                                                                knowledgeBaseBlocks: knowledgeBaseBlocks
+                                                            }
+                                                        };
+                                                        setQuestions(updatedQuestions);
+                                                        if (onChange) {
+                                                            onChange(updatedQuestions);
+                                                        }
+                                                    }}
+                                                    onLinkedMaterialsChange={(linkedMaterialIds) => {
+                                                        // Update the question config with the new linked material IDs
+                                                        const updatedQuestions = [...questions];
+                                                        updatedQuestions[currentQuestionIndex] = {
+                                                            ...updatedQuestions[currentQuestionIndex],
+                                                            config: {
+                                                                ...updatedQuestions[currentQuestionIndex].config,
+                                                                linkedMaterialIds: linkedMaterialIds
+                                                            }
+                                                        };
+                                                        setQuestions(updatedQuestions);
+                                                        if (onChange) {
+                                                            onChange(updatedQuestions);
+                                                        }
+                                                    }}
+                                                    className="question"
+                                                />
                                         ) : (
                                             // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
                                             currentQuestionConfig.scorecardData ? (

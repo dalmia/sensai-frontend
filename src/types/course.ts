@@ -22,7 +22,17 @@ export interface Quiz {
   isGenerating?: boolean;
 }
 
-export type ModuleItem = LearningMaterial | Quiz;
+export interface Assignment {
+  id: string;
+  title: string;
+  position: number;
+  type: 'assignment';
+  status?: string;
+  scheduled_publish_at: string | null;
+  isGenerating?: boolean;
+}
+
+export type ModuleItem = LearningMaterial | Quiz | Assignment;
 
 export interface Module {
   id: string;

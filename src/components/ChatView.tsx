@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { ChatMessage, ScorecardItem, QuizQuestion } from '../types/quiz';
+import { ChatMessage, ScorecardItem } from '../types/quiz';
 import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
 import AudioInputComponent from './AudioInputComponent';
 import CodeEditorView, { CodeEditorViewHandle } from './CodeEditorView';
 import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
+import UploadZip from './UploadZip';
 import isEqual from 'lodash/isEqual';
 
 // Export interface for code view state to be used by parent components
@@ -29,7 +30,7 @@ interface ChatViewProps {
     showPreparingReport: boolean;
     isChatHistoryLoaded: boolean;
     isTestMode: boolean;
-    taskType: 'quiz' | 'learning_material';
+    taskType: 'quiz' | 'learning_material' | 'assignment';
     currentQuestionConfig?: any;
     isSubmitting: boolean;
     currentAnswer: string;
@@ -47,6 +48,9 @@ interface ChatViewProps {
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
     userId?: string;
+    // Assignment mode: show upload instead of textarea until upload completes
+    showUploadSection?: boolean;
+    onZipUploaded?: (file: File) => void;
 }
 
 export interface ChatViewHandle {
@@ -77,6 +81,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     onShowLearnerViewChange,
     isAdminView = false,
     userId,
+    showUploadSection = false,
+    onZipUploaded,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -633,7 +639,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             {!(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
-                                    {currentQuestionConfig?.inputType === 'audio' ? (
+                                    {showUploadSection ? (
+                                        <UploadZip
+                                            disabled={false}
+                                            onComplete={(file) => {
+                                                if (onZipUploaded) onZipUploaded(file);
+                                            }}
+                                            className="mt-auto"
+                                        />
+                                    ) : currentQuestionConfig?.inputType === 'audio' ? (
                                         <div className="w-full sm:w-auto">
                                             <AudioInputComponent
                                                 onAudioSubmit={handleAudioSubmit}

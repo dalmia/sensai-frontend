@@ -460,6 +460,19 @@ export default function CreateCourse() {
         return addItemToState(moduleId, newItem, position);
     };
 
+    const addAssignmentToState = (moduleId: string, taskData: any, position: number) => {
+        const newItem = {
+            id: taskData.id.toString(),
+            title: taskData.title || "New assignment",
+            position: position,
+            type: 'assignment',
+            status: 'draft',
+            scheduled_publish_at: null
+        } as ModuleItem;
+
+        return addItemToState(moduleId, newItem, position);
+    };
+
     // Add handleDuplicateItem function to handle task duplication
     const handleDuplicateItem = async (moduleId: string, taskData: any, position: number) => {
         try {
@@ -561,6 +574,34 @@ export default function CreateCourse() {
         } catch (error) {
             console.error("Error creating quiz:", error);
             // You might want to show an error message to the user here
+        }
+    };
+
+    const addAssignment = async (moduleId: string) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    course_id: parseInt(courseId),
+                    milestone_id: parseInt(moduleId),
+                    type: "assignment",
+                    title: "New assignment",
+                    status: "draft"
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to create assignment: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            addAssignmentToState(moduleId, data, modules.find(m => m.id === moduleId)?.items.length || 0);
+        } catch (error) {
+            console.error("Error creating assignment:", error);
         }
     };
 
@@ -2022,6 +2063,7 @@ export default function CreateCourse() {
                             onDeleteItem={deleteItem}
                             onAddLearningMaterial={addLearningMaterial}
                             onAddQuiz={addQuiz}
+                            onAddAssignment={addAssignment}
                             onMoveModuleUp={moveModuleUp}
                             onMoveModuleDown={moveModuleDown}
                             onDeleteModule={deleteModule}

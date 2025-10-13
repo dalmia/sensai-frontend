@@ -22,6 +22,12 @@ const DynamicLearnerQuizView = dynamic(
     { ssr: false }
 );
 
+// Dynamic import for LearnerAssignmentView
+const DynamicLearnerAssignmentView = dynamic(
+    () => import("./LearnerAssignmentView"),
+    { ssr: false }
+);
+
 interface LearnerCourseViewProps {
     modules: Module[];
     completedTaskIds?: Record<string, boolean>;
@@ -1274,6 +1280,16 @@ export default function LearnerCourseView({
                                                 />
                                             </>
                                         )}
+                                            {(activeItem?.type === 'assignment') && (
+                                                <DynamicLearnerAssignmentView
+                                                    problemBlocks={activeItem.content || []}
+                                                    title={activeItem.title}
+                                                    userId={userId}
+                                                    taskId={activeItem.id}
+                                                    isTestMode={isTestMode}
+                                                    viewOnly={viewOnly}
+                                                />
+                                            )}
                                     </>
                                 )}
                             </div>
