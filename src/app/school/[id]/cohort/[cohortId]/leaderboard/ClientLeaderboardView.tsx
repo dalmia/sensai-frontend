@@ -60,8 +60,6 @@ export default function ClientLeaderboardView({
                     };
                 });
 
-                console.log(performersData);
-
                 setPerformers(performersData);
                 setLoading(false);
             } catch (error) {
