@@ -642,6 +642,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                     {showUploadSection ? (
                                         <UploadZip
                                             disabled={false}
+                                            isAiResponding={isAiResponding}
                                             onComplete={(file) => {
                                                 if (onZipUploaded) onZipUploaded(file);
                                             }}
