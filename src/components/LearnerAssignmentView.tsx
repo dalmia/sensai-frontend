@@ -5,6 +5,7 @@ import BlockNoteEditor from "./BlockNoteEditor";
 import ChatView from "./ChatView";
 import ScorecardView from "./ScorecardView";
 import { ChatMessage, ScorecardItem } from "../types/quiz";
+import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
 
 import { CheckCircle } from "lucide-react";
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
@@ -27,6 +28,8 @@ interface LearnerAssignmentViewProps {
     isTestMode?: boolean;
     viewOnly?: boolean;
     className?: string;
+    onTaskComplete?: (taskId: string, isComplete: boolean) => void;
+    onAiRespondingChange?: (isResponding: boolean) => void;
 }
 
 // Local chat message type aligned with ChatView expectations
@@ -62,7 +65,6 @@ interface AssignmentResponse {
     // Phase 3 fields
     key_area_scores?: Record<string, number>;
     final_score?: number;
-    overall_feedback?: string;
 }
 
 export default function LearnerAssignmentView({
@@ -75,6 +77,8 @@ export default function LearnerAssignmentView({
     isTestMode = true,
     viewOnly = false,
     className = "",
+    onTaskComplete,
+    onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
     // Left panel editor is read-only
     const isDarkMode = true;
@@ -99,10 +103,18 @@ export default function LearnerAssignmentView({
     // Scorecard state
     const [isViewingScorecard, setIsViewingScorecard] = useState(false);
     const [activeScorecard, setActiveScorecard] = useState<ScorecardItem[]>([]);
+    const [showPreparingReport, setShowPreparingReport] = useState(false);
 
     // Input state for ChatView
     const [currentAnswer, setCurrentAnswer] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Update the parent component when AI responding state changes
+    useEffect(() => {
+        if (onAiRespondingChange) {
+            onAiRespondingChange(isAiResponding);
+        }
+    }, [isAiResponding, onAiRespondingChange]);
 
     // Fetch assignment data from API when taskId changes
     useEffect(() => {
@@ -168,11 +180,17 @@ export default function LearnerAssignmentView({
         });
     };
 
-    // NEW: Handle assignment response based on evaluation status
+    // Handle assignment response based on evaluation status
     const handleAssignmentResponse = useCallback((response: AssignmentResponse) => {
         // Update evaluation status
         setEvaluationStatus(response.evaluation_status);
-    }, []);
+
+        // Call onTaskComplete callback when assignment is completed
+        if (response.evaluation_status === "completed" && onTaskComplete && taskId) {
+            onTaskComplete(taskId, true);
+        }
+    }, [onTaskComplete, taskId]);
+
 
     // Helper function to convert key_area_scores to ScorecardItem format
     const convertKeyAreaScoresToScorecard = useCallback((keyAreaScores: Record<string, any>): ScorecardItem[] => {
@@ -193,7 +211,6 @@ export default function LearnerAssignmentView({
         const contentObj = {
             feedback: aiResponse.feedback,
             evaluation_status: aiResponse.evaluation_status,
-            overall_feedback: aiResponse.overall_feedback,
             project_score: aiResponse.project_score,
             current_key_area: aiResponse.current_key_area,
             key_area_question: aiResponse.key_area_question,
@@ -388,6 +405,7 @@ export default function LearnerAssignmentView({
                     }
 
                     // For AI messages, extract only the feedback field from JSON content
+                    // For user file messages, extract filename from JSON content
                     let displayContent = message.content;
                     let rawContent = message.content;
                     if (message.role === 'assistant' && message.content) {
@@ -400,6 +418,17 @@ export default function LearnerAssignmentView({
                         } catch (error) {
                             // If parsing fails, use the original content
                             console.log('Failed to parse AI message content, using original:', error);
+                        }
+                    } else if (message.role === 'user' && message.response_type === 'file' && message.content) {
+                        try {
+                            const parsedContent = JSON.parse(message.content);
+                            if (parsedContent.filename) {
+                                displayContent = `Uploaded ${parsedContent.filename}`;
+                                rawContent = message.content;
+                            }
+                        } catch (error) {
+                            // If parsing fails, use the original content
+                            console.log('Failed to parse user file message content, using original:', error);
                         }
                     }
 
@@ -439,10 +468,42 @@ export default function LearnerAssignmentView({
         settings: {},
     }), [title, submissionType]);
 
+    // Map local chat history to ChatView-compatible messages, attaching scorecard for completed assignment
+    const chatHistoryForView = useMemo(() => {
+        const mapped = (chatHistory as unknown as any[]).map((msg) => {
+            const base: any = { ...msg };
+            // Ensure messageType aligns with ChatView expectations
+            base.messageType = base.messageType || 'text';
+            // For AI messages, try to attach scorecard when completed
+            if (base.sender === 'ai') {
+                try {
+                    const parsed = JSON.parse(base.rawContent || base.content || '{}');
+                    if (parsed && parsed.evaluation_status === 'completed' && parsed.key_area_scores) {
+                        const scorecard = convertKeyAreaScoresToScorecard(parsed.key_area_scores);
+                        if (Array.isArray(scorecard) && scorecard.length > 0) {
+                            base.scorecard = scorecard;
+                            // Ensure displayed content is feedback text
+                            if (parsed.feedback) {
+                                base.content = parsed.feedback;
+                            }
+                        }
+                    }
+                } catch { /* ignore parse errors */ }
+            }
+            return base;
+        });
+        return mapped as unknown as ChatMessage[];
+    }, [chatHistory, convertKeyAreaScoresToScorecard]);
+
     // Helpers for ChatView handlers
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setCurrentAnswer(e.target.value);
-    }, []);
+        const newValue = e.target.value;
+        setCurrentAnswer(newValue);
+        try {
+            const key = String(taskId || 'assignment');
+            setDraft(key, newValue || '');
+        } catch { }
+    }, [taskId]);
 
     const pushUserMessage = useCallback((content: string, type: MessageType = "text") => {
         const userMsg: ChatMessageLocal = {
@@ -482,6 +543,11 @@ export default function LearnerAssignmentView({
         };
 
         pushUserMessage(currentAnswer, "text");
+        setCurrentAnswer("");
+        try {
+            const key = String(taskId || 'assignment');
+            deleteDraft(key);
+        } catch { }
 
         try {
             // Prepare the request body
@@ -548,6 +614,10 @@ export default function LearnerAssignmentView({
                                 });
                             }
                         }
+                        // Detect when report (scorecard) is being prepared
+                        if (data.key_area_scores && !showPreparingReport && evaluationStatus === "completed") {
+                            setShowPreparingReport(true);
+                        }
                     } catch (e) {
                         console.error('Error parsing JSON chunk:', e);
                     }
@@ -555,7 +625,26 @@ export default function LearnerAssignmentView({
             }
 
             // Handle assignment response
+            // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
+            try {
+                const finalRaw = JSON.stringify(accumulatedResponse);
+                setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    const lastIndex = newHistory.length - 1;
+                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
+                        newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
+                    }
+                    return newHistory;
+                });
+            } catch { }
+
+            // Update evaluation state
             handleAssignmentResponse(accumulatedResponse);
+
+            // Hide preparing report indicator now that streaming is complete
+            if (showPreparingReport) {
+                setTimeout(() => setShowPreparingReport(false), 0);
+            }
 
             // Store chat history after getting complete response
             if (!isTestMode) {
@@ -571,6 +660,22 @@ export default function LearnerAssignmentView({
             setCurrentAnswer("");
         }
     }, [currentAnswer, pushUserMessage, pushAiMessage, taskId, userId, isTestMode, storeChatHistory, handleAssignmentResponse]);
+
+    // Load draft on task change
+    useEffect(() => {
+        const loadDraft = async () => {
+            try {
+                const key = String(taskId || 'assignment');
+                const draft = await getDraft(key);
+                if (typeof draft === 'string') {
+                    setCurrentAnswer(draft);
+                } else {
+                    setCurrentAnswer('');
+                }
+            } catch { }
+        };
+        loadDraft();
+    }, [taskId]);
 
     const handleAudioSubmit = useCallback(async (audioBlob: Blob) => {
         try {
@@ -717,6 +822,10 @@ export default function LearnerAssignmentView({
                                         });
                                     }
                                 }
+                                // Detect when report (scorecard) is being prepared
+                                if (data.key_area_scores && !showPreparingReport && evaluationStatus === "completed") {
+                                    setShowPreparingReport(true);
+                                }
                             } catch (err) {
                                 console.error('Error parsing JSON chunk:', err);
                             }
@@ -724,7 +833,26 @@ export default function LearnerAssignmentView({
                     }
 
                     // Handle assignment response
+                    // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
+                    try {
+                        const finalRaw = JSON.stringify(accumulatedResponse);
+                        setChatHistory(prev => {
+                            const newHistory = [...prev];
+                            const lastIndex = newHistory.length - 1;
+                            if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
+                                newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
+                            }
+                            return newHistory;
+                        });
+                    } catch { }
+
+                    // Update evaluation state
                     handleAssignmentResponse(accumulatedResponse);
+
+                    // Hide preparing report indicator now that streaming is complete
+                    if (showPreparingReport) {
+                        setTimeout(() => setShowPreparingReport(false), 0);
+                    }
 
                     // Store chat history after getting complete response
                     if (!isTestMode) {
@@ -749,6 +877,8 @@ export default function LearnerAssignmentView({
     const handleViewScorecard = useCallback((scorecard: ScorecardItem[]) => {
         setActiveScorecard(scorecard);
         setIsViewingScorecard(true);
+        // Hide preparing report once the scorecard is opened
+        setShowPreparingReport(false);
     }, []);
 
     const handleBackToChat = useCallback(() => {
@@ -789,8 +919,11 @@ export default function LearnerAssignmentView({
             const uploadData = await uploadResponse.json();
             const fileUuid = uploadData.file_uuid;
 
-            // Update user message content with file_uuid for storage
-            userMessage.content = fileUuid;
+            // Update user message content with file_uuid and filename for storage
+            userMessage.content = JSON.stringify({
+                file_uuid: fileUuid,
+                filename: file.name,
+            });
             userMessage.messageType = 'file';
 
             // Now process the uploaded file using the new assignment endpoint
@@ -856,6 +989,10 @@ export default function LearnerAssignmentView({
                                 });
                             }
                         }
+                        // Detect when report (scorecard) is being prepared
+                        if (data.key_area_scores && !showPreparingReport) {
+                            setShowPreparingReport(true);
+                        }
                     } catch (e) {
                         console.error('Error parsing JSON chunk:', e);
                     }
@@ -863,7 +1000,26 @@ export default function LearnerAssignmentView({
             }
 
             // Handle assignment response
+            // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
+            try {
+                const finalRaw = JSON.stringify(accumulatedResponse);
+                setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    const lastIndex = newHistory.length - 1;
+                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
+                        newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
+                    }
+                    return newHistory;
+                });
+            } catch { }
+
+            // Update evaluation state
             handleAssignmentResponse(accumulatedResponse);
+
+            // Hide preparing report indicator now that streaming is complete
+            if (showPreparingReport) {
+                setTimeout(() => setShowPreparingReport(false), 0);
+            }
 
             // Store chat history after getting complete response
             if (!isTestMode) {
@@ -919,6 +1075,8 @@ export default function LearnerAssignmentView({
                         if (scorecard.length > 0) {
                             setActiveScorecard(scorecard);
                             setIsViewingScorecard(true);
+                            // Ensure the preparing report banner is hidden when opening scorecard automatically
+                            setShowPreparingReport(false);
                         }
                     }
                 } catch (error) {
@@ -990,65 +1148,10 @@ export default function LearnerAssignmentView({
                         overflow: hidden;
                     }
                 }
-
-                /* Make sure the question and chat containers properly fit their content */
-                @media (max-width: 1024px) {
-                    .assignment-view-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow: hidden !important;
-                        display: grid !important;
-                        grid-template-rows: 50% 50% !important;
-                        grid-template-columns: 1fr !important;
-                    }
-                    
-                    .assignment-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow-y: auto !important;
-                        grid-row: 1 !important;
-                    }
-                    
-                    .chat-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow: hidden !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        grid-row: 2 !important;
-                    }
-                    
-                    /* Ensure the messages area scrolls but input stays fixed */
-                    .chat-container {
-                        flex: 1 !important;
-                        overflow-y: auto !important;
-                        min-height: 0 !important;
-                    }
-                    
-                    /* Ensure the input area stays at the bottom and doesn't scroll */
-                    .chat-container {
-                        flex-shrink: 0 !important;
-                        position: sticky !important;
-                        bottom: 0 !important;
-                        background-color: #111111 !important;
-                        z-index: 10 !important;
-                        padding-top: 0.5rem !important;
-                        border-top: 1px solid #222222 !important;
-                    }
-                }
-
-                /* Ensure the editor stays within the question container on mobile */
-                @media (max-width: 1024px) {
-                    .assignment-container,
-                    .assignment-container {
-                        max-height: calc(100% - 80px) !important;
-                        overflow: auto !important;
-                    }
-                }
             `}</style>
-            <div className="two-column-grid rounded-md overflow-hidden bg-[#111111] assignment-view-container">
+            <div className="two-column-grid rounded-md overflow-hidden bg-[#111111]">
                 {/* Left: Problem Statement */}
-                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] assignment-container" style={{ overflow: 'auto' }}>
+                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]" style={{ overflow: 'auto' }}>
                     {/* Header chip like LearnerQuizView */}
                     <div className="flex items-center justify-center w-full mb-6">
                         <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm flex items-center">
@@ -1096,9 +1199,9 @@ export default function LearnerAssignmentView({
                         /* Use the ChatView component */
                         <div className="flex-1 min-h-0">
                             <ChatView
-                                currentChatHistory={chatHistory as unknown as ChatMessage[]}
+                                currentChatHistory={chatHistoryForView}
                                 isAiResponding={isAiResponding}
-                                showPreparingReport={false}
+                                showPreparingReport={showPreparingReport}
                                 isChatHistoryLoaded={isChatHistoryLoaded}
                                 isTestMode={isTestMode}
                                 taskType={'assignment'}
