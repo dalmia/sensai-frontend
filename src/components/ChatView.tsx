@@ -6,7 +6,7 @@ import AudioInputComponent from './AudioInputComponent';
 import CodeEditorView, { CodeEditorViewHandle } from './CodeEditorView';
 import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
-import UploadZip from './UploadZip';
+import UploadAssignmentFile from './UploadAssignmentFile';
 import isEqual from 'lodash/isEqual';
 
 // Export interface for code view state to be used by parent components
@@ -50,7 +50,7 @@ interface ChatViewProps {
     userId?: string;
     // Assignment mode: show upload instead of textarea until upload completes
     showUploadSection?: boolean;
-    onZipUploaded?: (file: File) => void;
+    onFileUploaded?: (file: File) => void;
 }
 
 export interface ChatViewHandle {
@@ -82,7 +82,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     isAdminView = false,
     userId,
     showUploadSection = false,
-    onZipUploaded,
+    onFileUploaded,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -640,11 +640,11 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                 /* Input area - conditional render based on input type */
                                 <>
                                     {showUploadSection ? (
-                                        <UploadZip
+                                        <UploadAssignmentFile
                                             disabled={false}
                                             isAiResponding={isAiResponding}
                                             onComplete={(file) => {
-                                                if (onZipUploaded) onZipUploaded(file);
+                                                if (onFileUploaded) onFileUploaded(file);
                                             }}
                                             className="mt-auto"
                                         />

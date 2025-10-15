@@ -36,6 +36,8 @@ import Tooltip from "./Tooltip";
 import PublishConfirmationDialog from './PublishConfirmationDialog';
 import { useEditorContentOrSelectionChange } from "@blocknote/react";
 import { useAuth } from "@/lib/auth";
+// Import scorecard validation utility
+import { validateScorecardCriteria as validateScorecardCriteriaUtil, ValidationCallbacks } from "@/lib/utils/scorecardValidation";
 
 // Add import for NotionIntegration
 import NotionIntegration from "./NotionIntegration";
@@ -547,100 +549,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             questionConfig.scorecardData.criteria.length > 0);
     }, []);
 
-    /**
-     * Validates scorecard criteria for empty names and descriptions
-     * @param scorecard The scorecard data to validate
-     * @param callbacks Object containing callback functions for validation actions
-     * @returns True if all criteria are valid, false if any validation fails
-     */
-    const validateScorecardCriteria = (
-        scorecard: ScorecardTemplate | undefined,
-        callbacks: {
-            setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
-            showErrorMessage?: (title: string, message: string, emoji?: string) => void;
-            questionIndex?: number; // Optional for showing question number in error message
-        }
-    ): boolean => {
-        // If no scorecard or not a user-created scorecard (new), return true (valid)
-        if (!scorecard) {
-            return true;
-        }
-
-        const { setActiveTab, showErrorMessage, questionIndex } = callbacks;
-
-        // Check each criterion for empty name or description
-        for (let i = 0; i < scorecard.criteria.length; i++) {
-            const criterion = scorecard.criteria[i];
-
-            // Check for empty name
-            if (!criterion.name || criterion.name.trim() === '') {
-                // Switch to scorecard tab first
-                setActiveTab('scorecard');
-
-                // Use a self-invoking function for delayed highlight and error message
-                (function (index) {
-                    setTimeout(() => {
-                        // Create event to highlight the problematic row
-                        const event = new CustomEvent('highlight-criterion', {
-                            detail: {
-                                index,
-                                field: 'name'
-                            }
-                        });
-                        document.dispatchEvent(event);
-
-                        // Show error message if callback is provided
-                        if (showErrorMessage) {
-                            const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
-                            showErrorMessage(
-                                "Empty Scorecard Parameter",
-                                `Please provide a name for parameter ${index + 1} in the scorecard${suffix}`,
-                                "🚫"
-                            );
-                        }
-                    }, 250);
-                })(i);
-
-                return false;
-            }
-
-            // Check for empty description
-            if (!criterion.description || criterion.description.trim() === '') {
-                // Switch to scorecard tab first
-                setActiveTab('scorecard');
-
-                // Use a self-invoking function for delayed highlight and error message
-                (function (index, name) {
-                    setTimeout(() => {
-                        // Create event to highlight the problematic row
-                        const event = new CustomEvent('highlight-criterion', {
-                            detail: {
-                                index,
-                                field: 'description'
-                            }
-                        });
-                        document.dispatchEvent(event);
-
-                        // Show error message if callback is provided
-                        if (showErrorMessage) {
-                            const parameterName = name || `parameter ${index + 1}`;
-                            const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
-                            showErrorMessage(
-                                "Empty Scorecard Parameter",
-                                `Please provide a description for ${parameterName} in the scorecard${suffix}`,
-                                "🚫"
-                            );
-                        }
-                    }, 250);
-                })(i, criterion.name);
-
-                return false;
-            }
-        }
-
-        // If all criteria passed validation
-        return true;
-    };
 
     /**
      * Validates all questions in the quiz and navigates to the first invalid question
@@ -771,7 +679,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     updateCurrentQuestionId(question.id);
                     
                     // Use the shared validation function for scorecards
-                    const isValid = validateScorecardCriteria(
+                    const isValid = validateScorecardCriteriaUtil(
                         question.config.scorecardData,
                         {
                             setActiveTab: setActiveEditorTab,
@@ -788,7 +696,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
 
         return true;
-    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, validateScorecardCriteria, highlightField]);
+    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, highlightField]);
 
     // Function to handle opening the scorecard templates dialog
     const handleOpenScorecardDialog = () => {
@@ -1788,8 +1696,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Return the current question's configuration
             return currentQuestionConfig;
         },
-        validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: any) =>
-            validateScorecardCriteria(scorecard, callbacks),
+        validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: ValidationCallbacks) =>
+            validateScorecardCriteriaUtil(scorecard, callbacks),
         hasChanges: () => {
             // If we don't have original questions to compare with, assume no changes
             if (originalQuestionsRef.current.length === 0 && questions.length === 0) return false;

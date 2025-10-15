@@ -3,14 +3,14 @@
 import { useRef, useState } from "react";
 import { Upload, FileArchive } from "lucide-react";
 
-interface UploadZipProps {
+interface UploadAssignmentFileProps {
     disabled?: boolean;
     onComplete: (file: File) => void;
     className?: string;
     isAiResponding?: boolean;
 }
 
-export default function UploadZip({ disabled = false, onComplete, className = "", isAiResponding = false }: UploadZipProps) {
+export default function UploadAssignmentFile({ disabled = false, onComplete, className = "", isAiResponding = false }: UploadAssignmentFileProps) {
     const [dragActive, setDragActive] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number>(0);

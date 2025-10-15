@@ -6,22 +6,17 @@ import ChatView from "./ChatView";
 import ScorecardView from "./ScorecardView";
 import { ChatMessage, ScorecardItem } from "../types/quiz";
 import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
+import { blobToBase64, convertAudioBufferToWav } from '@/lib/utils/audioUtils';
 
 import { CheckCircle } from "lucide-react";
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
-
-interface EvaluationSettings {
-    min_score: number;
-    max_score: number;
-    pass_score: number;
-}
+import { useAuth } from "@/lib/auth";
 
 interface LearnerAssignmentViewProps {
     problemBlocks?: unknown[];
     title?: string;
-    evaluationSettings?: EvaluationSettings;
     submissionType?: string;
     userId?: string;
     taskId?: string;
@@ -51,26 +46,13 @@ interface ChatMessageLocal {
 interface AssignmentResponse {
     feedback: string;
     evaluation_status: "in_progress" | "needs_resubmission" | "completed";
-
-    // Phase 1 fields
-    project_score?: number;
-    current_key_area?: string;
-    key_area_question?: string;
-    key_areas_remaining?: string[];
-
-    // Phase 2 fields  
-    key_area_score?: number;
-    key_areas_completed?: string[];
-
-    // Phase 3 fields
-    key_area_scores?: Record<string, number>;
-    final_score?: number;
+    key_area_scores: Record<string, number>;
+    current_key_area: string;
 }
 
 export default function LearnerAssignmentView({
     problemBlocks: initialProblemBlocks = [],
     title: initialTitle,
-    evaluationSettings: _ = { min_score: 0, max_score: 100, pass_score: 60 },
     submissionType: initialSubmissionType = "text",
     userId = "",
     taskId = "",
@@ -82,6 +64,8 @@ export default function LearnerAssignmentView({
 }: LearnerAssignmentViewProps) {
     // Left panel editor is read-only
     const isDarkMode = true;
+
+    const { user } = useAuth();
 
     // Data fetching state
     const [isLoadingAssignment, setIsLoadingAssignment] = useState(true);
@@ -165,20 +149,6 @@ export default function LearnerAssignmentView({
         setHasFetchedData(false);
     }, [taskId]);
 
-    // Helper function to convert Blob to base64
-    const blobToBase64 = (blob: Blob): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                // Extract the base64 data portion (remove "data:audio/wav;base64," prefix)
-                const base64Data = base64String.split(',')[1];
-                resolve(base64Data);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    };
 
     // Handle assignment response based on evaluation status
     const handleAssignmentResponse = useCallback((response: AssignmentResponse) => {
@@ -211,14 +181,8 @@ export default function LearnerAssignmentView({
         const contentObj = {
             feedback: aiResponse.feedback,
             evaluation_status: aiResponse.evaluation_status,
-            project_score: aiResponse.project_score,
             current_key_area: aiResponse.current_key_area,
-            key_area_question: aiResponse.key_area_question,
-            key_areas_remaining: aiResponse.key_areas_remaining,
-            key_area_score: aiResponse.key_area_score,
-            key_areas_completed: aiResponse.key_areas_completed,
             key_area_scores: aiResponse.key_area_scores,
-            final_score: aiResponse.final_score
         };
         const aiContent = JSON.stringify(contentObj);
 
@@ -260,85 +224,6 @@ export default function LearnerAssignmentView({
         }
     }, [userId, isTestMode, taskId]);
 
-    // Audio helpers (mirroring LearnerQuizView)
-    const resampleAudio = useCallback((audioBuffer: AudioBuffer, targetSampleRate: number = 8000) => {
-        const sourceSampleRate = audioBuffer.sampleRate;
-        const numChannels = audioBuffer.numberOfChannels;
-        const sourceLength = audioBuffer.length;
-
-        const ratio = sourceSampleRate / targetSampleRate;
-        const targetLength = Math.floor(sourceLength / ratio);
-
-        const resampledBuffer = new AudioBuffer({
-            length: targetLength,
-            numberOfChannels: numChannels,
-            sampleRate: targetSampleRate
-        });
-
-        for (let channel = 0; channel < numChannels; channel++) {
-            const sourceChannel = audioBuffer.getChannelData(channel);
-            const targetChannel = resampledBuffer.getChannelData(channel);
-
-            for (let i = 0; i < targetLength; i++) {
-                const sourceIndex = i * ratio;
-                const sourceIndexFloor = Math.floor(sourceIndex);
-                const sourceIndexCeil = Math.min(sourceIndexFloor + 1, sourceLength - 1);
-                const fraction = sourceIndex - sourceIndexFloor;
-                const sample = sourceChannel[sourceIndexFloor] * (1 - fraction) + sourceChannel[sourceIndexCeil] * fraction;
-                targetChannel[i] = sample;
-            }
-        }
-
-        return resampledBuffer;
-    }, []);
-
-    const writeString = useCallback((view: DataView, offset: number, str: string) => {
-        for (let i = 0; i < str.length; i++) {
-            view.setUint8(offset + i, str.charCodeAt(i));
-        }
-    }, []);
-
-    const convertAudioBufferToWav = useCallback((audioBuffer: AudioBuffer, targetSampleRate: number = 8000) => {
-        const resampledBuffer = resampleAudio(audioBuffer, targetSampleRate);
-
-        const numOfChan = resampledBuffer.numberOfChannels;
-        const length = resampledBuffer.length * numOfChan * 2;
-        const buffer = new ArrayBuffer(44 + length);
-        const view = new DataView(buffer);
-        const sampleRate = targetSampleRate;
-        const channels: Float32Array[] = [];
-
-        for (let i = 0; i < numOfChan; i++) {
-            channels.push(resampledBuffer.getChannelData(i));
-        }
-
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + length, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, numOfChan, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numOfChan * 2, true);
-        view.setUint16(32, numOfChan * 2, true);
-        view.setUint16(34, 16, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, length, true);
-
-        const offset = 44;
-        let pos = 0;
-        for (let i = 0; i < resampledBuffer.length; i++) {
-            for (let channel = 0; channel < numOfChan; channel++) {
-                const sample = Math.max(-1, Math.min(1, channels[channel][i]));
-                const value = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                view.setInt16(offset + pos, value, true);
-                pos += 2;
-            }
-        }
-
-        return buffer;
-    }, [resampleAudio, writeString]);
 
     // Fetch chat history from backend when component mounts or task changes
     useEffect(() => {
@@ -505,183 +390,349 @@ export default function LearnerAssignmentView({
         } catch { }
     }, [taskId]);
 
-    const pushUserMessage = useCallback((content: string, type: MessageType = "text") => {
-        const userMsg: ChatMessageLocal = {
-            id: `user-${Date.now()}`,
-            content,
-            sender: "user",
-            timestamp: new Date(),
-            messageType: type,
-        };
-        setChatHistory(prev => [...prev, userMsg]);
-    }, []);
+    // Process a user response (shared logic between text, audio, and file submission)
+    const processUserResponse = useCallback(
+        async (
+            responseContent: string,
+            responseType: 'text' | 'audio' | 'file' = 'text',
+            audioData?: string,
+            fileUuid?: string
+        ) => {
+            if (!taskId || !userId) {
+                return;
+            }
 
-    const pushAiMessage = useCallback((content: string, extras?: Partial<ChatMessageLocal>) => {
-        const aiMsg: ChatMessageLocal = {
-            id: `ai-${Date.now()}`,
-            content,
-            sender: "ai",
-            timestamp: new Date(),
-            messageType: "text",
-            ...extras,
-        };
-        setChatHistory(prev => [...prev, aiMsg]);
-    }, []);
+            // Set submitting state to true
+            setIsSubmitting(true);
+            setIsAiResponding(true);
 
-    const handleSubmitAnswer = useCallback(async () => {
-        if (!currentAnswer.trim()) return;
-        setIsSubmitting(true);
-        setIsAiResponding(true);
-
-        // Create user message for storing
-        const userMessage: ChatMessageLocal = {
-            id: `user-${Date.now()}`,
-            content: currentAnswer,
-            sender: "user",
-            timestamp: new Date(),
-            messageType: "text",
-        };
-
-        pushUserMessage(currentAnswer, "text");
-        setCurrentAnswer("");
-        try {
-            const key = String(taskId || 'assignment');
-            deleteDraft(key);
-        } catch { }
-
-        try {
-            // Prepare the request body
-            const requestBody = {
-                user_response: currentAnswer,
-                response_type: "text",
-                task_id: taskId,
-                user_id: userId,
-                user_email: "user@example.com"
+            // Create the user message object for display
+            const displayMessage: ChatMessageLocal = {
+                id: `user-${Date.now()}`,
+                content: responseType === 'file' ? `Uploaded ${responseContent}` : responseContent,
+                sender: 'user',
+                timestamp: new Date(),
+                messageType: responseType,
+                audioData: audioData,
             };
 
-            // Call the API for streaming response
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
+            // Create storage message
+            const storageMessage: ChatMessageLocal = {
+                ...displayMessage,
+                content: responseType === 'file' && fileUuid ? JSON.stringify({
+                    file_uuid: fileUuid,
+                    filename: responseContent,
+                }) : responseContent,
+                messageType: responseType === 'file' ? 'file' : responseType,
+            };
+
+            // Immediately add the display message to chat history
+            setChatHistory(prev => [...prev, displayMessage]);
+
+            // Clear the input field after submission (only for text input)
+            if (responseType === 'text') {
+                setCurrentAnswer("");
+                try {
+                    const key = String(taskId || 'assignment');
+                    deleteDraft(key);
+                } catch { }
+            }
+
+            // Track if we've received any feedback
+            let receivedAnyFeedback = false;
+
+            // For audio responses, get a presigned URL to upload the audio file
+            if (responseType === 'audio' && audioData) {
+                let presigned_url = '';
+                let file_uuid = '';
+
+                try {
+                    // First, get a presigned URL for the audio file
+                    const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            content_type: "audio/wav"
+                        })
+                    });
+
+                    if (!presignedUrlResponse.ok) {
+                        throw new Error('Failed to get presigned URL');
+                    }
+
+                    const presignedData = await presignedUrlResponse.json();
+                    presigned_url = presignedData.presigned_url;
+                    file_uuid = presignedData.file_uuid;
+                } catch (error) {
+                    console.error("Error getting presigned URL for audio:", error);
+                }
+
+                // Convert base64 audio data to a Blob
+                const binaryData = atob(audioData);
+                const arrayBuffer = new ArrayBuffer(binaryData.length);
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                for (let i = 0; i < binaryData.length; i++) {
+                    uint8Array[i] = binaryData.charCodeAt(i);
+                }
+
+                // Create audio blob with WAV format
+                const audioBlob = new Blob([uint8Array], { type: 'audio/wav' });
+
+                if (!presigned_url) {
+                    // If we couldn't get a presigned URL, try direct upload to the backend
+                    try {
+                        console.log("Attempting direct upload to backend");
+
+                // Create FormData for the file upload
+                        const formData = new FormData();
+                        formData.append('file', audioBlob, 'audio.wav');
+                        formData.append('content_type', 'audio/wav');
+
+                        // Upload directly to the backend
+                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
+                        }
+
+                        const uploadData = await uploadResponse.json();
+                        file_uuid = uploadData.file_uuid;
+
+                        console.log('Audio file uploaded successfully to backend');
+                        // Update the storage message content with the file information
+                        storageMessage.content = file_uuid || '';
+                    } catch (error) {
+                        console.error('Error with direct upload to backend:', error);
+                        throw error;
+                    }
+                } else {
+                    // Upload the audio file to S3 using the presigned URL
+                    try {
+                        // Upload to S3 using the presigned URL with WAV content type
+                        const uploadResponse = await fetch(presigned_url, {
+                            method: 'PUT',
+                            body: audioBlob,
+                            headers: {
+                                'Content-Type': 'audio/wav'
+                            }
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Failed to upload audio to S3: ${uploadResponse.status}`);
+                        }
+
+                        console.log('Audio file uploaded successfully to S3');
+                        // Update the storage message content with the file information
+                        storageMessage.content = file_uuid;
+                    } catch (error) {
+                        console.error('Error uploading audio to S3:', error);
+                        throw error;
+                    }
+                }
+            }
+
+            // Prepare the request body
+            const requestBody = {
+                user_response: responseType === 'audio' ? audioData : responseType === 'file' ? fileUuid : responseContent,
+                response_type: responseType,
+                task_id: taskId,
+                user_id: userId,
+                user_email: user?.email
+            };
+
+            // Call the API with the appropriate request body for streaming response
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestBody)
-            });
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+                    // Get the response reader for streaming
+                    const reader = response.body?.getReader();
 
-            // Get the response reader for streaming
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error('Failed to get response reader');
-            }
+                    if (!reader) {
+                        throw new Error('Failed to get response reader');
+                    }
 
-            // Process streaming response
-            let accumulatedResponse: AssignmentResponse = {
-                feedback: "",
-                evaluation_status: "in_progress",
-            };
-            let isFirstChunk = true;
+                    // Function to process the streaming chunks
+                    const processStream = async () => {
+                        try {
+                            let assignmentResponse: AssignmentResponse = {
+                                feedback: "",
+                                evaluation_status: "in_progress",
+                                key_area_scores: {},
+                                current_key_area: "",
+                            };
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                            while (true) {
+                                const { done, value } = await reader.read();
 
-                const chunk = new TextDecoder().decode(value);
-                const jsonLines = chunk.split('\n').filter(line => line.trim());
+                                if (done) {
+                                    break;
+                                }
 
-                for (const line of jsonLines) {
-                    try {
-                        const data = JSON.parse(line);
-                        if (data.feedback) {
-                            accumulatedResponse = { ...accumulatedResponse, ...data };
+                                // Convert the chunk to text
+                                const chunk = new TextDecoder().decode(value);
 
-                            if (isFirstChunk) {
-                                setIsAiResponding(false);
-                                pushAiMessage(accumulatedResponse.feedback);
-                                isFirstChunk = false;
-                            } else {
-                                // Update the last AI message
+                                // Split by newlines to handle multiple JSON objects in a single chunk
+                                const jsonLines = chunk.split('\n').filter(line => line.trim());
+
+                                for (const line of jsonLines) {
+                                    try {
+                                        const data = JSON.parse(line);
+
+                                        // Handle feedback updates
+                                        if (data.feedback) {
+                                            // Update assignment evaluation
+                                            assignmentResponse = { ...assignmentResponse, ...data };
+
+                                            // If this is the first feedback chunk we've received
+                                            if (!receivedAnyFeedback) {
+                                                receivedAnyFeedback = true;
+
+                                                // Stop showing the animation
+                                                setIsAiResponding(false);
+
+                                                // Add the AI message to chat history now that we have content
+                                                setChatHistory(prev => [...prev, {
+                                                    id: `ai-${Date.now()}`,
+                                                    content: assignmentResponse.feedback,
+                                                    sender: 'ai',
+                                                    timestamp: new Date(),
+                                                    messageType: 'text',
+                                                    audioData: undefined,
+                                                }]);
+                                            } else {
+                                                // Update the existing AI message content for subsequent chunks
+                                                setChatHistory(prev => {
+                                                    const newHistory = [...prev];
+                                                    const lastIndex = newHistory.length - 1;
+                                                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
+                                                        newHistory[lastIndex] = { ...newHistory[lastIndex], content: assignmentResponse.feedback };
+                                                    }
+                                                    return newHistory;
+                                                });
+                                            }
+                                        }
+
+                                        // Detect when report (scorecard) is being prepared
+                                        if (data.key_area_scores && !showPreparingReport && assignmentResponse.evaluation_status === "completed") {
+                                            setShowPreparingReport(true);
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing JSON chunk:', e);
+                                    }
+                                }
+                            }
+
+                            // After processing all chunks (stream is complete)
+                            // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
+                            try {
+                                const finalRaw = JSON.stringify(assignmentResponse);
                                 setChatHistory(prev => {
                                     const newHistory = [...prev];
                                     const lastIndex = newHistory.length - 1;
                                     if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                                        newHistory[lastIndex] = { ...newHistory[lastIndex], content: accumulatedResponse.feedback };
+                                        newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
                                     }
                                     return newHistory;
                                 });
+                            } catch { }
+
+                            // Update evaluation state
+                            handleAssignmentResponse(assignmentResponse);
+
+                            // Hide preparing report indicator now that streaming is complete
+                            if (showPreparingReport) {
+                                setTimeout(() => setShowPreparingReport(false), 0);
                             }
-                        }
-                        // Detect when report (scorecard) is being prepared
-                        if (data.key_area_scores && !showPreparingReport && evaluationStatus === "completed") {
-                            setShowPreparingReport(true);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing JSON chunk:', e);
-                    }
-                }
-            }
 
-            // Handle assignment response
-            // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
-            try {
-                const finalRaw = JSON.stringify(accumulatedResponse);
-                setChatHistory(prev => {
-                    const newHistory = [...prev];
-                    const lastIndex = newHistory.length - 1;
-                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                        newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
+                            // Store chat history after getting complete response
+                            if (!isTestMode) {
+                                storeChatHistory(storageMessage, assignmentResponse);
+                            }
+                        } catch (error) {
+                            console.error('Error processing stream:', error);
+                            // Only reset the preparing report state when an error occurs
+                            // and we need to allow the user to try again
+                            if (showPreparingReport) {
+                                setTimeout(() => setShowPreparingReport(false), 0);
+                            }
+                            throw error;
+                        }
+                    };
+
+                    // Start processing the stream
+                    return processStream();
+                })
+                .catch(error => {
+                    console.error('Error fetching AI response:', error);
+
+                    // Show error message to the user
+                    const errorMessage = responseType === 'audio'
+                        ? "There was an error while processing your audio. Please try again."
+                        : responseType === 'file'
+                            ? "There was an error while processing your file. Please try again."
+                            : "There was an error while processing your answer. Please try again.";
+
+                    const errorResponse: ChatMessageLocal = {
+                        id: `ai-error-${Date.now()}`,
+                        content: errorMessage,
+                        sender: 'ai',
+                        timestamp: new Date(),
+                        messageType: 'text',
+                        audioData: undefined,
+                        isError: true
+                    };
+
+                    // Add the error message to the chat history
+                    setChatHistory(prev => [...prev, errorResponse]);
+
+                    // Reset report preparation state on error since the user needs to try again
+                    setShowPreparingReport(false);
+                })
+                .finally(() => {
+                // Only reset submitting state when API call is done
+                    setIsSubmitting(false);
+
+                    // If we never received any feedback, also reset the AI responding state
+                    if (!receivedAnyFeedback) {
+                        setIsAiResponding(false);
                     }
-                    return newHistory;
                 });
-            } catch { }
+        },
+        [
+            taskId,
+            userId,
+            user?.email,
+            isTestMode,
+            storeChatHistory,
+            handleAssignmentResponse,
+            showPreparingReport
+        ]
+    );
 
-            // Update evaluation state
-            handleAssignmentResponse(accumulatedResponse);
+    const handleSubmitAnswer = useCallback(async () => {
+        if (!currentAnswer.trim()) return;
 
-            // Hide preparing report indicator now that streaming is complete
-            if (showPreparingReport) {
-                setTimeout(() => setShowPreparingReport(false), 0);
-            }
-
-            // Store chat history after getting complete response
-            if (!isTestMode) {
-                await storeChatHistory(userMessage, accumulatedResponse);
-            }
-
-        } catch (error) {
-            console.error('Error fetching AI response:', error);
-            pushAiMessage("There was an error while processing your answer. Please try again.");
-        } finally {
-            setIsSubmitting(false);
-            setIsAiResponding(false);
-            setCurrentAnswer("");
-        }
-    }, [currentAnswer, pushUserMessage, pushAiMessage, taskId, userId, isTestMode, storeChatHistory, handleAssignmentResponse]);
-
-    // Load draft on task change
-    useEffect(() => {
-        const loadDraft = async () => {
-            try {
-                const key = String(taskId || 'assignment');
-                const draft = await getDraft(key);
-                if (typeof draft === 'string') {
-                    setCurrentAnswer(draft);
-                } else {
-                    setCurrentAnswer('');
-                }
-            } catch { }
-        };
-        loadDraft();
-    }, [taskId]);
+        // Use the shared processing function
+        processUserResponse(currentAnswer, 'text');
+    }, [currentAnswer, processUserResponse]);
 
     const handleAudioSubmit = useCallback(async (audioBlob: Blob) => {
         try {
-            setIsSubmitting(true);
-            setIsAiResponding(true);
-
             // Convert the WebM audio blob to WAV format (8kHz)
             const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
             const arrayBuffer = await audioBlob.arrayBuffer();
@@ -694,212 +745,21 @@ export default function LearnerAssignmentView({
             reader.readAsDataURL(wavBlob);
 
             reader.onloadend = async () => {
-                try {
-                    const base64Audio = reader.result as string;
-                    const base64Data = base64Audio.split(',')[1];
+                const base64Audio = reader.result as string;
+                const base64Data = base64Audio.split(',')[1];
 
-                    // Create user message for storing
-                    const userMessage: ChatMessageLocal = {
-                        id: `user-${Date.now()}`,
-                        content: '',
-                        sender: 'user',
-                        timestamp: new Date(),
-                        messageType: 'audio',
-                        audioData: base64Data,
-                    };
-
-                    // Push user audio message into chat for immediate feedback
-                    setChatHistory(prev => [...prev, userMessage]);
-
-                    // Upload audio: try presigned URL first
-                    let presigned_url = '';
-                    let file_uuid = '';
-
-                    try {
-                        const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ content_type: 'audio/wav' })
-                        });
-
-                        if (!presignedUrlResponse.ok) {
-                            throw new Error('Failed to get presigned URL');
-                        }
-
-                        const presignedData = await presignedUrlResponse.json();
-                        presigned_url = presignedData.presigned_url;
-                        file_uuid = presignedData.file_uuid;
-                    } catch {
-                        // continue with fallback
-                    }
-
-                    if (presigned_url) {
-                        // Upload to S3
-                        const uploadResponse = await fetch(presigned_url, {
-                            method: 'PUT',
-                            body: wavBlob,
-                            headers: { 'Content-Type': 'audio/wav' }
-                        });
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload audio to S3: ${uploadResponse.status}`);
-                        }
-                    } else {
-                        // Fallback: upload directly to backend
-                        const formData = new FormData();
-                        formData.append('file', wavBlob, 'audio.wav');
-                        formData.append('content_type', 'audio/wav');
-
-                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
-                        }
-                        const uploadData = await uploadResponse.json();
-                        file_uuid = uploadData.file_uuid;
-                    }
-
-                    // Update user message content with file_uuid for storage
-                    userMessage.content = file_uuid;
-
-                    // Prepare request to assignment AI with audio
-                    const requestBody = {
-                        user_response: file_uuid,
-                        response_type: 'audio',
-                        task_id: taskId,
-                        user_id: userId,
-                        user_email: 'user@example.com'
-                    };
-
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-
-                    const readerStream = response.body?.getReader();
-                    if (!readerStream) {
-                        throw new Error('Failed to get response reader');
-                    }
-
-                    let accumulatedResponse: AssignmentResponse = {
-                        feedback: "",
-                        evaluation_status: "in_progress",
-                    };
-                    let isFirstChunk = true;
-
-                    while (true) {
-                        const { done, value } = await readerStream.read();
-                        if (done) break;
-
-                        const chunk = new TextDecoder().decode(value);
-                        const jsonLines = chunk.split('\n').filter(line => line.trim());
-
-                        for (const line of jsonLines) {
-                            try {
-                                const data = JSON.parse(line);
-                                if (data.feedback) {
-                                    accumulatedResponse = { ...accumulatedResponse, ...data };
-
-                                    if (isFirstChunk) {
-                                        setIsAiResponding(false);
-                                        pushAiMessage(accumulatedResponse.feedback);
-                                        isFirstChunk = false;
-                                    } else {
-                                        // Update the last AI message
-                                        setChatHistory(prev => {
-                                            const newHistory = [...prev];
-                                            const lastIndex = newHistory.length - 1;
-                                            if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                                                newHistory[lastIndex] = { ...newHistory[lastIndex], content: accumulatedResponse.feedback };
-                                            }
-                                            return newHistory;
-                                        });
-                                    }
-                                }
-                                // Detect when report (scorecard) is being prepared
-                                if (data.key_area_scores && !showPreparingReport && evaluationStatus === "completed") {
-                                    setShowPreparingReport(true);
-                                }
-                            } catch (err) {
-                                console.error('Error parsing JSON chunk:', err);
-                            }
-                        }
-                    }
-
-                    // Handle assignment response
-                    // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
-                    try {
-                        const finalRaw = JSON.stringify(accumulatedResponse);
-                        setChatHistory(prev => {
-                            const newHistory = [...prev];
-                            const lastIndex = newHistory.length - 1;
-                            if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                                newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
-                            }
-                            return newHistory;
-                        });
-                    } catch { }
-
-                    // Update evaluation state
-                    handleAssignmentResponse(accumulatedResponse);
-
-                    // Hide preparing report indicator now that streaming is complete
-                    if (showPreparingReport) {
-                        setTimeout(() => setShowPreparingReport(false), 0);
-                    }
-
-                    // Store chat history after getting complete response
-                    if (!isTestMode) {
-                        await storeChatHistory(userMessage, accumulatedResponse);
-                    }
-
-                } catch (err) {
-                    console.error('Error during audio submission:', err);
-                    pushAiMessage('There was an error while processing your audio. Please try again.');
-                } finally {
-                    setIsSubmitting(false);
-                    setIsAiResponding(false);
-                }
+                // Use the shared processing function with audio-specific parameters
+                processUserResponse('', 'audio', base64Data);
             };
         } catch (error) {
-            console.error('Error processing audio submission:', error);
+            console.error("Error processing audio submission:", error);
             setIsSubmitting(false);
             setIsAiResponding(false);
         }
-    }, [pushAiMessage, taskId, userId, convertAudioBufferToWav, isTestMode, storeChatHistory, handleAssignmentResponse]);
+    }, [processUserResponse]);
 
-    const handleViewScorecard = useCallback((scorecard: ScorecardItem[]) => {
-        setActiveScorecard(scorecard);
-        setIsViewingScorecard(true);
-        // Hide preparing report once the scorecard is opened
-        setShowPreparingReport(false);
-    }, []);
-
-    const handleBackToChat = useCallback(() => {
-        setIsViewingScorecard(false);
-    }, []);
-
-    const onZipUploaded = async (file: File) => {
+    const handleFileSubmit = async (file: File) => {
         if (viewOnly) return;
-
-        // Create user message for storing
-        const userMessage: ChatMessageLocal = {
-            id: `user-${Date.now()}`,
-            content: `Uploaded ${file.name}`,
-            sender: 'user',
-            timestamp: new Date(),
-            messageType: 'text',
-        };
-
-        pushUserMessage(`Uploaded ${file.name}`);
-
-        setIsAiResponding(true);
 
         try {
             // Upload the file first
@@ -919,128 +779,37 @@ export default function LearnerAssignmentView({
             const uploadData = await uploadResponse.json();
             const fileUuid = uploadData.file_uuid;
 
-            // Update user message content with file_uuid and filename for storage
-            userMessage.content = JSON.stringify({
-                file_uuid: fileUuid,
-                filename: file.name,
-            });
-            userMessage.messageType = 'file';
-
-            // Now process the uploaded file using the new assignment endpoint
-            const requestBody = {
-                user_response: fileUuid,
-                response_type: "file",
-                task_type: "assignment",
-                task_id: taskId,
-                user_id: userId,
-                user_email: ""
-            };
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            // Process streaming response
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error('Failed to get response reader');
-            }
-
-            let accumulatedResponse: AssignmentResponse = {
-                feedback: "",
-                evaluation_status: "in_progress",
-            };
-            let isFirstChunk = true;
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = new TextDecoder().decode(value);
-                const jsonLines = chunk.split('\n').filter(line => line.trim());
-
-                for (const line of jsonLines) {
-                    try {
-                        const data = JSON.parse(line);
-                        if (data.feedback) {
-                            accumulatedResponse = { ...accumulatedResponse, ...data };
-
-                            if (isFirstChunk) {
-                                setIsAiResponding(false);
-                                pushAiMessage(accumulatedResponse.feedback);
-                                isFirstChunk = false;
-                            } else {
-                                // Update the last AI message
-                                setChatHistory(prev => {
-                                    const newHistory = [...prev];
-                                    const lastIndex = newHistory.length - 1;
-                                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                                        newHistory[lastIndex] = { ...newHistory[lastIndex], content: accumulatedResponse.feedback };
-                                    }
-                                    return newHistory;
-                                });
-                            }
-                        }
-                        // Detect when report (scorecard) is being prepared
-                        if (data.key_area_scores && !showPreparingReport) {
-                            setShowPreparingReport(true);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing JSON chunk:', e);
-                    }
-                }
-            }
-
-            // Handle assignment response
-            // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
-            try {
-                const finalRaw = JSON.stringify(accumulatedResponse);
-                setChatHistory(prev => {
-                    const newHistory = [...prev];
-                    const lastIndex = newHistory.length - 1;
-                    if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                        newHistory[lastIndex] = { ...newHistory[lastIndex], rawContent: finalRaw } as any;
-                    }
-                    return newHistory;
-                });
-            } catch { }
-
-            // Update evaluation state
-            handleAssignmentResponse(accumulatedResponse);
-
-            // Hide preparing report indicator now that streaming is complete
-            if (showPreparingReport) {
-                setTimeout(() => setShowPreparingReport(false), 0);
-            }
-
-            // Store chat history after getting complete response
-            if (!isTestMode) {
-                await storeChatHistory(userMessage, accumulatedResponse);
-            }
-
+            // Use the shared processing function with file-specific parameters
+            processUserResponse(file.name, 'file', undefined, fileUuid);
         } catch (error) {
             console.error('Error processing file upload:', error);
-            pushAiMessage("There was an error while processing your file. Please try again.");
-        } finally {
-            setIsAiResponding(false);
+            // Show error message to the user
+            const errorResponse: ChatMessageLocal = {
+                id: `ai-error-${Date.now()}`,
+                content: "There was an error while processing your file. Please try again.",
+                sender: 'ai',
+                timestamp: new Date(),
+                messageType: 'text',
+                audioData: undefined,
+                isError: true
+            };
+            setChatHistory(prev => [...prev, errorResponse]);
         }
     };
 
+    const handleViewScorecard = useCallback((scorecard: ScorecardItem[]) => {
+        setActiveScorecard(scorecard);
+        setIsViewingScorecard(true);
+        // Hide preparing report once the scorecard is opened
+        setShowPreparingReport(false);
+    }, []);
+
+    const handleBackToChat = useCallback(() => {
+        setIsViewingScorecard(false);
+    }, []);
+
     // Check if assignment is completed based on evaluation status or last AI message
     const isCompleted = useMemo(() => {
-        // First check evaluation status
-        if (evaluationStatus === "completed") {
-            return true;
-        }
-
         // If no chat history, not completed
         if (chatHistory.length === 0) {
             return false;
@@ -1055,12 +824,44 @@ export default function LearnerAssignmentView({
         // Try to parse the rawContent to check evaluation status
         try {
             const parsedContent = JSON.parse(lastAiMessage.rawContent || lastAiMessage.content);
-            return parsedContent.evaluation_status === "completed";
+            // check if all criteria are met
+            if (parsedContent.key_area_scores && parsedContent.evaluation_status === "completed") {
+                const scorecard = convertKeyAreaScoresToScorecard(parsedContent.key_area_scores);
+                if (scorecard.length > 0) {
+                    // check if all scorecard items meet their pass criteria
+                    const allCriteriaMet = scorecard.every((item: ScorecardItem) =>
+                        item.score !== null && item.score !== undefined &&
+                        (
+                            (item.pass_score !== null && item.pass_score !== undefined && item.score >= item.pass_score) ||
+                            (item.max_score !== null && item.max_score !== undefined && item.score === item.max_score)
+                        )
+                    );
+                    return allCriteriaMet;
+                }
+            }
+
+            return false;
         } catch (error) {
             // If parsing fails, check if content contains "completed" status
             return (lastAiMessage.rawContent || lastAiMessage.content).includes('"evaluation_status":"completed"');
         }
-    }, [evaluationStatus, chatHistory]);
+    }, [evaluationStatus, chatHistory, convertKeyAreaScoresToScorecard]);
+
+    // Load draft on task change
+    useEffect(() => {
+        const loadDraft = async () => {
+            try {
+                const key = String(taskId || 'assignment');
+                const draft = await getDraft(key);
+                if (typeof draft === 'string') {
+                    setCurrentAnswer(draft);
+                } else {
+                    setCurrentAnswer('');
+                }
+            } catch { }
+        };
+        loadDraft();
+    }, [taskId]);
 
     // Auto-show scorecard when assignment is completed
     useEffect(() => {
@@ -1217,7 +1018,7 @@ export default function LearnerAssignmentView({
                                 currentQuestionId={"assignment"}
                                 userId={userId}
                                 showUploadSection={needsResubmission}
-                                onZipUploaded={onZipUploaded}
+                                onFileUploaded={handleFileSubmit}
                             />
                         </div>
                     )}

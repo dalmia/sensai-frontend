@@ -1,7 +1,9 @@
 import { ScorecardTemplate } from "../../components/ScorecardPickerDialog";
 
 export interface ValidationCallbacks {
+    setActiveTab?: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
     showErrorMessage?: (title: string, message: string, emoji?: string) => void;
+    questionIndex?: number; // Optional for showing question number in error message
 }
 
 /**
@@ -19,7 +21,7 @@ export const validateScorecardCriteria = (
         return true;
     }
 
-    const { showErrorMessage } = callbacks;
+    const { setActiveTab, showErrorMessage, questionIndex } = callbacks;
 
     // Check each criterion for empty name or description
     for (let i = 0; i < scorecard.criteria.length; i++) {
@@ -27,6 +29,11 @@ export const validateScorecardCriteria = (
 
         // Check for empty name
         if (!criterion.name || criterion.name.trim() === '') {
+            // Switch to scorecard tab first if callback is provided
+            if (setActiveTab) {
+                setActiveTab('scorecard');
+            }
+
             // Use a self-invoking function for delayed highlight and error message
             (function (index) {
                 setTimeout(() => {
@@ -41,9 +48,10 @@ export const validateScorecardCriteria = (
 
                     // Show error message if callback is provided
                     if (showErrorMessage) {
+                        const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
                         showErrorMessage(
                             "Empty Scorecard Parameter",
-                            `Please provide a name for parameter ${index + 1} in the scorecard`,
+                            `Please provide a name for parameter ${index + 1} in the scorecard${suffix}`,
                             "🚫"
                         );
                     }
@@ -55,6 +63,11 @@ export const validateScorecardCriteria = (
 
         // Check for empty description
         if (!criterion.description || criterion.description.trim() === '') {
+            // Switch to scorecard tab first if callback is provided
+            if (setActiveTab) {
+                setActiveTab('scorecard');
+            }
+
             // Use a self-invoking function for delayed highlight and error message
             (function (index, name) {
                 setTimeout(() => {
@@ -70,9 +83,10 @@ export const validateScorecardCriteria = (
                     // Show error message if callback is provided
                     if (showErrorMessage) {
                         const parameterName = name || `parameter ${index + 1}`;
+                        const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
                         showErrorMessage(
                             "Empty Scorecard Parameter",
-                            `Please provide a description for ${parameterName} in the scorecard`,
+                            `Please provide a description for ${parameterName} in the scorecard${suffix}`,
                             "🚫"
                         );
                     }
