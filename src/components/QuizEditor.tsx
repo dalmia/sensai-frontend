@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
-import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen, Code, Sparkles, Tag } from "lucide-react";
+import { Plus, FileText, Trash2, Check, HelpCircle, Pen, ClipboardCheck, BookOpen, Code, Sparkles, Tag } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -15,26 +15,22 @@ import LearnerQuizView from "./LearnerQuizView";
 import ConfirmationDialog from "./ConfirmationDialog";
 // Import the new Dropdown component
 import Dropdown, { DropdownOption } from "./Dropdown";
-// Import the ScorecardPickerDialog component
-import ScorecardPickerDialog, { CriterionData, ScorecardTemplate } from "./ScorecardPickerDialog";
-// Import the new Scorecard component
-import Scorecard, { ScorecardHandle } from "./Scorecard";
+// Import the ScorecardPickerDialog component for types
+import { CriterionData, ScorecardTemplate } from "./ScorecardPickerDialog";
+// Import the ScorecardManager component
+import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
 // Import dropdown options
 import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
 import { extractTextFromBlocks, hasBlocksContent } from "@/lib/utils/blockUtils";
-// Add import for LearningMaterialLinker
-import LearningMaterialLinker from "./LearningMaterialLinker";
 // Add import for KnowledgeBaseEditor
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 // Import Toast component
 import Toast from "./Toast";
-// Import Tooltip component
-import Tooltip from "./Tooltip";
 // Import the PublishConfirmationDialog component
 import PublishConfirmationDialog from './PublishConfirmationDialog';
-import { useEditorContentOrSelectionChange } from "@blocknote/react";
+// Import the useAuth hook
 import { useAuth } from "@/lib/auth";
 // Import scorecard validation utility
 import { validateScorecardCriteria as validateScorecardCriteriaUtil, ValidationCallbacks } from "@/lib/utils/scorecardValidation";
@@ -66,14 +62,6 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     title: '',
     settings: {},
 };
-
-// Add these new interfaces after your existing interfaces
-interface LearningMaterial {
-    id: number;
-    title: string;
-    type: string;
-    status: string;
-}
 
 // Helper function to extract text from all blocks in a BlockNote document
 
@@ -453,14 +441,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // State for delete confirmation
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    // Add state for scorecard delete confirmation
-    const [showScorecardDeleteConfirm, setShowScorecardDeleteConfirm] = useState(false);
-
-    // Add state to track if scorecard is used by multiple questions
-    const [scorecardUsedByMultiple, setScorecardUsedByMultiple] = useState(false);
-
-    // Add state for scorecard save confirmation
-    const [showScorecardSaveConfirm, setShowScorecardSaveConfirm] = useState(false);
 
     // State for tracking publishing status
     const [isPublishing, setIsPublishing] = useState(false);
@@ -477,20 +457,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Reference to the correct answer editor
     const correctAnswerEditorRef = useRef<any>(null);
 
-    // Reference to the knowledge base editor
-    const knowledgeBaseEditorRef = useRef<any>(null);
-
-    // State for scorecard templates dialog
-    const [showScorecardDialog, setShowScorecardDialog] = useState(false);
-    const [scorecardDialogPosition, setScorecardDialogPosition] = useState<{ top: number, left: number } | null>(null);
-    const scorecardButtonRef = useRef<HTMLButtonElement>(null);
-
-    // We don't need the hasScorecard state anymore since we're using currentQuestionConfig.scorecardData
-    // If needed for the scorecard title, we'll keep that state
-    const [scorecardTitle, setScorecardTitle] = useState<string>("Scorecard");
-
-    // Reference to the scorecard component
-    const scorecardRef = useRef<ScorecardHandle>(null);
+    // Reference to the scorecard manager component
+    const scorecardManagerRef = useRef<ScorecardManagerHandle>(null);
 
     // State for tracking active tab (question or answer)
     const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard' | 'knowledge'>('question');
@@ -698,187 +666,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return true;
     }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, highlightField]);
 
-    // Function to handle opening the scorecard templates dialog
-    const handleOpenScorecardDialog = () => {
-        const buttonElement = scorecardButtonRef.current;
-        if (buttonElement) {
-            const rect = buttonElement.getBoundingClientRect();
-
-            // Approximate height of the dialog (templates + header)
-            const estimatedDialogHeight = 325;
-
-            // Position the bottom of the dialog above the button with some spacing
-            setScorecardDialogPosition({
-                top: Math.max(10, schoolScorecards.length > 0 ? rect.top - estimatedDialogHeight - 80 : rect.top - estimatedDialogHeight - 10), // Ensure at least 10px from top of viewport
-                left: Math.max(10, rect.left - 120) // Center horizontally but ensure it's not off-screen
-            });
-            setShowScorecardDialog(true);
-        }
-    };
-
-    // Add a reusable function for creating scorecards
-    const createScorecard = async (title: string, criteria: CriterionData[]): Promise<any> => {
-        if (!schoolId) {
-            throw new Error('School ID is required to create scorecard');
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                title: title,
-                org_id: schoolId,
-                criteria: criteria.map(criterion => ({
-                    name: criterion.name,
-                    description: criterion.description,
-                    min_score: criterion.minScore,
-                    max_score: criterion.maxScore,
-                    pass_score: criterion.passScore
-                }))
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to create scorecard: ${response.status}`);
-        }
-
-        return await response.json();
-    };
-
-    // Function to handle creating a new scorecard
-    const handleCreateNewScorecard = async () => {
-        setShowScorecardDialog(false);
-
-        const newScorecardTitle = "New Scorecard";
-
-        // Set the scorecard title
-        setScorecardTitle(newScorecardTitle);
-
-        try {
-            // Use the reusable function to create scorecard
-            const createdScorecard = await createScorecard(newScorecardTitle, [
-                { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
-            ]);
-
-            // Create scorecard data using the backend ID
-            const newScorecardData: ScorecardTemplate = {
-                id: createdScorecard.id, // Use the ID returned from backend
-                name: createdScorecard.title,
-                new: true, // Mark as newly created in this session
-                is_template: false, // Not a template
-                criteria: [
-                    { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
-                ]
-            };
-
-            // Add the new scorecard to the question's config
-            handleConfigChange({
-                scorecardData: newScorecardData
-            });
-
-            // Update school scorecards state with new scorecard
-            const updatedScorecards = [...schoolScorecards, newScorecardData];
-            setSchoolScorecards(updatedScorecards);
-
-            // Add the new scorecard to originalScorecardData as the baseline for change detection
-            const updatedOriginalData = new Map(originalScorecardData);
-            updatedOriginalData.set(newScorecardData.id, {
-                name: newScorecardData.name,
-                criteria: JSON.parse(JSON.stringify(newScorecardData.criteria))
-            });
-            setOriginalScorecardData(updatedOriginalData);
-
-            // Switch to the scorecard tab
-            setActiveEditorTab('scorecard');
-
-            // Focus on the scorecard title after a short delay to allow rendering
-            setTimeout(() => {
-                scorecardRef.current?.focusName();
-            }, 100);
-
-        } catch (error) {
-            console.error('Error creating scorecard:', error);
-
-            // Show error toast
-            setToastTitle("Creation Failed");
-            setToastMessage("Failed to create scorecard. Please try again.");
-            setToastEmoji("❌");
-            setShowToast(true);
-        }
-    };
-
-    // Function to handle selecting a scorecard template
-    const handleSelectScorecardTemplate = async (template: ScorecardTemplate) => {
-        setShowScorecardDialog(false);
-
-        // Set the scorecard title
-        setScorecardTitle(template.name || "Scorecard Template");
-
-        let scorecard: ScorecardTemplate;
-
-        if (template.is_template) {
-            // Creating from a hardcoded template - use the reusable function
-            try {
-                const createdScorecard = await createScorecard(template.name, template.criteria);
-
-                // Use the backend ID for the new scorecard
-                scorecard = {
-                    id: createdScorecard.id, // Use the ID returned from backend
-                    name: createdScorecard.title,
-                    new: true,
-                    is_template: false,
-                    criteria: template.criteria,
-                };
-
-                // Update school scorecards state with new scorecard
-                const updatedScorecards = [...schoolScorecards, scorecard];
-                setSchoolScorecards(updatedScorecards);
-            } catch (error) {
-                console.error('Error creating scorecard from template:', error);
-
-                // Show error toast
-                setToastTitle("Creation Failed");
-                setToastMessage("Failed to create scorecard from template. Please try again.");
-                setToastEmoji("❌");
-                setShowToast(true);
-                return;
-            }
-        } else {
-            // one of the user generated scorecards - could be both published scorecards or newly created scorecards in this session itself
-            scorecard = {
-                id: template.id,
-                name: template.name,
-                new: template.new,
-                is_template: false,
-                criteria: template.criteria,
-            };
-        }
-
-        // Add the new scorecard to originalScorecardData as the baseline for change detection
-        const updatedOriginalData = new Map(originalScorecardData);
-        updatedOriginalData.set(scorecard.id, {
-            name: scorecard.name,
-            criteria: JSON.parse(JSON.stringify(scorecard.criteria))
-        });
-        setOriginalScorecardData(updatedOriginalData);
-
-        // Add the scorecard data to the question's config
-        handleConfigChange({
-            scorecardData: scorecard
-        });
-
-        // Switch to the scorecard tab
-        setActiveEditorTab('scorecard');
-
-        // Focus on the scorecard title after a short delay to allow rendering
-        if (scorecard.new) {
-            setTimeout(() => {
-                scorecardRef.current?.focusName();
-            }, 100);
-        }
-    };
 
     // Function to set the editor reference
     const setEditorInstance = useCallback((editor: any) => {
@@ -1058,56 +845,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             onChange(updatedQuestions);
         }
     }, [questions, currentQuestionIndex, onChange, status]);
-
-    const removeScorecardFromSchoolScoreboards = useCallback(() => {
-        let scorecardForQuestion = questions[currentQuestionIndex].config.scorecardData
-
-        if (!scorecardForQuestion) {
-            return;
-        }
-
-        // Check if this scorecard is used by multiple questions
-        // const questionsUsingThisScorecard = questions.filter(q =>
-        //     q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
-        // );
-        // const isUsedByMultiple = questionsUsingThisScorecard.length > 1;
-
-        let updatedQuestions;
-
-        // if (isUsedByMultiple) {
-        // Only remove from current question without affecting others
-        updatedQuestions = [...questions];
-        updatedQuestions[currentQuestionIndex] = {
-            ...updatedQuestions[currentQuestionIndex],
-            config: {
-                ...updatedQuestions[currentQuestionIndex].config,
-                scorecardData: undefined
-            }
-        };
-        setQuestions(updatedQuestions);
-        // }
-        // {
-        //     // Original behavior: remove from all questions and schoolScorecards if new
-        //     if (scorecardForQuestion && scorecardForQuestion.new) {
-        //         const updatedScorecards = schoolScorecards.filter(scorecard => scorecard.id !== scorecardForQuestion.id);
-        //         setSchoolScorecards(updatedScorecards);
-        //     }
-
-        //     updatedQuestions = [...questions];
-
-        //     for (let i = 0; i < updatedQuestions.length; i++) {
-        //         if (updatedQuestions[i].config.scorecardData && updatedQuestions[i].config.scorecardData?.id === scorecardForQuestion.id) {
-        //             updatedQuestions[i].config.scorecardData = undefined;
-        //         }
-        //     }
-
-        //     setQuestions(updatedQuestions);
-        // }
-
-        if (onChange) {
-            onChange(updatedQuestions);
-        }
-    }, [questions, currentQuestionIndex, schoolScorecards, onChange]);
 
 
 
@@ -1587,56 +1324,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Add function to check for unsaved scorecard changes across all questions
     const checkUnsavedScorecardChanges = useCallback(() => {
-        // Check only the current question
-        if (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
-            const question = questions[currentQuestionIndex];
-
-            // Check if this question has a scorecard
-            if (question.config.scorecardData) {
-                const scorecardId = question.config.scorecardData.id;
-
-                const originalData = originalScorecardData.get(scorecardId);
-
-                // If this is a new scorecard (not in original data), skip the check
-                if (!originalData) {
-                    return false;
-                }
-
-                // Check if scorecard name has changed
-                if (question.config.scorecardData.name !== originalData.name) {
-                    return true;
-                }
-
-                // Check if criteria have changed
-                const currentCriteria = question.config.scorecardData.criteria;
-                const originalCriteria = originalData.criteria;
-
-                // Check if criteria length has changed
-                if (currentCriteria.length !== originalCriteria.length) {
-                    return true;
-                }
-
-                // Check if any criterion has changed
-                for (let j = 0; j < currentCriteria.length; j++) {
-                    const current = currentCriteria[j];
-                    const original = originalCriteria[j];
-
-                    if (!original) {
-                        return true;
-                    }
-
-                    if (current.name !== original.name ||
-                        current.description !== original.description ||
-                        current.minScore !== original.minScore ||
-                        current.maxScore !== original.maxScore) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false; // No unsaved changes found
-    }, [questions, originalScorecardData, currentQuestionIndex]);
+        // Use the scorecard manager's method to check for unsaved changes
+        return scorecardManagerRef.current?.hasUnsavedScorecardChanges() ?? false;
+    }, []);
 
     // Expose methods to parent component via the ref
     useImperativeHandle(ref, () => ({
@@ -1676,7 +1366,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
             return isValid;
         },
-        hasScorecard: () => validateScorecard(currentQuestionConfig),
+        hasScorecard: () => scorecardManagerRef.current?.hasScorecard() ?? false,
         hasCodingLanguages: () => {
             const isValid = hasCodingLanguages();
             if (!isValid) {
@@ -1697,7 +1387,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return currentQuestionConfig;
         },
         validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: ValidationCallbacks) =>
-            validateScorecardCriteriaUtil(scorecard, callbacks),
+            scorecardManagerRef.current?.validateScorecardCriteria(scorecard, callbacks) ?? true,
         hasChanges: () => {
             // If we don't have original questions to compare with, assume no changes
             if (originalQuestionsRef.current.length === 0 && questions.length === 0) return false;
@@ -1723,8 +1413,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Return true if there are changes
             return currentQuestionsStr !== originalQuestionsStr;
         },
-        hasUnsavedScorecardChanges: checkUnsavedScorecardChanges,
-        handleScorecardChangesRevert: handleScorecardRevert
+        hasUnsavedScorecardChanges: () => scorecardManagerRef.current?.hasUnsavedScorecardChanges() ?? false,
+        handleScorecardChangesRevert: () => scorecardManagerRef.current?.handleScorecardChangesRevert()
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer
@@ -2013,10 +1703,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return scorecardData && !scorecardData.new && !scorecardData.is_template;
     };
 
-    const isLinkedScorecard = (scorecardData: ScorecardTemplate): boolean => {
-        if (scorecardData.new) return false;
-        return isUserCreatedNewScorecard(scorecardData);
-    };
 
     // New function to sync all questions with a source scorecard when it changes
     const syncLinkedScorecards = useCallback((sourceId: string, newName?: string, newCriteria?: CriterionData[]) => {
@@ -2056,153 +1742,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [questions, onChange]);
 
-    // Function to handle saving published scorecard changes
-    const handleSaveScorecardChanges = useCallback(async () => {
-        if (!currentQuestionConfig.scorecardData || !schoolId || isSavingScorecardRef.current) {
-            return;
-        }
-
-        const scorecardData = currentQuestionConfig.scorecardData;
-
-        // Don't ask for confirmation if this is a new scorecard
-        if (scorecardData.new) {
-            performScorecardSave();
-            return;
-        }
-
-        // Show confirmation dialog instead of saving directly
-        setShowScorecardSaveConfirm(true);
-    }, [currentQuestionConfig.scorecardData, schoolId, originalScorecardData]);
-
-    // Function that actually performs the scorecard save operation
-    const performScorecardSave = useCallback(async () => {
-        if (!currentQuestionConfig.scorecardData || !schoolId || isSavingScorecardRef.current) {
-            return;
-        }
-
-        const scorecardData = currentQuestionConfig.scorecardData;
-
-        // Only save if this is a published scorecard (not new)
-        // if (scorecardData.new) {
-        //     return;
-        // }
-
-        isSavingScorecardRef.current = true;
-
-        try {
-            // Prepare the scorecard data for the API
-            const scorecardPayload = {
-                title: scorecardData.name,
-                criteria: scorecardData.criteria.map(criterion => ({
-                    name: criterion.name,
-                    description: criterion.description,
-                    min_score: criterion.minScore,
-                    max_score: criterion.maxScore,
-                    pass_score: criterion.passScore
-                }))
-            };
-
-            // Make the API call to update the scorecard
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/${scorecardData.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(scorecardPayload),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to save scorecard: ${response.status}`);
-            }
-
-            // Create the new original data immediately
-            const newOriginalData = {
-                name: scorecardData.name,
-                criteria: JSON.parse(JSON.stringify(scorecardData.criteria))
-            };
-
-            // Update the original scorecard data to reflect the saved state
-            const updatedOriginalData = new Map(originalScorecardData);
-            updatedOriginalData.set(scorecardData.id, newOriginalData);
-            setOriginalScorecardData(updatedOriginalData);
-
-            // Also update the ref immediately for synchronous access
-            // This ensures that any immediate checks will see the updated data
-            originalScorecardData.set(scorecardData.id, newOriginalData);
-
-            // Show success toast if this is not a new scorecard
-            if (scorecardData.new) {
-                return;
-            }
-
-            setToastTitle("Scorecard Saved");
-            setToastMessage("All questions using this scorecard have been updated");
-            setToastEmoji("✅");
-            setShowToast(true);
-        } catch (error) {
-            console.error('Error saving scorecard:', error);
-
-            // Show error toast
-            setToastTitle("Save Failed");
-            setToastMessage("Failed to save scorecard changes. Please try again.");
-            setToastEmoji("❌");
-            setShowToast(true);
-        } finally {
-            isSavingScorecardRef.current = false;
-        }
-    }, [currentQuestionConfig.scorecardData, schoolId, originalScorecardData, setToastTitle, setToastMessage, setToastEmoji, setShowToast]);
-
-    // New function to handle complete scorecard revert
-    const handleScorecardRevert = useCallback(() => {
-        if (!currentQuestionConfig.scorecardData) {
-            return;
-        }
-
-        const scorecardId = currentQuestionConfig.scorecardData.id;
-        const originalData = originalScorecardData.get(scorecardId);
-
-        if (!originalData) {
-            return; // No original data to revert to
-        }
-
-        // Create the reverted scorecard data
-        const revertedScorecardData = {
-            ...currentQuestionConfig.scorecardData,
-            name: originalData.name,
-            criteria: [...originalData.criteria]
-        };
-
-        // Update the question config atomically
-        handleConfigChange({
-            scorecardData: revertedScorecardData
-        });
-
-        // Update the scorecard in schoolScorecards state
-        const updatedScorecards = schoolScorecards.map(sc =>
-            sc.id === scorecardId ? { ...sc, name: originalData.name, criteria: [...originalData.criteria] } : sc
-        );
-        setSchoolScorecards(updatedScorecards);
-
-        // Sync all linked scorecards to reflect the reverted changes
-        syncLinkedScorecards(scorecardId, originalData.name, originalData.criteria);
-    }, [currentQuestionConfig.scorecardData, originalScorecardData, handleConfigChange, schoolScorecards, syncLinkedScorecards]);
 
     return (
         <div className={`flex flex-col h-full relative ${className}`} key={`quiz-${taskId}-${isEditMode ? 'edit' : 'view'}`}>
-            {/* Scorecard delete confirmation modal */}
-            <ConfirmationDialog
-                show={showScorecardDeleteConfirm && !isPreviewMode}
-                title="Remove scorecard"
-                message="Are you sure you want to remove this scorecard from this question? This will not affect other questions using this scorecard."
-                onConfirm={() => {
-                    removeScorecardFromSchoolScoreboards();
-                    setShowScorecardDeleteConfirm(false);
-                }}
-                onCancel={() => setShowScorecardDeleteConfirm(false)}
-                type="delete"
-                confirmButtonText="Remove"
-            />
-
             {/* Question delete confirmation modal */}
             <ConfirmationDialog
                 show={showDeleteConfirm && !isPreviewMode}
@@ -2211,20 +1753,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onConfirm={deleteQuestion}
                 onCancel={() => setShowDeleteConfirm(false)}
                 type="delete"
-            />
-
-            {/* Scorecard save confirmation modal */}
-            <ConfirmationDialog
-                show={showScorecardSaveConfirm && !isPreviewMode}
-                onConfirm={() => {
-                    performScorecardSave();
-                    setShowScorecardSaveConfirm(false);
-                }}
-                title="Are you sure you want to save?"
-                message="These changes will be applied to all the questions across quizzes using this scorecard. If you want to make changes only to this question, you can duplicate the scorecard and add your changes there."
-                onCancel={() => setShowScorecardSaveConfirm(false)}
-                type="save"
-                isLoading={isSavingScorecardRef.current}
             />
 
             {/* Publish Confirmation Dialog */}
@@ -2621,163 +2149,31 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     className="question"
                                                 />
                                         ) : (
-                                            // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
-                                            currentQuestionConfig.scorecardData ? (
-                                                <div className="h-full overflow-y-auto w-full p-4">
-                                                    <Scorecard
-                                                        ref={scorecardRef}
-                                                        name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
-                                                        criteria={currentQuestionConfig.scorecardData?.criteria || []}
-                                                        onDelete={() => {
-                                                            // Check if scorecard is used by multiple questions
-                                                            const scorecardForQuestion = questions[currentQuestionIndex].config.scorecardData;
-                                                            if (scorecardForQuestion) {
-                                                                const questionsUsingThisScorecard = questions.filter(q =>
-                                                                    q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
-                                                                );
-                                                                setScorecardUsedByMultiple(questionsUsingThisScorecard.length > 1);
-                                                            }
-                                                            setShowScorecardDeleteConfirm(true);
-                                                        }}
-                                                        new={currentQuestionConfig.scorecardData?.new}
-                                                        readOnly={readOnly}
-                                                        linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
-                                                        scorecardId={currentQuestionConfig.scorecardData?.id}
-                                                        allQuestions={questions}
-                                                        onSave={handleSaveScorecardChanges}
-                                                        originalName={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.name : undefined}
-                                                        originalCriteria={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.criteria : undefined}
-                                                        onRevert={handleScorecardRevert}
-                                                        onDuplicate={async () => {
-                                                            if (!currentQuestionConfig.scorecardData) {
-                                                                return;
-                                                            }
+                                            // Scorecard tab - use ScorecardManager component
+                                            <div className="h-full w-full">
+                                                <ScorecardManager
+                                                                        key={`scorecard-manager-${questions[currentQuestionIndex]?.id || currentQuestionIndex}`}
+                                                    ref={scorecardManagerRef}
+                                                    schoolId={schoolId}
+                                                    readOnly={readOnly}
+                                                    initialScorecardData={currentQuestionConfig.scorecardData}
+                                                    scorecardId={currentQuestionConfig.scorecardData?.id}
+                                                    type="quiz"
+                                                    allQuestions={questions}
+                                                    currentQuestionIndex={currentQuestionIndex}
+                                                    onScorecardChange={(scorecardData) => {
+                                                        // Update the current question's scorecard
+                                                        handleConfigChange({
+                                                            scorecardData: scorecardData
+                                                        });
 
-                                                            const originalScorecard = currentQuestionConfig.scorecardData;
-
-                                                            try {
-                                                                // Use the reusable function to create duplicated scorecard
-                                                                const createdScorecard = await createScorecard(
-                                                                    `${originalScorecard.name} (Copy)`,
-                                                                    originalScorecard.criteria
-                                                                );
-
-                                                                // Create a duplicate scorecard with the backend ID
-                                                                const duplicatedScorecard: ScorecardTemplate = {
-                                                                    id: createdScorecard.id, // Use the ID returned from backend
-                                                                    name: createdScorecard.title,
-                                                                    new: true, // Mark as newly created to make it unlinked
-                                                                    is_template: false,
-                                                                    criteria: [...originalScorecard.criteria] // Deep copy the criteria
-                                                                };
-
-                                                                // Update the current question to use the duplicated scorecard
-                                                                handleConfigChange({
-                                                                    scorecardData: duplicatedScorecard
-                                                                });
-
-                                                                // Add the duplicated scorecard to school scorecards
-                                                                const updatedScorecards = [...schoolScorecards, duplicatedScorecard];
-                                                                setSchoolScorecards(updatedScorecards);
-
-                                                                // Add the new scorecard to originalScorecardData as the baseline for change detection
-                                                                const updatedOriginalData = new Map(originalScorecardData);
-                                                                updatedOriginalData.set(duplicatedScorecard.id, {
-                                                                    name: duplicatedScorecard.name,
-                                                                    criteria: JSON.parse(JSON.stringify(duplicatedScorecard.criteria))
-                                                                });
-                                                                setOriginalScorecardData(updatedOriginalData);
-
-                                                                // Focus on the scorecard name for editing
-                                                                setTimeout(() => {
-                                                                    scorecardRef.current?.focusName();
-                                                                }, 100);
-
-                                                            } catch (error) {
-                                                                console.error('Error duplicating scorecard:', error);
-
-                                                                // Show error toast
-                                                                setToastTitle("Duplication Failed");
-                                                                setToastMessage("Failed to duplicate scorecard. Please try again.");
-                                                                setToastEmoji("❌");
-                                                                setShowToast(true);
-                                                            }
-                                                        }}
-                                                        onNameChange={(newName) => {
-                                                            if (!currentQuestionConfig.scorecardData) {
-                                                                return;
-                                                            }
-
-                                                            const currentScorecardData = currentQuestionConfig.scorecardData;
-
-                                                            // Update the title of the current scorecard
-                                                            const updatedScorecardData = {
-                                                                ...currentScorecardData,
-                                                                name: newName
-                                                            };
-
-                                                            handleConfigChange({
-                                                                scorecardData: updatedScorecardData
-                                                            });
-
-                                                            // Update the scorecard in schoolScorecards state
-                                                            const updatedScorecards = schoolScorecards.map(sc =>
-                                                                sc.id === currentScorecardData.id ? { ...sc, name: newName } : sc
-                                                            );
-                                                            setSchoolScorecards(updatedScorecards);
-
-                                                            // sync all linked scorecards to reflect the name change
-                                                            syncLinkedScorecards(currentScorecardData.id, newName);
-                                                        }}
-                                                        onChange={(updatedCriteria) => {
-                                                            if (!currentQuestionConfig.scorecardData) {
-                                                                return;
-                                                            }
-
-                                                            const currentScorecardData = currentQuestionConfig.scorecardData;
-
-                                                            // Update the current question's scorecard
-                                                            const updatedScorecardData = {
-                                                                ...currentScorecardData,
-                                                                criteria: updatedCriteria
-                                                            };
-
-                                                            handleConfigChange({
-                                                                scorecardData: updatedScorecardData
-                                                            });
-
-                                                            // Update the scorecard in schoolScorecards state
-                                                            const updatedScorecards = schoolScorecards.map(sc =>
-                                                                sc.id === currentScorecardData.id ? { ...sc, criteria: updatedCriteria } : sc
-                                                            );
-                                                            setSchoolScorecards(updatedScorecards);
-
-                                                            // sync all linked scorecards to reflect the criteria changes
-                                                            syncLinkedScorecards(currentScorecardData.id, undefined, updatedCriteria);
-                                                        }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
-                                                    <div className="max-w-md">
-                                                        <h3 className="text-xl font-light text-white mb-3">What is a scorecard?</h3>
-                                                        <p className="text-gray-400 mb-6">
-                                                            A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
-                                                        </p>
-                                                        <button
-                                                            className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
-                                                            ref={scorecardButtonRef}
-                                                            onClick={handleOpenScorecardDialog}
-                                                            disabled={readOnly}
-                                                        >
-                                                            <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
-                                                                <Plus size={12} className="text-black" />
-                                                            </div>
-                                                            Add a scorecard
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )
+                                                        // If scorecard data exists and is linked, sync all linked scorecards
+                                                        if (scorecardData && !scorecardData.new) {
+                                                            syncLinkedScorecards(scorecardData.id, scorecardData.name, scorecardData.criteria);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -2786,17 +2182,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     </>
                 )}
             </div>
-
-            {/* Scorecard Templates Dialog */}
-            <ScorecardPickerDialog
-                key={`scorecard-picker-${schoolScorecards.length}`}
-                isOpen={showScorecardDialog}
-                onClose={() => setShowScorecardDialog(false)}
-                onCreateNew={handleCreateNewScorecard}
-                onSelectTemplate={handleSelectScorecardTemplate}
-                position={scorecardDialogPosition || undefined}
-                schoolScorecards={schoolScorecards}
-            />
 
             {/* Toast for language combination validation */}
             <Toast
