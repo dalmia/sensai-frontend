@@ -485,6 +485,8 @@ export default function CreateCourse() {
                 addLearningMaterialToState(moduleId, taskData, position);
             } else if (taskData.type === "quiz") {
                 addQuizToState(moduleId, taskData, position);
+            } else if (taskData.type === "assignment") {
+                addAssignmentToState(moduleId, taskData, position);
             }
 
             // Auto-hide toast after 3 seconds
