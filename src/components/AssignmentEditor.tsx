@@ -61,9 +61,9 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     // Visual mode
     const isDarkMode = true;
 
-    // Problem statement (question-like blocks)
+    // Problem statement
     const [problemBlocks, setProblemBlocks] = useState<any[]>([]);
-    // Resources (answer-like blocks)
+    // Resources
     const [knowledgeBaseBlocks, setKnowledgeBaseBlocks] = useState<any[]>([]);
     // Linked material IDs for knowledge base
     const [linkedMaterialIds, setLinkedMaterialIds] = useState<string[]>([]);
@@ -249,7 +249,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     }, []);
 
 
-    const handleQuestionContentChange = useCallback((content: any[]) => {
+    const handleProblemContentChange = useCallback((content: any[]) => {
         setProblemBlocks(content);
         if (highlightedField === 'problem') setHighlightedField(null);
         setDirty(true);
@@ -497,8 +497,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                 id: taskId,
             };
 
-            // If we're saving a published assignment via Save (not Publish flow),
-            // treat it as a save, not a publish. The publish flow shows a confirmation dialog.
             if (status === 'published') {
                 if (showPublishConfirmation) {
                     onPublishSuccess?.(updatedData);
@@ -538,11 +536,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                     <LearnerAssignmentView
                         problemBlocks={problemBlocks}
                         title={getDialogTitle()}
-                        evaluationSettings={{
-                            min: scoreRange.min_score,
-                            max: scoreRange.max_score,
-                            pass_mark: scoreRange.pass_score
-                        }}
                         submissionType={submissionType.value}
                         userId={user?.id}
                         taskId={taskId}
@@ -552,291 +545,291 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                     />
                 </div>
             ) : (
-                    <div className="flex-1 flex flex-col space-y-6 h-full">
-                        <PublishConfirmationDialog
-                            show={!!showPublishConfirmation}
-                            title="Ready to publish?"
-                            message="After publishing, you won't be able to add or remove sections, but you can still edit existing ones"
-                            onConfirm={(scheduledPublishAt) => updateDraftAssignment('published', scheduledPublishAt)}
-                            onCancel={onPublishCancel || (() => { })}
-                            isLoading={false}
-                        />
-                        {isLoadingAssignment && (
-                            <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-                            </div>
-                        )}
-                        {/* Settings: Submission Type */}
-                        <div className="space-y-4 px-6 py-4 bg-[#111111]">
-                            <div className="flex items-center">
-                                <Dropdown
-                                    icon={<ClipboardCheck size={16} />}
-                                    title="Submission type"
-                                    options={submissionTypeOptions}
-                                    selectedOption={submissionType}
-                                    onChange={(opt) => {
-                                        if (!Array.isArray(opt)) {
-                                            setSubmissionType(opt);
-                                            setDirty(true);
-                                        }
-                                    }}
-                                    disabled={readOnly}
-                                />
-                            </div>
+                <div className="flex-1 flex flex-col space-y-6 h-full">
+                    <PublishConfirmationDialog
+                        show={!!showPublishConfirmation}
+                        title="Ready to publish?"
+                        message="After publishing, you won't be able to add or remove sections, but you can still edit existing ones"
+                        onConfirm={(scheduledPublishAt) => updateDraftAssignment('published', scheduledPublishAt)}
+                        onCancel={onPublishCancel || (() => { })}
+                        isLoading={false}
+                    />
+                    {isLoadingAssignment && (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
                         </div>
-                        <div className="flex justify-center">
-                            <div className="inline-flex bg-[#222222] rounded-lg p-1">
-                                <button
-                                    className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                    onClick={() => setActiveTab('problem')}
-                                >
-                                    <HelpCircle size={16} className="mr-2" />
-                                    Problem statement
-                                </button>
-                                <button
-                                    className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                    onClick={() => setActiveTab('evaluation')}
-                                >
-                                    <ClipboardCheck size={16} className="mr-2" />
-                                    Evaluation criteria
-                                </button>
-                                <button
-                                    className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                    onClick={() => setActiveTab('knowledge')}
-                                >
-                                    <BookOpen size={16} className="mr-2" />
-                                    AI training resources
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Tab content */}
-                        <div className="flex-1">
-                            {activeTab === 'problem' && (
-                                <div className="h-full flex flex-col">
-                                    {/* Integration */}
-                                    {!readOnly && !isLoadingAssignment && (
-                                        <div className="my-4">
-                                            <NotionIntegration
-                                                onPageSelect={handleIntegrationPageSelect}
-                                                onPageRemove={handleIntegrationPageRemove}
-                                                isEditMode={!readOnly}
-                                                editorContent={problemContent}
-                                                loading={isLoadingIntegration}
-                                                status={status}
-                                                storedBlocks={integrationBlocks}
-                                                onContentUpdate={(updatedContent) => {
-                                                    handleQuestionContentChange(updatedContent);
-                                                    setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                                }}
-                                                onLoadingChange={setIsLoadingIntegration}
-                                            />
-                                        </div>
-                                    )}
-                                    <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                        {isLoadingAssignment ? (
-                                            <div className="flex items-center justify-center h-32">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                            </div>
-                                        ) : isLoadingIntegration ? (
-                                            <div className="flex items-center justify-center h-32">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                            </div>
-                                        ) : integrationError ? (
-                                            <div className="flex flex-col items-center justify-center h-32 text-center">
-                                                <div className="text-red-400 text-sm mb-4">
-                                                    {integrationError}
-                                                </div>
-                                                <div className="text-gray-400 text-xs">
-                                                    The Notion integration may have been disconnected. Please reconnect it.
-                                                </div>
-                                            </div>
-                                        ) : integrationBlocks.length > 0 ? (
-                                            <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                                <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                <RenderConfig theme="dark">
-                                                    <BlockList blocks={integrationBlocks} />
-                                                </RenderConfig>
-                                            </div>
-                                        ) : integrationBlock ? (
-                                            <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                                <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
-                                            </div>
-                                        ) : (
-                                            <BlockNoteEditor
-                                                initialContent={initialContent}
-                                                onChange={handleQuestionContentChange}
-                                                isDarkMode={isDarkMode}
-                                                readOnly={readOnly}
-                                                onEditorReady={setEditorInstance}
-                                                className="assignment-editor"
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'evaluation' && (
-                                <div className="h-full flex flex-col p-6 space-y-6 overflow-hidden">
-                                    {/* Eve Section */}
-                                    <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2 flex-shrink-0">
-                                        <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
-                                            <div className="flex items-center mb-4">
-                                                <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
-                                                <Tooltip content="Used to decide if depth Q&A should begin" position="top">
-                                                    <HelpCircle size={16} className="ml-2 text-white" />
-                                                </Tooltip>
-                                            </div>
-
-                                            {/* Table header */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className="gap-2 mb-2 text-xs text-gray-300">
-                                                <div className="px-2 text-center flex items-center justify-center">
-                                                    Minimum
-                                                    <Tooltip content="The minimum score that a learner needs to be marked as complete" position="top">
-                                                        <HelpCircle size={12} className="ml-2 text-white" />
-                                                    </Tooltip>
-                                                </div>
-                                                <div className="px-2 text-center flex items-center justify-center">
-                                                    Maximum
-                                                    <Tooltip content="The maximum score that a learner can get" position="top">
-                                                        <HelpCircle size={12} className="ml-2 text-white" />
-                                                    </Tooltip>
-                                                </div>
-                                                <div className="px-2 text-center flex items-center justify-center">
-                                                    Pass Mark
-                                                    <Tooltip content="The minimum score that a learner needs to get to be marked as complete" position="left">
-                                                        <HelpCircle size={12} className="ml-2 text-white" />
-                                                    </Tooltip>
-                                                </div>
-                                            </div>
-
-                                            {/* Threshold row */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className={`gap-2 rounded-md p-1 text-white bg-[#2A2A2A] ${highlightedField === 'evaluation' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                                {/* Min Score Cell */}
-                                                <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                    {editingField === 'min_score' ? (
-                                                        <input
-                                                            type="number"
-                                                            min={1}
-                                                            max={scoreRange.max_score - 1}
-                                                            className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                            value={scoreRange.min_score}
-                                                            onChange={(e) => handleScoreChange('min_score', Number(e.target.value))}
-                                                            onBlur={handleBlur}
-                                                            onKeyDown={handleKeyDown}
-                                                            autoFocus
-                                                            onMouseDown={minScoreDrag.dragProps.onMouseDown}
-                                                            disabled={readOnly || isLoadingAssignment}
-                                                        />
-                                                    ) : (
-                                                        <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                            <span
-                                                                className="block cursor-pointer hover:opacity-80"
-                                                                onClick={() => handleClickToEdit('min_score')}
-                                                                {...minScoreDrag.dragProps}
-                                                            >
-                                                                {scoreRange.min_score}
-                                                            </span>
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
-
-                                                {/* Max Score Cell */}
-                                                <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                    {editingField === 'max_score' ? (
-                                                        <input
-                                                            type="number"
-                                                            min={scoreRange.min_score + 1}
-                                                            className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                            value={scoreRange.max_score}
-                                                            onChange={(e) => handleScoreChange('max_score', Number(e.target.value))}
-                                                            onBlur={handleBlur}
-                                                            onKeyDown={handleKeyDown}
-                                                            autoFocus
-                                                            onMouseDown={maxScoreDrag.dragProps.onMouseDown}
-                                                            disabled={readOnly || isLoadingAssignment}
-                                                        />
-                                                    ) : (
-                                                        <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                            <span
-                                                                className="block cursor-pointer hover:opacity-80"
-                                                                onClick={() => handleClickToEdit('max_score')}
-                                                                {...maxScoreDrag.dragProps}
-                                                            >
-                                                                {scoreRange.max_score}
-                                                            </span>
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
-
-                                                {/* Pass Score Cell */}
-                                                <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                    {editingField === 'pass_score' ? (
-                                                        <input
-                                                            type="number"
-                                                            min={scoreRange.min_score}
-                                                            max={scoreRange.max_score}
-                                                            className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                            value={scoreRange.pass_score}
-                                                            onChange={(e) => handleScoreChange('pass_score', Number(e.target.value))}
-                                                            onBlur={handleBlur}
-                                                            onKeyDown={handleKeyDown}
-                                                            autoFocus
-                                                            {...passScoreDrag.dragProps}
-                                                            disabled={readOnly || isLoadingAssignment}
-                                                        />
-                                                    ) : (
-                                                        <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                            <span
-                                                                className="block cursor-pointer hover:opacity-80"
-                                                                onClick={() => handleClickToEdit('pass_score')}
-                                                                {...passScoreDrag.dragProps}
-                                                            >
-                                                                {scoreRange.pass_score}
-                                                            </span>
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Scorecard Section */}
-                                    <div className={`h-full ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
-                                        <ScorecardManager
-                                            ref={scorecardManagerRef}
-                                            schoolId={schoolId}
-                                            readOnly={readOnly || isLoadingAssignment}
-                                            onScorecardChange={handleScorecardChange}
-                                            scorecardId={scorecardId}
-                                            className="scorecard-section"
-                                            type="assignment"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'knowledge' && (
-                                <KnowledgeBaseEditor
-                                    knowledgeBaseBlocks={knowledgeBaseBlocks}
-                                    linkedMaterialIds={linkedMaterialIds}
-                                    courseId={courseId}
-                                    readOnly={readOnly || isLoadingAssignment}
-                                    isDarkMode={isDarkMode}
-                                    onKnowledgeBaseChange={(blocks) => {
-                                        setKnowledgeBaseBlocks(blocks);
+                    )}
+                    {/* Settings: Submission Type */}
+                    <div className="space-y-4 px-6 py-4 bg-[#111111]">
+                        <div className="flex items-center">
+                            <Dropdown
+                                icon={<ClipboardCheck size={16} />}
+                                title="Submission type"
+                                options={submissionTypeOptions}
+                                selectedOption={submissionType}
+                                onChange={(opt) => {
+                                    if (!Array.isArray(opt)) {
+                                        setSubmissionType(opt);
                                         setDirty(true);
-                                    }}
-                                    onLinkedMaterialsChange={(ids) => {
-                                        setLinkedMaterialIds(ids);
-                                        setDirty(true);
-                                    }}
-                                    className="assignment"
-                                />
-                            )}
+                                    }
+                                }}
+                                disabled={readOnly}
+                            />
                         </div>
                     </div>
+                    <div className="flex justify-center">
+                        <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                            <button
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                onClick={() => setActiveTab('problem')}
+                            >
+                                <HelpCircle size={16} className="mr-2" />
+                                Problem statement
+                            </button>
+                            <button
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                onClick={() => setActiveTab('evaluation')}
+                            >
+                                <ClipboardCheck size={16} className="mr-2" />
+                                Evaluation criteria
+                            </button>
+                            <button
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                onClick={() => setActiveTab('knowledge')}
+                            >
+                                <BookOpen size={16} className="mr-2" />
+                                AI training resources
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Tab content */}
+                    <div className="flex-1">
+                        {activeTab === 'problem' && (
+                            <div className="h-full flex flex-col">
+                                {/* Integration */}
+                                {!readOnly && !isLoadingAssignment && (
+                                    <div className="my-4">
+                                        <NotionIntegration
+                                            onPageSelect={handleIntegrationPageSelect}
+                                            onPageRemove={handleIntegrationPageRemove}
+                                            isEditMode={!readOnly}
+                                            editorContent={problemContent}
+                                            loading={isLoadingIntegration}
+                                            status={status}
+                                            storedBlocks={integrationBlocks}
+                                            onContentUpdate={(updatedContent) => {
+                                                handleProblemContentChange(updatedContent);
+                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                            }}
+                                            onLoadingChange={setIsLoadingIntegration}
+                                        />
+                                    </div>
+                                )}
+                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                    {isLoadingAssignment ? (
+                                        <div className="flex items-center justify-center h-32">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                        </div>
+                                    ) : isLoadingIntegration ? (
+                                        <div className="flex items-center justify-center h-32">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                        </div>
+                                    ) : integrationError ? (
+                                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                                            <div className="text-red-400 text-sm mb-4">
+                                                {integrationError}
+                                            </div>
+                                            <div className="text-gray-400 text-xs">
+                                                The Notion integration may have been disconnected. Please reconnect it.
+                                            </div>
+                                        </div>
+                                    ) : integrationBlocks.length > 0 ? (
+                                        <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                            <RenderConfig theme="dark">
+                                                <BlockList blocks={integrationBlocks} />
+                                            </RenderConfig>
+                                        </div>
+                                    ) : integrationBlock ? (
+                                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                                            <div className="text-white text-lg mb-2">Notion page is empty</div>
+                                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                        </div>
+                                    ) : (
+                                        <BlockNoteEditor
+                                            initialContent={initialContent}
+                                            onChange={handleProblemContentChange}
+                                            isDarkMode={isDarkMode}
+                                            readOnly={readOnly}
+                                            onEditorReady={setEditorInstance}
+                                            className="assignment-editor"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'evaluation' && (
+                            <div className="h-full flex flex-col p-6 space-y-6 overflow-hidden">
+                                {/* Eve Section */}
+                                <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2 flex-shrink-0">
+                                    <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
+                                        <div className="flex items-center mb-4">
+                                            <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
+                                            <Tooltip content="Used to decide if depth Q&A should begin" position="top">
+                                                <HelpCircle size={16} className="ml-2 text-white" />
+                                            </Tooltip>
+                                        </div>
+
+                                        {/* Table header */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className="gap-2 mb-2 text-xs text-gray-300">
+                                            <div className="px-2 text-center flex items-center justify-center">
+                                                Minimum
+                                                <Tooltip content="The minimum score that a learner needs to be marked as complete" position="top">
+                                                    <HelpCircle size={12} className="ml-2 text-white" />
+                                                </Tooltip>
+                                            </div>
+                                            <div className="px-2 text-center flex items-center justify-center">
+                                                Maximum
+                                                <Tooltip content="The maximum score that a learner can get" position="top">
+                                                    <HelpCircle size={12} className="ml-2 text-white" />
+                                                </Tooltip>
+                                            </div>
+                                            <div className="px-2 text-center flex items-center justify-center">
+                                                Pass Mark
+                                                <Tooltip content="The minimum score that a learner needs to get to be marked as complete" position="left">
+                                                    <HelpCircle size={12} className="ml-2 text-white" />
+                                                </Tooltip>
+                                            </div>
+                                        </div>
+
+                                        {/* Threshold row */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className={`gap-2 rounded-md p-1 text-white bg-[#2A2A2A] ${highlightedField === 'evaluation' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                            {/* Min Score Cell */}
+                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
+                                                {editingField === 'min_score' ? (
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        max={scoreRange.max_score - 1}
+                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
+                                                        value={scoreRange.min_score}
+                                                        onChange={(e) => handleScoreChange('min_score', Number(e.target.value))}
+                                                        onBlur={handleBlur}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        onMouseDown={minScoreDrag.dragProps.onMouseDown}
+                                                        disabled={readOnly || isLoadingAssignment}
+                                                    />
+                                                ) : (
+                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
+                                                        <span
+                                                            className="block cursor-pointer hover:opacity-80"
+                                                            onClick={() => handleClickToEdit('min_score')}
+                                                            {...minScoreDrag.dragProps}
+                                                        >
+                                                            {scoreRange.min_score}
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
+
+                                            {/* Max Score Cell */}
+                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
+                                                {editingField === 'max_score' ? (
+                                                    <input
+                                                        type="number"
+                                                        min={scoreRange.min_score + 1}
+                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
+                                                        value={scoreRange.max_score}
+                                                        onChange={(e) => handleScoreChange('max_score', Number(e.target.value))}
+                                                        onBlur={handleBlur}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        onMouseDown={maxScoreDrag.dragProps.onMouseDown}
+                                                        disabled={readOnly || isLoadingAssignment}
+                                                    />
+                                                ) : (
+                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
+                                                        <span
+                                                            className="block cursor-pointer hover:opacity-80"
+                                                            onClick={() => handleClickToEdit('max_score')}
+                                                            {...maxScoreDrag.dragProps}
+                                                        >
+                                                            {scoreRange.max_score}
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
+
+                                            {/* Pass Score Cell */}
+                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
+                                                {editingField === 'pass_score' ? (
+                                                    <input
+                                                        type="number"
+                                                        min={scoreRange.min_score}
+                                                        max={scoreRange.max_score}
+                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
+                                                        value={scoreRange.pass_score}
+                                                        onChange={(e) => handleScoreChange('pass_score', Number(e.target.value))}
+                                                        onBlur={handleBlur}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        {...passScoreDrag.dragProps}
+                                                        disabled={readOnly || isLoadingAssignment}
+                                                    />
+                                                ) : (
+                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
+                                                        <span
+                                                            className="block cursor-pointer hover:opacity-80"
+                                                            onClick={() => handleClickToEdit('pass_score')}
+                                                            {...passScoreDrag.dragProps}
+                                                        >
+                                                            {scoreRange.pass_score}
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Scorecard Section */}
+                                <div className={`h-full ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
+                                    <ScorecardManager
+                                        ref={scorecardManagerRef}
+                                        schoolId={schoolId}
+                                        readOnly={readOnly || isLoadingAssignment}
+                                        onScorecardChange={handleScorecardChange}
+                                        scorecardId={scorecardId}
+                                        className="scorecard-section"
+                                        type="assignment"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'knowledge' && (
+                            <KnowledgeBaseEditor
+                                knowledgeBaseBlocks={knowledgeBaseBlocks}
+                                linkedMaterialIds={linkedMaterialIds}
+                                courseId={courseId}
+                                readOnly={readOnly || isLoadingAssignment}
+                                isDarkMode={isDarkMode}
+                                onKnowledgeBaseChange={(blocks) => {
+                                    setKnowledgeBaseBlocks(blocks);
+                                    setDirty(true);
+                                }}
+                                onLinkedMaterialsChange={(ids) => {
+                                    setLinkedMaterialIds(ids);
+                                    setDirty(true);
+                                }}
+                                className="assignment"
+                            />
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );

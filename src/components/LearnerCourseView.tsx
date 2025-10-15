@@ -1025,8 +1025,8 @@ export default function LearnerCourseView({
                     onClick={handleDialogBackdropClick}
                 >
                     {isAdminView && learnerName && (
-                    <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
-                        <p className="font-light text-sm">
+                        <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
+                            <p className="font-light text-sm">
                                 You are viewing this course as <span className="font-medium">{learnerName}</span>
                             </p>
                         </div>
@@ -1101,19 +1101,19 @@ export default function LearnerCourseView({
                                                     </div>
                                                 ) :
                                                     item.type === 'material' ? (
-                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                        <BookOpen size={16} className="text-blue-400" />
-                                                    </div>
-                                                ) : (
-                                                    <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
-                                                        <ClipboardList size={16} className={
-                                                            localCompletedQuestionIds[item.id] &&
-                                                                Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                                ? "text-yellow-500"
-                                                                : "text-purple-500"
-                                                        } />
-                                                    </div>
-                                                )}
+                                                        <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                            <BookOpen size={16} className="text-blue-400" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
+                                                            <ClipboardList size={16} className={
+                                                                localCompletedQuestionIds[item.id] &&
+                                                                    Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
+                                                                    ? "text-yellow-500"
+                                                                    : "text-purple-500"
+                                                            } />
+                                                        </div>
+                                                    )}
 
                                                 {/* Add a small generating indicator if the item is still being generated */}
                                                 {item.isGenerating && (
@@ -1188,7 +1188,7 @@ export default function LearnerCourseView({
                                     (completedTasks[activeItem?.id])
                                         ? "lg:bg-[#111111] bg-green-700"
                                         : "bg-[#111111]"
-                                    } ${activeItem?.type === 'material' ? 'py-3' : 'py-4'}`}
+                                    } ${(activeItem?.type === 'material' || completedTasks[activeItem?.id]) ? 'py-3' : 'py-4'}`}
                             >
                                 <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
@@ -1301,45 +1301,47 @@ export default function LearnerCourseView({
                                                 />
                                             </>
                                         )}
-                                            {(activeItem?.type === 'assignment') && (
-                                                <DynamicLearnerAssignmentView
-                                                    problemBlocks={activeItem.content || []}
-                                                    title={activeItem.title}
-                                                    userId={userId}
-                                                    taskId={activeItem.id}
-                                                    isTestMode={isTestMode}
-                                                    viewOnly={viewOnly}
-                                                    onTaskComplete={handleTaskCompletion}
-                                                    onAiRespondingChange={handleAiRespondingChange}
-                                                />
-                                            )}
+                                        {(activeItem?.type === 'assignment') && (
+                                            <DynamicLearnerAssignmentView
+                                                problemBlocks={activeItem.content || []}
+                                                title={activeItem.title}
+                                                userId={userId}
+                                                taskId={activeItem.id}
+                                                isTestMode={isTestMode}
+                                                viewOnly={viewOnly}
+                                                onTaskComplete={handleTaskCompletion}
+                                                onAiRespondingChange={handleAiRespondingChange}
+                                            />
+                                        )}
                                     </>
                                 )}
                             </div>
 
                             {/* Navigation Footer - Hidden on mobile */}
-                            <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
-                                {!isFirstTask() && getPreviousTaskInfo() && (
-                                    <button
-                                        onClick={goToPreviousTask}
-                                        className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
-                                    >
-                                        <ChevronLeft size={16} className="mr-1" />
-                                        {getPreviousTaskInfo()?.title}
-                                    </button>
-                                )}
-                                {isFirstTask() && <div></div>}
+                            {((!isFirstTask() && getPreviousTaskInfo()) || (!isLastTask() && getNextTaskInfo())) && (
+                                <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
+                                    {!isFirstTask() && getPreviousTaskInfo() && (
+                                        <button
+                                            onClick={goToPreviousTask}
+                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                        >
+                                            <ChevronLeft size={16} className="mr-1" />
+                                            {getPreviousTaskInfo()?.title}
+                                        </button>
+                                    )}
+                                    {isFirstTask() && <div></div>}
 
-                                {!isLastTask() && getNextTaskInfo() && (
-                                    <button
-                                        onClick={goToNextTask}
-                                        className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
-                                    >
-                                        {getNextTaskInfo()?.title}
-                                        <ChevronRight size={16} className="ml-1" />
-                                    </button>
-                                )}
-                            </div>
+                                    {!isLastTask() && getNextTaskInfo() && (
+                                        <button
+                                            onClick={goToNextTask}
+                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                        >
+                                            {getNextTaskInfo()?.title}
+                                            <ChevronRight size={16} className="ml-1" />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
