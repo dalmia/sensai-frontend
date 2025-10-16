@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import QuizEditor, { extractTextFromBlocks, getKnowledgeBaseContent } from '../../components/QuizEditor';
-import { QuizQuestion, QuizQuestionConfig } from '../../types';
-import { ScorecardTemplate } from '../../components/ScorecardPickerDialog';
+import QuizEditor, { getKnowledgeBaseContent } from '../../components/QuizEditor';
+import { extractTextFromBlocks } from '@/lib/utils/blockUtils';
+import { QuizQuestionConfig } from '../../types';
 
 // Mock all CSS imports
 jest.mock('@blocknote/core/fonts/inter.css', () => ({}));
