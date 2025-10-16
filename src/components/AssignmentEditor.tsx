@@ -567,9 +567,9 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                 title="Submission type"
                                 options={submissionTypeOptions}
                                 selectedOption={submissionType}
-                                onChange={(opt) => {
-                                    if (!Array.isArray(opt)) {
-                                        setSubmissionType(opt);
+                                onChange={(e) => {
+                                    if (!Array.isArray(e)) {
+                                        setSubmissionType(e);
                                         setDirty(true);
                                     }
                                 }}

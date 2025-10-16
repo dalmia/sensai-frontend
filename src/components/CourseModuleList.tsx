@@ -489,7 +489,6 @@ export default function CourseModuleList({
             case 'material': return 'learning material';
             case 'quiz': return 'quiz';
             case 'assignment': return 'assignment';
-            default: return 'item';
         }
     };
 
