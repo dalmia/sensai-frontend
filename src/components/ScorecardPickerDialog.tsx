@@ -120,7 +120,7 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
                             <div key={index} className="grid grid-cols-3 gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span
-                                        className="inline-block px-2 py-0.5 rounded-full text-xs text-white"
+                                        className="inline-block px-2 py-0.5 rounded-full text-xs text-white truncate"
                                         style={{ backgroundColor: pillColor }}
                                     >
                                         {criterion.name}
