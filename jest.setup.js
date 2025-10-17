@@ -47,3 +47,13 @@ process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 
 // Add any custom Jest matchers here
 expect.extend({}); 
+
+// Polyfills for streaming tests
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder } = require('util');
+  global.TextEncoder = TextEncoder;
+}
+if (typeof global.TextDecoder === 'undefined') {
+  const { TextDecoder } = require('util');
+  global.TextDecoder = TextDecoder;
+}
