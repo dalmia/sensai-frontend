@@ -169,4 +169,90 @@ describe('ChatPlaceholderView Component', () => {
 
         expect(screen.getByText(/Think through your answer carefully, then write your code in the code editor/)).toBeInTheDocument();
     });
-}); 
+
+    it('should render assignment placeholder text when taskType is assignment', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+            />
+        );
+
+        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        expect(screen.getByText(/The AI will analyze your work and provide detailed feedback/)).toBeInTheDocument();
+    });
+
+    it('should render view-only message for assignment when viewOnly is true', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+                viewOnly={true}
+            />
+        );
+
+        expect(screen.getByText('No submission yet')).toBeInTheDocument();
+        expect(screen.getByText('There is no submission history for this assignment')).toBeInTheDocument();
+    });
+
+    it('should render assignment placeholder with different input types', () => {
+        // Test with text input type
+        const { unmount: unmountText } = render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+                inputType="text"
+            />
+        );
+
+        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        unmountText();
+
+        // Test with audio input type
+        const { unmount: unmountAudio } = render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+                inputType="audio"
+            />
+        );
+
+        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        unmountAudio();
+
+        // Test with code input type
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+                inputType="code"
+            />
+        );
+
+        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+    });
+
+    it('should render assignment placeholder in test mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                taskType="assignment"
+                isTestMode={true}
+                isChatHistoryLoaded={false}
+            />
+        );
+
+        // Should not show loading spinner even if isChatHistoryLoaded is false because isTestMode is true
+        const spinner = document.querySelector('.animate-spin');
+        expect(spinner).not.toBeInTheDocument();
+
+        // Should show the assignment placeholder content instead
+        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+    });
+
+});
