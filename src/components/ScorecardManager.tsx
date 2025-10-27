@@ -788,11 +788,11 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                     <div className="h-full flex flex-col items-center justify-center text-center">
                         <div className="max-w-md">
                             <h3 className="text-xl font-light text-white mb-3">
-                                {type === 'assignment' ? 'What are evaluation criteria?' : 'What is a scorecard?'}
+                                {type === 'assignment' ? 'What are key areas?' : 'What is a scorecard?'}
                             </h3>
                             <p className="text-gray-400 mb-6">
                                 {type === 'assignment'
-                                    ? 'Define parameters used to evaluate open-ended responses. Use a template or create your own.'
+                                    ? 'Define the specific parts of the project to be evaluated: such as logic, data handling, UI behavior, or API integration. Use a template or create your own.'
                                     : 'A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own'
                                 }
                             </p>
@@ -805,7 +805,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                                 <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
                                     <Plus size={12} className="text-black" />
                                 </div>
-                                {type === 'assignment' ? 'Add evaluation criteria' : 'Add a scorecard'}
+                                {type === 'assignment' ? 'Add key areas' : 'Add a scorecard'}
                             </button>
                     </div>
                 </div>

@@ -390,7 +390,7 @@ export default function LearnerAssignmentView({
         } catch { }
     }, [taskId]);
 
-    // Process a user response (shared logic between text, audio, and file submission)
+    // Process a user response
     const processUserResponse = useCallback(
         async (
             responseContent: string,
@@ -469,8 +469,8 @@ export default function LearnerAssignmentView({
                     const presignedData = await presignedUrlResponse.json();
                     presigned_url = presignedData.presigned_url;
                     file_uuid = presignedData.file_uuid;
-                } catch (error) {
-                    console.error("Error getting presigned URL:", error);
+                } catch {
+                    console.error("Error getting presigned URL");
                 }
 
                 // Convert base64 data to a Blob
@@ -485,8 +485,6 @@ export default function LearnerAssignmentView({
                 if (!presigned_url) {
                     // If we couldn't get a presigned URL, try direct upload to the backend
                     try {
-                        console.log("Attempting direct upload to backend");
-
                         // Create FormData for the file upload
                         const formData = new FormData();
                         formData.append('file', dataBlob, filename);
@@ -499,22 +497,20 @@ export default function LearnerAssignmentView({
                         });
 
                         if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload file to backend: ${uploadResponse.status}`);
+                            throw new Error(`Failed to upload file to backend`);
                         }
 
                         const uploadData = await uploadResponse.json();
                         file_uuid = uploadData.file_uuid;
 
-                        console.log('File uploaded successfully to backend');
                         // Update the storage message content with the file information
                         if (isAudio) {
                             storageMessage.content = file_uuid || '';
                         } else {
                             storageMessage.content = JSON.stringify({ file_uuid: file_uuid || '', filename: responseContent });
                         }
-                    } catch (error) {
-                        console.error('Error with direct upload to backend:', error);
-                        throw error;
+                    } catch {
+                        throw new Error('Error with direct upload to backend');
                     }
                 } else {
                     // Upload the file to S3 using the presigned URL
@@ -528,30 +524,36 @@ export default function LearnerAssignmentView({
                         });
 
                         if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+                            throw new Error(`Failed to upload file to S3`);
                         }
 
-                        console.log('File uploaded successfully to S3');
                         // Update the storage message content with the file information
                         if (isAudio) {
                             storageMessage.content = file_uuid;
                         } else {
                             storageMessage.content = JSON.stringify({ file_uuid, filename: responseContent });
                         }
-                    } catch (error) {
-                        console.error('Error uploading file to S3:', error);
-                        throw error;
+                    } catch {
+                        throw new Error('Error uploading file to S3');
                     }
                 }
             }
 
-            // Prepare the request body
-            const requestBody = {
+            // In test mode, include chat history in the request
+            const formattedChatHistory = isTestMode ? chatHistory.map(msg => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.sender === 'user' ? msg.content : msg.rawContent || msg.content,
+                response_type: msg.messageType || 'text',
+                created_at: msg.timestamp
+            })) : undefined;
+
+            const requestBody: Record<string, unknown> = {
                 user_response: responseType === 'audio' ? (file_uuid || audioData) : responseType === 'file' ? (fileUuid || file_uuid) : responseContent,
                 response_type: responseType,
                 task_id: taskId,
                 user_id: userId,
-                user_email: user?.email
+                user_email: user?.email,
+                ...(isTestMode && { chat_history: formattedChatHistory })
             };
 
             // Call the API with the appropriate request body for streaming response
@@ -639,8 +641,8 @@ export default function LearnerAssignmentView({
                                         if (data.key_area_scores && !showPreparingReport && assignmentResponse.evaluation_status === "completed") {
                                             setShowPreparingReport(true);
                                         }
-                                    } catch (e) {
-                                        console.error('Error parsing JSON chunk:', e);
+                                    } catch {
+                                        throw new Error('Error parsing JSON chunk');
                                     }
                                 }
                             }
@@ -671,22 +673,21 @@ export default function LearnerAssignmentView({
                             if (!isTestMode) {
                                 storeChatHistory(storageMessage, assignmentResponse);
                             }
-                        } catch (error) {
-                            console.error('Error processing stream:', error);
+                        } catch {
+                            console.error('Error processing stream');
                             // Only reset the preparing report state when an error occurs
                             // and we need to allow the user to try again
                             if (showPreparingReport) {
                                 setTimeout(() => setShowPreparingReport(false), 0);
                             }
-                            throw error;
                         }
                     };
 
                     // Start processing the stream
                     return processStream();
                 })
-                .catch(error => {
-                    console.error('Error fetching AI response:', error);
+                .catch(() => {
+                    console.error('Error fetching AI response');
 
                     // Show error message to the user
                     const errorMessage = responseType === 'audio'
@@ -712,7 +713,7 @@ export default function LearnerAssignmentView({
                     setShowPreparingReport(false);
                 })
                 .finally(() => {
-                // Only reset submitting state when API call is done
+                    // Only reset submitting state when API call is done
                     setIsSubmitting(false);
 
                     // If we never received any feedback, also reset the AI responding state
@@ -728,7 +729,8 @@ export default function LearnerAssignmentView({
             isTestMode,
             storeChatHistory,
             handleAssignmentResponse,
-            showPreparingReport
+            showPreparingReport,
+            chatHistory
         ]
     );
 
@@ -756,11 +758,10 @@ export default function LearnerAssignmentView({
                 const base64Audio = reader.result as string;
                 const base64Data = base64Audio.split(',')[1];
 
-                // Use the shared processing function with audio-specific parameters
                 processUserResponse('', 'audio', base64Data);
             };
-        } catch (error) {
-            console.error("Error processing audio submission:", error);
+        } catch {
+            console.error("Error processing audio submission");
             setIsSubmitting(false);
             setIsAiResponding(false);
         }
@@ -787,7 +788,6 @@ export default function LearnerAssignmentView({
             const uploadData = await uploadResponse.json();
             const fileUuid = uploadData.file_uuid;
 
-            // Use the shared processing function with file-specific parameters
             processUserResponse(file.name, 'file', undefined, fileUuid);
         } catch (error) {
             console.error('Error processing file upload:', error);
