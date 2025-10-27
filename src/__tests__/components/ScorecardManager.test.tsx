@@ -129,7 +129,7 @@ describe('ScorecardManager', () => {
         render(<ScorecardManager type="assignment" schoolId="org1" />);
 
         // Open picker dialog from placeholder button
-        fireEvent.click(screen.getByText('Add evaluation criteria'));
+        fireEvent.click(screen.getByText('Add key areas'));
         // Click Create New in mocked picker
         fireEvent.click(await screen.findByText('Create New'));
 
@@ -148,7 +148,7 @@ describe('ScorecardManager', () => {
         render(<ScorecardManager type="assignment" schoolId="org1" />);
 
         // Open picker and select a template (mock triggers is_template path)
-        fireEvent.click(screen.getByText('Add evaluation criteria'));
+        fireEvent.click(screen.getByText('Add key areas'));
         fireEvent.click(await screen.findByText('Pick Template'));
 
         expect(await screen.findByTestId('toast')).toBeInTheDocument();
