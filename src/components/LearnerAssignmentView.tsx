@@ -575,6 +575,7 @@ export default function LearnerAssignmentView({
                     const reader = response.body?.getReader();
 
                     if (!reader) {
+                        console.error('assignment stream: failed to get reader from response body');
                         throw new Error('Failed to get response reader');
                     }
 
@@ -597,6 +598,7 @@ export default function LearnerAssignmentView({
 
                                 // Convert the chunk to text
                                 const chunk = new TextDecoder().decode(value);
+                                console.debug('assignment stream: chunk received', { length: chunk.length, preview: chunk.slice(0, 200) });
 
                                 // Split by newlines to handle multiple JSON objects in a single chunk
                                 const jsonLines = chunk.split('\n').filter(line => line.trim());
@@ -643,8 +645,9 @@ export default function LearnerAssignmentView({
                                         if (data.key_area_scores && !showPreparingReport && assignmentResponse.evaluation_status === "completed") {
                                             setShowPreparingReport(true);
                                         }
-                                    } catch {
-                                        throw new Error('Error parsing JSON chunk');
+                                    } catch (err) {
+                                        console.error('assignment stream: JSON parse failed', { linePreview: line.slice(0, 200) }, err);
+                                        throw err as Error;
                                     }
                                 }
                             }
@@ -677,7 +680,8 @@ export default function LearnerAssignmentView({
                                 storeChatHistory(storageMessage, assignmentResponse);
                             }
                         } catch (error) {
-                            console.error('Error processing stream', error);
+                            const err = error as Error;
+                            console.error('assignment stream: processing error', { message: err?.message, stack: err?.stack });
                             // Only reset the preparing report state when an error occurs
                             // and we need to allow the user to try again
                             if (showPreparingReport) {
