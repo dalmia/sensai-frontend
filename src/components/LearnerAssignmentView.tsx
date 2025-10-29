@@ -589,6 +589,9 @@ export default function LearnerAssignmentView({
                                 current_key_area: "",
                             };
 
+                            // Buffer to accumulate partial lines across chunks
+                            let bufferedLine = "";
+
                             while (true) {
                                 const { done, value } = await reader.read();
 
@@ -600,18 +603,37 @@ export default function LearnerAssignmentView({
                                 const chunk = new TextDecoder().decode(value);
                                 console.debug('assignment stream: chunk received', { length: chunk.length, preview: chunk.slice(0, 200) });
 
+                                // Prepend any buffered partial line from the previous chunk
+                                const text = bufferedLine ? bufferedLine + chunk : chunk;
+                                bufferedLine = "";
+
                                 // Split by newlines to handle multiple JSON objects in a single chunk
-                                const jsonLines = chunk.split('\n').filter(line => line.trim());
+                                const lines = text.split('\n');
 
-                                for (const line of jsonLines) {
+                                // Process all complete lines; keep the last as buffer if it seems incomplete
+                                for (let i = 0; i < lines.length; i++) {
+                                    const isLast = i === lines.length - 1;
+                                    const line = lines[i];
+
+                                    // If this is the last line and the chunk doesn't end with a newline,
+                                    // buffer it for the next chunk (it might be incomplete)
+                                    if (isLast && chunk && !chunk.endsWith('\n')) {
+                                        bufferedLine = line;
+                                        continue;
+                                    }
+
+                                    // Skip empty lines
+                                    const trimmedLine = line.trim();
+                                    if (!trimmedLine) continue;
+
                                     try {
-                                        const data = JSON.parse(line);
+                                        const data = JSON.parse(trimmedLine);
 
-                                        // Handle feedback updates
+                                        // Merge any received fields unconditionally to avoid stale state
+                                        assignmentResponse = { ...assignmentResponse, ...data };
+
+                                        // Handle feedback-specific UI updates
                                         if (data.feedback) {
-                                            // Update assignment evaluation
-                                            assignmentResponse = { ...assignmentResponse, ...data };
-
                                             // If this is the first feedback chunk we've received
                                             if (!receivedAnyFeedback) {
                                                 receivedAnyFeedback = true;
@@ -634,21 +656,34 @@ export default function LearnerAssignmentView({
                                                     const newHistory = [...prev];
                                                     const lastIndex = newHistory.length - 1;
                                                     if (lastIndex >= 0 && newHistory[lastIndex].sender === 'ai') {
-                                                        newHistory[lastIndex] = { ...newHistory[lastIndex], content: assignmentResponse.feedback };
+                                                        newHistory[lastIndex] = { ...newHistory[lastIndex], content: assignmentResponse.feedback } as any;
                                                     }
                                                     return newHistory;
                                                 });
                                             }
                                         }
 
-                                        // Detect when report (scorecard) is being prepared
-                                        if (data.key_area_scores && !showPreparingReport && assignmentResponse.evaluation_status === "completed") {
+                                        // Detect when report (scorecard) starts preparing as soon as we see scores and completed status
+                                        if (data.key_area_scores && !showPreparingReport && (assignmentResponse.evaluation_status === "completed" || data.evaluation_status === "completed")) {
                                             setShowPreparingReport(true);
                                         }
                                     } catch (err) {
-                                        console.error('assignment stream: JSON parse failed', { linePreview: line.slice(0, 200) }, err);
-                                        throw err as Error;
+                                        // Parsing failed - log but don't throw (like LearnerQuizView does)
+                                        // This allows the stream to continue processing even if one line fails
+                                        console.error('assignment stream: JSON parse failed', { linePreview: trimmedLine.slice(0, 200) }, err);
+                                        // Continue processing other lines instead of crashing
                                     }
+                                }
+                            }
+
+                            // Process any remaining buffered content after the stream ends
+                            if (bufferedLine && bufferedLine.trim()) {
+                                try {
+                                    const data = JSON.parse(bufferedLine.trim());
+                                    // Merge final buffered data
+                                    assignmentResponse = { ...assignmentResponse, ...data };
+                                } catch (err) {
+                                    console.error('assignment stream: Failed to parse final buffered line', err);
                                 }
                             }
 
