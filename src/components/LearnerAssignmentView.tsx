@@ -446,6 +446,7 @@ export default function LearnerAssignmentView({
             let presigned_url = '';
             let file_uuid = '';
             if ((responseType === 'audio' && audioData) || (responseType === 'file' && fileData)) {
+                console.log({ responseType });
                 const isAudio = responseType === 'audio';
                 const contentType = isAudio ? 'audio/wav' : 'application/zip';
                 const filename = isAudio ? 'audio.wav' : 'file.zip';
@@ -557,6 +558,7 @@ export default function LearnerAssignmentView({
             };
 
             // Call the API with the appropriate request body for streaming response
+            console.log({ requestBody });
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
                 method: 'POST',
                 headers: {
@@ -663,6 +665,7 @@ export default function LearnerAssignmentView({
 
                             // Update evaluation state
                             handleAssignmentResponse(assignmentResponse);
+                            console.table({ assignmentResponse });
 
                             // Hide preparing report indicator now that streaming is complete
                             if (showPreparingReport) {
@@ -673,8 +676,8 @@ export default function LearnerAssignmentView({
                             if (!isTestMode) {
                                 storeChatHistory(storageMessage, assignmentResponse);
                             }
-                        } catch {
-                            console.error('Error processing stream');
+                        } catch (error) {
+                            console.error('Error processing stream', error);
                             // Only reset the preparing report state when an error occurs
                             // and we need to allow the user to try again
                             if (showPreparingReport) {
@@ -686,8 +689,8 @@ export default function LearnerAssignmentView({
                     // Start processing the stream
                     return processStream();
                 })
-                .catch(() => {
-                    console.error('Error fetching AI response');
+                .catch((error) => {
+                    console.error('Error fetching AI response', error);
 
                     // Show error message to the user
                     const errorMessage = responseType === 'audio'
