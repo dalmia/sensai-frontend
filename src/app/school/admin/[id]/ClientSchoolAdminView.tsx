@@ -191,7 +191,23 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to invite members');
+                // Try to extract more detailed error message from response
+                let errorText = 'Failed to invite members. Please try again.';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) {
+                        // Use the specific detail message from the API
+                        errorText = errorData.detail;
+                    } else if (errorData.message) {
+                        errorText = errorData.message;
+                    } else if (errorData.error) {
+                        errorText = errorData.error;
+                    }
+                } catch (parseError) {
+                    // If parsing JSON fails, use default error message
+                    console.error('Could not parse error response:', parseError);
+                }
+                throw new Error(errorText);
             }
 
             // Refresh school data to get updated members list
@@ -220,7 +236,18 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
         } catch (error) {
             console.error('Error inviting members:', error);
-            // Here you would typically show an error message to the user
+            
+            // Show error toast
+            let errorMessage = 'Failed to invite members. Please try again.';
+            if (error instanceof Error && error.message && error.message !== 'Invalid JSON') {
+                errorMessage = error.message;
+            }
+            setToastMessage({
+                title: 'Could not invite members',
+                description: errorMessage,
+                emoji: '❌'
+            });
+            setShowToast(true);
         }
     };
 
