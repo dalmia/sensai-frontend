@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share, Settings } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
@@ -160,6 +160,7 @@ export default function CreateCourse() {
 
     useEffect(() => {
         if (taskId && modules.length > 0) {
+            console.log("Inside usefEffect1")
             // Find the module containing this item
             for (const module of modules) {
                 const item = module.items.find(i => i.id === taskId);
@@ -279,6 +280,7 @@ export default function CreateCourse() {
     // Set initial content and focus on newly added modules and items
     useEffect(() => {
         // Focus the newly added module
+        console.log("Inside useEffect2")
         if (activeModuleId) {
             const moduleElement = document.querySelector(`[data-module-id="${activeModuleId}"]`) as HTMLHeadingElement;
 
@@ -723,14 +725,15 @@ export default function CreateCourse() {
 
     // Close the dialog
     const closeDialog = () => {
+        console.log("Inside closeDialog()")
         // Clean up the URL (remove taskId and questionId)
         updateTaskAndQuestionIdInUrl(router, null, null);
 
-        setIsDialogOpen(false);
-        setActiveItem(null);
-        setActiveModuleId(null);
-        setActiveQuestionId(null);
-        setIsEditMode(false);
+        // setIsDialogOpen(false);
+        // setActiveItem(null);
+        // setActiveModuleId(null);
+        // setActiveQuestionId(null);
+        // setIsEditMode(false);
     };
 
     // Cancel edit mode and revert to original state

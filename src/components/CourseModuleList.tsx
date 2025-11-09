@@ -530,6 +530,7 @@ export default function CourseModuleList({
 
     // Handle module click based on mode
     const handleModuleClick = (e: React.MouseEvent, moduleId: string) => {
+        console.log("Inside handleModuleClick")
         // Find the module
         const module = modules.find(m => m.id === moduleId);
         if (!module) return;
@@ -1021,10 +1022,13 @@ export default function CourseModuleList({
 
                                                 {/* Item action buttons - only in edit mode */}
                                                 {mode === 'edit' && (
-                                                    <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center space-x-2" onClick={(e) => {
+                                                        console.log("logging item from courseModuleList", item)
+                                                        e.stopPropagation()
+                                                    }}>
                                                         {item.status === 'draft' && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500 text-white">
-                                                                DRAFT
+                                                                DRAFTT
                                                             </span>
                                                         )}
                                                         {item.status === 'published' && item.scheduled_publish_at && (
