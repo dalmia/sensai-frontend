@@ -14,7 +14,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatScheduleDate } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/lib/auth";
-import { json } from "stream/consumers";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(

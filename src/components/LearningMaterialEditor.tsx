@@ -207,8 +207,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     }, [taskId]);
 
 
-    // useEffect(() => {}, [showUnublishConfirmation])
-
     // Handle cancel in edit mode - revert to original data
     const handleCancel = () => {
         if (!originalDataRef.current) return;

@@ -1763,7 +1763,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             {/* Publish Confirmation Dialog */}
             <PublishConfirmationDialog
                 show={showPublishConfirmation}
-                title="Ready to publishhh?"
+                title="Ready to publish?"
                 message="After publishing, you won't be able to add or remove questions, but you can still edit existing ones"
                 onConfirm={updateDraftQuiz}
                 onCancel={handleCancelPublish}

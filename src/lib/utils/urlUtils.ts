@@ -35,5 +35,5 @@ export const updateTaskAndQuestionIdInUrl = (
         url.searchParams.delete('questionId');
     }
 
-    router.push(url.pathname + url.search, { scroll: false }); 
+    router.push(url.pathname + url.search, { scroll: false });
 };
