@@ -308,12 +308,25 @@ export default function LearnerAssignmentView({
                         try {
                             const parsedContent = JSON.parse(message.content);
                             if (parsedContent.filename) {
-                                displayContent = `Uploaded ${parsedContent.filename}`;
+                                displayContent = parsedContent.filename;
                                 rawContent = message.content;
                             }
                         } catch (error) {
                             // If parsing fails, use the original content
                             console.log('Failed to parse user file message content, using original:', error);
+                        }
+                    }
+
+                    // Extract file info for file messages
+                    let fileUuid: string | undefined;
+                    let fileName: string | undefined;
+                    if (message.role === 'user' && message.response_type === 'file' && rawContent) {
+                        try {
+                            const parsedContent = JSON.parse(rawContent);
+                            fileUuid = parsedContent.file_uuid;
+                            fileName = parsedContent.filename;
+                        } catch {
+                            // Ignore parse errors
                         }
                     }
 
@@ -325,7 +338,9 @@ export default function LearnerAssignmentView({
                         messageType: (message.response_type as MessageType) || 'text',
                         audioData: audioData,
                         isError: false,
-                        rawContent: rawContent
+                        rawContent: rawContent,
+                        fileUuid: fileUuid,
+                        fileName: fileName
                     };
                 }));
 
@@ -410,7 +425,7 @@ export default function LearnerAssignmentView({
             // Create the user message object for display
             const displayMessage: ChatMessageLocal = {
                 id: `user-${Date.now()}`,
-                content: responseType === 'file' ? `Uploaded ${responseContent}` : responseContent,
+                content: responseType === 'file' ? `${responseContent}` : responseContent,
                 sender: 'user',
                 timestamp: new Date(),
                 messageType: responseType,
@@ -858,6 +873,47 @@ export default function LearnerAssignmentView({
         setIsViewingScorecard(false);
     }, []);
 
+    const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
+        try {
+            // Try to get presigned URL first
+            const presignedResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
+                { method: 'GET' }
+            );
+
+            let downloadUrl: string;
+            if (presignedResponse.ok) {
+                const { url } = await presignedResponse.json();
+                downloadUrl = url;
+            } else {
+                // Fallback to direct download
+                downloadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
+            }
+
+            // Fetch the file as a blob to have control over the filename
+            const fileResponse = await fetch(downloadUrl);
+            if (!fileResponse.ok) {
+                throw new Error('Failed to download file');
+            }
+
+            const blob = await fileResponse.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            // Create a temporary link and trigger download with the correct filename
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up the object URL
+            URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+        }
+    }, []);
+
     // Check if assignment is completed based on evaluation status or last AI message
     const isCompleted = useMemo(() => {
         // If no chat history, not completed
@@ -1069,6 +1125,7 @@ export default function LearnerAssignmentView({
                                 userId={userId}
                                 showUploadSection={needsResubmission}
                                 onFileUploaded={handleFileSubmit}
+                                    onFileDownload={handleFileDownload}
                             />
                         </div>
                     )}

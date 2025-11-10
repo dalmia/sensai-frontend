@@ -740,6 +740,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                 onSelectTemplate={handleSelectScorecardTemplate}
                 position={scorecardDialogPosition || undefined}
                 schoolScorecards={schoolScorecards}
+                type={type}
             />
 
             {/* Toast for notifications */}

@@ -23,6 +23,7 @@ interface CourseMetrics {
         quiz?: TaskTypeMetrics;
         learning_material?: TaskTypeMetrics;
         exam?: TaskTypeMetrics;
+        assignment?: TaskTypeMetrics;
     };
 }
 
@@ -408,7 +409,8 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             {/* Empty state */}
                             {!courseMetrics.task_type_metrics?.quiz &&
                                 !courseMetrics.task_type_metrics?.learning_material &&
-                                !courseMetrics.task_type_metrics?.exam && (
+                                !courseMetrics.task_type_metrics?.exam &&
+                                !courseMetrics.task_type_metrics?.assignment && (
                                     <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
                                         No task type metrics available
                                     </div>
@@ -416,16 +418,18 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
 
                             {/* Cards Layout */}
                             {(courseMetrics.task_type_metrics?.quiz ||
-                                courseMetrics.task_type_metrics?.learning_material) && (() => {
+                                courseMetrics.task_type_metrics?.learning_material ||
+                                courseMetrics.task_type_metrics?.assignment) && (() => {
                                     // Calculate number of available task types
                                     const availableTypes = [
                                         courseMetrics.task_type_metrics?.quiz,
                                         courseMetrics.task_type_metrics?.learning_material,
+                                        courseMetrics.task_type_metrics?.assignment,
                                     ].filter(Boolean).length;
 
                                     // Render with the appropriate grid class based on count
                                     return (
-                                        <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' : 'md:grid-cols-2'
+                                        <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' : availableTypes === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
                                             } gap-4`}>
 
                                             {/* Learning Material Card */}
@@ -445,6 +449,16 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                     count={courseMetrics.task_type_metrics?.quiz?.count}
                                                     completionRate={courseMetrics.task_type_metrics?.quiz?.completion_rate}
                                                     color="indigo"
+                                                />
+                                            )}
+
+                                            {/* Assignment Card */}
+                                            {courseMetrics.task_type_metrics?.assignment && (
+                                                <TaskTypeMetricCard
+                                                    title="Assignment"
+                                                    count={courseMetrics.task_type_metrics?.assignment?.count}
+                                                    completionRate={courseMetrics.task_type_metrics?.assignment?.completion_rate}
+                                                    color="blue"
                                                 />
                                             )}
                                         </div>
@@ -526,6 +540,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                 Object.keys(courseMetrics.task_type_metrics?.exam?.completions).forEach(id =>
                                     studentIds.add(id));
                             }
+                            if (courseMetrics.task_type_metrics?.assignment?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics?.assignment?.completions).forEach(id =>
+                                    studentIds.add(id));
+                            }
 
                             // Map student IDs to member info
                             const studentIdToMember = new Map<string, CohortMember>();
@@ -542,7 +560,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             }
 
                             // Function to get completion percentage for a student and task type
-                            const getCompletionPercentage = (studentId: string, taskType: 'learning_material' | 'quiz') => {
+                            const getCompletionPercentage = (studentId: string, taskType: 'learning_material' | 'quiz' | 'assignment') => {
                                 if (!courseMetrics.task_type_metrics[taskType]) return null;
 
                                 const completions = courseMetrics.task_type_metrics[taskType]?.completions || {};
@@ -576,6 +594,9 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                     } else if (sortColumn === 'quiz') {
                                         valueA = getCompletionPercentage(a, 'quiz');
                                         valueB = getCompletionPercentage(b, 'quiz');
+                                    } else if (sortColumn === 'assignment') {
+                                        valueA = getCompletionPercentage(a, 'assignment');
+                                        valueB = getCompletionPercentage(b, 'assignment');
                                     }
 
                                     // Handle null values (put them at the end)
@@ -637,6 +658,23 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                     </div>
                                                 </th>
                                             )}
+                                            {courseMetrics.task_type_metrics?.assignment && (
+                                                <th
+                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    onClick={() => handleSort('assignment')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="text-blue-400 mr-1">●</span>
+                                                        <span>Assignment</span>
+                                                        {sortColumn === 'assignment' && sortDirection === 'asc' && (
+                                                            <ArrowUp size={14} className="ml-1" />
+                                                        )}
+                                                        {sortColumn === 'assignment' && sortDirection === 'desc' && (
+                                                            <ArrowDown size={14} className="ml-1" />
+                                                        )}
+                                                    </div>
+                                                </th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -657,6 +695,11 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             const examCompletion = courseMetrics.task_type_metrics?.exam
                                                 ? (courseMetrics.task_type_metrics?.exam?.completions[studentId] || 0) /
                                                 courseMetrics.task_type_metrics?.exam?.count
+                                                : null;
+
+                                            const assignmentCompletion = courseMetrics.task_type_metrics?.assignment
+                                                ? (courseMetrics.task_type_metrics?.assignment?.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics?.assignment?.count
                                                 : null;
 
                                             // Helper function to get text color class based on completion percentage
@@ -683,6 +726,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                         <td className={`p-4 ${getColorClass(quizCompletion)}`}>
                                                             {quizCompletion !== null
                                                                 ? `${Math.round(quizCompletion * 100)}%`
+                                                                : '-'}
+                                                        </td>
+                                                    )}
+                                                    {courseMetrics.task_type_metrics?.assignment && (
+                                                        <td className={`p-4 ${getColorClass(assignmentCompletion)}`}>
+                                                            {assignmentCompletion !== null
+                                                                ? `${Math.round(assignmentCompletion * 100)}%`
                                                                 : '-'}
                                                         </td>
                                                     )}

@@ -51,6 +51,7 @@ interface ChatViewProps {
     // Assignment mode: show upload instead of textarea until upload completes
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
+    onFileDownload?: (fileUuid: string, fileName: string) => void;
 }
 
 export interface ChatViewHandle {
@@ -83,6 +84,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     userId,
     showUploadSection = false,
     onFileUploaded,
+    onFileDownload,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -599,6 +601,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                 showLearnerView={showLearnerView}
                                 onShowLearnerViewChange={onShowLearnerViewChange}
                                 isAdminView={isAdminView}
+                                onFileDownload={onFileDownload}
                             />
                         </div>
                     )}

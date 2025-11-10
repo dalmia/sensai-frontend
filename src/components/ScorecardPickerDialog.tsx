@@ -30,6 +30,7 @@ interface ScorecardTemplatesDialogProps {
     onSelectTemplate: (template: ScorecardTemplate) => void;
     position?: { top: number; left: number };
     schoolScorecards?: ScorecardTemplate[]; // New prop for school-specific scorecards
+    type?: 'quiz' | 'assignment'; // Type to determine if this is for quiz or assignment
 }
 
 // Tab type for the dialog
@@ -150,7 +151,8 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
     onCreateNew,
     onSelectTemplate,
     position,
-    schoolScorecards = []
+    schoolScorecards = [],
+    type = 'quiz'
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
@@ -158,8 +160,8 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         schoolScorecards.length > 0 ? 'yours' : 'templates'
     );
 
-    // Define template options with updated properties
-    const templates: ScorecardTemplate[] = [
+    // Define quiz template options
+    const quizTemplates: ScorecardTemplate[] = [
         {
             id: 'written-communication',
             name: 'Written Communication',
@@ -227,6 +229,27 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         // },
     ];
 
+    const assignmentTemplates: ScorecardTemplate[] = [
+        {
+            id: 'key-areas',
+            name: 'Key Areas',
+            icon: <FileText size={16} className="text-white" />,
+            description: "Key areas of project implementation",
+            is_template: true,
+            criteria: [
+                { name: "Fetching Questions from the API", description: "Ensuring that the API is used correctly to fetch two questions from each difficulty level (easy, medium, and hard).", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Displaying Questions on Screen", description: "Making sure the questions are displayed in the UI at the correct time, including after fetching and when clicking the \"Next\" button.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Managing the Next Button", description: "Properly updating the current question and switching turns between players when the \"Next\" button is clicked.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Score Calculation and Player Turn Logic", description: "Keeping track of the scores, ensuring they are preserved when categories change, and correctly managing turns.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Disabling Previously Used Categories", description: "Preventing players from selecting the same category again once it has already been used.", maxScore: 5, minScore: 1, passScore: 3 }
+            ],
+            new: false
+        },
+    ];
+
+    // Select templates based on type
+    const templates = type === 'assignment' ? assignmentTemplates : quizTemplates;
+
     // Simpler approach: create a ref and track DOM element
     const [hoveredElement, setHoveredElement] = useState<HTMLDivElement | null>(null);
 
@@ -250,7 +273,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                         'text-gray-400 hover:text-white'}`}
                     onClick={() => setActiveTab('yours')}
                 >
-                    Your Scorecards
+                    {type === 'assignment' ? 'Your key areas' : 'Your Scorecards'}
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'templates' ?
@@ -280,7 +303,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Search your scorecards"
+                            placeholder={type === 'assignment' ? "Search your key areas" : "Search your scorecards"}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
@@ -314,7 +337,10 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                         ))
                     ) : (
                         <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                            {searchQuery ? 'No scorecards match your search' : 'No scorecards available'}
+                                {searchQuery
+                                    ? (type === 'assignment' ? 'No key areas match your search' : 'No scorecards match your search')
+                                    : (type === 'assignment' ? 'No key areas available' : 'No scorecards available')
+                                }
                         </div>
                     )}
                 </div>
@@ -388,7 +414,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             >
                 {/* Header */}
                 <div className="flex justify-between items-center p-4">
-                    <h2 className="text-white text-lg font-normal">New scorecard</h2>
+                    <h2 className="text-white text-lg font-normal">{type === 'assignment' ? 'New key areas' : 'New scorecard'}</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-white transition-colors cursor-pointer"
@@ -406,7 +432,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     <div className="w-8 h-8 bg-[#313131] rounded flex items-center justify-center mr-3">
                         <Plus size={20} className="text-white" />
                     </div>
-                    <span className="text-white text-sm">New empty scorecard</span>
+                    <span className="text-white text-sm">{type === 'assignment' ? 'New empty key areas' : 'New empty scorecard'}</span>
                 </div>
 
                 {/* Tab navigation */}

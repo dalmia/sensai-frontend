@@ -117,11 +117,13 @@ export interface ChatMessage {
     content: string;
     sender: 'user' | 'ai';
     timestamp: Date;
-    messageType?: 'text' | 'audio' | 'code';
+    messageType?: 'text' | 'audio' | 'code' | 'file';
     audioData?: string; // base64 encoded audio data
     scorecard?: ScorecardItem[]; // Add scorecard field for detailed feedback
     isError?: boolean;
     is_correct?: boolean; // Add is_correct attribute for exam responses
+    fileUuid?: string; // UUID for file messages
+    fileName?: string; // Filename for file messages
 }   
 
 
