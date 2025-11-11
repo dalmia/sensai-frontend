@@ -3,7 +3,7 @@
 import { forwardRef, useImperativeHandle, useMemo, useState, useRef, useCallback, useEffect } from "react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import Dropdown, { DropdownOption } from "./Dropdown";
-import { submissionTypeOptions } from "./dropdownOptions";
+import { submissionTypeOptions, copyPasteControlOptions } from "./dropdownOptions";
 import NotionIntegration from "./NotionIntegration";
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 import LearnerAssignmentView from "./LearnerAssignmentView";
@@ -71,6 +71,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     const [scoreRange, setScoreRange] = useState<{ min_score: number; max_score: number; pass_score: number }>({ min_score: 1, max_score: 4, pass_score: 3 });
     // Submission type for learner responses
     const [submissionType, setSubmissionType] = useState<DropdownOption>(submissionTypeOptions[0]);
+    // Copy/paste control setting
+    const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[0]);
 
     // Active tab: problem | resources | scorecard
     const [activeTab, setActiveTab] = useState<'problem' | 'evaluation' | 'knowledge'>('problem');
@@ -158,6 +160,17 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                         const matchingOption = submissionTypeOptions.find(opt => opt.value === assignment.input_type);
                         if (matchingOption) {
                             setSubmissionType(matchingOption);
+                        }
+                    }
+
+                    // Load copy/paste control setting
+                    if (assignment.settings) {
+                        const allowCopyPaste = assignment.settings.allowCopyPaste;
+                        if (allowCopyPaste !== undefined) {
+                            const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
+                            if (copyPasteOption) {
+                                setSelectedCopyPasteControl(copyPasteOption);
+                            }
                         }
                     }
                 }
@@ -468,6 +481,9 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                     input_type: submissionType.value,
                     response_type: null,
                     max_attempts: null,
+                    settings: {
+                        allowCopyPaste: selectedCopyPasteControl.value === 'true'
+                    }
                 }
             };
 
@@ -559,7 +575,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
                         </div>
                     )}
-                    {/* Settings: Submission Type */}
+                        {/* Settings: Submission Type and Copy/Paste Control */}
                     <div className="space-y-4 px-6 py-4 bg-[#111111]">
                         <div className="flex items-center">
                             <Dropdown
@@ -576,6 +592,21 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                 disabled={readOnly}
                             />
                         </div>
+                            <div className="flex items-center">
+                                <Dropdown
+                                    icon={<ClipboardCheck size={16} />}
+                                    title="Allow copy/paste?"
+                                    options={copyPasteControlOptions}
+                                    selectedOption={selectedCopyPasteControl}
+                                    onChange={(e) => {
+                                        if (!Array.isArray(e)) {
+                                            setSelectedCopyPasteControl(e);
+                                            setDirty(true);
+                                        }
+                                    }}
+                                    disabled={readOnly}
+                                />
+                            </div>
                     </div>
                     <div className="flex justify-center">
                         <div className="inline-flex bg-[#222222] rounded-lg p-1">
