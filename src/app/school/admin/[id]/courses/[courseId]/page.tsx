@@ -166,7 +166,7 @@ export default function CreateCourse() {
         } else if (!taskId) {
             setIsDialogOpen(false);
         }
-    }, [taskId, questionId, modules.length, isDialogOpen, activeItem]);
+    }, [taskId, questionId, modules.length]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
@@ -1898,7 +1898,7 @@ export default function CreateCourse() {
             )}
 
             {/* Show spinner when loading, or when taskId is present and dialog is not open */}
-            {(isLoading || (taskId && !isDialogOpen)) ? (
+            {isLoading ? (
                 <div className="flex justify-center items-center h-[calc(100vh-80px)]">
                     <div className="w-16 h-16 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>
