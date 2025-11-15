@@ -177,11 +177,14 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     setTaskData(data);
 
                     // Store the original data for reverting on cancel
-                    originalDataRef.current = { ...data };
+                    let sanitizedData = sanitizeTaskDataFromBackend(data) 
+                    // The data has to be sanitized here because originalDataRef gets compared with editorContent in other places. 
+                    // Also editorContent is set from other places in the frontend which will not contain properties set from the backend. So it is necessary for both of them to use the sanitized data
+                    originalDataRef.current = { ...sanitizedData };
 
                     // Initialize editorContent with the blocks from taskData
                     if (data.blocks && data.blocks.length > 0) {
-                        setEditorContent(data.blocks);
+                        setEditorContent(sanitizedData.blocks);
                     }
 
                     setIsLoading(false);
@@ -205,6 +208,17 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setIsLoading(false);
         }
     }, [taskId]);
+
+    const sanitizeTaskDataFromBackend = (data: TaskData): TaskData => {
+        const sanitizedDataBlocks = data.blocks.map((block: any) => {
+            const { position, ...dataWithoutPositionProperty } = block
+            return dataWithoutPositionProperty
+        })
+
+        const sanitizedTaskData = { ...data, blocks: sanitizedDataBlocks }
+
+        return sanitizedTaskData
+    }
 
 
     // Handle cancel in edit mode - revert to original data
@@ -302,7 +316,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const handleConfirmlUnpublish = async () => {
+    const handleConfirmUnpublish = async () => {
         if (!taskId) {
             console.error("Cannot unpublish: taskId is not provided");
             setErrorMessage("Cannot unpublish: Task ID is missing");
@@ -316,7 +330,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Additionally, "Unpublish" is not going to be visible when Editing, so ideally data of the editorContent and taskData should be the same
             const currentTitle = taskData?.title || "";
             const currentContent = taskData?.blocks || []
-            const currentScheduledPublishAt = taskData?.scheduled_publish_at || null;
+            const currentScheduledPublishAt = null; // This has to be null because, the we also "unschedule" a scheduled to publish task. 
 
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
@@ -652,7 +666,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 message="This material will be unpublished to learners immediately after this action. Are you sure you want to proceed?"
                 confirmButtonText="Unpublish"
                 cancelButtonText="Cancel"
-                onConfirm={handleConfirmlUnpublish}
+                onConfirm={handleConfirmUnpublish}
                 onCancel={handleCancelUnpublish}
                 isLoading={isUnpublishing}
                 errorMessage={errorMessage}

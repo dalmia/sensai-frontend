@@ -1030,7 +1030,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         }}
                                     >
                                         <ZapOff size={16} className="mr-2" />
-                                        Unpublish
+                                        {activeItem.scheduled_publish_at ? `Unschedule` : `Unpublish`}
                                     </button>
                                 </>
                             )}
@@ -1071,7 +1071,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     }
                                     
                                     navigateBackWindowHistoryIfDialogWasOpen()
-                                    displayToast("Task Unpublished", "Your learning material has been unpublished", "✅");
+                                    displayToast("Task Unpublished", "Your learning material has been unpublished", "⛔");
                                 }}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
