@@ -345,7 +345,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to save learning material: ${response.status}`)
+                const responseBody = await response.json()
+                throw new Error(`Failed to unpublish learning material: \"${responseBody?.detail}\" (${response.status})`)
             }
 
             const taskDataFromResponse = await response.json();
@@ -355,14 +356,14 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setShowUnpublishConfirmation(false);
 
         } catch (error) {
-            console.error("Error publishing learning material:", error);
-            setErrorMessage(error instanceof Error ? error.message : "Failed to publish learning material")
+            setErrorMessage(error instanceof Error ? error.message : "Failed to unpublish learning material")
             setIsUnpublishing(false);
         }
     };
 
     const handleCancelUnpublish = () => {
         setShowUnpublishConfirmation(false)
+        setErrorMessage(null)
     };
 
 
