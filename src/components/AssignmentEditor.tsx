@@ -545,6 +545,14 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         }
     }));
 
+    if (isLoadingAssignment) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-full relative">
             {isPreviewMode ? (
@@ -570,12 +578,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                         onCancel={onPublishCancel || (() => { })}
                         isLoading={false}
                     />
-                    {isLoadingAssignment && (
-                        <div className="flex items-center justify-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-                        </div>
-                    )}
-                        {/* Settings: Submission Type and Copy/Paste Control */}
+
+                    {/* Settings: Submission Type and Copy/Paste Control */}
                     <div className="space-y-4 px-6 py-4 bg-[#111111]">
                         <div className="flex items-center">
                             <Dropdown
@@ -592,22 +596,24 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                 disabled={readOnly}
                             />
                         </div>
-                            <div className="flex items-center">
-                                <Dropdown
-                                    icon={<ClipboardCheck size={16} />}
-                                    title="Allow copy/paste?"
-                                    options={copyPasteControlOptions}
-                                    selectedOption={selectedCopyPasteControl}
-                                    onChange={(e) => {
-                                        if (!Array.isArray(e)) {
-                                            setSelectedCopyPasteControl(e);
-                                            setDirty(true);
-                                        }
-                                    }}
-                                    disabled={readOnly}
-                                />
-                            </div>
+                        <div className="flex items-center">
+                            <Dropdown
+                                icon={<ClipboardCheck size={16} />}
+                                title="Allow copy/paste?"
+                                options={copyPasteControlOptions}
+                                selectedOption={selectedCopyPasteControl}
+                                onChange={(e) => {
+                                    if (!Array.isArray(e)) {
+                                        setSelectedCopyPasteControl(e);
+                                        setDirty(true);
+                                    }
+                                }}
+                                disabled={readOnly}
+                            />
+                        </div>
                     </div>
+
+                    {/* Tab navigation */}
                     <div className="flex justify-center">
                         <div className="inline-flex bg-[#222222] rounded-lg p-1">
                             <button
@@ -658,11 +664,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                     </div>
                                 )}
                                 <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                    {isLoadingAssignment ? (
-                                        <div className="flex items-center justify-center h-32">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                                        </div>
-                                    ) : isLoadingIntegration ? (
+                                    {isLoadingIntegration ? (
                                         <div className="flex items-center justify-center h-32">
                                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                                         </div>
@@ -702,7 +704,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                         )}
 
                         {activeTab === 'evaluation' && (
-                            <div className="h-full flex flex-col p-6 space-y-6 overflow-hidden">
+                            <div className="h-full flex flex-col px-16 space-y-6 overflow-hidden">
                                 {/* Eve Section */}
                                 <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2 flex-shrink-0">
                                     <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
@@ -842,22 +844,24 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                         )}
 
                         {activeTab === 'knowledge' && (
-                            <KnowledgeBaseEditor
-                                knowledgeBaseBlocks={knowledgeBaseBlocks}
-                                linkedMaterialIds={linkedMaterialIds}
-                                courseId={courseId}
-                                readOnly={readOnly || isLoadingAssignment}
-                                isDarkMode={isDarkMode}
-                                onKnowledgeBaseChange={(blocks) => {
-                                    setKnowledgeBaseBlocks(blocks);
-                                    setDirty(true);
-                                }}
-                                onLinkedMaterialsChange={(ids) => {
-                                    setLinkedMaterialIds(ids);
-                                    setDirty(true);
-                                }}
-                                className="assignment"
-                            />
+                            <div className="h-full flex flex-col px-16 space-y-6 overflow-hidden">
+                                <KnowledgeBaseEditor
+                                    knowledgeBaseBlocks={knowledgeBaseBlocks}
+                                    linkedMaterialIds={linkedMaterialIds}
+                                    courseId={courseId}
+                                    readOnly={readOnly || isLoadingAssignment}
+                                    isDarkMode={isDarkMode}
+                                    onKnowledgeBaseChange={(blocks) => {
+                                        setKnowledgeBaseBlocks(blocks);
+                                        setDirty(true);
+                                    }}
+                                    onLinkedMaterialsChange={(ids) => {
+                                        setLinkedMaterialIds(ids);
+                                        setDirty(true);
+                                    }}
+                                    className="assignment"
+                                />
+                            </div>
                         )}
                     </div>
                 </div>

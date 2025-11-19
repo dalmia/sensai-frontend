@@ -58,7 +58,6 @@ describe('LearnerAssignmentView', () => {
 
     it('shows loading then renders problem and chat', async () => {
         render(<LearnerAssignmentView taskId="1" userId="2" />);
-        expect(screen.getByText('Loading assignment...')).toBeInTheDocument();
         await waitFor(() => expect(screen.getByTestId('blocknote')).toBeInTheDocument());
         expect(screen.getByTestId('chat-view')).toBeInTheDocument();
     });

@@ -45,7 +45,7 @@ const KnowledgeBaseEditor = ({
     };
 
     return (
-        <div className={`w-full h-full flex flex-row overflow-y-auto p-6 ${className}`}>
+        <div className={`w-full h-full flex flex-row overflow-y-auto ${className}`}>
             {/* Left column with callout (20-30% width) */}
             <div className="w-[20%]">
                 <div className="bg-[#222222] p-3 rounded-md">

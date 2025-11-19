@@ -166,7 +166,7 @@ export default function CreateCourse() {
         } else if (!taskId) {
             setIsDialogOpen(false);
         }
-    }, [taskId, questionId, modules.length, isDialogOpen, activeItem]);
+    }, [taskId, questionId, modules.length]);
 
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {

@@ -895,29 +895,36 @@ export default function LearnerAssignmentView({
     }, []);
 
     const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
+        console.log('[handleFileDownload] Start', { fileUuid, fileName });
         try {
             // Try to get presigned URL first
             const presignedResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
                 { method: 'GET' }
             );
+            console.log('[handleFileDownload] Presigned response', { status: presignedResponse.status, ok: presignedResponse.ok });
 
             let downloadUrl: string;
             if (presignedResponse.ok) {
                 const { url } = await presignedResponse.json();
                 downloadUrl = url;
+                console.log('[handleFileDownload] Using presigned URL', { downloadUrl: downloadUrl.substring(0, 100) + '...' });
             } else {
                 // Fallback to direct download
                 downloadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
+                console.log('[handleFileDownload] Using fallback URL', { downloadUrl });
             }
 
             // Fetch the file as a blob to have control over the filename
+            console.log('[handleFileDownload] Fetching file blob');
             const fileResponse = await fetch(downloadUrl);
+            console.log('[handleFileDownload] File response', { status: fileResponse.status, ok: fileResponse.ok, contentType: fileResponse.headers.get('content-type') });
             if (!fileResponse.ok) {
                 throw new Error('Failed to download file');
             }
 
             const blob = await fileResponse.blob();
+            console.log('[handleFileDownload] Blob created', { size: blob.size, type: blob.type });
             const blobUrl = URL.createObjectURL(blob);
 
             // Create a temporary link and trigger download with the correct filename
@@ -930,6 +937,7 @@ export default function LearnerAssignmentView({
 
             // Clean up the object URL
             URL.revokeObjectURL(blobUrl);
+            console.log('[handleFileDownload] Download completed successfully');
         } catch (error) {
             console.error('Error downloading file:', error);
         }
@@ -1071,10 +1079,7 @@ export default function LearnerAssignmentView({
     if (isLoadingAssignment) {
         return (
             <div className={`w-full h-full flex items-center justify-center ${className}`}>
-                <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
-                    <div className="text-white text-lg">Loading assignment...</div>
-                </div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
             </div>
         );
     }
