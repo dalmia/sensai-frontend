@@ -707,7 +707,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                                 // Show toast message for external paste attempts
                                                                 setToastData({
                                                                     title: 'Not allowed',
-                                                                    description: 'Pasting the answer is disabled for this question',
+                                                                    description: `Pasting the answer is disabled for this ${taskType === 'assignment' ? 'assignment' : 'question'}`,
                                                                     emoji: '🚫'
                                                                 });
                                                             }

@@ -7,6 +7,7 @@ import ScorecardView from "./ScorecardView";
 import { ChatMessage, ScorecardItem } from "../types/quiz";
 import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
 import { blobToBase64, convertAudioBufferToWav } from '@/lib/utils/audioUtils';
+import Toast from "./Toast";
 
 import { CheckCircle } from "lucide-react";
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
@@ -75,6 +76,7 @@ export default function LearnerAssignmentView({
     const [problemBlocks, setProblemBlocks] = useState<unknown[]>(initialProblemBlocks);
     const [title, setTitle] = useState<string>(initialTitle || "");
     const [submissionType, setSubmissionType] = useState<string>(initialSubmissionType);
+    const [settings, setSettings] = useState<{ allowCopyPaste?: boolean }>({});
 
     // Right panel: chat + upload local state
     const [chatHistory, setChatHistory] = useState<ChatMessageLocal[]>([]);
@@ -92,6 +94,20 @@ export default function LearnerAssignmentView({
     // Input state for ChatView
     const [currentAnswer, setCurrentAnswer] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Toast state
+    const [toastData, setToastData] = useState({
+        title: '',
+        description: '',
+        emoji: ''
+    });
+    const [showToast, setShowToast] = useState(false);
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => setShowToast(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
 
     // Update the parent component when AI responding state changes
     useEffect(() => {
@@ -130,6 +146,11 @@ export default function LearnerAssignmentView({
                     // Load submission type
                     if (data.input_type) {
                         setSubmissionType(data.input_type);
+                    }
+
+                    // Load settings
+                    if (data.settings) {
+                        setSettings(data.settings);
                     }
                 }
 
@@ -365,8 +386,8 @@ export default function LearnerAssignmentView({
         correctAnswer: [],
         scorecardData: undefined,
         codingLanguages: [],
-        settings: {},
-    }), [title, submissionType]);
+        settings: settings,
+    }), [title, submissionType, settings]);
 
     // Map local chat history to ChatView-compatible messages, attaching scorecard for completed assignment
     const chatHistoryForView = useMemo(() => {
@@ -1021,6 +1042,31 @@ export default function LearnerAssignmentView({
         }
     }, [evaluationStatus, chatHistory]);
 
+    // Disable copy/paste only when explicitly set to false
+    const disableCopyPaste = settings?.allowCopyPaste === false;
+
+    // Prevent CMD/CTRL+A when copy/paste is disabled
+    useEffect(() => {
+        function handleKeyDown(event: KeyboardEvent) {
+            if (disableCopyPaste) {
+                if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setToastData({
+                        title: 'Not allowed',
+                        description: 'Selecting all text is disabled for this assignment',
+                        emoji: '🚫'
+                    });
+                    setShowToast(true);
+                }
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [disableCopyPaste]);
+
     // Show loading state while fetching assignment data
     if (isLoadingAssignment) {
         return (
@@ -1070,7 +1116,21 @@ export default function LearnerAssignmentView({
                     </div>
 
                     <div className="flex-1">
-                        <div className="ml-[-60px]">
+                        <div
+                            className="ml-[-60px]"
+                            onCopy={(e) => {
+                                if (disableCopyPaste) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setToastData({
+                                        title: 'Not allowed',
+                                        description: 'Copying is disabled for this assignment',
+                                        emoji: '🚫'
+                                    });
+                                    setShowToast(true);
+                                }
+                            }}
+                        >
                             {integrationBlocks.length > 0 ? (
                                 <div className="bg-[#191919] text-white px-20 pr-0 pb-6 rounded-lg">
                                     <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
@@ -1131,6 +1191,14 @@ export default function LearnerAssignmentView({
                     )}
                 </div>
             </div>
+            {/* Toast */}
+            <Toast
+                show={showToast}
+                title={toastData.title}
+                description={toastData.description}
+                emoji={toastData.emoji}
+                onClose={() => setShowToast(false)}
+            />
         </div>
     );
 }
