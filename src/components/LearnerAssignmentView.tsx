@@ -849,24 +849,21 @@ export default function LearnerAssignmentView({
         if (viewOnly) return;
 
         try {
-            // Upload the file first
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('content_type', 'application/zip');
+            // Convert the file to base64 for presigned URL upload (similar to audio flow)
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
 
-            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                method: 'POST',
-                body: formData
-            });
+            reader.onloadend = async () => {
+                const base64File = reader.result as string;
+                const base64Data = base64File.split(',')[1];
 
-            if (!uploadResponse.ok) {
-                throw new Error(`Failed to upload file: ${uploadResponse.status}`);
-            }
+                // Pass fileData to processUserResponse so it uses the presigned URL flow
+                processUserResponse(file.name, 'file', undefined, undefined, base64Data);
+            };
 
-            const uploadData = await uploadResponse.json();
-            const fileUuid = uploadData.file_uuid;
-
-            processUserResponse(file.name, 'file', undefined, fileUuid);
+            reader.onerror = () => {
+                throw new Error('Failed to read file');
+            };
         } catch (error) {
             console.error('Error processing file upload:', error);
             // Show error message to the user
@@ -895,36 +892,29 @@ export default function LearnerAssignmentView({
     }, []);
 
     const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
-        console.log('[handleFileDownload] Start', { fileUuid, fileName });
         try {
             // Try to get presigned URL first
             const presignedResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
                 { method: 'GET' }
             );
-            console.log('[handleFileDownload] Presigned response', { status: presignedResponse.status, ok: presignedResponse.ok });
 
             let downloadUrl: string;
             if (presignedResponse.ok) {
                 const { url } = await presignedResponse.json();
                 downloadUrl = url;
-                console.log('[handleFileDownload] Using presigned URL', { downloadUrl: downloadUrl.substring(0, 100) + '...' });
             } else {
                 // Fallback to direct download
                 downloadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
-                console.log('[handleFileDownload] Using fallback URL', { downloadUrl });
             }
 
             // Fetch the file as a blob to have control over the filename
-            console.log('[handleFileDownload] Fetching file blob');
             const fileResponse = await fetch(downloadUrl);
-            console.log('[handleFileDownload] File response', { status: fileResponse.status, ok: fileResponse.ok, contentType: fileResponse.headers.get('content-type') });
             if (!fileResponse.ok) {
                 throw new Error('Failed to download file');
             }
 
             const blob = await fileResponse.blob();
-            console.log('[handleFileDownload] Blob created', { size: blob.size, type: blob.type });
             const blobUrl = URL.createObjectURL(blob);
 
             // Create a temporary link and trigger download with the correct filename
@@ -937,7 +927,6 @@ export default function LearnerAssignmentView({
 
             // Clean up the object URL
             URL.revokeObjectURL(blobUrl);
-            console.log('[handleFileDownload] Download completed successfully');
         } catch (error) {
             console.error('Error downloading file:', error);
         }
