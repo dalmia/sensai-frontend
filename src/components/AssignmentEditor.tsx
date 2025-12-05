@@ -3,22 +3,24 @@
 import { forwardRef, useImperativeHandle, useMemo, useState, useRef, useCallback, useEffect } from "react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import Dropdown, { DropdownOption } from "./Dropdown";
-import { submissionTypeOptions, copyPasteControlOptions } from "./dropdownOptions";
+import { answerTypeOptions, copyPasteControlOptions } from "./dropdownOptions";
 import NotionIntegration from "./NotionIntegration";
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 import LearnerAssignmentView from "./LearnerAssignmentView";
 import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
+import EvaluationCriteriaEditor from "./EvaluationCriteriaEditor";
 import { BookOpen, ClipboardCheck, HelpCircle } from "lucide-react";
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import { hasBlocksContent } from "@/lib/utils/blockUtils";
-import { useDragInput } from "@/lib/utils/dragInput";
 import { handleIntegrationPageSelection, handleIntegrationPageRemoval } from "@/lib/utils/integrationUtils";
 import { useAuth } from "@/lib/auth";
 import { validateScorecardCriteria } from "@/lib/utils/scorecardValidation";
 import { ScorecardTemplate } from "./ScorecardPickerDialog";
 import "@udus/notion-renderer/styles/globals.css";
-import Tooltip from "./Tooltip";
 import PublishConfirmationDialog from './PublishConfirmationDialog';
+
+// Submission type options filtered from answerTypeOptions
+const submissionTypeOptions = answerTypeOptions.filter(opt => opt.value === 'text' || opt.value === 'audio');
 
 export interface AssignmentEditorHandle {
     hasChanges: () => boolean;
@@ -71,6 +73,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     const [scoreRange, setScoreRange] = useState<{ min_score: number; max_score: number; pass_score: number }>({ min_score: 1, max_score: 4, pass_score: 3 });
     // Submission type for learner responses
     const [submissionType, setSubmissionType] = useState<DropdownOption>(submissionTypeOptions[0]);
+
+    const [responseType, setResponseType] = useState<'chat' | 'exam'>('chat');
     // Copy/paste control setting
     const [selectedCopyPasteControl, setSelectedCopyPasteControl] = useState<DropdownOption>(copyPasteControlOptions[0]);
 
@@ -122,7 +126,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                 const data = await response.json();
 
                 if (data) {
-                    const assignment = data;
+                    const assignment = data.assignment;
 
                     // Load problem blocks
                     if (assignment.blocks && Array.isArray(assignment.blocks)) {
@@ -192,64 +196,11 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         setScorecardId(undefined);
     }, [taskId]);
 
-    // removed old per-field handlers in favor of unified handlers below
-
     const handleScoreChange = useCallback((key: 'min_score' | 'max_score' | 'pass_score', value: number) => {
         setScoreRange(prev => ({ ...prev, [key]: value }));
         if (highlightedField === 'evaluation') setHighlightedField(null);
         setDirty(true);
     }, [highlightedField]);
-
-    // Editing state for each input field
-    const [editingField, setEditingField] = useState<'min_score' | 'max_score' | 'pass_score' | null>(null);
-
-    // Drag functionality for score inputs using utility hook
-    const minScoreDrag = useDragInput({
-        value: scoreRange.min_score,
-        onChange: (value) => handleScoreChange('min_score', value),
-        min: 1,
-        max: scoreRange.max_score - 1,
-        disabled: readOnly || isLoadingAssignment,
-        onDragStart: () => setEditingField('min_score')
-    });
-
-    const maxScoreDrag = useDragInput({
-        value: scoreRange.max_score,
-        onChange: (value) => handleScoreChange('max_score', value),
-        min: scoreRange.min_score + 1,
-        max: 100,
-        disabled: readOnly || isLoadingAssignment,
-        onDragStart: () => setEditingField('max_score')
-    });
-
-    const passScoreDrag = useDragInput({
-        value: scoreRange.pass_score,
-        onChange: (value) => handleScoreChange('pass_score', value),
-        min: scoreRange.min_score,
-        max: scoreRange.max_score,
-        disabled: readOnly || isLoadingAssignment,
-        onDragStart: () => setEditingField('pass_score')
-    });
-
-    // Handle click to edit
-    const handleClickToEdit = useCallback((field: 'min_score' | 'max_score' | 'pass_score') => {
-        if (readOnly || isLoadingAssignment) return;
-        setEditingField(field);
-    }, [readOnly, isLoadingAssignment]);
-
-    // Handle blur to stop editing
-    const handleBlur = useCallback(() => {
-        setEditingField(null);
-    }, []);
-
-    // Handle key down for Enter/Escape
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            setEditingField(null);
-        } else if (e.key === 'Escape') {
-            setEditingField(null);
-        }
-    }, []);
 
     const hasValidProblem = useMemo(() => hasBlocksContent(problemBlocks), [problemBlocks]);
 
@@ -479,7 +430,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                         pass_score: scoreRange.pass_score,
                     },
                     input_type: submissionType.value,
-                    response_type: null,
+                    response_type: responseType,
                     max_attempts: null,
                     settings: {
                         allowCopyPaste: selectedCopyPasteControl.value === 'true'
@@ -542,7 +493,9 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         },
         cancel: () => {
             setDirty(false);
-        }
+        },
+        hasUnsavedScorecardChanges: () => scorecardManagerRef.current?.hasUnsavedScorecardChanges() ?? false,
+        handleScorecardChangesRevert: () => scorecardManagerRef.current?.handleScorecardChangesRevert()
     }));
 
     if (isLoadingAssignment) {
@@ -705,131 +658,17 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
 
                         {activeTab === 'evaluation' && (
                             <div className="h-full flex flex-col px-16 space-y-6 overflow-hidden">
-                                {/* Eve Section */}
-                                <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2 flex-shrink-0">
-                                    <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
-                                        <div className="flex items-center mb-4">
-                                            <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
-                                            <Tooltip content="Used to decide if depth Q&A should begin" position="top">
-                                                <HelpCircle size={16} className="ml-2 text-white" />
-                                            </Tooltip>
-                                        </div>
-
-                                        {/* Table header */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className="gap-2 mb-2 text-xs text-gray-300">
-                                            <div className="px-2 text-center flex items-center justify-center">
-                                                Minimum
-                                                <Tooltip content="The minimum score that a learner needs to be marked as complete" position="top">
-                                                    <HelpCircle size={12} className="ml-2 text-white" />
-                                                </Tooltip>
-                                            </div>
-                                            <div className="px-2 text-center flex items-center justify-center">
-                                                Maximum
-                                                <Tooltip content="The maximum score that a learner can get" position="top">
-                                                    <HelpCircle size={12} className="ml-2 text-white" />
-                                                </Tooltip>
-                                            </div>
-                                            <div className="px-2 text-center flex items-center justify-center">
-                                                Pass Mark
-                                                <Tooltip content="The minimum score that a learner needs to get to be marked as complete" position="left">
-                                                    <HelpCircle size={12} className="ml-2 text-white" />
-                                                </Tooltip>
-                                            </div>
-                                        </div>
-
-                                        {/* Threshold row */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }} className={`gap-2 rounded-md p-1 text-white bg-[#2A2A2A] ${highlightedField === 'evaluation' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                            {/* Min Score Cell */}
-                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                {editingField === 'min_score' ? (
-                                                    <input
-                                                        type="number"
-                                                        min={1}
-                                                        max={scoreRange.max_score - 1}
-                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                        value={scoreRange.min_score}
-                                                        onChange={(e) => handleScoreChange('min_score', Number(e.target.value))}
-                                                        onBlur={handleBlur}
-                                                        onKeyDown={handleKeyDown}
-                                                        autoFocus
-                                                        onMouseDown={minScoreDrag.dragProps.onMouseDown}
-                                                        disabled={readOnly || isLoadingAssignment}
-                                                    />
-                                                ) : (
-                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                        <span
-                                                            className="block cursor-pointer hover:opacity-80"
-                                                            onClick={() => handleClickToEdit('min_score')}
-                                                            {...minScoreDrag.dragProps}
-                                                        >
-                                                            {scoreRange.min_score}
-                                                        </span>
-                                                    </Tooltip>
-                                                )}
-                                            </div>
-
-                                            {/* Max Score Cell */}
-                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                {editingField === 'max_score' ? (
-                                                    <input
-                                                        type="number"
-                                                        min={scoreRange.min_score + 1}
-                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                        value={scoreRange.max_score}
-                                                        onChange={(e) => handleScoreChange('max_score', Number(e.target.value))}
-                                                        onBlur={handleBlur}
-                                                        onKeyDown={handleKeyDown}
-                                                        autoFocus
-                                                        onMouseDown={maxScoreDrag.dragProps.onMouseDown}
-                                                        disabled={readOnly || isLoadingAssignment}
-                                                    />
-                                                ) : (
-                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                        <span
-                                                            className="block cursor-pointer hover:opacity-80"
-                                                            onClick={() => handleClickToEdit('max_score')}
-                                                            {...maxScoreDrag.dragProps}
-                                                        >
-                                                            {scoreRange.max_score}
-                                                        </span>
-                                                    </Tooltip>
-                                                )}
-                                            </div>
-
-                                            {/* Pass Score Cell */}
-                                            <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
-                                                {editingField === 'pass_score' ? (
-                                                    <input
-                                                        type="number"
-                                                        min={scoreRange.min_score}
-                                                        max={scoreRange.max_score}
-                                                        className="bg-[#333] rounded w-1/2 text-xs p-1 outline-none text-center"
-                                                        value={scoreRange.pass_score}
-                                                        onChange={(e) => handleScoreChange('pass_score', Number(e.target.value))}
-                                                        onBlur={handleBlur}
-                                                        onKeyDown={handleKeyDown}
-                                                        autoFocus
-                                                        {...passScoreDrag.dragProps}
-                                                        disabled={readOnly || isLoadingAssignment}
-                                                    />
-                                                ) : (
-                                                    <Tooltip content="Click to edit or drag to change" position="bottom" disabled={readOnly || isLoadingAssignment}>
-                                                        <span
-                                                            className="block cursor-pointer hover:opacity-80"
-                                                            onClick={() => handleClickToEdit('pass_score')}
-                                                            {...passScoreDrag.dragProps}
-                                                        >
-                                                            {scoreRange.pass_score}
-                                                        </span>
-                                                    </Tooltip>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* Evaluation Criteria Section */}
+                                <EvaluationCriteriaEditor
+                                    scoreRange={scoreRange}
+                                    onScoreChange={handleScoreChange}
+                                    readOnly={readOnly || isLoadingAssignment}
+                                    isLoading={isLoadingAssignment}
+                                    highlightedField={highlightedField === 'evaluation' ? 'evaluation' : null}
+                                />
 
                                 {/* Scorecard Section */}
-                                <div className={`h-full ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
+                                    <div className={`h-full mb-1 ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
                                     <ScorecardManager
                                         ref={scorecardManagerRef}
                                         schoolId={schoolId}

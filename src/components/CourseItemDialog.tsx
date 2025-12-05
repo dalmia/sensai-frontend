@@ -620,13 +620,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     }
                 }
             } else if (activeItem?.type === 'assignment' && assignmentEditorRef.current) {
-                // Check if assignment has content
-                const hasContent = assignmentEditorRef.current.hasContent();
-
-                if (!hasContent) {
-                    // Show toast notification
-                    displayToast("Empty assignment", "Please add content to the assignment before previewing", "🚫");
-                    return; // Prevent entering preview mode
+                // Validate assignment before previewing - shows specific error messages
+                if (assignmentEditorRef.current.validateBeforePublish) {
+                    const isValid = assignmentEditorRef.current.validateBeforePublish();
+                    if (!isValid) {
+                        return; // Validation shows its own toast via onValidationError
+                    }
                 }
             }
         }
@@ -700,6 +699,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         // For quizzes, check for unsaved scorecard changes first
         if (activeItem?.type === 'quiz' && quizEditorRef.current) {
             if (quizEditorRef.current.hasUnsavedScorecardChanges()) {
+                pendingActionRef.current = action;
+                setShowUnsavedScorecardConfirmation(true);
+                return;
+            }
+        }
+
+        // For assignments, check for unsaved scorecard changes
+        if (activeItem?.type === 'assignment' && assignmentEditorRef.current) {
+            if (assignmentEditorRef.current.hasUnsavedScorecardChanges && assignmentEditorRef.current.hasUnsavedScorecardChanges()) {
                 pendingActionRef.current = action;
                 setShowUnsavedScorecardConfirmation(true);
                 return;
@@ -1269,7 +1277,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             <ConfirmationDialog
                 open={showUnsavedScorecardConfirmation}
                 title="Unsaved Scorecard Changes"
-                message={`The scorecard for this question has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
+                message={`The scorecard has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
                 confirmButtonText="Discard changes"
                 cancelButtonText="Go Back"
                 onConfirm={handleDiscardScorecardChanges}

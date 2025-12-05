@@ -273,7 +273,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                         'text-gray-400 hover:text-white'}`}
                     onClick={() => setActiveTab('yours')}
                 >
-                    {type === 'assignment' ? 'Your key areas' : 'Your Scorecards'}
+                    Your Scorecards
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'templates' ?
@@ -303,7 +303,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder={type === 'assignment' ? "Search your key areas" : "Search your scorecards"}
+                            placeholder="Search your scorecards"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
@@ -338,8 +338,8 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     ) : (
                         <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                                 {searchQuery
-                                    ? (type === 'assignment' ? 'No key areas match your search' : 'No scorecards match your search')
-                                    : (type === 'assignment' ? 'No key areas available' : 'No scorecards available')
+                                    ? 'No scorecards match your search'
+                                    : 'No scorecards available'
                                 }
                         </div>
                     )}
@@ -414,7 +414,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             >
                 {/* Header */}
                 <div className="flex justify-between items-center p-4">
-                    <h2 className="text-white text-lg font-normal">{type === 'assignment' ? 'New key areas' : 'New scorecard'}</h2>
+                    <h2 className="text-white text-lg font-normal">New scorecard</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-white transition-colors cursor-pointer"
@@ -432,7 +432,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     <div className="w-8 h-8 bg-[#313131] rounded flex items-center justify-center mr-3">
                         <Plus size={20} className="text-white" />
                     </div>
-                    <span className="text-white text-sm">{type === 'assignment' ? 'New empty key areas' : 'New empty scorecard'}</span>
+                    <span className="text-white text-sm">New empty scorecard</span>
                 </div>
 
                 {/* Tab navigation */}

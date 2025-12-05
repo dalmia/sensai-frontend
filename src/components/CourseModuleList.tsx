@@ -800,11 +800,11 @@ export default function CourseModuleList({
                                                     ) : item.type === 'assignment' ? (
                                                         <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
                                                             ? "bg-green-500/15"
-                                                            : "bg-orange-500/15"
+                                                            : "bg-cyan-500/15"
                                                             }`}>
                                                             <PenSquare size={16} className={`${completedItems[item.id]
                                                                 ? "text-green-500"
-                                                                : "text-orange-400"
+                                                                : "text-cyan-400"
                                                                 }`} />
                                                         </div>
                                                     ) : (

@@ -179,8 +179,7 @@ describe('ChatPlaceholderView Component', () => {
         );
 
         expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
-        expect(screen.getByText(/The AI will analyze your work and provide detailed feedback/)).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
     });
 
     it('should render view-only message for assignment when viewOnly is true', () => {
@@ -207,7 +206,7 @@ describe('ChatPlaceholderView Component', () => {
         );
 
         expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
         unmountText();
 
         // Test with audio input type
@@ -220,7 +219,7 @@ describe('ChatPlaceholderView Component', () => {
         );
 
         expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
         unmountAudio();
 
         // Test with code input type
@@ -233,7 +232,7 @@ describe('ChatPlaceholderView Component', () => {
         );
 
         expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
     });
 
     it('should render assignment placeholder in test mode', () => {
@@ -252,7 +251,7 @@ describe('ChatPlaceholderView Component', () => {
 
         // Should show the assignment placeholder content instead
         expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project files as a ZIP archive/)).toBeInTheDocument();
+        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
     });
 
 });

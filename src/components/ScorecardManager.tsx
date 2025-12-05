@@ -59,7 +59,6 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
 
     // State for scorecard templates dialog
     const [showScorecardDialog, setShowScorecardDialog] = useState(false);
-    const [scorecardDialogPosition, setScorecardDialogPosition] = useState<{ top: number, left: number } | null>(null);
     const scorecardButtonRef = useRef<HTMLButtonElement>(null);
 
     // State for scorecard delete confirmation
@@ -219,35 +218,23 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
 
     // Function to handle opening the scorecard templates dialog
     const handleOpenScorecardDialog = () => {
-        const buttonElement = scorecardButtonRef.current;
-        if (buttonElement) {
-            const rect = buttonElement.getBoundingClientRect();
-
-            // Approximate height of the dialog (templates + header)
-            const estimatedDialogHeight = 380;
-
-            // Position the bottom of the dialog above the button with some spacing
-            setScorecardDialogPosition({
-                top: Math.max(10, schoolScorecards.length > 0 ? rect.top - estimatedDialogHeight - 80 : rect.top - estimatedDialogHeight - 10), // Ensure at least 10px from top of viewport
-                left: Math.max(10, rect.left - 40) // Center horizontally but ensure it's not off-screen
-            });
-            setShowScorecardDialog(true);
-        }
+        setShowScorecardDialog(true);
     };
 
     // Function to handle creating a new scorecard
     const handleCreateNewScorecard = async () => {
         setShowScorecardDialog(false);
 
-        const newScorecardTitle = type === 'assignment' ? "Key Areas" : "New Scorecard";
-
         // Scorecard title is handled by the Scorecard component
 
         try {
             // Use the reusable function to create scorecard
-            const createdScorecard = await createScorecard(newScorecardTitle, [
-                { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
-            ]);
+            const createdScorecard = await createScorecard(
+                "New Scorecard",
+                [
+                    { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
+                ]
+            );
 
             // Create scorecard data using the backend ID
             const newScorecardData: ScorecardTemplate = {
@@ -738,7 +725,15 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                 onClose={() => setShowScorecardDialog(false)}
                 onCreateNew={handleCreateNewScorecard}
                 onSelectTemplate={handleSelectScorecardTemplate}
-                position={scorecardDialogPosition || undefined}
+                position={(() => {
+                    if (!showScorecardDialog || !scorecardButtonRef.current) return undefined;
+                    const rect = scorecardButtonRef.current.getBoundingClientRect();
+                    const estimatedDialogHeight = 400;
+                    return {
+                        top: rect.top - estimatedDialogHeight,
+                        left: rect.left - 60
+                    };
+                })()}
                 schoolScorecards={schoolScorecards}
                 type={type}
             />
@@ -789,13 +784,10 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                     <div className="h-full flex flex-col items-center justify-center text-center">
                         <div className="max-w-md">
                             <h3 className="text-xl font-light text-white mb-3">
-                                {type === 'assignment' ? 'What are key areas?' : 'What is a scorecard?'}
+                                What is a scorecard?
                             </h3>
                             <p className="text-gray-400 mb-6">
-                                {type === 'assignment'
-                                    ? 'Define the specific parts of the project to be evaluated: such as logic, data handling, UI behavior, or API integration. Use a template or create your own.'
-                                    : 'A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own'
-                                }
+                                A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
                             </p>
                             <button
                                 className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
@@ -806,7 +798,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                                 <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
                                     <Plus size={12} className="text-black" />
                                 </div>
-                                {type === 'assignment' ? 'Add key areas' : 'Add a scorecard'}
+                                Add a scorecard
                             </button>
                     </div>
                 </div>

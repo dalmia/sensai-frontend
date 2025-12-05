@@ -51,7 +51,7 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                 : taskType === 'assignment'
                                     ? (
                                         <p className="text-gray-300 font-light text-center mt-1">
-                                            Upload your project files as a ZIP archive. The AI will analyze your work and provide detailed feedback on your implementation, code quality, and approach.
+                                            Upload your project as a .zip file. Make sure to include all the relevant files. Be careful as you can upload your submission just once.
                                         </p>
                                     )
                                     : responseType === 'exam'

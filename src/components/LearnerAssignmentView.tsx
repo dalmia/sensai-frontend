@@ -183,9 +183,9 @@ export default function LearnerAssignmentView({
     }, [onTaskComplete, taskId]);
 
 
-    // Helper function to convert key_area_scores to ScorecardItem format
-    const convertKeyAreaScoresToScorecard = useCallback((keyAreaScores: Record<string, any>): ScorecardItem[] => {
-        return Object.entries(keyAreaScores).map(([category, data]) => ({
+    // Helper function to convert scorecard scores to ScorecardItem format
+    const convertScorecardScoresToScorecard = useCallback((scorecardScores: Record<string, any>): ScorecardItem[] => {
+        return Object.entries(scorecardScores).map(([category, data]) => ({
             category,
             score: data.score || 0,
             max_score: data.max_score || 4,
@@ -400,7 +400,7 @@ export default function LearnerAssignmentView({
                 try {
                     const parsed = JSON.parse(base.rawContent || base.content || '{}');
                     if (parsed && parsed.evaluation_status === 'completed' && parsed.key_area_scores) {
-                        const scorecard = convertKeyAreaScoresToScorecard(parsed.key_area_scores);
+                        const scorecard = convertScorecardScoresToScorecard(parsed.key_area_scores);
                         if (Array.isArray(scorecard) && scorecard.length > 0) {
                             base.scorecard = scorecard;
                             // Ensure displayed content is feedback text
@@ -414,7 +414,7 @@ export default function LearnerAssignmentView({
             return base;
         });
         return mapped as unknown as ChatMessage[];
-    }, [chatHistory, convertKeyAreaScoresToScorecard]);
+    }, [chatHistory, convertScorecardScoresToScorecard]);
 
     // Helpers for ChatView handlers
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -950,7 +950,7 @@ export default function LearnerAssignmentView({
             const parsedContent = JSON.parse(lastAiMessage.rawContent || lastAiMessage.content);
             // check if all criteria are met
             if (parsedContent.key_area_scores && parsedContent.evaluation_status === "completed") {
-                const scorecard = convertKeyAreaScoresToScorecard(parsedContent.key_area_scores);
+                const scorecard = convertScorecardScoresToScorecard(parsedContent.key_area_scores);
                 if (scorecard.length > 0) {
                     // check if all scorecard items meet their pass criteria
                     const allCriteriaMet = scorecard.every((item: ScorecardItem) =>
@@ -969,7 +969,7 @@ export default function LearnerAssignmentView({
             // If parsing fails, check if content contains "completed" status
             return (lastAiMessage.rawContent || lastAiMessage.content).includes('"evaluation_status":"completed"');
         }
-    }, [evaluationStatus, chatHistory, convertKeyAreaScoresToScorecard]);
+    }, [evaluationStatus, chatHistory, convertScorecardScoresToScorecard]);
 
     // Load draft on task change
     useEffect(() => {
@@ -996,7 +996,7 @@ export default function LearnerAssignmentView({
                 try {
                     const parsedContent = JSON.parse(lastAiMessage.rawContent || lastAiMessage.content);
                     if (parsedContent.key_area_scores) {
-                        const scorecard = convertKeyAreaScoresToScorecard(parsedContent.key_area_scores);
+                        const scorecard = convertScorecardScoresToScorecard(parsedContent.key_area_scores);
                         if (scorecard.length > 0) {
                             setActiveScorecard(scorecard);
                             setIsViewingScorecard(true);
@@ -1009,7 +1009,7 @@ export default function LearnerAssignmentView({
                 }
             }
         }
-    }, [isCompleted, chatHistory, convertKeyAreaScoresToScorecard]);
+    }, [isCompleted, chatHistory, convertScorecardScoresToScorecard]);
 
     // Check if needs resubmission based on evaluation status or last AI message
     const needsResubmission = useMemo(() => {

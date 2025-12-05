@@ -349,8 +349,8 @@ describe('AssignmentEditor', () => {
         const calls2: any[] = (onValidationError as jest.Mock).mock.calls;
         expect(calls2.some(call => call[0] === 'Invalid pass mark')).toBe(true);
 
-        // Evaluation container gets animate-pulse class when highlighted
-        expect(document.querySelector('.animate-pulse')).toBeTruthy();
+        // Evaluation container gets highlighted (check for the red outline class)
+        expect(document.querySelector('.outline-red-400')).toBeTruthy();
     });
 });
 

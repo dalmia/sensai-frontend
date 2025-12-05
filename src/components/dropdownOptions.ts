@@ -110,20 +110,3 @@ export const codingLanguageOptions: DropdownOption[] = [
         "color": "#3182CE",
     }
 ];
-
-// Options for submission type in the assignment editor
-export const submissionTypeOptions: DropdownOption[] = [
-    {
-        "label": "Text",
-        "value": "text",
-        "color": "#2D6A4F",
-        "tooltip": "Learner types their answer"
-    },
-    {
-        "label": "Audio",
-        "value": "audio",
-        "color": "#9D4E4E",
-        "tooltip": "Learner records their answer"
-    },
-    
-];
