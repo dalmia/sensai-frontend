@@ -26,9 +26,12 @@ export interface AssignmentEditorHandle {
     hasChanges: () => boolean;
     hasContent: () => boolean;
     validateBeforePublish: () => boolean;
+    validateEvaluationCriteria: () => boolean;
     saveDraft: () => void;
     savePublished: () => void;
     cancel: () => void;
+    hasUnsavedScorecardChanges: () => boolean;
+    handleScorecardChangesRevert: () => void;
 }
 
 interface AssignmentEditorProps {
@@ -323,6 +326,46 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         }, 4000);
     }, []);
 
+    // Validation for evaluation criteria
+    const validateEvaluationCriteria = useCallback(() => {
+        if (activeTab !== 'evaluation') {
+            setActiveTab('evaluation');
+        }
+
+        if (scoreRange.min_score <= 0) {
+            highlightField('evaluation');
+            setActiveTab('evaluation');
+            onValidationError?.(
+                'Invalid minimum score',
+                'Minimum score must be greater than 0',
+                '🚫'
+            );
+            return false;
+        }
+
+        if (scoreRange.max_score <= scoreRange.min_score) {
+            highlightField('evaluation');
+            onValidationError?.(
+                'Invalid maximum score',
+                'Maximum score must be greater than minimum score',
+                '🚫'
+            );
+            return false;
+        }
+
+        if (scoreRange.pass_score < scoreRange.min_score || scoreRange.pass_score > scoreRange.max_score) {
+            highlightField('evaluation');
+            onValidationError?.(
+                'Invalid pass mark',
+                'Pass mark must be within the minimum and maximum scores',
+                '🚫'
+            );
+            return false;
+        }
+
+        return true;
+    }, [onValidationError, scoreRange.min_score, scoreRange.max_score, scoreRange.pass_score, highlightField, activeTab]);
+
     // Local validation similar to QuizEditor.validateBeforePublish
     const validateBeforePublish = useCallback(() => {
         // Problem statement validation
@@ -365,41 +408,13 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
             }
         }
 
-        if (scoreRange.min_score <= 0) {
-            setActiveTab('evaluation');
-            highlightField('evaluation');
-            onValidationError?.(
-                'Invalid minimum score',
-                'Minimum score must be greater than 0',
-                '🚫'
-            );
-            return false;
-        }
-
-        if (scoreRange.max_score <= scoreRange.min_score) {
-            setActiveTab('evaluation');
-            highlightField('evaluation');
-            onValidationError?.(
-                'Invalid maximum score',
-                'Maximum score must be greater than minimum score',
-                '🚫'
-            );
-            return false;
-        }
-
-        if (scoreRange.pass_score < scoreRange.min_score || scoreRange.pass_score > scoreRange.max_score) {
-            setActiveTab('evaluation');
-            highlightField('evaluation');
-            onValidationError?.(
-                'Invalid pass mark',
-                'Pass mark must be within the minimum and maximum scores',
-                '🚫'
-            );
+        // Validate score ranges
+        if (!validateEvaluationCriteria()) {
             return false;
         }
 
         return true;
-    }, [hasValidProblem, scorecardId, scorecardData, onValidationError, scoreRange.min_score, scoreRange.max_score, scoreRange.pass_score, highlightField]);
+    }, [hasValidProblem, scorecardId, scorecardData, onValidationError, validateEvaluationCriteria]);
 
     const getDialogTitle = () => {
         try {
@@ -496,6 +511,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         hasChanges: () => dirty,
         hasContent: () => hasValidProblem && (!!scorecardId || (scorecardManagerRef.current?.hasScorecard() ?? false)),
         validateBeforePublish,
+        validateEvaluationCriteria,
         saveDraft: () => {
             void updateDraftAssignment('draft', scheduledPublishAt);
         },

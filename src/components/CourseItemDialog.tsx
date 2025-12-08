@@ -509,6 +509,13 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         } else if (activeItem?.type === 'quiz') {
             quizEditorRef.current?.saveDraft();
         } else if (activeItem?.type === 'assignment') {
+            // Validate evaluation criteria before saving draft
+            if (assignmentEditorRef.current?.validateEvaluationCriteria) {
+                const isValid = assignmentEditorRef.current.validateEvaluationCriteria();
+                if (!isValid) {
+                    return;
+                }
+            }
             assignmentEditorRef.current?.saveDraft();
         }
         onClose();
