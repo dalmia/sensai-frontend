@@ -104,6 +104,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     // Loading state for fetching assignment data
     const [isLoadingAssignment, setIsLoadingAssignment] = useState(true);
     const [hasFetchedData, setHasFetchedData] = useState(false);
+    // Track if assignment already exists (to determine POST vs PUT)
+    const [hasAssignment, setHasAssignment] = useState(false);
 
     // Auth
     const { user } = useAuth();
@@ -125,8 +127,11 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
 
                 const data = await response.json();
 
-                if (data) {
+                if (data && data.assignment) {
                     const assignment = data.assignment;
+
+                    // Mark that assignment exists
+                    setHasAssignment(true);
 
                     // Load problem blocks
                     if (assignment.blocks && Array.isArray(assignment.blocks)) {
@@ -177,6 +182,9 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                             }
                         }
                     }
+                } else {
+                    // Assignment doesn't exist yet
+                    setHasAssignment(false);
                 }
 
                 setHasFetchedData(true);
@@ -194,6 +202,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     useEffect(() => {
         setHasFetchedData(false);
         setScorecardId(undefined);
+        setHasAssignment(false);
     }, [taskId]);
 
     const handleScoreChange = useCallback((key: 'min_score' | 'max_score' | 'pass_score', value: number) => {
@@ -438,8 +447,11 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                 }
             };
 
+            // Use POST for new assignments, PUT for updates
+            const method = hasAssignment ? 'PUT' : 'POST';
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/assignment`, {
-                method: 'POST',
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -453,6 +465,11 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
 
             if (!response.ok) {
                 throw new Error(`Failed to ${status === 'published' ? 'publish' : 'save'} assignment: ${response.status}`);
+            }
+
+            // Mark assignment as existing after first successful POST
+            if (!hasAssignment) {
+                setHasAssignment(true);
             }
 
             const updatedTaskData = await response.json();
