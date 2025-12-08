@@ -949,7 +949,11 @@ export default function LearnerAssignmentView({
 
         // Try to parse the rawContent to check evaluation status
         try {
-            const parsedContent = JSON.parse(lastAiMessage.rawContent || lastAiMessage.content);
+            const content = lastAiMessage.rawContent || lastAiMessage.content;
+            if (!content) {
+                return false;
+            }
+            const parsedContent = JSON.parse(content);
             // check if all criteria are met
             if (parsedContent.key_area_scores && parsedContent.evaluation_status === "completed") {
                 const scorecard = convertScorecardScoresToScorecard(parsedContent.key_area_scores);
@@ -967,9 +971,10 @@ export default function LearnerAssignmentView({
             }
 
             return false;
-        } catch (error) {
+        } catch {
             // If parsing fails, check if content contains "completed" status
-            return (lastAiMessage.rawContent || lastAiMessage.content).includes('"evaluation_status":"completed"');
+            const content = lastAiMessage.rawContent || lastAiMessage.content;
+            return content ? content.includes('"evaluation_status":"completed"') : false;
         }
     }, [evaluationStatus, chatHistory, convertScorecardScoresToScorecard]);
 
