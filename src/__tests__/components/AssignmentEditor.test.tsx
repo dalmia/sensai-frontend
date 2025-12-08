@@ -185,9 +185,7 @@ describe('AssignmentEditor', () => {
         fireEvent.click(screen.getByText('Pick Scorecard'));
 
         // Set invalid min (<=0)
-        // Click the displayed min number to enter edit
-        const minDisplay = screen.getByText('1');
-        fireEvent.click(minDisplay);
+        // Inputs are always editable now, so directly get the input
         const minInput = screen.getByDisplayValue('1') as HTMLInputElement;
         fireEvent.change(minInput, { target: { value: '0' } });
         fireEvent.blur(minInput);
@@ -196,13 +194,10 @@ describe('AssignmentEditor', () => {
         });
 
         // Fix min, set invalid max (<= min)
-        fireEvent.click(screen.getByText('0'));
         const minInput2 = screen.getByDisplayValue('0') as HTMLInputElement;
         fireEvent.change(minInput2, { target: { value: '2' } });
         fireEvent.blur(minInput2);
 
-        const maxDisplay = screen.getByText('4');
-        fireEvent.click(maxDisplay);
         const maxInput = screen.getByDisplayValue('4') as HTMLInputElement;
         fireEvent.change(maxInput, { target: { value: '2' } });
         fireEvent.blur(maxInput);
@@ -211,14 +206,10 @@ describe('AssignmentEditor', () => {
         });
 
         // Fix max, set invalid pass outside range
-        const twos = screen.getAllByText('2');
-        fireEvent.click(twos[0]);
         const maxInput2 = screen.getAllByDisplayValue('2')[0] as HTMLInputElement;
         fireEvent.change(maxInput2, { target: { value: '5' } });
         fireEvent.blur(maxInput2);
 
-        const passDisplay = screen.getByText('3');
-        fireEvent.click(passDisplay);
         const passInput = screen.getByDisplayValue('3') as HTMLInputElement;
         fireEvent.change(passInput, { target: { value: '6' } });
         fireEvent.blur(passInput);
@@ -229,7 +220,6 @@ describe('AssignmentEditor', () => {
         // Scorecard invalidation path
         (validateScorecardCriteria as jest.Mock).mockReturnValueOnce(false);
         // Put values in range
-        fireEvent.click(screen.getByText('6'));
         const passInput2 = screen.getByDisplayValue('6') as HTMLInputElement;
         fireEvent.change(passInput2, { target: { value: '3' } });
         fireEvent.blur(passInput2);
@@ -237,18 +227,9 @@ describe('AssignmentEditor', () => {
             expect(ref.current?.validateBeforePublish()).toBe(false);
         });
 
-        // handleKeyDown closes editing on Enter and Escape
-        // Open min input again
-        fireEvent.click(screen.getByText('2'));
+        // Inputs are always editable, so just verify they exist
         const minInput3 = screen.getByDisplayValue('2') as HTMLInputElement;
-        fireEvent.keyDown(minInput3, { key: 'Enter' });
-        expect(screen.queryByDisplayValue('2')).not.toBeInTheDocument();
-
-        // Re-open and close via Escape
-        fireEvent.click(screen.getByText('2'));
-        const minInput4 = screen.getByDisplayValue('2') as HTMLInputElement;
-        fireEvent.keyDown(minInput4, { key: 'Escape' });
-        expect(screen.queryByDisplayValue('2')).not.toBeInTheDocument();
+        expect(minInput3).toBeInTheDocument();
     });
 
     it('getDialogTitle extracts title and updateDraftAssignment error path triggers', async () => {
@@ -336,8 +317,6 @@ describe('AssignmentEditor', () => {
         fireEvent.click(screen.getByText('Pick Scorecard'));
 
         // Make pass score outside [min,max]
-        const passDisplay = screen.getByText('3');
-        fireEvent.click(passDisplay);
         const passInput = screen.getByDisplayValue('3') as HTMLInputElement;
         fireEvent.change(passInput, { target: { value: '100' } });
         fireEvent.blur(passInput);

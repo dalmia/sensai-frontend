@@ -131,26 +131,27 @@ export default function LearnerAssignmentView({
                 }
 
                 const data = await response.json();
+                const assignment = data.assignment;
 
-                if (data) {
+                if (assignment) {
                     // Load problem blocks
-                    if (data.blocks && Array.isArray(data.blocks)) {
-                        setProblemBlocks(data.blocks);
+                    if (assignment.blocks && Array.isArray(assignment.blocks)) {
+                        setProblemBlocks(assignment.blocks);
                     }
 
                     // Load title
-                    if (data.title) {
-                        setTitle(data.title);
+                    if (assignment.title) {
+                        setTitle(assignment.title);
                     }
 
                     // Load submission type
-                    if (data.input_type) {
-                        setSubmissionType(data.input_type);
+                    if (assignment.input_type) {
+                        setSubmissionType(assignment.input_type);
                     }
 
                     // Load settings
-                    if (data.settings) {
-                        setSettings(data.settings);
+                    if (assignment.settings) {
+                        setSettings(assignment.settings);
                     }
                 }
 
@@ -590,6 +591,7 @@ export default function LearnerAssignmentView({
                 task_id: taskId,
                 user_id: userId,
                 user_email: user?.email,
+                task_type: 'assignment',
                 ...(isTestMode && { chat_history: formattedChatHistory })
             };
 

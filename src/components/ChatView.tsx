@@ -6,7 +6,7 @@ import AudioInputComponent from './AudioInputComponent';
 import CodeEditorView, { CodeEditorViewHandle } from './CodeEditorView';
 import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
-import UploadAssignmentFile from './UploadAssignmentFile';
+import UploadFile from './UploadFile';
 import isEqual from 'lodash/isEqual';
 
 // Export interface for code view state to be used by parent components
@@ -642,14 +642,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             {!(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
-                                    {showUploadSection ? (
-                                        <UploadAssignmentFile
+                                    {showUploadSection && !isAiResponding ? (
+                                        <UploadFile
                                             disabled={false}
-                                            isAiResponding={isAiResponding}
                                             onComplete={(file) => {
                                                 if (onFileUploaded) onFileUploaded(file);
                                             }}
                                             className="mt-auto"
+                                            fileType={['.zip']}
+                                            maxSizeBytes={50 * 1024 * 1024}
+                                            placeholderText="Upload your project as a .zip file"
                                         />
                                     ) : currentQuestionConfig?.inputType === 'audio' ? (
                                         <div className="w-full sm:w-auto">

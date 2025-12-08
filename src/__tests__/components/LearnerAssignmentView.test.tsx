@@ -30,7 +30,7 @@ jest.mock('@/components/ScorecardView', () => (props: any) => (
         <div>items:{props.activeScorecard?.length || 0}</div>
     </div>
 ));
-jest.mock('@/components/UploadAssignmentFile', () => () => <div data-testid="upload-assignment-file" />);
+jest.mock('@/components/UploadFile', () => () => <div data-testid="upload-file" />);
 
 // Mock auth hook
 jest.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { email: 't@e.st' } }) }));

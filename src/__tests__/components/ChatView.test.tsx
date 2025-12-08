@@ -58,8 +58,8 @@ jest.mock('../../components/CodeEditorView', () => {
     });
 });
 
-jest.mock('../../components/UploadAssignmentFile', () => {
-    return function MockUploadAssignmentFile(props: any) {
+jest.mock('../../components/UploadFile', () => {
+    return function MockUploadFile(props: any) {
         return (
             <div data-testid="upload-assignment-file">
                 Upload Assignment File Mock
@@ -992,7 +992,7 @@ describe('ChatView Copy/Paste Functionality', () => {
     });
 });
 
-describe('ChatView UploadAssignmentFile Functionality', () => {
+describe('ChatView UploadFile Functionality', () => {
     const baseProps = {
         currentChatHistory: [],
         isAiResponding: false,
@@ -1014,7 +1014,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         jest.clearAllMocks();
     });
 
-    it('renders UploadAssignmentFile when showUploadSection is true', async () => {
+    it('renders UploadFile when showUploadSection is true', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} />);
         });
@@ -1023,7 +1023,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.getByText('Upload Assignment File Mock')).toBeInTheDocument();
     });
 
-    it('does not render UploadAssignmentFile when showUploadSection is false', async () => {
+    it('does not render UploadFile when showUploadSection is false', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={false} />);
         });
@@ -1031,7 +1031,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
     });
 
-    it('does not render UploadAssignmentFile when showUploadSection is undefined', async () => {
+    it('does not render UploadFile when showUploadSection is undefined', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} />);
         });
@@ -1039,7 +1039,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
     });
 
-    it('passes disabled=false to UploadAssignmentFile', async () => {
+    it('passes disabled=false to UploadFile', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} />);
         });
@@ -1047,20 +1047,21 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.getByTestId('upload-disabled')).toHaveTextContent('enabled');
     });
 
-    it('passes isAiResponding state to UploadAssignmentFile', async () => {
+    it('hides upload component when AI is responding', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={true} />);
         });
 
-        expect(screen.getByTestId('upload-ai-responding')).toHaveTextContent('responding');
+        // Upload component should be hidden during AI response (shows chat input instead)
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
     });
 
-    it('passes isAiResponding=false to UploadAssignmentFile when not responding', async () => {
+    it('shows upload component when AI is not responding', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={false} />);
         });
 
-        expect(screen.getByTestId('upload-ai-responding')).toHaveTextContent('not-responding');
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
     });
 
     it('calls onFileUploaded when file upload is completed', async () => {
@@ -1090,17 +1091,17 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
     });
 
-    it('passes correct className to UploadAssignmentFile', async () => {
+    it('passes correct className to UploadFile', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} />);
         });
 
         const uploadComponent = screen.getByTestId('upload-assignment-file');
         expect(uploadComponent).toBeInTheDocument();
-        // The className "mt-auto" should be applied to the UploadAssignmentFile component
+        // The className "mt-auto" should be applied to the UploadFile component
     });
 
-    it('renders UploadAssignmentFile instead of text input when showUploadSection is true', async () => {
+    it('renders UploadFile instead of text input when showUploadSection is true', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} />);
         });
@@ -1113,7 +1114,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByLabelText('Submit answer')).not.toBeInTheDocument();
     });
 
-    it('renders UploadAssignmentFile instead of audio input when showUploadSection is true', async () => {
+    it('renders UploadFile instead of audio input when showUploadSection is true', async () => {
         await act(async () => {
             render(
                 <ChatView
@@ -1131,7 +1132,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByTestId('audio-input')).not.toBeInTheDocument();
     });
 
-    it('renders UploadAssignmentFile instead of code input when showUploadSection is true', async () => {
+    it('renders UploadFile instead of code input when showUploadSection is true', async () => {
         await act(async () => {
             render(
                 <ChatView
@@ -1149,7 +1150,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByTestId('code-editor')).not.toBeInTheDocument();
     });
 
-    it('does not render UploadAssignmentFile when viewOnly is true', async () => {
+    it('does not render UploadFile when viewOnly is true', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} viewOnly={true} />);
         });
@@ -1157,7 +1158,7 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
     });
 
-    it('does not render UploadAssignmentFile when exam question is completed', async () => {
+    it('does not render UploadFile when exam question is completed', async () => {
         const completedQuestionId = 'question1';
         await act(async () => {
             render(
@@ -1192,14 +1193,13 @@ describe('ChatView UploadAssignmentFile Functionality', () => {
         );
     });
 
-    it('maintains upload component state during AI response', async () => {
+    it('hides upload component during AI response', async () => {
         await act(async () => {
             render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={true} />);
         });
 
-        // Upload component should still be visible during AI response
-        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
-        expect(screen.getByTestId('upload-ai-responding')).toHaveTextContent('responding');
+        // Upload component should be hidden during AI response (shows chat input instead)
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
     });
 
     it('works correctly with different task types', async () => {
