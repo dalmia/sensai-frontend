@@ -670,7 +670,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
     useImperativeHandle(ref, () => ({
         hasScorecard: () => validateScorecard(scorecardData),
         validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: { showErrorMessage?: (title: string, message: string, emoji?: string) => void }) =>
-            validateScorecardCriteria(scorecard, callbacks),
+        validateScorecardCriteria(scorecard, callbacks),
         hasUnsavedScorecardChanges: checkUnsavedScorecardChanges,
         handleScorecardChangesRevert: handleScorecardRevert,
         getScorecardData: () => scorecardData,
