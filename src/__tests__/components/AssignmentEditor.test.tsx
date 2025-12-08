@@ -291,9 +291,9 @@ describe('AssignmentEditor', () => {
             expect(ref.current?.validateBeforePublish()).toBe(false);
         });
 
-        // Expect error message for missing evaluation criteria
+        // Expect error message for missing scorecard
         const calls: any[] = (onValidationError as jest.Mock).mock.calls;
-        expect(calls.some(call => call[0] === 'Missing evaluation criteria')).toBe(true);
+        expect(calls.some(call => call[0] === 'Missing scorecard')).toBe(true);
 
         // Scorecard section uses animate-pulse when highlighted
         expect(document.querySelector('.animate-pulse')).toBeTruthy();
