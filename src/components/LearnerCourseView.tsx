@@ -1097,7 +1097,7 @@ export default function LearnerCourseView({
                                                     </div>
                                                 ) : item.type === 'assignment' ? (
                                                     <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                        <PenSquare size={16} className="text-cyan-400" />
+                                                        <PenSquare size={16} className="text-rose-400" />
                                                     </div>
                                                 ) :
                                                     item.type === 'material' ? (
