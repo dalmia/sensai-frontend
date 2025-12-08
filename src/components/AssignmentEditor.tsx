@@ -387,8 +387,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
             setActiveTab('evaluation');
             highlightField('scorecard');
             onValidationError?.(
-                'Missing evaluation criteria',
-                'Please add evaluation criteria before proceeding',
+                'Missing scorecard',
+                'Please add a scorecard before proceeding',
                 '🚫'
             );
             return false;
