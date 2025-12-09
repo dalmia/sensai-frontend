@@ -536,7 +536,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     }
 
     if (isPreviewMode) {
-        if (!hasAssignment) {
+        if (!hasAssignment || dirty) {
             void updateDraftAssignment('draft', null);
         }
         return (
