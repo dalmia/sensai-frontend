@@ -58,6 +58,27 @@ jest.mock('../../components/CodeEditorView', () => {
     });
 });
 
+jest.mock('../../components/UploadFile', () => {
+    return function MockUploadFile(props: any) {
+        return (
+            <div data-testid="upload-assignment-file">
+                Upload Assignment File Mock
+                <button
+                    onClick={() => {
+                        const mockFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
+                        props.onComplete && props.onComplete(mockFile);
+                    }}
+                    disabled={props.disabled}
+                >
+                    Upload File
+                </button>
+                <div data-testid="upload-disabled">{props.disabled ? 'disabled' : 'enabled'}</div>
+                <div data-testid="upload-ai-responding">{props.isAiResponding ? 'responding' : 'not-responding'}</div>
+            </div>
+        );
+    };
+});
+
 // Mock the global style jsx to avoid warnings
 jest.mock('styled-jsx/style', () => ({
     __esModule: true,
@@ -968,5 +989,231 @@ describe('ChatView Copy/Paste Functionality', () => {
 
         // Should still prevent the event when disableCopyPaste is true
         expect(preventDefault).toHaveBeenCalled();
+    });
+});
+
+describe('ChatView UploadFile Functionality', () => {
+    const baseProps = {
+        currentChatHistory: [],
+        isAiResponding: false,
+        showPreparingReport: false,
+        isChatHistoryLoaded: true,
+        isTestMode: false,
+        taskType: 'assignment' as const,
+        isSubmitting: false,
+        currentAnswer: '',
+        handleInputChange: jest.fn(),
+        handleSubmitAnswer: jest.fn(),
+        handleAudioSubmit: jest.fn(),
+        handleViewScorecard: jest.fn(),
+        completedQuestionIds: {},
+        onFileUploaded: jest.fn(),
+    } as any;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('renders UploadFile when showUploadSection is true', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+        expect(screen.getByText('Upload Assignment File Mock')).toBeInTheDocument();
+    });
+
+    it('does not render UploadFile when showUploadSection is false', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={false} />);
+        });
+
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('does not render UploadFile when showUploadSection is undefined', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} />);
+        });
+
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('passes disabled=false to UploadFile', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        expect(screen.getByTestId('upload-disabled')).toHaveTextContent('enabled');
+    });
+
+    it('hides upload component when AI is responding', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={true} />);
+        });
+
+        // Upload component should be hidden during AI response (shows chat input instead)
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('shows upload component when AI is not responding', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={false} />);
+        });
+
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+    });
+
+    it('calls onFileUploaded when file upload is completed', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        const uploadButton = screen.getByText('Upload File');
+        fireEvent.click(uploadButton);
+
+        expect(baseProps.onFileUploaded).toHaveBeenCalledWith(expect.any(File));
+        expect(baseProps.onFileUploaded).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onFileUploaded when onFileUploaded prop is not provided', async () => {
+        const propsWithoutCallback = { ...baseProps };
+        delete propsWithoutCallback.onFileUploaded;
+
+        await act(async () => {
+            render(<ChatView {...propsWithoutCallback} showUploadSection={true} />);
+        });
+
+        const uploadButton = screen.getByText('Upload File');
+        fireEvent.click(uploadButton);
+
+        // Should not throw an error even when onFileUploaded is undefined
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+    });
+
+    it('passes correct className to UploadFile', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        const uploadComponent = screen.getByTestId('upload-assignment-file');
+        expect(uploadComponent).toBeInTheDocument();
+        // The className "mt-auto" should be applied to the UploadFile component
+    });
+
+    it('renders UploadFile instead of text input when showUploadSection is true', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        // Should show upload component
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+
+        // Should not show text input
+        expect(screen.queryByPlaceholderText('Type your answer here')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Submit answer')).not.toBeInTheDocument();
+    });
+
+    it('renders UploadFile instead of audio input when showUploadSection is true', async () => {
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    showUploadSection={true}
+                    currentQuestionConfig={{ inputType: 'audio' }}
+                />
+            );
+        });
+
+        // Should show upload component
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+
+        // Should not show audio input
+        expect(screen.queryByTestId('audio-input')).not.toBeInTheDocument();
+    });
+
+    it('renders UploadFile instead of code input when showUploadSection is true', async () => {
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    showUploadSection={true}
+                    currentQuestionConfig={{ inputType: 'text' }} // Use text input instead of code
+                />
+            );
+        });
+
+        // Should show upload component
+        expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+
+        // Should not show code editor
+        expect(screen.queryByTestId('code-editor')).not.toBeInTheDocument();
+    });
+
+    it('does not render UploadFile when viewOnly is true', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} viewOnly={true} />);
+        });
+
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('does not render UploadFile when exam question is completed', async () => {
+        const completedQuestionId = 'question1';
+        await act(async () => {
+            render(
+                <ChatView
+                    {...baseProps}
+                    showUploadSection={true}
+                    currentQuestionConfig={{ responseType: 'exam' }}
+                    currentQuestionId={completedQuestionId}
+                    completedQuestionIds={{ [completedQuestionId]: true }}
+                />
+            );
+        });
+
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('handles file upload completion with proper file object', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} />);
+        });
+
+        const uploadButton = screen.getByText('Upload File');
+        fireEvent.click(uploadButton);
+
+        // Verify the callback was called with a proper File object
+        expect(baseProps.onFileUploaded).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'test.txt',
+                type: 'text/plain',
+                size: expect.any(Number)
+            })
+        );
+    });
+
+    it('hides upload component during AI response', async () => {
+        await act(async () => {
+            render(<ChatView {...baseProps} showUploadSection={true} isAiResponding={true} />);
+        });
+
+        // Upload component should be hidden during AI response (shows chat input instead)
+        expect(screen.queryByTestId('upload-assignment-file')).not.toBeInTheDocument();
+    });
+
+    it('works correctly with different task types', async () => {
+        const taskTypes = ['quiz', 'learning_material', 'assignment'] as const;
+
+        for (const taskType of taskTypes) {
+            await act(async () => {
+                render(<ChatView {...baseProps} showUploadSection={true} taskType={taskType} />);
+            });
+
+            expect(screen.getByTestId('upload-assignment-file')).toBeInTheDocument();
+
+            // Clean up for next iteration
+            screen.getByTestId('upload-assignment-file').remove();
+        }
     });
 }); 

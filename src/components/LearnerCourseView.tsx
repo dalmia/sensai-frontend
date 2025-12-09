@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ModuleItem, Module } from "@/types/course";
 import CourseModuleList from "./CourseModuleList";
 import dynamic from "next/dynamic";
-import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight, Menu, FileText, Brain, ClipboardList, Loader2 } from "lucide-react";
+import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight, Menu, FileText, Brain, ClipboardList, Loader2, PenSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import confetti from "canvas-confetti";
 import SuccessSound from "./SuccessSound";
@@ -19,6 +19,12 @@ const DynamicLearningMaterialViewer = dynamic(
 // Dynamic import for LearnerQuizView
 const DynamicLearnerQuizView = dynamic(
     () => import("./LearnerQuizView"),
+    { ssr: false }
+);
+
+// Dynamic import for LearnerAssignmentView
+const DynamicLearnerAssignmentView = dynamic(
+    () => import("./LearnerAssignmentView"),
     { ssr: false }
 );
 
@@ -208,6 +214,7 @@ export default function LearnerCourseView({
     // Function to handle navigation confirmation
     const handleNavigationConfirm = () => {
         setShowNavigationConfirmation(false);
+        setIsAiResponding(false);
 
         // Execute the pending navigation action
         switch (pendingNavigation.action) {
@@ -626,28 +633,8 @@ export default function LearnerCourseView({
                 // Continue execution even if this fails - don't block the UI update
             }
 
-            // Create updated completed tasks state
-            const newCompletedTasks = {
-                ...completedTasks,
-                [activeItem.id]: true
-            };
-
-            // Mark the task as completed in our local state
-            setCompletedTasks(newCompletedTasks);
-
-            // Call the onTaskComplete callback to notify parent component
-            if (onTaskComplete) {
-                onTaskComplete(activeItem.id, true);
-            }
-
-            // Check if this task completion has completed the entire module
-            if (checkModuleCompletion(activeModuleId, newCompletedTasks)) {
-                // This completes the module - trigger the enhanced celebration
-                triggerModuleCompletionCelebration();
-            } else {
-                // Regular completion celebration
-                triggerConfetti(true);
-            }
+            // Use the shared task completion handler
+            handleTaskCompletion(activeItem.id, true);
 
             // Find the current module
             const currentModule = filteredModules.find(m => m.id === activeModuleId);
@@ -906,6 +893,41 @@ export default function LearnerCourseView({
         }, 2000); // Longer timeout for the longer sound
     };
 
+    // Function to handle task completion (called from child components)
+    const handleTaskCompletion = useCallback((taskId: string, isComplete: boolean) => {
+        if (!isComplete) return;
+
+        // Create updated completed tasks state
+        const newCompletedTasks = {
+            ...completedTasks,
+            [taskId]: true
+        };
+
+        // Mark the task as completed in our local state
+        setCompletedTasks(newCompletedTasks);
+
+        // Call the onTaskComplete callback to notify parent component
+        if (onTaskComplete) {
+            onTaskComplete(taskId, true);
+        }
+
+        // Find the module containing this task
+        const taskModule = filteredModules.find(module =>
+            module.items.some(item => item.id === taskId)
+        );
+
+        if (taskModule) {
+            // Check if this task completion has completed the entire module
+            if (checkModuleCompletion(taskModule.id, newCompletedTasks)) {
+                // This completes the module - trigger the enhanced celebration
+                triggerModuleCompletionCelebration();
+            } else {
+                // Regular completion celebration
+                triggerConfetti(true);
+            }
+        }
+    }, [completedTasks, filteredModules, onTaskComplete, checkModuleCompletion]);
+
     // Initialize expandedModules from the isExpanded property of modules
     useEffect(() => {
         if (modules && modules.length > 0) {
@@ -1003,8 +1025,8 @@ export default function LearnerCourseView({
                     onClick={handleDialogBackdropClick}
                 >
                     {isAdminView && learnerName && (
-                    <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
-                        <p className="font-light text-sm">
+                        <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
+                            <p className="font-light text-sm">
                                 You are viewing this course as <span className="font-medium">{learnerName}</span>
                             </p>
                         </div>
@@ -1028,7 +1050,7 @@ export default function LearnerCourseView({
                         {/* Sidebar with module tasks - hidden on mobile by default */}
                         <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
                             {/* Sidebar Header */}
-                            <div className="p-4 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
+                            <div className="p-5 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
                                 <h3 className="text-lg font-light text-white truncate">
                                     {filteredModules.find(m => m.id === activeModuleId)?.title || "Module"}
                                 </h3>
@@ -1073,20 +1095,25 @@ export default function LearnerCourseView({
                                                     <div className="w-7 h-7 rounded-md flex items-center justify-center">
                                                         <CheckCircle size={16} className="text-green-500" />
                                                     </div>
-                                                ) : item.type === 'material' ? (
+                                                ) : item.type === 'assignment' ? (
                                                     <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                        <BookOpen size={16} className="text-blue-400" />
+                                                        <PenSquare size={16} className="text-rose-400" />
                                                     </div>
-                                                ) : (
-                                                    <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
-                                                        <ClipboardList size={16} className={
-                                                            localCompletedQuestionIds[item.id] &&
-                                                                Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                                ? "text-yellow-500"
-                                                                : "text-purple-500"
-                                                        } />
-                                                    </div>
-                                                )}
+                                                ) :
+                                                    item.type === 'material' ? (
+                                                        <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                            <BookOpen size={16} className="text-blue-400" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
+                                                            <ClipboardList size={16} className={
+                                                                localCompletedQuestionIds[item.id] &&
+                                                                    Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
+                                                                    ? "text-yellow-500"
+                                                                    : "text-purple-500"
+                                                            } />
+                                                        </div>
+                                                    )}
 
                                                 {/* Add a small generating indicator if the item is still being generated */}
                                                 {item.isGenerating && (
@@ -1113,7 +1140,7 @@ export default function LearnerCourseView({
                                             item.id === activeItem?.id &&
                                             activeItem?.questions &&
                                             activeItem.questions.length > 1 && (
-                                                <div className="pl-8 border-l border-gray-800">
+                                                <div className="pl-8">
                                                     {activeItem.questions.map((question: any, index: number) => (
                                                         <div
                                                             key={question.id}
@@ -1121,7 +1148,7 @@ export default function LearnerCourseView({
                                                                 ? "bg-[#222222] border-l-2 border-green-500"
                                                                 : completedQuestions[question.id]
                                                                     ? "border-l-2 border-green-500 text-green-500"
-                                                                    : "hover:bg-[#1A1A1A] border-l-2 border-transparent"
+                                                                    : "hover:bg-[#1A1A1A] border-l-2 border-gray-800"
                                                                 }`}
                                                             onClick={() => activateQuestion(question.id)}
                                                         >
@@ -1142,7 +1169,7 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Back to Course Button - hidden on mobile, fixed at bottom for laptop */}
-                            <div className="hidden lg:block p-3 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
+                            <div className="hidden lg:block p-4 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
                                 <button
                                     onClick={closeDialog}
                                     className="w-full flex items-center justify-center px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222] rounded transition-colors cursor-pointer"
@@ -1156,12 +1183,12 @@ export default function LearnerCourseView({
                         <div className={`flex-1 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} flex flex-col bg-[#1A1A1A]`}>
                             {/* Dialog Header */}
                             <div
-                                className={`flex items-start justify-between p-4 border-b border-gray-800 ${
+                                className={`flex items-center px-3 justify-between border-b border-gray-800 ${
                                     // Add background color for completed tasks on mobile
                                     (completedTasks[activeItem?.id])
                                         ? "lg:bg-[#111111] bg-green-700"
                                         : "bg-[#111111]"
-                                    }`}
+                                    } ${(activeItem?.type === 'material' || completedTasks[activeItem?.id]) ? 'py-3' : 'py-4'}`}
                             >
                                 <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
@@ -1176,7 +1203,7 @@ export default function LearnerCourseView({
                                         <Menu size={20} />
                                     </button>
                                     <div className="flex flex-col min-w-0 pr-2">
-                                        <div className="flex items-center mb-1">
+                                        <div className="flex items-center">
                                             <h2
                                                 ref={dialogTitleRef}
                                                 contentEditable={false}
@@ -1193,7 +1220,7 @@ export default function LearnerCourseView({
                                     {/* Show completed status for learning material/quiz that has been completed */}
                                     {completedTasks[activeItem.id] && (
                                         <button
-                                            className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
+                                            className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 border border-green-700 rounded-full transition-colors cursor-default"
                                             disabled
                                         >
                                             <CheckCircle size={16} className="mr-2" />
@@ -1274,33 +1301,47 @@ export default function LearnerCourseView({
                                                 />
                                             </>
                                         )}
+                                        {(activeItem?.type === 'assignment') && (
+                                            <DynamicLearnerAssignmentView
+                                                problemBlocks={activeItem.content || []}
+                                                title={activeItem.title}
+                                                userId={userId}
+                                                taskId={activeItem.id}
+                                                isTestMode={isTestMode}
+                                                viewOnly={viewOnly}
+                                                onTaskComplete={handleTaskCompletion}
+                                                onAiRespondingChange={handleAiRespondingChange}
+                                            />
+                                        )}
                                     </>
                                 )}
                             </div>
 
                             {/* Navigation Footer - Hidden on mobile */}
-                            <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
-                                {!isFirstTask() && getPreviousTaskInfo() && (
-                                    <button
-                                        onClick={goToPreviousTask}
-                                        className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
-                                    >
-                                        <ChevronLeft size={16} className="mr-1" />
-                                        {getPreviousTaskInfo()?.title}
-                                    </button>
-                                )}
-                                {isFirstTask() && <div></div>}
+                            {((!isFirstTask() && getPreviousTaskInfo()) || (!isLastTask() && getNextTaskInfo())) && (
+                                <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
+                                    {!isFirstTask() && getPreviousTaskInfo() && (
+                                        <button
+                                            onClick={goToPreviousTask}
+                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                        >
+                                            <ChevronLeft size={16} className="mr-1" />
+                                            {getPreviousTaskInfo()?.title}
+                                        </button>
+                                    )}
+                                    {isFirstTask() && <div></div>}
 
-                                {!isLastTask() && getNextTaskInfo() && (
-                                    <button
-                                        onClick={goToNextTask}
-                                        className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
-                                    >
-                                        {getNextTaskInfo()?.title}
-                                        <ChevronRight size={16} className="ml-1" />
-                                    </button>
-                                )}
-                            </div>
+                                    {!isLastTask() && getNextTaskInfo() && (
+                                        <button
+                                            onClick={goToNextTask}
+                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                        >
+                                            {getNextTaskInfo()?.title}
+                                            <ChevronRight size={16} className="ml-1" />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -541,6 +541,12 @@ div[role="dialog"]>div {
     overflow-y: auto !important;
 }
 
+.assignment-editor .bn-container,
+.assignment-editor .bn-editor,
+.assignment-editor .bn-content {
+    height: 100% !important;
+}
+
 .quiz-editor .bn-container,
 .quiz-editor .bn-editor,
 .quiz-editor .bn-content {

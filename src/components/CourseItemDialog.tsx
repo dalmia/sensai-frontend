@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Sparkles, Check, X, Pencil, Eye, Edit2, Zap } from "lucide-react";
+import { Check, X, Pencil, Eye, Edit2, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import { QuizQuestion } from "../types";
 import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
@@ -13,7 +13,6 @@ import Tooltip from "./Tooltip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatScheduleDate } from "@/lib/utils/dateFormat";
-import { useAuth } from "@/lib/auth";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(
@@ -31,6 +30,19 @@ const DynamicLearningMaterialEditor = dynamic(
 // Dynamically import the QuizEditor component
 const DynamicQuizEditor = dynamic(
     () => import("./QuizEditor"),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex items-center justify-center h-full w-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+            </div>
+        )
+    }
+);
+
+// Assignment editor
+const DynamicAssignmentEditor = dynamic(
+    () => import("./AssignmentEditor"),
     {
         ssr: false,
         loading: () => (
@@ -92,6 +104,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
     const quizEditorRef = useRef<QuizEditorHandle>(null);
+    const assignmentEditorRef = useRef<any>(null);
 
     // Ref to store toast timeout ID
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -99,8 +112,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Ref to track if we've already pushed history state for current changes
     const hasPushedHistoryRef = useRef<boolean>(false);
 
-    // State to track preview mode for quizzes
-    const [quizPreviewMode, setQuizPreviewMode] = useState(false);
+    // State to track preview mode for any content type
+    const [previewMode, setPreviewMode] = useState(false);
 
     // State for scheduled date
     const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
@@ -159,10 +172,10 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setScheduledDate(date);
     }
 
-    // Reset quiz preview mode when dialog is closed
+    // Reset preview mode when dialog is closed
     useEffect(() => {
         if (!isOpen) {
-            setQuizPreviewMode(false);
+            setPreviewMode(false);
 
             // Clear any active toast timeout when dialog closes
             if (toastTimeoutRef.current) {
@@ -191,7 +204,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                 const hasChanges = activeItem?.type === 'material'
                     ? (learningMaterialEditorRef.current?.hasChanges() || false)
-                    : (quizEditorRef.current?.hasChanges() || false);
+                    : activeItem?.type === 'quiz'
+                        ? (quizEditorRef.current?.hasChanges() || false)
+                        : (assignmentEditorRef.current?.hasChanges() || false);
 
                 // Only push history state if we haven't already done so for this change
                 if (hasChanges && (isEditMode || activeItem?.status === 'draft') && !hasPushedHistoryRef.current) {
@@ -249,7 +264,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                 const hasChanges = activeItem?.type === 'material'
                     ? learningMaterialEditorRef.current?.hasChanges() || false
-                    : quizEditorRef.current?.hasChanges() || false;
+                    : activeItem?.type === 'quiz'
+                        ? quizEditorRef.current?.hasChanges() || false
+                        : assignmentEditorRef.current?.hasChanges() || false;
 
                 // If we're in edit mode for a published item
                 if (activeItem?.status === 'published') {
@@ -404,7 +421,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         // Check if there are actual changes
         const hasChanges = activeItem.type === 'material'
             ? learningMaterialEditorRef.current?.hasChanges() || false
-            : quizEditorRef.current?.hasChanges() || false;
+            : activeItem.type === 'quiz'
+                ? quizEditorRef.current?.hasChanges() || false
+                : assignmentEditorRef.current?.hasChanges() || false;
 
         // Case 1: Published learning material in edit mode 
         if (activeItem?.status === 'published' && isEditMode) {
@@ -426,7 +445,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Check if the editor/quiz has any content using the appropriate ref
             const hasContent = activeItem.type === 'material'
                 ? learningMaterialEditorRef.current?.hasContent() || false
-                : quizEditorRef.current?.hasContent() || false;
+                : activeItem.type === 'quiz'
+                    ? quizEditorRef.current?.hasContent() || false
+                    : assignmentEditorRef.current?.hasContent() || false;
 
             // Check if the title has been changed from default
             const titleElement = dialogTitleRef.current;
@@ -435,6 +456,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Set default title based on item type
             let defaultTitle = "New learning material";
             if (activeItem.type === 'quiz') defaultTitle = "New quiz";
+            if (activeItem.type === 'assignment') defaultTitle = "New assignment";
 
             const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
 
@@ -463,7 +485,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         // Check if there are actual changes
         const hasChanges = activeItem.type === 'material'
             ? learningMaterialEditorRef.current?.hasChanges() || false
-            : quizEditorRef.current?.hasChanges() || false;
+            : activeItem.type === 'quiz'
+                ? quizEditorRef.current?.hasChanges() || false
+                : assignmentEditorRef.current?.hasChanges() || false;
 
         // Only show confirmation if there are changes
         if (hasChanges) {
@@ -484,6 +508,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             learningMaterialEditorRef.current?.save();
         } else if (activeItem?.type === 'quiz') {
             quizEditorRef.current?.saveDraft();
+        } else if (activeItem?.type === 'assignment') {
+            // Validate evaluation criteria before saving draft
+            if (assignmentEditorRef.current?.validateEvaluationCriteria) {
+                const isValid = assignmentEditorRef.current.validateEvaluationCriteria();
+                if (!isValid) {
+                    return;
+                }
+            }
+            assignmentEditorRef.current?.saveDraft();
         }
         onClose();
     }
@@ -500,6 +533,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             } else if (activeItem?.type === 'quiz') {
                 // Use the ref to call cancel directly to revert any changes
                 quizEditorRef.current?.cancel();
+            } else if (activeItem?.type === 'assignment') {
+                assignmentEditorRef.current?.cancel();
             }
 
             // Exit edit mode but keep the dialog open
@@ -523,76 +558,87 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         }
     };
 
-    // Toggle quiz preview mode
-    const toggleQuizPreviewMode = () => {
+    // Toggle preview mode for any content type
+    const togglePreviewMode = () => {
         // If we're not already in preview mode and trying to enter it
-        if (!quizPreviewMode && quizEditorRef.current) {
-            // Check if current question has content
-            const hasContent = quizEditorRef.current.hasQuestionContent();
+        if (!previewMode) {
+            // Check content based on active item type
+            if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+                // Check if current question has content
+                const hasContent = quizEditorRef.current.hasQuestionContent();
 
-            if (!hasContent) {
-                // Show toast notification
-                displayToast("Empty question", "Please add details to the question before previewing", "🚫");
-                return; // Prevent entering preview mode
-            }
-
-            // Get the current question type and check for empty correct answer or missing scorecard
-            const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
-            const currentQuestionInputType = quizEditorRef.current.getCurrentQuestionInputType();
-
-            if (currentQuestionInputType === 'code') {
-                const hasCodingLanguages = quizEditorRef.current.hasCodingLanguages();
-                if (!hasCodingLanguages) {
-                    // Show toast notification for missing coding languages
-                    displayToast("Missing Coding Languages", "Please select at least one programming language", "🚫");
-                    return; // Prevent entering preview mode
-                }
-            }
-
-            if (currentQuestionType === 'objective') {
-                // For objective questions, check if correct answer is empty
-                const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
-                if (!hasCorrectAnswer) {
-                    // Show toast notification for empty correct answer
-                    displayToast("Empty correct answer", "Please set a correct answer for this question before previewing", "🚫");
-                    // Switch to answer tab
-                    quizEditorRef.current.setActiveTab('answer');
-                    return; // Prevent entering preview mode
-                }
-            } else if (currentQuestionType === 'subjective') {
-                // For subjective questions, check if scorecard is set
-                const hasScorecard = quizEditorRef.current.hasScorecard();
-                if (!hasScorecard) {
-                    // Show toast notification for missing scorecard
-                    displayToast("Missing scorecard", "Please set a scorecard for evaluating this question before previewing", "🚫");
-                    // Switch to scorecard tab
-                    quizEditorRef.current.setActiveTab('scorecard');
+                if (!hasContent) {
+                    // Show toast notification
+                    displayToast("Empty question", "Please add details to the question before previewing", "🚫");
                     return; // Prevent entering preview mode
                 }
 
-                // Validate the scorecard criteria for subjective questions
-                // Get the current question's scorecard data
-                const currentQuestionConfig = quizEditorRef.current.getCurrentQuestionConfig?.();
+                // Get the current question type and check for empty correct answer or missing scorecard
+                const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
+                const currentQuestionInputType = quizEditorRef.current.getCurrentQuestionInputType();
 
-                if (currentQuestionConfig?.scorecardData) {
-                    // Use the shared validation function to validate the scorecard criteria
-                    const isValid = quizEditorRef.current.validateScorecardCriteria(
-                        currentQuestionConfig.scorecardData,
-                        {
-                            setActiveTab: quizEditorRef.current.setActiveTab,
-                            showErrorMessage: displayToast
+                if (currentQuestionInputType === 'code') {
+                    const hasCodingLanguages = quizEditorRef.current.hasCodingLanguages();
+                    if (!hasCodingLanguages) {
+                        // Show toast notification for missing coding languages
+                        displayToast("Missing Coding Languages", "Please select at least one programming language", "🚫");
+                        return; // Prevent entering preview mode
+                    }
+                }
+
+                if (currentQuestionType === 'objective') {
+                    // For objective questions, check if correct answer is empty
+                    const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
+                    if (!hasCorrectAnswer) {
+                        // Show toast notification for empty correct answer
+                        displayToast("Empty correct answer", "Please set a correct answer for this question before previewing", "🚫");
+                        // Switch to answer tab
+                        quizEditorRef.current.setActiveTab('answer');
+                        return; // Prevent entering preview mode
+                    }
+                } else if (currentQuestionType === 'subjective') {
+                    // For subjective questions, check if scorecard is set
+                    const hasScorecard = quizEditorRef.current.hasScorecard();
+                    if (!hasScorecard) {
+                        // Show toast notification for missing scorecard
+                        displayToast("Missing scorecard", "Please set a scorecard for evaluating this question before previewing", "🚫");
+                        // Switch to scorecard tab
+                        quizEditorRef.current.setActiveTab('scorecard');
+                        return; // Prevent entering preview mode
+                    }
+
+                    // Validate the scorecard criteria for subjective questions
+                    // Get the current question's scorecard data
+                    const currentQuestionConfig = quizEditorRef.current.getCurrentQuestionConfig?.();
+
+                    if (currentQuestionConfig?.scorecardData) {
+                        // Use the shared validation function to validate the scorecard criteria
+                        const isValid = quizEditorRef.current.validateScorecardCriteria(
+                            currentQuestionConfig.scorecardData,
+                            {
+                                setActiveTab: quizEditorRef.current.setActiveTab,
+                                showErrorMessage: displayToast
+                            }
+                        );
+
+                        if (!isValid) {
+                            return; // Prevent entering preview mode if validation fails
                         }
-                    );
-
+                    }
+                }
+            } else if (activeItem?.type === 'assignment' && assignmentEditorRef.current) {
+                // Validate assignment before previewing - shows specific error messages
+                if (assignmentEditorRef.current.validateBeforePublish) {
+                    const isValid = assignmentEditorRef.current.validateBeforePublish();
                     if (!isValid) {
-                        return; // Prevent entering preview mode if validation fails
+                        return; // Validation shows its own toast via onValidationError
                     }
                 }
             }
         }
 
         // Toggle preview mode if content exists or we're exiting preview mode
-        setQuizPreviewMode(!quizPreviewMode);
+        setPreviewMode(!previewMode);
     };
 
     // Handle showing and hiding toast
@@ -628,6 +674,14 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 }
             }
 
+            // For assignments, run internal validation for precise messaging
+            if (activeItem?.type === 'assignment' && assignmentEditorRef.current?.validateBeforePublish) {
+                const isValid = assignmentEditorRef.current.validateBeforePublish();
+                if (!isValid) {
+                    return; // Validation shows its own toast via onValidationError
+                }
+            }
+
             // For learning materials, validate content exists
             if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
                 const hasContent = learningMaterialEditorRef.current.hasContent();
@@ -652,6 +706,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         // For quizzes, check for unsaved scorecard changes first
         if (activeItem?.type === 'quiz' && quizEditorRef.current) {
             if (quizEditorRef.current.hasUnsavedScorecardChanges()) {
+                pendingActionRef.current = action;
+                setShowUnsavedScorecardConfirmation(true);
+                return;
+            }
+        }
+
+        // For assignments, check for unsaved scorecard changes
+        if (activeItem?.type === 'assignment' && assignmentEditorRef.current) {
+            if (assignmentEditorRef.current.hasUnsavedScorecardChanges && assignmentEditorRef.current.hasUnsavedScorecardChanges()) {
                 pendingActionRef.current = action;
                 setShowUnsavedScorecardConfirmation(true);
                 return;
@@ -694,6 +757,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         } else if (activeItem?.type === 'quiz') {
             // Use the ref to call save directly
             quizEditorRef.current?.savePublished();
+        } else if (activeItem?.type === 'assignment') {
+            assignmentEditorRef.current?.savePublished();
         }
     };
 
@@ -756,20 +821,20 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     titleElement.dataset.editing = "true";
                                 }}
                                 className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
-                                data-placeholder={activeItem?.type === 'material' ? 'New learning material' : 'New quiz'}
+                                data-placeholder={activeItem?.type === 'material' ? 'New learning material' : (activeItem?.type === 'quiz' ? 'New quiz' : 'New assignment')}
                             >
                                 {activeItem?.title}
                             </h2>
                         </div>
                         <div className="flex items-center space-x-3">
-                            {/* Preview Mode Toggle for Quizzes/Exams */}
-                            {activeItem?.type === 'quiz' && hasQuizQuestions && (
+                            {/* Preview Mode Toggle for Quizzes/Assignments */}
+                            {((activeItem?.type === 'quiz' && hasQuizQuestions) || activeItem?.type === 'assignment') && (
                                 <button
-                                    onClick={toggleQuizPreviewMode}
+                                    onClick={togglePreviewMode}
                                     className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500 rounded-full transition-colors cursor-pointer"
-                                    aria-label={quizPreviewMode ? "Exit preview" : "Preview quiz"}
+                                    aria-label={previewMode ? "Exit preview" : `Preview ${activeItem?.type}`}
                                 >
-                                    {quizPreviewMode ? (
+                                    {previewMode ? (
                                         <>
                                             <Edit2 size={16} className="mr-2" />
                                             Exit preview
@@ -786,7 +851,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             {/* Publish button for all item types */}
                             {activeItem?.status === 'draft' &&
                                 ((activeItem?.type === 'quiz' && hasQuizQuestions) ||
-                                    activeItem?.type === 'material') && (
+                                    activeItem?.type === 'material' ||
+                                    activeItem?.type === 'assignment') && (
                                     <>
                                         {/* Save Draft button */}
                                         <button
@@ -828,6 +894,14 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                         }
                                                     }
 
+                                                    // For assignments, validate using editor
+                                                    if (activeItem?.type === 'assignment' && assignmentEditorRef.current?.validateBeforePublish) {
+                                                        const isValid = assignmentEditorRef.current.validateBeforePublish();
+                                                        if (!isValid) {
+                                                            return; // Validation shows its own toast via onValidationError
+                                                        }
+                                                    }
+
                                                     // If validation passes, show publish confirmation
                                                     onSetShowPublishConfirmation(true);
                                                 });
@@ -841,7 +915,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </>
                                 )}
 
-                            {activeItem?.status === 'published' && isEditMode && !quizPreviewMode ? (
+                            {activeItem?.status === 'published' && isEditMode && !previewMode ? (
                                 <>
                                     {scheduledDate && (
                                         <div className="flex items-center mr-3">
@@ -901,7 +975,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         Cancel
                                     </button>
                                 </>
-                            ) : activeItem?.status === 'published' && !isEditMode && !quizPreviewMode && (
+                            ) : activeItem?.status === 'published' && !isEditMode && !previewMode && (
                                 <>
                                     {activeItem.scheduled_publish_at && (
                                         <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(activeItem.scheduled_publish_at))}`} position="top">
@@ -1028,12 +1102,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
-                                currentQuestionId={activeQuestionId}
+                                    currentQuestionId={activeQuestionId || undefined}
                                 onQuestionChange={onQuestionChange}
                                 onChange={(questions) => {
                                     // Track if there are questions for publish/preview button visibility
                                     setHasQuizQuestions(questions.length > 0);
-
                                     // Keep activeItem.questions updated for component state consistency
                                     if (activeItem) {
                                         activeItem.questions = questions;
@@ -1042,7 +1115,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Notify parent component
                                     onQuizContentChange(questions);
                                 }}
-                                isPreviewMode={quizPreviewMode}
+                                    isPreviewMode={previewMode}
                                 isDarkMode={true}
                                 readOnly={activeItem.status === 'published' && !isEditMode}
                                 taskId={activeItem.id}
@@ -1128,6 +1201,49 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     setShowUnsavedScorecardChangesInfo(true);
                                 }}
                             />
+                            ) : activeItem?.type === 'assignment' ? (
+                                <DynamicAssignmentEditor
+                                    ref={assignmentEditorRef}
+                                    key={`assignment-${activeItem.id}-${isEditMode}`}
+                                    readOnly={activeItem.status === 'published' && !isEditMode}
+                                    status={activeItem.status}
+                                    showPublishConfirmation={showPublishConfirmation}
+                                    onPublishCancel={onPublishCancel}
+                                    taskId={activeItem.id}
+                                    scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
+                                    courseId={courseId}
+                                    schoolId={schoolId}
+                                    onValidationError={(title, message, emoji) => displayToast(title, message, emoji || '🚫')}
+                                    onPublishSuccess={(updatedData?: any) => {
+                                        if (updatedData) {
+                                            if (activeItem && updatedData.status === 'published') {
+                                                activeItem.status = 'published';
+                                                activeItem.title = updatedData.title || activeItem.title;
+                                                activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
+
+                                                if (updatedData.scheduled_publish_at) {
+                                                    setScheduledDate(new Date(updatedData.scheduled_publish_at));
+                                                } else {
+                                                    setScheduledDate(null);
+                                                }
+                                            }
+                                            onPublishConfirm();
+                                            onSetShowPublishConfirmation(false);
+
+
+                                            const publishMessage = updatedData.scheduled_publish_at ? `Your assignment has been scheduled for publishing` : `Your assignment has been published`;
+                                            displayToast("Published", publishMessage);
+                                        }
+                                    }}
+                                    onSaveSuccess={(updatedData?: any) => {
+                                        if (updatedData && activeItem) {
+                                            activeItem.title = updatedData.title || activeItem.title;
+                                            onSaveItem();
+                                            displayToast("Saved", "Your assignment has been updated");
+                                        }
+                                    }}
+                                    isPreviewMode={previewMode}
+                                />
                         ) : null}
                     </div>
                 </div>
@@ -1168,7 +1284,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             <ConfirmationDialog
                 open={showUnsavedScorecardConfirmation}
                 title="Unsaved Scorecard Changes"
-                message={`The scorecard for this question has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
+                message={`The scorecard has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
                 confirmButtonText="Discard changes"
                 cancelButtonText="Go Back"
                 onConfirm={handleDiscardScorecardChanges}

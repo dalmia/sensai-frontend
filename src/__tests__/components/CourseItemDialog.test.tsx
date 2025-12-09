@@ -2512,7 +2512,7 @@ describe('CourseItemDialog', () => {
 
             // This covers the unsaved scorecard confirmation dialog JSX (lines around 1110-1120)
             const scorecardElements = screen.getAllByText((content, element) => {
-                return element?.textContent?.includes('The scorecard for this question has unsaved changes') || false;
+                return element?.textContent?.includes('The scorecard has unsaved changes') || false;
             });
             expect(scorecardElements.length).toBeGreaterThan(0);
 

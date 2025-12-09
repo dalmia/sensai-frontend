@@ -18,6 +18,7 @@ interface CourseModuleListProps {
     onDeleteItem?: (moduleId: string, itemId: string) => void;
     onAddLearningMaterial?: (moduleId: string) => Promise<void>;
     onAddQuiz?: (moduleId: string) => Promise<void>;
+    onAddAssignment?: (moduleId: string) => Promise<void>;
     onMoveModuleUp?: (moduleId: string) => void;
     onMoveModuleDown?: (moduleId: string) => void;
     onDeleteModule?: (moduleId: string) => void;
@@ -60,6 +61,7 @@ export default function CourseModuleList({
     onDeleteItem,
     onAddLearningMaterial,
     onAddQuiz,
+    onAddAssignment,
     onMoveModuleUp,
     onMoveModuleDown,
     onDeleteModule,
@@ -486,6 +488,7 @@ export default function CourseModuleList({
         switch (type) {
             case 'material': return 'learning material';
             case 'quiz': return 'quiz';
+            case 'assignment': return 'assignment';
         }
     };
 
@@ -794,6 +797,16 @@ export default function CourseModuleList({
                                                                 : "text-blue-400"
                                                                 }`} />
                                                         </div>
+                                                    ) : item.type === 'assignment' ? (
+                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
+                                                            ? "bg-green-500/15"
+                                                            : "bg-rose-500/15"
+                                                            }`}>
+                                                            <PenSquare size={16} className={`${completedItems[item.id]
+                                                                ? "text-green-500"
+                                                                : "text-rose-400"
+                                                                }`} />
+                                                        </div>
                                                     ) : (
                                                         <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
                                                             ? "bg-green-500/15"
@@ -988,6 +1001,23 @@ export default function CourseModuleList({
                                                     >
                                                         <Plus size={14} className="mr-1" />
                                                         Quiz
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="Add a new project/assignment" position="top">
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (onAddAssignment) {
+                                                                try {
+                                                                    await onAddAssignment(module.id);
+                                                                } catch (error) {
+                                                                    console.error("Failed to add assignment:", error);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex items-center px-3 py-1.5 text-sm text-gray-300 hover:text-white border border-gray-400 rounded-full transition-colors cursor-pointer"
+                                                    >
+                                                        <Plus size={14} className="mr-1" />
+                                                        Assignment
                                                     </button>
                                                 </Tooltip>
                                             </div>

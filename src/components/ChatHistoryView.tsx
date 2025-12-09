@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem } from '../types/quiz';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { FileDown } from 'lucide-react';
 
 // Code message display component
 const CodeMessageDisplay = ({ code, language }: { code: string, language?: string }) => {
@@ -60,6 +61,7 @@ interface ChatHistoryViewProps {
     showLearnerView?: boolean;
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
+    onFileDownload?: (fileUuid: string, fileName: string) => void;
 }
 
 const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
@@ -73,6 +75,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     showLearnerView = false,
     onShowLearnerViewChange,
     isAdminView = false,
+    onFileDownload,
 }) => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -365,6 +368,20 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                     >
                                                         {message.content}
                                                     </Markdown>
+                                                </div>
+                                            ) : message.messageType === 'file' && message.fileUuid && onFileDownload ? (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            const fileUuid = message.fileUuid!;
+                                                            const fileName = message.fileName || 'file.zip';
+                                                            onFileDownload(fileUuid, fileName);
+                                                        }}
+                                                        className="flex items-center gap-2 text-sm text-white hover:text-gray-300 transition-colors cursor-pointer"
+                                                    >
+                                                        <FileDown className="w-4 h-4" />
+                                                        <span>{message.content}</span>
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
