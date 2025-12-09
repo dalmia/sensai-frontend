@@ -683,7 +683,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
     }));
 
     return (
-        <div className={`h-full ${className}`}>
+        <div className={`h-full px-16 space-y-6 ${className}`}>
             {/* Scorecard delete confirmation modal */}
             <ConfirmationDialog
                 show={showScorecardDeleteConfirm}
@@ -709,10 +709,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
                     setShowScorecardSaveConfirm(false);
                 }}
                 title="Are you sure you want to save?"
-                message={type === 'quiz'
-                    ? "These changes will be applied to all questions across quizzes using this scorecard. If you want to make changes only to this question, you can duplicate the scorecard and add your changes there."
-                    : "These changes will be applied to all items using this scorecard. If you want to make changes only to this item, you can duplicate the scorecard and add your changes there."
-                }
+                message={`These changes will be applied to all tasks using this scorecard. If you want to make changes only to this ${type === 'quiz' ? 'question' : 'assignment'}, you can duplicate the scorecard and add your changes there.`}
                 onCancel={() => setShowScorecardSaveConfirm(false)}
                 type="save"
                 isLoading={isSavingScorecardRef.current}

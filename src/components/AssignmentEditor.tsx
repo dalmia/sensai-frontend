@@ -500,6 +500,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                 onSaveSuccess?.(updatedData);
             }
 
+            setHasAssignment(true);
+
             setDirty(false);
         } catch (error) {
             console.error('Error saving assignment:', error);
@@ -533,205 +535,206 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
         );
     }
 
+    if (isPreviewMode) {
+        if (!hasAssignment) {
+            void updateDraftAssignment('draft', null);
+        }
+        return (
+            <div className="w-full h-full">
+                <LearnerAssignmentView
+                    problemBlocks={problemBlocks}
+                    title={getDialogTitle()}
+                    submissionType={submissionType.value}
+                    userId={user?.id}
+                    taskId={taskId}
+                    isTestMode={true}
+                    viewOnly={false}
+                    className="w-full h-full"
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-full relative">
-            {isPreviewMode ? (
-                <div className="w-full h-full">
-                    <LearnerAssignmentView
-                        problemBlocks={problemBlocks}
-                        title={getDialogTitle()}
-                        submissionType={submissionType.value}
-                        userId={user?.id}
-                        taskId={taskId}
-                        isTestMode={true}
-                        viewOnly={false}
-                        className="w-full h-full"
-                    />
+            <div className="flex-1 flex flex-col space-y-6 h-full">
+                <PublishConfirmationDialog
+                    show={!!showPublishConfirmation}
+                    title="Ready to publish?"
+                    message="After publishing, you won't be able to add or remove sections, but you can still edit existing ones"
+                    onConfirm={(scheduledPublishAt) => updateDraftAssignment('published', scheduledPublishAt)}
+                    onCancel={onPublishCancel || (() => { })}
+                    isLoading={false}
+                />
+
+                {/* Settings: Submission Type and Copy/Paste Control */}
+                <div className="space-y-4 px-6 py-4 bg-[#111111]">
+                    <div className="flex items-center">
+                        <Dropdown
+                            icon={<ClipboardCheck size={16} />}
+                            title="Submission type"
+                            options={submissionTypeOptions}
+                            selectedOption={submissionType}
+                            onChange={(e) => {
+                                if (!Array.isArray(e)) {
+                                    setSubmissionType(e);
+                                    setDirty(true);
+                                }
+                            }}
+                            disabled={readOnly}
+                        />
+                    </div>
+                    <div className="flex items-center">
+                        <Dropdown
+                            icon={<ClipboardCheck size={16} />}
+                            title="Allow copy/paste?"
+                            options={copyPasteControlOptions}
+                            selectedOption={selectedCopyPasteControl}
+                            onChange={(e) => {
+                                if (!Array.isArray(e)) {
+                                    setSelectedCopyPasteControl(e);
+                                    setDirty(true);
+                                }
+                            }}
+                            disabled={readOnly}
+                        />
+                    </div>
                 </div>
-            ) : (
-                <div className="flex-1 flex flex-col space-y-6 h-full">
-                    <PublishConfirmationDialog
-                        show={!!showPublishConfirmation}
-                        title="Ready to publish?"
-                        message="After publishing, you won't be able to add or remove sections, but you can still edit existing ones"
-                        onConfirm={(scheduledPublishAt) => updateDraftAssignment('published', scheduledPublishAt)}
-                        onCancel={onPublishCancel || (() => { })}
-                        isLoading={false}
-                    />
 
-                    {/* Settings: Submission Type and Copy/Paste Control */}
-                    <div className="space-y-4 px-6 py-4 bg-[#111111]">
-                        <div className="flex items-center">
-                            <Dropdown
-                                icon={<ClipboardCheck size={16} />}
-                                title="Submission type"
-                                options={submissionTypeOptions}
-                                selectedOption={submissionType}
-                                onChange={(e) => {
-                                    if (!Array.isArray(e)) {
-                                        setSubmissionType(e);
-                                        setDirty(true);
-                                    }
-                                }}
-                                disabled={readOnly}
-                            />
-                        </div>
-                        <div className="flex items-center">
-                            <Dropdown
-                                icon={<ClipboardCheck size={16} />}
-                                title="Allow copy/paste?"
-                                options={copyPasteControlOptions}
-                                selectedOption={selectedCopyPasteControl}
-                                onChange={(e) => {
-                                    if (!Array.isArray(e)) {
-                                        setSelectedCopyPasteControl(e);
-                                        setDirty(true);
-                                    }
-                                }}
-                                disabled={readOnly}
-                            />
-                        </div>
+                {/* Tab navigation */}
+                <div className="flex justify-center">
+                    <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                        <button
+                            className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => setActiveTab('problem')}
+                        >
+                            <HelpCircle size={16} className="mr-2" />
+                            Problem statement
+                        </button>
+                        <button
+                            className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => setActiveTab('evaluation')}
+                        >
+                            <ClipboardCheck size={16} className="mr-2" />
+                            Evaluation criteria
+                        </button>
+                        <button
+                            className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => setActiveTab('knowledge')}
+                        >
+                            <BookOpen size={16} className="mr-2" />
+                            AI training resources
+                        </button>
                     </div>
+                </div>
 
-                    {/* Tab navigation */}
-                    <div className="flex justify-center">
-                        <div className="inline-flex bg-[#222222] rounded-lg p-1">
-                            <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                onClick={() => setActiveTab('problem')}
-                            >
-                                <HelpCircle size={16} className="mr-2" />
-                                Problem statement
-                            </button>
-                            <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                onClick={() => setActiveTab('evaluation')}
-                            >
-                                <ClipboardCheck size={16} className="mr-2" />
-                                Evaluation criteria
-                            </button>
-                            <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
-                                onClick={() => setActiveTab('knowledge')}
-                            >
-                                <BookOpen size={16} className="mr-2" />
-                                AI training resources
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Tab content */}
-                    <div className="flex-1">
-                        {activeTab === 'problem' && (
-                            <div className="h-full flex flex-col">
-                                {/* Integration */}
-                                {!readOnly && !isLoadingAssignment && (
-                                    <div className="my-4">
-                                        <NotionIntegration
-                                            onPageSelect={handleIntegrationPageSelect}
-                                            onPageRemove={handleIntegrationPageRemove}
-                                            isEditMode={!readOnly}
-                                            editorContent={problemContent}
-                                            loading={isLoadingIntegration}
-                                            status={status}
-                                            storedBlocks={integrationBlocks}
-                                            onContentUpdate={(updatedContent) => {
-                                                handleProblemContentChange(updatedContent);
-                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                            }}
-                                            onLoadingChange={setIsLoadingIntegration}
-                                        />
+                {/* Tab content */}
+                <div className="flex-1">
+                    {activeTab === 'problem' && (
+                        <div className="h-full flex flex-col">
+                            {/* Integration */}
+                            {!readOnly && !isLoadingAssignment && (
+                                <NotionIntegration
+                                    onPageSelect={handleIntegrationPageSelect}
+                                    onPageRemove={handleIntegrationPageRemove}
+                                    isEditMode={!readOnly}
+                                    editorContent={problemContent}
+                                    loading={isLoadingIntegration}
+                                    status={status}
+                                    storedBlocks={integrationBlocks}
+                                    onContentUpdate={(updatedContent) => {
+                                        handleProblemContentChange(updatedContent);
+                                        setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                    }}
+                                    onLoadingChange={setIsLoadingIntegration}
+                                />
+                            )}
+                            <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                {isLoadingIntegration ? (
+                                    <div className="flex items-center justify-center h-32">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                                     </div>
-                                )}
-                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                    {isLoadingIntegration ? (
-                                        <div className="flex items-center justify-center h-32">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                ) : integrationError ? (
+                                    <div className="flex flex-col items-center justify-center h-32 text-center">
+                                        <div className="text-red-400 text-sm mb-4">
+                                            {integrationError}
                                         </div>
-                                    ) : integrationError ? (
-                                        <div className="flex flex-col items-center justify-center h-32 text-center">
-                                            <div className="text-red-400 text-sm mb-4">
-                                                {integrationError}
-                                            </div>
-                                            <div className="text-gray-400 text-xs">
-                                                The Notion integration may have been disconnected. Please reconnect it.
-                                            </div>
+                                        <div className="text-gray-400 text-xs">
+                                            The Notion integration may have been disconnected. Please reconnect it.
                                         </div>
-                                    ) : integrationBlocks.length > 0 ? (
-                                        <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                            <RenderConfig theme="dark">
-                                                <BlockList blocks={integrationBlocks} />
-                                            </RenderConfig>
-                                        </div>
-                                    ) : integrationBlock ? (
-                                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                                            <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
-                                        </div>
-                                    ) : (
-                                        <BlockNoteEditor
-                                            initialContent={initialContent}
-                                            onChange={handleProblemContentChange}
-                                            isDarkMode={isDarkMode}
-                                            readOnly={readOnly}
-                                            onEditorReady={setEditorInstance}
-                                            className="assignment-editor"
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'evaluation' && (
-                            <div className="h-full flex flex-col px-16 space-y-6 overflow-hidden">
-                                {/* Evaluation Criteria Section */}
-                                <EvaluationCriteriaEditor
-                                    scoreRange={scoreRange}
-                                    onScoreChange={handleScoreChange}
-                                    readOnly={readOnly || isLoadingAssignment}
-                                    isLoading={isLoadingAssignment}
-                                    highlightedField={highlightedField === 'evaluation' ? 'evaluation' : null}
-                                />
-
-                                {/* Scorecard Section */}
-                                    <div className={`h-full mb-1 ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
-                                    <ScorecardManager
-                                        ref={scorecardManagerRef}
-                                        schoolId={schoolId}
-                                        readOnly={readOnly || isLoadingAssignment}
-                                        onScorecardChange={handleScorecardChange}
-                                        scorecardId={scorecardId}
-                                        className="scorecard-section"
-                                        type="assignment"
+                                    </div>
+                                ) : integrationBlocks.length > 0 ? (
+                                    <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
+                                        <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                        <RenderConfig theme="dark">
+                                            <BlockList blocks={integrationBlocks} />
+                                        </RenderConfig>
+                                    </div>
+                                ) : integrationBlock ? (
+                                    <div className="flex flex-col items-center justify-center h-64 text-center">
+                                        <div className="text-white text-lg mb-2">Notion page is empty</div>
+                                        <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                    </div>
+                                ) : (
+                                    <BlockNoteEditor
+                                        initialContent={initialContent}
+                                        onChange={handleProblemContentChange}
+                                        isDarkMode={isDarkMode}
+                                        readOnly={readOnly}
+                                        onEditorReady={setEditorInstance}
+                                        className="assignment-editor"
                                     />
-                                </div>
+                                )}
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {activeTab === 'knowledge' && (
-                            <div className="h-full flex flex-col px-16 space-y-6 overflow-hidden">
-                                <KnowledgeBaseEditor
-                                    knowledgeBaseBlocks={knowledgeBaseBlocks}
-                                    linkedMaterialIds={linkedMaterialIds}
-                                    courseId={courseId}
+                    {activeTab === 'evaluation' && (
+                        <div className="h-full flex flex-col space-y-6">
+                            {/* Evaluation Criteria Section */}
+                            <EvaluationCriteriaEditor
+                                scoreRange={scoreRange}
+                                onScoreChange={handleScoreChange}
+                                readOnly={readOnly || isLoadingAssignment}
+                                isLoading={isLoadingAssignment}
+                                highlightedField={highlightedField === 'evaluation' ? 'evaluation' : null}
+                            />
+
+                            {/* Scorecard Section */}
+                            <div className={`h-full m-1 ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
+                                <ScorecardManager
+                                    ref={scorecardManagerRef}
+                                    schoolId={schoolId}
                                     readOnly={readOnly || isLoadingAssignment}
-                                    isDarkMode={isDarkMode}
-                                    onKnowledgeBaseChange={(blocks) => {
-                                        setKnowledgeBaseBlocks(blocks);
-                                        setDirty(true);
-                                    }}
-                                    onLinkedMaterialsChange={(ids) => {
-                                        setLinkedMaterialIds(ids);
-                                        setDirty(true);
-                                    }}
-                                    className="assignment"
+                                    onScorecardChange={handleScorecardChange}
+                                    scorecardId={scorecardId}
+                                    className="scorecard-section"
+                                    type="assignment"
                                 />
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'knowledge' && (
+                        <KnowledgeBaseEditor
+                            knowledgeBaseBlocks={knowledgeBaseBlocks}
+                            linkedMaterialIds={linkedMaterialIds}
+                            courseId={courseId}
+                            readOnly={readOnly || isLoadingAssignment}
+                            isDarkMode={isDarkMode}
+                            onKnowledgeBaseChange={(blocks) => {
+                                setKnowledgeBaseBlocks(blocks);
+                                setDirty(true);
+                            }}
+                            onLinkedMaterialsChange={(ids) => {
+                                setLinkedMaterialIds(ids);
+                                setDirty(true);
+                            }}
+                            className="assignment"
+                        />
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 });

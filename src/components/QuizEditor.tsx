@@ -1699,48 +1699,39 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [currentQuestionIndex, questions, getQuestionTypeOption, getAnswerTypeOption, getPurposeOption]);
 
-    const isUserCreatedNewScorecard = (scorecardData: ScorecardTemplate): boolean => {
-        return scorecardData && !scorecardData.new && !scorecardData.is_template;
-    };
-
 
     // New function to sync all questions with a source scorecard when it changes
     const syncLinkedScorecards = useCallback((sourceId: string, newName?: string, newCriteria?: CriterionData[]) => {
         if (!sourceId) return;
 
-        // Update all questions that have scorecard linked to this source
-        const updatedQuestions = questions.map(question => {
-            // Check if this question has a linked scorecard with the matching id
-            if (question.config.scorecardData &&
-                question.config.scorecardData.id === sourceId) {
+        setQuestions(prevQuestions => {
+            const updatedQuestions = prevQuestions.map(question => {
+                const scorecard = question.config.scorecardData;
+                if (scorecard && scorecard.id === sourceId) {
+                    const updatedScorecardData = {
+                        ...scorecard,
+                        name: newName !== undefined ? newName : scorecard.name,
+                        criteria: newCriteria !== undefined ? newCriteria : scorecard.criteria,
+                    };
 
-                // Create an updated scorecard data
-                const updatedScorecardData = {
-                    ...question.config.scorecardData,
-                    name: newName !== undefined ? newName : question.config.scorecardData.name,
-                    criteria: newCriteria !== undefined ? newCriteria : question.config.scorecardData.criteria
-                };
+                    return {
+                        ...question,
+                        config: {
+                            ...question.config,
+                            scorecardData: updatedScorecardData,
+                        },
+                    };
+                }
+                return question;
+            });
 
-                // Return updated question with synced scorecard
-                return {
-                    ...question,
-                    config: {
-                        ...question.config,
-                        scorecardData: updatedScorecardData
-                    }
-                };
+            if (onChange) {
+                onChange(updatedQuestions);
             }
 
-            // Return question unchanged if it doesn't have a matching scorecard
-            return question;
+            return updatedQuestions;
         });
-
-        // Update questions state and notify parent
-        setQuestions(updatedQuestions);
-        if (onChange) {
-            onChange(updatedQuestions);
-        }
-    }, [questions, onChange]);
+    }, [onChange]);
 
 
     return (
@@ -2019,24 +2010,22 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         {activeEditorTab === 'question' ? (
                                             <div className="w-full h-full flex flex-col">
                                                 {/* Integration */}
-                                                {!readOnly && (
-                                                    <div className="my-4">
-                                                        <NotionIntegration
-                                                            key={`notion-integration-${currentQuestionIndex}`}
-                                                            onPageSelect={handleIntegrationPageSelect}
-                                                            onPageRemove={handleIntegrationPageRemove}
-                                                            isEditMode={!readOnly}
-                                                            editorContent={currentQuestionContent}
-                                                            loading={isLoadingIntegration}
-                                                            status={status}
-                                                            storedBlocks={integrationBlocks}
-                                                            onContentUpdate={(updatedContent) => {
-                                                                handleQuestionContentChange(updatedContent);
-                                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                                            }}
-                                                            onLoadingChange={setIsLoadingIntegration}
-                                                        />
-                                                    </div>
+                                                        {!readOnly && (
+                                                            <NotionIntegration
+                                                                key={`notion-integration-${currentQuestionIndex}`}
+                                                                onPageSelect={handleIntegrationPageSelect}
+                                                                onPageRemove={handleIntegrationPageRemove}
+                                                                isEditMode={!readOnly}
+                                                                editorContent={currentQuestionContent}
+                                                                loading={isLoadingIntegration}
+                                                                status={status}
+                                                                storedBlocks={integrationBlocks}
+                                                                onContentUpdate={(updatedContent) => {
+                                                                    handleQuestionContentChange(updatedContent);
+                                                                    setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                                                }}
+                                                                onLoadingChange={setIsLoadingIntegration}
+                                                            />
                                                 )}
                                                 <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                                     {isLoadingIntegration ? (
@@ -2110,44 +2099,44 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'knowledge' ? (
-                                                <KnowledgeBaseEditor
-                                                    knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
-                                                    linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
-                                                    courseId={courseId}
-                                                    readOnly={readOnly}
-                                                    isDarkMode={isDarkMode}
-                                                    onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
-                                                        // Update the question config with the new knowledge base blocks
-                                                        const updatedQuestions = [...questions];
-                                                        updatedQuestions[currentQuestionIndex] = {
-                                                            ...updatedQuestions[currentQuestionIndex],
-                                                            config: {
-                                                                ...updatedQuestions[currentQuestionIndex].config,
-                                                                knowledgeBaseBlocks: knowledgeBaseBlocks
-                                                            }
-                                                        };
-                                                        setQuestions(updatedQuestions);
-                                                        if (onChange) {
-                                                            onChange(updatedQuestions);
-                                                        }
-                                                    }}
-                                                    onLinkedMaterialsChange={(linkedMaterialIds) => {
-                                                        // Update the question config with the new linked material IDs
-                                                        const updatedQuestions = [...questions];
-                                                        updatedQuestions[currentQuestionIndex] = {
-                                                            ...updatedQuestions[currentQuestionIndex],
-                                                            config: {
-                                                                ...updatedQuestions[currentQuestionIndex].config,
-                                                                linkedMaterialIds: linkedMaterialIds
-                                                            }
-                                                        };
-                                                        setQuestions(updatedQuestions);
-                                                        if (onChange) {
-                                                            onChange(updatedQuestions);
-                                                        }
-                                                    }}
-                                                    className="question"
-                                                />
+                                                            <KnowledgeBaseEditor
+                                                                knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                                linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
+                                                                courseId={courseId}
+                                                                readOnly={readOnly}
+                                                                isDarkMode={isDarkMode}
+                                                                onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
+                                                                    // Update the question config with the new knowledge base blocks
+                                                                    const updatedQuestions = [...questions];
+                                                                    updatedQuestions[currentQuestionIndex] = {
+                                                                        ...updatedQuestions[currentQuestionIndex],
+                                                                        config: {
+                                                                            ...updatedQuestions[currentQuestionIndex].config,
+                                                                            knowledgeBaseBlocks: knowledgeBaseBlocks
+                                                                        }
+                                                                    };
+                                                                    setQuestions(updatedQuestions);
+                                                                    if (onChange) {
+                                                                        onChange(updatedQuestions);
+                                                                    }
+                                                                }}
+                                                                onLinkedMaterialsChange={(linkedMaterialIds) => {
+                                                                    // Update the question config with the new linked material IDs
+                                                                    const updatedQuestions = [...questions];
+                                                                    updatedQuestions[currentQuestionIndex] = {
+                                                                        ...updatedQuestions[currentQuestionIndex],
+                                                                        config: {
+                                                                            ...updatedQuestions[currentQuestionIndex].config,
+                                                                            linkedMaterialIds: linkedMaterialIds
+                                                                        }
+                                                                    };
+                                                                    setQuestions(updatedQuestions);
+                                                                    if (onChange) {
+                                                                        onChange(updatedQuestions);
+                                                                    }
+                                                                }}
+                                                                className="question"
+                                                            />
                                         ) : (
                                             // Scorecard tab - use ScorecardManager component
                                             <div className="h-full w-full">
