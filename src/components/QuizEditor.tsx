@@ -1725,8 +1725,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 return question;
             });
 
+            // Defer onChange callback to avoid updating parent component during render
             if (onChange) {
-                onChange(updatedQuestions);
+                setTimeout(() => {
+                    onChange(updatedQuestions);
+                }, 0);
             }
 
             return updatedQuestions;
