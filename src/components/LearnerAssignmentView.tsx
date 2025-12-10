@@ -120,7 +120,7 @@ export default function LearnerAssignmentView({
     // Fetch assignment data from API when taskId changes
     useEffect(() => {
         const fetchAssignmentData = async () => {
-            if (!taskId || hasFetchedData) {
+            if (isTestMode || !taskId || hasFetchedData) {
                 setIsLoadingAssignment(false);
                 return;
             }

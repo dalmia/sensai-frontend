@@ -48,46 +48,48 @@ export default function EvaluationCriteriaEditor({
     };
 
     return (
-        <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2">
-            <div className="bg-[#1F1F1F] shadow-xl p-6 mb-2">
-                <div className="mb-6">
-                    <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                    <div className={`space-y-3 ${isHighlighted ? 'outline-2 outline-red-400 rounded-md' : ''}`}>
-                        {renderScoreInput(
-                            "Minimum Score",
-                            'min_score',
-                            scoreRange.min_score,
-                            1,
-                            scoreRange.max_score - 1
-                        )}
-                        {renderScoreInput(
-                            "Maximum Score",
-                            'max_score',
-                            scoreRange.max_score,
-                            scoreRange.min_score + 1,
-                            100
-                        )}
-                        {renderScoreInput(
-                            "Pass Mark",
-                            'pass_score',
-                            scoreRange.pass_score,
-                            scoreRange.min_score,
-                            scoreRange.max_score
-                        )}
+        <div className="px-16 space-y-6">
+            <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2">
+                <div className="bg-[#1F1F1F] shadow-xl p-6 mb-2">
+                    <div className="mb-6">
+                        <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
                     </div>
 
-                    <div className="flex flex-col justify-center">
-                        <div className="bg-[#2F2F2F] rounded-lg p-5">
-                            <div className="space-y-3 text-gray-300 text-sm font-light leading-relaxed">
-                                <p>
-                                    Set the scoring range and pass mark. The AI evaluates submissions and assigns a score. If the score doesn&apos;t meet the pass mark, students resubmit until it does.
-                                </p>
-                                <p>
-                                    Once the pass mark is reached, the AI asks questions across the key areas you define in the scorecard below, then generates a final report.
-                                </p>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className={`space-y-3 ${isHighlighted ? 'outline-2 outline-red-400 rounded-md' : ''}`}>
+                            {renderScoreInput(
+                                "Minimum Score",
+                                'min_score',
+                                scoreRange.min_score,
+                                1,
+                                scoreRange.max_score - 1
+                            )}
+                            {renderScoreInput(
+                                "Maximum Score",
+                                'max_score',
+                                scoreRange.max_score,
+                                scoreRange.min_score + 1,
+                                100
+                            )}
+                            {renderScoreInput(
+                                "Pass Mark",
+                                'pass_score',
+                                scoreRange.pass_score,
+                                scoreRange.min_score,
+                                scoreRange.max_score
+                            )}
+                        </div>
+
+                        <div className="flex flex-col justify-center">
+                            <div className="bg-[#2F2F2F] rounded-lg p-5">
+                                <div className="space-y-3 text-gray-300 text-sm font-light leading-relaxed">
+                                    <p>
+                                        Set the scoring range and pass mark. The AI evaluates submissions and assigns a score. If the score doesn&apos;t meet the pass mark, students resubmit until it does.
+                                    </p>
+                                    <p>
+                                        Once the pass mark is reached, the AI asks questions across the key areas you define in the scorecard below, then generates a final report.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
