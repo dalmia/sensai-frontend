@@ -1385,6 +1385,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Convert both to JSON strings for deep comparison
             const currentQuestionsStr = JSON.stringify(questions);
             const originalQuestionsStr = JSON.stringify(originalQuestionsRef.current);
+            
+            console.log("currentQuestionsStr", currentQuestionsStr)
+            console.log("originalQuestionsStr", originalQuestionsStr)
 
             // Return true if there are changes
             return currentQuestionsStr !== originalQuestionsStr;
@@ -1804,6 +1807,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }
     
     const handleCancelUnpublish = () => {
+        setErrorMessage(null)
         setShowUnpublishConfirmation(false)
     };
 
