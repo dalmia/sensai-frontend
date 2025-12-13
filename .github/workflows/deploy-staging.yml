@@ -39,6 +39,7 @@ jobs:
             BACKEND_URL=${{ secrets.BACKEND_URL }}
             NEXT_PUBLIC_BACKEND_URL=${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
             JUDGE0_API_URL=${{ secrets.JUDGE0_API_URL }}
+            NEXT_PUBLIC_BUGSNAG_API_KEY=${{ secrets.NEXT_PUBLIC_BUGSNAG_API_KEY }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
