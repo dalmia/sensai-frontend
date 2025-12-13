@@ -1,5 +1,3 @@
-import Bugsnag from '@bugsnag/js';
-
 const apiKey = process.env.NEXT_PUBLIC_BUGSNAG_API_KEY;
 
 export async function register() {
@@ -13,6 +11,9 @@ export async function register() {
   if (g.__bugsnagStarted) return;
   g.__bugsnagStarted = true;
 
+  // IMPORTANT: Lazy import to avoid crashing the edge instrumentation bundle
+  // (`@bugsnag/js` may reference browser globals like `navigator` at module eval time).
+  const { default: Bugsnag } = await import('@bugsnag/js');
   Bugsnag.start({ apiKey });
 }
 

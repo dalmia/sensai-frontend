@@ -46,4 +46,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Start the application
-CMD ["sh", "-c", "echo 'Environment variables:' && env | grep -E 'NEXTAUTH|GOOGLE|NODE_ENV|NEXT_PUBLIC|BACKEND|JUDGE0|NOTION' && npm start"]
+CMD ["sh", "-c", "echo 'Environment variables:' && env | grep -E 'NEXTAUTH|GOOGLE|NODE_ENV|NEXT_PUBLIC|BACKEND|JUDGE0|NOTION|BUGSNAG' && npm start"]
