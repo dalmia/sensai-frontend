@@ -16,6 +16,8 @@
     "@blocknote/core": "^0.39.1",
     "@blocknote/mantine": "^0.39.1",
     "@blocknote/react": "^0.39.1",
+    "@bugsnag/js": "^8.6.0",
+    "@bugsnag/plugin-react": "^8.6.0",
     "@headlessui/react": "^2.2.1",
     "@monaco-editor/react": "^4.7.0",
     "@notionhq/client": "^4.0.1",
