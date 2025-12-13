@@ -1,7 +1,6 @@
 import Bugsnag from '@bugsnag/js';
 
-const apiKey =
-  process.env.BUGSNAG_API_KEY ?? process.env.NEXT_PUBLIC_BUGSNAG_API_KEY;
+const apiKey = process.env.NEXT_PUBLIC_BUGSNAG_API_KEY;
 
 export async function register() {
   // Only initialize on the Node.js runtime (not edge) and only in production
