@@ -6,6 +6,13 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    // TEMP: Force an error response for Bugsnag integration testing.
+    // This intentionally bypasses Judge0 and always returns a 500.
+    return NextResponse.json(
+      { error: 'Forced error for Bugsnag testing (/api/code/submit)' },
+      { status: 500 }
+    );
+
     // Parse the request body
     const payload = await request.json();
     
