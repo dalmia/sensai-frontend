@@ -50,3 +50,5 @@ next-env.d.ts
 
 # codecov
 /codecov
+# Sentry Config File
+.env.sentry-build-plugin
