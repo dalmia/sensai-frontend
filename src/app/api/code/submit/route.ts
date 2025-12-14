@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
   try {
     // TEMP: Force an error response for Bugsnag integration testing.
     // This intentionally bypasses Judge0 and always returns a 500.
-    return NextResponse.json(
-      { error: 'Forced error for Bugsnag testing (/api/code/submit)' },
-      { status: 500 }
-    );
+    // return NextResponse.json(
+    //   { error: 'Forced error for Bugsnag testing (/api/code/submit)' },
+    //   { status: 500 }
+    // );
+    const a = 1/0;
 
     // Parse the request body
     const payload = await request.json();
