@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    throw new Error('Test error');
+
     // Parse the request body
     const payload = await request.json();
     
