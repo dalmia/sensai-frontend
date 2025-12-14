@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     //   { error: 'Forced error for Bugsnag testing (/api/code/submit)' },
     //   { status: 500 }
     // );
-    const a = 1/0;
+    throw new Error("forced error");
 
     // Parse the request body
     const payload = await request.json();
