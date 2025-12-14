@@ -17,7 +17,10 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
   
   // Public paths that don't require authentication
-  const publicPaths = ['/api/auth']
+  // NOTE: `/api/code/*` is used by the in-browser code runner and should not
+  // depend on the user's auth session cookie (which can expire), otherwise
+  // execution starts failing after the session is no longer valid.
+  const publicPaths = ['/api/auth', '/api/code']
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
   
   // If the path is public, allow access
