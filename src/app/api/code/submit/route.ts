@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * This avoids CORS issues when calling Judge0 directly from the browser
  */
 export async function POST(request: NextRequest) {
-  throw new Error('Test error');
-
   // Parse the request body
   const payload = await request.json();
   
