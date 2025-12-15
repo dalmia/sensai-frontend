@@ -548,7 +548,10 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
                     disableCopyPaste={disableCopyPaste}
-                    onCodeChange={() => {
+                    onCodeChange={(updatedCode) => {
+                        setTimeout(() => {
+                            setCodeContent(updatedCode);
+                        }, 0);
                         // Debounce autosave to run 1s after typing stops
                         if (autoSaveTimerRef.current) {
                             clearTimeout(autoSaveTimerRef.current);
@@ -668,7 +671,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                     <textarea
                                                         id="no-border-textarea"
                                                         ref={textareaRef}
-                                                        placeholder={taskType === 'quiz' ? "Type your answer here" : "Type your question here"}
+                                                        placeholder={taskType === 'learning_material' ? "Type your question here" : "Type your answer here"}
                                                         className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}

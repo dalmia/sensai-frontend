@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem } from '../types/quiz';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FileDown } from 'lucide-react';
+import { ArrowDownToLine } from 'lucide-react';
 
 // Code message display component
 const CodeMessageDisplay = ({ code, language }: { code: string, language?: string }) => {
@@ -368,23 +368,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                     >
                                                         {message.content}
                                                     </Markdown>
-                                                </div>
-                                            ) : message.messageType === 'file' && message.fileUuid && onFileDownload ? (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            const fileUuid = message.fileUuid!;
-                                                            const fileName = message.fileName || 'file.zip';
-                                                            onFileDownload(fileUuid, fileName);
-                                                        }}
-                                                        className="flex items-center gap-2 text-sm text-white hover:text-gray-300 transition-colors cursor-pointer"
-                                                    >
-                                                        <FileDown className="w-4 h-4" />
-                                                        <span>{message.content}</span>
-                                                    </button>
-                                                </div>
+                                                        </div>
                                             ) : (
-                                                <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
+                                                            <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">
+                                                                {message.content}
+                                                            </pre>
                                             )}
                                             {shouldShowViewReport(message) && (
                                                 <div className="my-3">
@@ -416,6 +404,23 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                     )}
                                 </div>
                             </div>
+                            {message.messageType === 'file' && message.fileUuid && onFileDownload && (
+                                <div
+                                    className={`mt-1 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <button
+                                        onClick={() => {
+                                            const fileUuid = message.fileUuid!;
+                                            const fileName = message.fileName!;
+                                            onFileDownload(fileUuid, fileName);
+                                        }}
+                                        className="flex items-center gap-2 text-xs hover:text-gray-300 transition-colors cursor-pointer"
+                                    >
+                                        <ArrowDownToLine className="w-3 h-3" />
+                                        <span>Download</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
 
