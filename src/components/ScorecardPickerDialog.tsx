@@ -231,17 +231,16 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
 
     const assignmentTemplates: ScorecardTemplate[] = [
         {
-            id: 'key-areas',
-            name: 'Key Areas',
+            id: 'assignment-evaluation',
+            name: 'Assignment Evaluation',
             icon: <FileText size={16} className="text-white" />,
-            description: "Key areas of project implementation",
+            description: "General rubric to evaluate learner answers to open-ended assignment questions",
             is_template: true,
             criteria: [
-                { name: "Fetching Questions from the API", description: "Ensuring that the API is used correctly to fetch two questions from each difficulty level (easy, medium, and hard).", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Displaying Questions on Screen", description: "Making sure the questions are displayed in the UI at the correct time, including after fetching and when clicking the \"Next\" button.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Managing the Next Button", description: "Properly updating the current question and switching turns between players when the \"Next\" button is clicked.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Score Calculation and Player Turn Logic", description: "Keeping track of the scores, ensuring they are preserved when categories change, and correctly managing turns.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Disabling Previously Used Categories", description: "Preventing players from selecting the same category again once it has already been used.", maxScore: 5, minScore: 1, passScore: 3 }
+                { name: "Understanding of the Problem", description: "Checks if the assignment correctly interprets what the problem is asking and focuses on the right objective.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Approach and Reasoning", description: "Checks if the assignment outlines a clear, logical approach and explains why that approach was chosen.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Implementation Details", description: "Checks if the assignment covers the important steps, structures, or components needed to implement the solution.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Edge Cases and Constraints", description: "Checks if the assignment considers edge cases, limitations, performance, or constraints that might affect the solution.", maxScore: 5, minScore: 1, passScore: 3 },
             ],
             new: false
         },

@@ -18,6 +18,9 @@ jest.mock('@/components/ChatView', () => (props: any) => {
             <button onClick={() => props.handleSubmitAnswer?.()}>Submit</button>
             <button onClick={() => props.handleViewScorecard?.([{ category: 'A', score: 3, max_score: 4, pass_score: 3, feedback: {} }])}>Open Scorecard</button>
             <button onClick={() => props.onFileUploaded?.(new File([new Uint8Array([1, 2, 3])], 'sample.zip', { type: 'application/zip' }))}>Upload File</button>
+            {props.onFileDownload && (
+                <button onClick={() => props.onFileDownload?.('test-uuid', 'test-file.zip')} data-testid="download-file">Download File</button>
+            )}
             {props.handleAudioSubmit && (
                 <button onClick={() => props.handleAudioSubmit?.(new Blob(['audio'], { type: 'audio/webm' }))} data-testid="audio-submit">Audio Submit</button>
             )}
@@ -34,6 +37,13 @@ jest.mock('@/components/UploadFile', () => () => <div data-testid="upload-file" 
 
 // Mock auth hook
 jest.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { email: 't@e.st' } }) }));
+
+// Mock indexedDB draft utils
+jest.mock('@/lib/utils/indexedDB', () => ({
+    getDraft: jest.fn(async () => null),
+    setDraft: jest.fn(async () => undefined),
+    deleteDraft: jest.fn(async () => undefined),
+}));
 
 // Helper to build a mock ReadableStream reader
 function makeMockReader(lines: string[]) {
@@ -147,6 +157,261 @@ describe('LearnerAssignmentView', () => {
             expect(calls.length).toBeGreaterThanOrEqual(2);
             // Verify component still renders (no error thrown)
             expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        });
+    });
+
+    it('returns early when viewOnly is true', async () => {
+        (global.fetch as any)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+
+        render(<LearnerAssignmentView taskId="61" userId="71" viewOnly={true} isTestMode={false} />);
+        await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+        // Mock FileReader to track if it's called
+        const fileReaderSpy = jest.spyOn(global, 'FileReader' as any);
+
+        // Try to trigger file upload - should return early due to viewOnly
+        fireEvent.click(screen.getByText('Upload File'));
+
+        // Wait a bit to ensure the function would have been called if not for early return
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // FileReader should not be called because handleFileSubmit returns early
+        // We verify this by checking that no fetch calls were made for file upload
+        const fetchCalls = (global.fetch as any).mock.calls;
+        const uploadCalls = fetchCalls.filter((call: any) =>
+            call[0]?.includes('/file/create-presigned') ||
+            call[0]?.includes('/file/upload-local')
+        );
+        expect(uploadCalls.length).toBe(0);
+    });
+
+    it('sets reader.onerror handler and throws error when triggered (line 885-887)', async () => {
+        (global.fetch as any)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+
+        let onerrorHandler: (() => void) | null = null;
+
+        // Mock FileReader to capture the onerror handler
+        global.FileReader = jest.fn().mockImplementation(function (this: FileReader) {
+            this.readAsDataURL = jest.fn();
+            Object.defineProperty(this, 'onerror', {
+                set: (handler: () => void) => {
+                    onerrorHandler = handler;
+                },
+                get: () => onerrorHandler
+            });
+            return this;
+        }) as any;
+
+        render(<LearnerAssignmentView taskId="71" userId="81" isTestMode={false} />);
+        await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+        // Trigger file upload - this should set the onerror handler
+        fireEvent.click(screen.getByText('Upload File'));
+
+        // Wait a bit for the handler to be set
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Verify onerror handler was set (line 885-887)
+        expect(onerrorHandler).toBeDefined();
+        expect(typeof onerrorHandler).toBe('function');
+
+        // Trigger the onerror handler and verify it throws an error (line 886)
+        expect(() => {
+            if (onerrorHandler) {
+                onerrorHandler();
+            }
+        }).toThrow('Failed to read file');
+    });
+
+    it('handles catch block error and adds errorResponse to chatHistory (line 888-900)', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+        (global.fetch as any)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+
+        // Mock FileReader constructor to throw synchronously to trigger catch block
+        global.FileReader = jest.fn().mockImplementation(() => {
+            throw new Error('FileReader initialization failed');
+        }) as any;
+
+        render(<LearnerAssignmentView taskId="81" userId="91" isTestMode={false} />);
+        await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+        // Trigger file upload - error should be caught in catch block
+        fireEvent.click(screen.getByText('Upload File'));
+
+        // Wait for error to be caught and logged
+        await waitFor(() => {
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                'Error processing file upload:',
+                expect.any(Error)
+            );
+        }, { timeout: 3000 });
+
+        // Verify error was logged (indicates catch block was executed - line 888-889)
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        // Verify component still renders (error was handled - line 900)
+        expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+
+        consoleErrorSpy.mockRestore();
+    });
+
+    describe('File download functionality', () => {
+        let createElementSpy: jest.SpyInstance;
+        let mockLink: any;
+        const originalCreateElement = document.createElement.bind(document);
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+            (global.fetch as any) = jest.fn();
+
+            // Mock URL methods
+            global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-url');
+            global.URL.revokeObjectURL = jest.fn();
+
+            // Mock createElement to return a mock link
+            mockLink = {
+                href: '',
+                download: '',
+                click: jest.fn(),
+            };
+            createElementSpy = jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+                if (tagName === 'a') {
+                    return mockLink;
+                }
+                return originalCreateElement(tagName);
+            });
+        });
+
+        afterEach(() => {
+            createElementSpy.mockRestore();
+        });
+
+        it('downloads file using presigned URL (line 924-926)', async () => {
+            const mockBlob = new Blob(['file content'], { type: 'application/zip' });
+            const presignedUrl = 'https://s3.test/presigned-download';
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ url: presignedUrl }) }) // Presigned URL success (line 924-926)
+                .mockResolvedValueOnce({ ok: true, blob: async () => mockBlob }); // File download
+
+            render(<LearnerAssignmentView taskId="1" userId="2" isTestMode={false} />);
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Trigger file download
+            const downloadButton = screen.getByTestId('download-file');
+            fireEvent.click(downloadButton);
+
+            // Wait for presigned URL fetch and file download to complete
+            await waitFor(() => {
+                const fetchCalls = (global.fetch as any).mock.calls;
+                const presignedCall = fetchCalls.find((call: any) =>
+                    call[0]?.includes('/file/presigned-url/get')
+                );
+                const fileDownloadCall = fetchCalls.find((call: any) =>
+                    call[0] === presignedUrl
+                );
+                expect(presignedCall).toBeDefined();
+                expect(fileDownloadCall).toBeDefined();
+            }, { timeout: 3000 });
+
+            // Verify URL.createObjectURL was called (line 939)
+            expect(global.URL.createObjectURL).toHaveBeenCalledWith(mockBlob);
+            // Verify link was created and configured (line 942-944)
+            expect(createElementSpy).toHaveBeenCalledWith('a');
+            expect(mockLink.href).toBe('blob:mock-url');
+            expect(mockLink.download).toBe('test-file.zip');
+        });
+
+        it('falls back to direct download when presigned URL fails (line 927-930)', async () => {
+            const mockBlob = new Blob(['file content'], { type: 'application/zip' });
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockResolvedValueOnce({ ok: false }) // Presigned URL fails (line 927-930)
+                .mockResolvedValueOnce({ ok: true, blob: async () => mockBlob }); // Direct download succeeds
+
+            render(<LearnerAssignmentView taskId="2" userId="3" isTestMode={false} />);
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Trigger file download
+            const downloadButton = screen.getByTestId('download-file');
+            fireEvent.click(downloadButton);
+
+            // Wait for download to complete
+            await waitFor(() => {
+                expect(createElementSpy).toHaveBeenCalledWith('a');
+            }, { timeout: 3000 });
+
+            // Verify direct download URL was used (line 929)
+            const fetchCalls = (global.fetch as any).mock.calls;
+            const directUrlCall = fetchCalls.find((call: any) =>
+                call[0]?.includes('/file/download-local/')
+            );
+            expect(directUrlCall).toBeDefined();
+            // Verify URL.createObjectURL was called
+            expect(global.URL.createObjectURL).toHaveBeenCalledWith(mockBlob);
+        });
+
+        it('handles file download failure (line 934-936)', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ url: 'https://s3.test/presigned' }) }) // Presigned URL success
+                .mockResolvedValueOnce({ ok: false, status: 404 }); // File download fails (line 934-936)
+
+            render(<LearnerAssignmentView taskId="3" userId="4" isTestMode={false} />);
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Trigger file download
+            const downloadButton = screen.getByTestId('download-file');
+            fireEvent.click(downloadButton);
+
+            // Wait for error to be logged
+            await waitFor(() => {
+                expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    'Error downloading file:',
+                    expect.any(Error)
+                );
+            }, { timeout: 3000 });
+
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('handles error in catch block (line 951-953)', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockRejectedValueOnce(new Error('Network error')); // Presigned URL fetch throws (line 951-953)
+
+            render(<LearnerAssignmentView taskId="4" userId="5" isTestMode={false} />);
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Trigger file download
+            const downloadButton = screen.getByTestId('download-file');
+            fireEvent.click(downloadButton);
+
+            // Wait for error to be logged
+            await waitFor(() => {
+                expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    'Error downloading file:',
+                    expect.any(Error)
+                );
+            }, { timeout: 3000 });
+
+            consoleErrorSpy.mockRestore();
         });
     });
 
@@ -375,11 +640,18 @@ describe('LearnerAssignmentView', () => {
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
+                    assignment: {
+                        input_type: 'text',
                     blocks: mockBlocks
+                    }
                 })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ([])
             });
 
-        render(<LearnerAssignmentView taskId="121" userId="131" />);
+        render(<LearnerAssignmentView taskId="121" userId="131" isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
     });
 
@@ -391,11 +663,19 @@ describe('LearnerAssignmentView', () => {
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
+                    assignment: {
+                        input_type: 'text',
+                        blocks: [],
                     title: mockTitle
+                    }
                 })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ([])
             });
 
-        render(<LearnerAssignmentView taskId="131" userId="141" />);
+        render(<LearnerAssignmentView taskId="131" userId="141" isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
     });
 
@@ -407,11 +687,44 @@ describe('LearnerAssignmentView', () => {
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
-                    input_type: mockInputType
+                    assignment: {
+                        input_type: mockInputType,
+                        blocks: []
+                    }
                 })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ([])
             });
 
-        render(<LearnerAssignmentView taskId="141" userId="151" />);
+        render(<LearnerAssignmentView taskId="141" userId="151" isTestMode={false} />);
+        await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+    });
+
+    it('sets settings when assignment.settings is provided (line 161)', async () => {
+        const mockSettings = {
+            allowCopyPaste: false
+        };
+
+        (global.fetch as any)
+            .mockReset()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    assignment: {
+                        input_type: 'text',
+                        blocks: [],
+                        settings: mockSettings
+                    }
+                })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ([])
+            });
+
+        render(<LearnerAssignmentView taskId="161" userId="171" isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
     });
 
@@ -419,19 +732,27 @@ describe('LearnerAssignmentView', () => {
         const mockBlocks = [{ type: 'paragraph', content: 'Full problem' }];
         const mockTitle = 'Complete Assignment';
         const mockInputType = 'file';
+        const mockSettings = { allowCopyPaste: true };
 
         (global.fetch as any)
             .mockReset()
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
+                    assignment: {
                     blocks: mockBlocks,
                     title: mockTitle,
-                    input_type: mockInputType
+                        input_type: mockInputType,
+                        settings: mockSettings
+                    }
                 })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ([])
             });
 
-        render(<LearnerAssignmentView taskId="151" userId="161" />);
+        render(<LearnerAssignmentView taskId="151" userId="161" isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
     });
 
@@ -1175,6 +1496,281 @@ describe('LearnerAssignmentView', () => {
                 }
             }, { timeout: 5000 });
         }, 10000);
+    });
+
+    describe('Copy/Paste disable functionality', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            (global.fetch as any) = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+        });
+
+        it('prevents CMD+A (Mac) when copy/paste is disabled and shows toast', async () => {
+            const preventDefault = jest.fn();
+            const stopPropagation = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                    settings={{ allowCopyPaste: false }}
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CMD+A (Mac) keydown event
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'a',
+                metaKey: true,
+                ctrlKey: false,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+            Object.defineProperty(keydownEvent, 'stopPropagation', { value: stopPropagation });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait for toast to appear
+            await waitFor(() => {
+                expect(screen.getByText('Not allowed')).toBeInTheDocument();
+                expect(screen.getByText('Selecting all text is disabled for this assignment')).toBeInTheDocument();
+            });
+
+            expect(preventDefault).toHaveBeenCalled();
+            expect(stopPropagation).toHaveBeenCalled();
+        });
+
+        it('prevents CTRL+A (Windows/Linux) when copy/paste is disabled and shows toast', async () => {
+            const preventDefault = jest.fn();
+            const stopPropagation = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                    settings={{ allowCopyPaste: false }}
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CTRL+A (Windows/Linux) keydown event
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'a',
+                metaKey: false,
+                ctrlKey: true,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+            Object.defineProperty(keydownEvent, 'stopPropagation', { value: stopPropagation });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait for toast to appear
+            await waitFor(() => {
+                expect(screen.getByText('Not allowed')).toBeInTheDocument();
+                expect(screen.getByText('Selecting all text is disabled for this assignment')).toBeInTheDocument();
+            });
+
+            expect(preventDefault).toHaveBeenCalled();
+            expect(stopPropagation).toHaveBeenCalled();
+        });
+
+        it('does not prevent CMD+A when copy/paste is enabled', async () => {
+            const preventDefault = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                    settings={{ allowCopyPaste: true }}
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CMD+A keydown event
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'a',
+                metaKey: true,
+                ctrlKey: false,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait a bit to ensure toast doesn't appear
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            expect(preventDefault).not.toHaveBeenCalled();
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+        });
+
+        it('does not prevent CMD+A when settings are not provided (default enabled)', async () => {
+            const preventDefault = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CMD+A keydown event
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'a',
+                metaKey: true,
+                ctrlKey: false,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait a bit to ensure toast doesn't appear
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            expect(preventDefault).not.toHaveBeenCalled();
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+        });
+
+        it('does not prevent other keys when copy/paste is disabled', async () => {
+            const preventDefault = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                    settings={{ allowCopyPaste: false }}
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CMD+C (copy) keydown event - should not be prevented
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'c',
+                metaKey: true,
+                ctrlKey: false,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait a bit to ensure toast doesn't appear
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            expect(preventDefault).not.toHaveBeenCalled();
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+        });
+
+        it('does not prevent CMD+A when only metaKey or ctrlKey is pressed without "a"', async () => {
+            const preventDefault = jest.fn();
+
+            render(
+                <LearnerAssignmentView
+                    taskId="1"
+                    userId="2"
+                    settings={{ allowCopyPaste: false }}
+                />
+            );
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Simulate CMD+B keydown event - should not be prevented
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'b',
+                metaKey: true,
+                ctrlKey: false,
+                bubbles: true,
+                cancelable: true
+            });
+            Object.defineProperty(keydownEvent, 'preventDefault', { value: preventDefault });
+
+            document.dispatchEvent(keydownEvent);
+
+            // Wait a bit to ensure toast doesn't appear
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            expect(preventDefault).not.toHaveBeenCalled();
+            expect(screen.queryByText('Not allowed')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Draft loading and scorecard parsing', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            (global.fetch as any) = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+        });
+
+        it('loads draft from IndexedDB and sets current answer (line 1005)', async () => {
+            const { getDraft } = require('@/lib/utils/indexedDB');
+            getDraft.mockResolvedValueOnce('draft answer text');
+
+            render(<LearnerAssignmentView taskId="123" userId="456" />);
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Wait for draft to load and set current answer
+            await waitFor(() => {
+                const input = screen.getByLabelText('answer') as HTMLInputElement;
+                expect(input.value).toBe('draft answer text');
+            });
+
+            // Verify getDraft was called with correct key
+            expect(getDraft).toHaveBeenCalledWith('123');
+        });
+
+        it('handles failed JSON parsing for scorecard and logs error (line 1032)', async () => {
+            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Mock fetch to return assignment and chat history with invalid JSON in last AI message
+            // The invalid JSON contains "evaluation_status":"completed" as a string so isCompleted will be true
+            // but the JSON itself is malformed so parsing will fail in the useEffect
+            const invalidJson = '{"evaluation_status":"completed" "invalid":}'; // Invalid JSON syntax
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        assignment: { input_type: 'text', blocks: [] }
+                    })
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ([
+                        { sender: 'user', content: 'test', rawContent: 'test' },
+                        { sender: 'ai', content: invalidJson, rawContent: invalidJson } // Invalid JSON with completed status
+                    ])
+                });
+
+            render(<LearnerAssignmentView taskId="999" userId="888" isTestMode={false} />);
+
+            // Wait for component to render and chat history to load
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            // Wait for chat history to be fetched and set
+            // The fetchChatHistory useEffect will run and set chatHistory
+            // Then isCompleted useMemo will recompute and return true (because content includes "evaluation_status":"completed")
+            // Then the scorecard parsing useEffect will run and try to parse, which will fail
+            await waitFor(() => {
+                expect(consoleLogSpy).toHaveBeenCalledWith(
+                    'Failed to parse AI message for scorecard:',
+                    expect.any(Error)
+                );
+            }, { timeout: 5000 });
+
+            consoleLogSpy.mockRestore();
+        });
     });
 });
 

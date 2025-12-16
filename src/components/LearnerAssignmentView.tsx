@@ -493,7 +493,6 @@ export default function LearnerAssignmentView({
             let presigned_url = '';
             let file_uuid = '';
             if ((responseType === 'audio' && audioData) || (responseType === 'file' && fileData)) {
-                console.log({ responseType });
                 const isAudio = responseType === 'audio';
                 const contentType = isAudio ? 'audio/wav' : 'application/zip';
                 const filename = isAudio ? 'audio.wav' : 'file.zip';
@@ -616,7 +615,6 @@ export default function LearnerAssignmentView({
             };
 
             // Call the API with the appropriate request body for streaming response
-            console.log({ requestBody });
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
                 method: 'POST',
                 headers: {
