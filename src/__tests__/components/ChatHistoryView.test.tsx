@@ -123,6 +123,9 @@ describe('ChatHistoryView Component', () => {
     it('renders chat messages correctly', () => {
         render(<ChatHistoryView {...defaultProps} />);
 
+        // Date divider should render for the first message of the day
+        expect(screen.getByText('Today')).toBeInTheDocument();
+
         // Check if all messages are rendered
         expect(screen.getByText('Hello, how can I help you?')).toBeInTheDocument();
         expect(screen.getByText('I need help with my code.')).toBeInTheDocument();

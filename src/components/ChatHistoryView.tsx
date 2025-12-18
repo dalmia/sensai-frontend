@@ -275,6 +275,43 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
         return message.sender === 'ai' ? index : lastIndex;
     }, -1);
 
+    const toSafeDate = (ts: unknown): Date | null => {
+        if (!ts) return null;
+        const date = ts instanceof Date ? ts : new Date(ts as any);
+        if (Number.isNaN(date.getTime())) return null;
+        return date;
+    };
+
+    const getLocalDateKey = (date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
+    const formatMessageDayLabel = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayKey = getLocalDateKey(today);
+
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayKey = getLocalDateKey(yesterday);
+
+        const key = getLocalDateKey(date);
+        if (key === todayKey) return 'Today';
+        if (key === yesterdayKey) return 'Yesterday';
+
+        return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' }).format(date);
+    };
+
+    const formatMessageTime = (ts: unknown) => {
+        if (!ts) return '';
+        const date = ts instanceof Date ? ts : new Date(ts as any);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+    };
+
     return (
         <>
             <style jsx>{customStyles}</style>
@@ -285,10 +322,34 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                 <div className="flex flex-col space-y-6 pr-2">
                     {chatHistory.map((message, index) => (
                         <div key={message.id}>
+                            {(() => {
+                                const currentDate = toSafeDate((message as any).timestamp);
+                                if (!currentDate) return null;
+
+                                const prevDate = index > 0 ? toSafeDate((chatHistory[index - 1] as any)?.timestamp) : null;
+                                const currentKey = getLocalDateKey(currentDate);
+                                const prevKey = prevDate ? getLocalDateKey(prevDate) : null;
+                                const shouldShow = index === 0 || currentKey !== prevKey;
+
+                                if (!shouldShow) return null;
+
+                                return (
+                                    <div className="flex justify-center mb-2">
+                                        <div className="px-3 py-1 rounded-full bg-[#232428] text-gray-200 text-xs font-light select-none">
+                                            {formatMessageDayLabel(currentDate)}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             <div
                                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div className="flex items-start gap-2">
+                                    {message.sender === 'user' && (
+                                        <span className="text-[10px] leading-none text-gray-400 font-light select-none self-end pb-1">
+                                            {formatMessageTime((message as any).timestamp)}
+                                        </span>
+                                    )}
                                     <div
                                         className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
                                             ? 'w-full sm:w-[75%]'
