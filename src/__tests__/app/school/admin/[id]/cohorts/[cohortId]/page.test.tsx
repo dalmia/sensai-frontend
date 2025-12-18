@@ -236,4 +236,4 @@ describe('CohortPage', () => {
             expect(redirect).toHaveBeenCalledWith('/school/admin/very-specific-school-id-123#cohorts');
         });
     });
-});
+}); 
