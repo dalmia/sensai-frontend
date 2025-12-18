@@ -29,6 +29,7 @@ interface LearnerAssignmentViewProps {
     isTestMode?: boolean;
     viewOnly?: boolean;
     className?: string;
+    isDarkMode?: boolean;
     onTaskComplete?: (taskId: string, isComplete: boolean) => void;
     onAiRespondingChange?: (isResponding: boolean) => void;
 }
@@ -67,12 +68,10 @@ export default function LearnerAssignmentView({
     isTestMode = true,
     viewOnly = false,
     className = "",
+    isDarkMode = true,
     onTaskComplete,
     onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
-    // Left panel editor is read-only
-    const isDarkMode = true;
-
     const { user } = useAuth();
 
     // Data fetching state
@@ -1091,7 +1090,7 @@ export default function LearnerAssignmentView({
     if (isLoadingAssignment) {
         return (
             <div className={`w-full h-full flex items-center justify-center ${className}`}>
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-gray-700'} border-t-transparent`}></div>
             </div>
         );
     }
@@ -1119,15 +1118,18 @@ export default function LearnerAssignmentView({
                     }
                 }
             `}</style>
-            <div className="two-column-grid rounded-md overflow-hidden bg-[#111111]">
+            <div className={`two-column-grid rounded-md overflow-hidden ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'}`}>
                 {/* Left: Problem Statement */}
-                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]" style={{ overflow: 'auto' }}>
+                <div
+                    className={`p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 ${isDarkMode ? 'bg-[#1A1A1A] border-[#222222]' : 'bg-gray-50 border-gray-200'}`}
+                    style={{ overflow: 'auto' }}
+                >
                     {/* Header chip */}
                     <div className="flex items-center justify-center w-full mb-6">
-                        <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm flex items-center">
+                        <div className={`${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-700'} px-3 py-1 rounded-full text-sm flex items-center`}>
                             <span>Problem Statement</span>
                             {isCompleted && (
-                                <CheckCircle size={14} className="ml-2 text-green-500 flex-shrink-0" />
+                                <CheckCircle size={14} className={`ml-2 flex-shrink-0 ${isDarkMode ? 'text-green-500' : 'text-emerald-500'}`} />
                             )}
                         </div>
                     </div>
@@ -1149,10 +1151,10 @@ export default function LearnerAssignmentView({
                             }}
                         >
                             {integrationBlocks.length > 0 ? (
-                                <div className="bg-[#191919] text-white px-20 pr-0 pb-6 rounded-lg">
-                                    <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
+                                <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-gray-100 text-gray-900'} px-20 pr-0 pb-6 rounded-lg`}>
+                                    <h1 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-0.5`}>{integrationBlock?.props?.resource_name}</h1>
                                     <RenderConfig theme="dark">
-                                        <BlockList blocks={integrationBlocks} />
+                                        <BlockList blocks={integrationBlocks as any} />
                                     </RenderConfig>
                                 </div>
                             ) : (
@@ -1171,13 +1173,14 @@ export default function LearnerAssignmentView({
                 </div>
 
                 {/* Right: Upload + Chat */}
-                <div className="flex flex-col bg-[#111111] h-full overflow-auto border-l border-[#222222] chat-container">
+                <div className={`flex flex-col h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 chat-container ${isDarkMode ? 'bg-[#111111] border border-[#222222]' : 'bg-white border border-gray-200'}`}>
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView
                             activeScorecard={activeScorecard}
                             handleBackToChat={handleBackToChat}
                             lastUserMessage={null}
+                            isDarkMode={isDarkMode}
                         />
                     ) : (
                         /* Use the ChatView component */
@@ -1203,6 +1206,7 @@ export default function LearnerAssignmentView({
                                 showUploadSection={needsResubmission}
                                 onFileUploaded={handleFileSubmit}
                                     onFileDownload={handleFileDownload}
+                                isDarkMode={isDarkMode}
                             />
                         </div>
                     )}

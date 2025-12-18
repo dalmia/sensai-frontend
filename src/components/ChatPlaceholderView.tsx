@@ -7,6 +7,7 @@ interface ChatPlaceholderViewProps {
     inputType?: string;
     viewOnly?: boolean;
     responseType?: 'chat' | 'exam';
+    isDarkMode?: boolean;
 }
 
 const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
@@ -15,19 +16,24 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
     isTestMode,
     inputType = 'text',
     viewOnly = false,
-    responseType = 'chat'
+    responseType = 'chat',
+    isDarkMode = true
 }) => {
+    const headingTextClass = isDarkMode ? 'text-white' : 'text-slate-900';
+    const bodyTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-600';
+    const secondaryBodyTextClass = isDarkMode ? 'text-gray-300' : 'text-gray-600';
+
     return (
         <div className="flex flex-col items-center justify-center h-full w-full">
             {!isChatHistoryLoaded && !isTestMode ? (
                 // Loading spinner while chat history is loading
                 <div className="flex flex-col items-center justify-center">
-                    <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className={`w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mb-4 ${isDarkMode ? 'border-white' : 'border-slate-900'}`}></div>
                 </div>
             ) : (
                 // Show placeholder text only when history is loaded but empty
                 <>
-                    <h2 className="text-4xl font-light text-white mb-6 text-center">
+                    <h2 className={`text-4xl font-light mb-6 text-center ${headingTextClass}`}>
                         {viewOnly
                             ? taskType === 'assignment'
                                 ? 'No submission yet'
@@ -41,7 +47,7 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                         : 'Ready for a challenge?'
                         }
                     </h2>
-                    <div className="text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
+                    <div className={`${bodyTextClass} text-center max-w-md mx-6 sm:mx-auto mb-8`}>
                         {viewOnly
                             ? taskType === 'assignment'
                                 ? <p>There is no submission history for this assignment</p>
@@ -50,18 +56,18 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                 ? <p>Ask your doubt here and AI will help you understand the material better</p>
                                 : taskType === 'assignment'
                                     ? (
-                                        <p className="text-gray-300 font-light text-center mt-1">
+                                        <p className={`${secondaryBodyTextClass} font-light text-center mt-1`}>
                                             Upload your project as a .zip file. Make sure to include all the relevant files. Be careful as you can upload your submission just once.
                                         </p>
                                     )
                                     : responseType === 'exam'
                                         ? (
-                                            <div className="bg-[#1a1a1a] rounded-xl px-6 py-5 flex flex-col items-center justify-center max-w-lg mx-auto">
+                                            <div className={`${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-gray-50 border border-gray-200'} rounded-xl px-6 py-5 flex flex-col items-center justify-center max-w-lg mx-auto`}>
                                                 <span className="flex items-center gap-2 mb-2">
-                                                    <span className="text-red-400 text-lg" style={{ fontWeight: 300 }}>●</span>
-                                                    <span className="text-red-400 font-light text-base">One-time Submission</span>
+                                                    <span className={`${isDarkMode ? 'text-red-400' : 'text-rose-500'} text-lg`} style={{ fontWeight: 300 }}>●</span>
+                                                    <span className={`${isDarkMode ? 'text-red-400' : 'text-rose-600'} font-light text-base`}>One-time Submission</span>
                                                 </span>
-                                                <span className="text-gray-300 font-light text-center mt-1">
+                                                <span className={`${secondaryBodyTextClass} font-light text-center mt-1`}>
                                                     {inputType === 'code'
                                                         ? `Think through your answer carefully, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
                                                         : `Think through your answer carefully, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`}

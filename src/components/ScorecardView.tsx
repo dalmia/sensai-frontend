@@ -7,12 +7,14 @@ interface ScorecardViewProps {
     activeScorecard: ScorecardItem[];
     handleBackToChat: () => void;
     lastUserMessage: ChatMessage | null;
+    isDarkMode?: boolean;
 }
 
 const ScorecardView: React.FC<ScorecardViewProps> = ({
     activeScorecard,
     handleBackToChat,
-    lastUserMessage
+    lastUserMessage,
+    isDarkMode = true,
 }) => {
     const [isTextExpanded, setIsTextExpanded] = useState(false);
 
@@ -24,7 +26,7 @@ const ScorecardView: React.FC<ScorecardViewProps> = ({
         <div className="flex flex-col h-full px-6 py-6 overflow-auto relative">
             <button
                 onClick={handleBackToChat}
-                className="inline-flex cursor-pointer justify-center items-center rounded-full w-10 h-10 bg-[#1D1D1D] text-white hover:bg-[#2A2A2A] focus:outline-none mb-4"
+                className={`inline-flex cursor-pointer justify-center items-center rounded-full w-10 h-10 focus:outline-none mb-4 ${isDarkMode ? 'bg-[#1D1D1D] text-white hover:bg-[#2A2A2A]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
                 <ChevronLeft size={24} />
             </button>
@@ -44,13 +46,13 @@ const ScorecardView: React.FC<ScorecardViewProps> = ({
                             ) : (
                                 <div className="relative">
                                     <div className="max-w-lg mx-auto">
-                                        <p className={`text-gray-300 text-sm text-left ${!isTextExpanded ? 'line-clamp-2' : ''}`}>
+                                        <p className={`text-sm text-left ${!isTextExpanded ? 'line-clamp-2' : ''} ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                             {lastUserMessage.content}
                                         </p>
                                         {lastUserMessage.content && lastUserMessage.content.length > 80 && (
                                             <button
                                                 onClick={toggleTextExpansion}
-                                                className="mt-4 px-3 py-1.5 bg-[#222222] text-sm text-white rounded-full hover:bg-[#333333] transition-colors flex items-center cursor-pointer mx-auto"
+                                                className={`mt-4 px-3 py-1.5 text-sm rounded-full transition-colors flex items-center cursor-pointer mx-auto ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
                                             >
                                                 {isTextExpanded ? (
                                                     <>
@@ -69,12 +71,12 @@ const ScorecardView: React.FC<ScorecardViewProps> = ({
                                 </div>
                             )
                         ) : (
-                            <h2 className="text-xl font-light text-white">Detailed Report</h2>
+                            <h2 className={`text-xl font-light ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Detailed Report</h2>
                         )}
                     </div>
                 </div>
 
-                <LearnerScorecard scorecard={activeScorecard} className="mt-0" />
+                <LearnerScorecard scorecard={activeScorecard} className="mt-0" isDarkMode={isDarkMode} />
             </div>
         </div>
     );

@@ -10,14 +10,16 @@ interface CreateCohortDialogProps {
     onCreateCohort: (cohort: any, dripConfig?: DripConfig) => void;
     schoolId?: string;
     showDripPublishSettings?: boolean;
+    isDarkMode?: boolean;
 }
 
-export default function CreateCohortDialog({ open, onClose, onCreateCohort, schoolId, showDripPublishSettings }: CreateCohortDialogProps) {
+export default function CreateCohortDialog({ open, onClose, onCreateCohort, schoolId, showDripPublishSettings, isDarkMode }: CreateCohortDialogProps) {
     const [cohortName, setCohortName] = useState('');
     const [dripConfig, setDripConfig] = useState<DripConfig | undefined>(undefined);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const dripConfigRef = useRef<DripPublishingConfigRef>(null);
+    const [resolvedIsDarkMode, setResolvedIsDarkMode] = useState<boolean>(isDarkMode ?? true);
 
     // Reset form state when dialog is opened
     useEffect(() => {
@@ -28,6 +30,16 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
             setIsLoading(false);
         }
     }, [open]);
+
+    useEffect(() => {
+        if (typeof isDarkMode === 'boolean') {
+            setResolvedIsDarkMode(isDarkMode);
+            return;
+        }
+        if (typeof window === 'undefined') return;
+        const storedTheme = localStorage.getItem('theme');
+        setResolvedIsDarkMode(storedTheme !== 'light');
+    }, [isDarkMode]);
 
     const handleSubmit = async () => {
         // Validate cohort name
@@ -87,16 +99,19 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={onClose}
+        >
             <div
-                className="w-full max-w-md bg-[#1A1A1A] rounded-lg shadow-2xl"
+                className={`w-full max-w-md rounded-lg shadow-2xl ${resolvedIsDarkMode ? 'bg-[#1A1A1A] text-white' : 'bg-white text-black border border-gray-200'}`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Dialog Content */}
                 <div className="p-6 mt-4">
                     <div className="space-y-4">
                         <div>
-                            <p className="text-xs text-gray-400 mb-2 font-light">A cohort is a group of learners who will take your course together</p>
+                            <p className={`text-xs mb-2 font-light ${resolvedIsDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>A cohort is a group of learners who will take your course together</p>
                             <input
                                 id="cohortName"
                                 type="text"
@@ -106,7 +121,9 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
                                     if (error) setError('');
                                 }}
                                 placeholder="What will you name this cohort?"
-                                className={`w-full px-4 py-3 bg-[#0D0D0D] text-white text-lg rounded-lg font-light placeholder-gray-500 outline-none ${error ? 'border border-red-500' : 'border-none'}`}
+                                className={`w-full px-4 py-3 text-lg rounded-lg font-light placeholder-gray-500 outline-none ${
+                                    resolvedIsDarkMode ? 'bg-[#0D0D0D] text-white' : 'bg-white text-black border border-gray-300'
+                                } ${error ? 'border border-red-500' : (resolvedIsDarkMode ? 'border-none' : 'border border-gray-300')}`}
                                 disabled={isLoading}
                             />
                             {error && (
@@ -130,19 +147,19 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
                 <div className="flex justify-end gap-4 p-6">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                        className={`px-4 py-2 transition-colors focus:outline-none cursor-pointer ${resolvedIsDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
                         disabled={isLoading}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className={`px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${isLoading ? 'opacity-70' : ''}`}
+                        className={`px-6 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${resolvedIsDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'} ${isLoading ? 'opacity-70' : ''}`}
                         disabled={isLoading}
                     >
                         {isLoading ? (
                             <span className="flex items-center justify-center">
-                                <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg className={`animate-spin h-5 w-5 ${resolvedIsDarkMode ? 'text-black' : 'text-white'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>

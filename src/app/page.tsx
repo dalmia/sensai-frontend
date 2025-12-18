@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useCourses, useSchools, Course as ApiCourse } from "@/lib/api";
 import CourseCard from "@/components/CourseCard";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 export default function Home() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function Home() {
   const { courses, isLoading, error } = useCourses();
   const { schools } = useSchools();
   const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
+  const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
 
   // Memoize derived data to avoid recalculations
   const {
@@ -146,11 +148,14 @@ export default function Home() {
       `}
       </style>
 
-      <div className="min-h-screen bg-black text-white overflow-y-auto">
+      <div className={`min-h-screen overflow-y-auto ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
         {/* Use the reusable Header component */}
         <Header
           showCreateCourseButton={hasAnyCourses || (hasSchool ?? false)}
           showTryDemoButton={!hasLearningCourses}
+          isDarkMode={isDarkMode}
+          themePreference={themePreference}
+          onThemePreferenceChange={setThemePreference}
         />
 
         {/* Main content */}
@@ -158,7 +163,7 @@ export default function Home() {
           {/* Loading state */}
           {isLoading && (
             <div className="flex justify-center items-center py-12">
-              <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+              <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
             </div>
           )}
 
@@ -168,12 +173,12 @@ export default function Home() {
               {/* Segmented control for tabs */}
               {showSegmentedTabs && (
                 <div className="flex justify-center mb-8">
-                  <div className="inline-flex bg-[#222222] rounded-lg p-1 w-full sm:w-auto">
+                  <div className={`inline-flex rounded-lg p-1 w-full sm:w-auto ${isDarkMode ? 'bg-[#222222]' : 'bg-gray-200'}`}>
                     {tabsToShow.includes('teaching') && (
                       <button
                         className={`flex items-center justify-center px-1 xxs:px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm xxs:font-medium cursor-pointer flex-1 sm:flex-initial ${activeTab === 'teaching'
-                          ? 'bg-[#333333] text-white'
-                          : 'text-gray-400 hover:text-white'
+                          ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
+                          : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
                           }`}
                         onClick={() => setActiveTab('teaching')}
                       >
@@ -186,8 +191,8 @@ export default function Home() {
                     {tabsToShow.includes('mentoring') && (
                       <button
                         className={`flex items-center justify-center px-1 xxs:px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm xxs:font-medium cursor-pointer flex-1 sm:flex-initial ${activeTab === 'mentoring'
-                          ? 'bg-[#333333] text-white'
-                          : 'text-gray-400 hover:text-white'
+                          ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
+                          : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
                           }`}
                         onClick={() => setActiveTab('mentoring')}
                       >
@@ -200,8 +205,8 @@ export default function Home() {
                     {tabsToShow.includes('learning') && (
                       <button
                         className={`flex items-center justify-center px-1 xxs:px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm xxs:font-medium cursor-pointer flex-1 sm:flex-initial ${activeTab === 'learning'
-                          ? 'bg-[#333333] text-white'
-                          : 'text-gray-400 hover:text-white'
+                          ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
+                          : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
                           }`}
                         onClick={() => setActiveTab('learning')}
                       >
@@ -220,12 +225,12 @@ export default function Home() {
                 {!hasTeachingCourses && !hasMentoringCourses && !hasLearningCourses ? (
                   // No courses at all - show universal placeholder
                   <div className="text-center py-12">
-                    <h2 className="text-2xl font-medium mb-2">What if your next big idea became a course?</h2>
+                    <h2 className={`text-2xl font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>What if your next big idea became a course?</h2>
                     <p className="text-gray-400 mb-6">It might be easier than you think</p>
                     <div className="flex justify-center gap-4">
                       <button
                         onClick={handleCreateCourseButtonClick}
-                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
+                        className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                       >
                         Create course
                       </button>
@@ -233,7 +238,7 @@ export default function Home() {
                   </div>
                 ) : !showSegmentedTabs && (
                   // User has courses but only one role - show appropriate heading
-                  <h2 className="text-2xl font-medium">
+                  <h2 className={`text-2xl font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>
                     {getSingleRoleTitle()}
                   </h2>
                 )}
@@ -249,6 +254,7 @@ export default function Home() {
                         ...course,
                         title: course.org?.slug ? `@${course.org.slug}/${course.title}` : course.title,
                       }}
+                      isDarkMode={isDarkMode}
                     />
                   ))}
                 </div>

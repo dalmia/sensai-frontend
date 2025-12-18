@@ -12,6 +12,7 @@ export default function CreateSchool() {
     const router = useRouter();
     const { user } = useAuth();
     const { schools, isLoading: isLoadingSchools } = useSchools();
+    const [isDarkMode, setIsDarkMode] = useState(true);
 
     // State for form fields
     const [firstName, setFirstName] = useState("");
@@ -35,6 +36,39 @@ export default function CreateSchool() {
             }
         }
     }, [schools, router]);
+
+    // Load theme preference from localStorage on mount (including following device preference)
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            setIsDarkMode(false);
+            return;
+        }
+
+        if (savedTheme === 'dark') {
+            setIsDarkMode(true);
+            return;
+        }
+
+        if (savedTheme === 'device') {
+            const mql = window.matchMedia('(prefers-color-scheme: dark)');
+            const apply = () => setIsDarkMode(mql.matches);
+            apply();
+
+            const handler = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+
+            if (typeof mql.addEventListener === 'function') {
+                mql.addEventListener('change', handler);
+                return () => mql.removeEventListener('change', handler);
+            }
+
+            // Safari < 14
+            // eslint-disable-next-line deprecation/deprecation
+            mql.addListener(handler);
+            // eslint-disable-next-line deprecation/deprecation
+            return () => mql.removeListener(handler);
+        }
+    }, []);
 
     // Base URL for the school (would come from environment variables in a real app)
     const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/school/`;
@@ -227,22 +261,22 @@ export default function CreateSchool() {
 
     return (
         <>
-            <div className="flex min-h-screen flex-col bg-black text-white">
+            <div className={`flex min-h-screen flex-col ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
                 {/* Close button - repositioned for better mobile experience */}
                 <div className="absolute top-5 right-4 sm:right-6 md:right-8 lg:right-12 z-10">
                     <button
                         onClick={handleGoBack}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition-colors focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-0 focus:border-0 cursor-pointer ${isDarkMode ? 'bg-gray-900 hover:bg-gray-800' : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'}`}
                         aria-label="Close and return to home"
                     >
-                        <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        <X className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkMode ? 'text-white' : 'text-black'}`} />
                     </button>
                 </div>
 
                 <main className="container mt-10 sm:mt-20 mx-auto px-4 sm:px-6 py-8 max-w-3xl">
                     {isLoadingSchools ? (
                         <div className="flex justify-center items-center py-12">
-                            <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin" data-testid="loading-spinner"></div>
+                            <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-slate-900'} border-t-transparent`} data-testid="loading-spinner"></div>
                         </div>
                     ) : (
                         <>
@@ -252,17 +286,17 @@ export default function CreateSchool() {
                                 {/* School Name */}
                                 <div>
                                     <h2 className="text-xl sm:text-2xl font-light mb-2">School Name</h2>
-                                    <p className="text-gray-400 text-sm mb-2">This is usually your name or the name of your organization.</p>
+                                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm mb-2`}>This is usually your name or the name of your organization.</p>
                                     <input
                                         id="schoolName"
                                         type="text"
                                         value={schoolName}
                                         onChange={(e) => setSchoolName(e.target.value)}
-                                        className="w-full px-3 sm:px-4 py-3 rounded-md bg-[#161925] border border-gray-800 text-white focus:outline-none focus:ring-1 focus:ring-white"
+                                        className={`w-full px-3 sm:px-4 py-3 rounded-md border focus:outline-none focus:ring-1 ${isDarkMode ? 'bg-[#161925] border-gray-800 text-white focus:ring-white' : 'bg-white border-gray-300 text-black focus:ring-black'}`}
                                         required
                                         maxLength={40}
                                     />
-                                    <div className="text-right text-sm text-gray-400 mt-1">
+                                    <div className={`text-right text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                         {schoolName.length}/40
                                     </div>
                                 </div>
@@ -270,9 +304,9 @@ export default function CreateSchool() {
                                 {/* School URL */}
                                 <div>
                                     <h2 className="text-xl sm:text-2xl font-light mb-2">School Link</h2>
-                                    <p className="text-gray-400 text-sm mb-2">This is how your school will be accessed online by your learners</p>
+                                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm mb-2`}>This is how your school will be accessed online by your learners</p>
                                     <div className="flex flex-col sm:flex-row">
-                                        <div className={`bg-[#161925] px-3 sm:px-4 py-3 rounded-t-md sm:rounded-l-md sm:rounded-tr-none text-gray-300 border border-gray-800 sm:text-sm md:text-base overflow-x-auto whitespace-nowrap ${slugError ? 'border-red-500' : ''}`}>
+                                        <div className={`${isDarkMode ? 'bg-[#161925] text-gray-300 border-gray-800' : 'bg-gray-100 text-gray-700 border-gray-300'} px-3 sm:px-4 py-3 rounded-t-md sm:rounded-l-md sm:rounded-tr-none border sm:text-sm md:text-base overflow-x-auto whitespace-nowrap ${slugError ? 'border-red-500' : ''}`}>
                                             {baseUrl}
                                         </div>
                                         <input
@@ -280,7 +314,7 @@ export default function CreateSchool() {
                                             type="text"
                                             value={slug}
                                             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                            className={`flex-1 px-3 sm:px-4 py-3 rounded-b-md sm:rounded-r-md sm:rounded-bl-none bg-[#161925] border border-gray-800 sm:border-l-0 border-t-0 sm:border-t text-white focus:outline-none focus:ring-1 focus:ring-white ${slugError ? 'border-red-500' : ''}`}
+                                            className={`flex-1 px-3 sm:px-4 py-3 rounded-b-md sm:rounded-r-md sm:rounded-bl-none border sm:border-l-0 border-t-0 sm:border-t focus:outline-none focus:ring-1 ${isDarkMode ? 'bg-[#161925] border-gray-800 text-white focus:ring-white' : 'bg-white border-gray-300 text-black focus:ring-black'} ${slugError ? 'border-red-500' : ''}`}
                                             required
                                             pattern="[a-z0-9-]+"
                                             title="Only lowercase letters, numbers, and hyphens are allowed"
@@ -291,7 +325,7 @@ export default function CreateSchool() {
                                         {slugError && (
                                             <p className="text-red-500 mb-1 sm:mb-0">{slugError}</p>
                                         )}
-                                        <div className={`text-gray-400 ${slugError ? 'sm:ml-auto' : 'w-full text-right'}`}>
+                                        <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} ${slugError ? 'sm:ml-auto' : 'w-full text-right'}`}>
                                             {slug.length}/121
                                         </div>
                                     </div>
@@ -301,7 +335,7 @@ export default function CreateSchool() {
                                 <div className="pt-4 sm:pt-6 flex justify-center">
                                     <button
                                         type="submit"
-                                        className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 text-sm font-medium rounded-full transition-colors cursor-pointer disabled:opacity-50 ${isDarkMode ? 'bg-white text-black hover:opacity-90' : 'bg-white text-black border border-gray-200 shadow-sm hover:bg-gray-50'}`}
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? 'Creating...' : 'Create School'}
@@ -389,15 +423,15 @@ export default function CreateSchool() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-lg max-w-md w-full mx-auto relative z-60"
+                        className={`p-[2px] rounded-lg max-w-md w-full mx-auto relative z-60 ${isDarkMode ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500' : 'bg-white border border-gray-200'}`}
                     >
-                        <div className="bg-black rounded-lg p-6 sm:p-8 flex flex-col items-center text-center">
-                            <h2 className="text-3xl sm:text-4xl font-light text-white mb-3 sm:mb-4">Your School is Ready!</h2>
-                            <p className="text-lg sm:text-xl font-light text-white mb-6 sm:mb-8">An epic journey begins now</p>
+                        <div className={`${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'} rounded-lg p-6 sm:p-8 flex flex-col items-center text-center`}>
+                            <h2 className="text-3xl sm:text-4xl font-light mb-3 sm:mb-4">Your School is Ready!</h2>
+                            <p className="text-lg sm:text-xl font-light mb-6 sm:mb-8">An epic journey begins now</p>
 
                             <button
                                 onClick={navigateToSchool}
-                                className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                className={`w-full sm:w-auto px-6 sm:px-8 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
                             >
                                 Open my school
                             </button>

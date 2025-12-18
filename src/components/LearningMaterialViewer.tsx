@@ -48,8 +48,8 @@ export default function LearningMaterialViewer({
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Add state for button animation
-    const [showButtonEntrance, setShowButtonEntrance] = useState(true);
+    // No animations on the "Ask a doubt" button (kept simple + consistent)
+    const [showButtonEntrance, setShowButtonEntrance] = useState(false);
     const [showButtonPulse, setShowButtonPulse] = useState(false);
 
     // Check if user has clicked the button before
@@ -124,22 +124,7 @@ export default function LearningMaterialViewer({
         setHasClickedFabButton(hasClicked);
     }, []);
 
-    // Add effect to manage button animation
-    useEffect(() => {
-        // Start entrance animation
-        setShowButtonEntrance(true);
-
-        // After entrance animation completes, only start pulse if user hasn't clicked before
-        const timer = setTimeout(() => {
-            setShowButtonEntrance(false);
-            // Only show pulse animation if user hasn't clicked the button before
-            if (!hasClickedFabButton) {
-                setShowButtonPulse(true);
-            }
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [hasClickedFabButton]);
+    // (intentionally no pulse/entrance animations)
 
     // Function to toggle mobile menu
     const toggleMobileMenu = () => {
@@ -677,17 +662,17 @@ export default function LearningMaterialViewer({
                 }
             `}</style>
 
-            <div className={`bg-[#111111] material-view-container ${showChatView ? (isMobileView ? 'mode-chat-full' : 'two-column-grid rounded-md overflow-hidden split-view-container') : 'mode-content-full'}`}>
+            <div className={`${isDarkMode ? 'bg-[#111111]' : 'bg-white'} material-view-container ${showChatView ? (isMobileView ? 'mode-chat-full' : 'two-column-grid rounded-md overflow-hidden split-view-container') : 'mode-content-full'}`}>
                 {/* Content Container - Always rendered to avoid reloading */}
                 <div
-                    className="py-6 flex flex-col bg-[#1A1A1A] h-full content-container"
+                    className={`py-6 flex flex-col h-full content-container ${isDarkMode ? 'bg-[#1A1A1A]' : 'bg-white'}`}
                     style={{ overflow: 'auto' }}
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
                         {integrationBlocks.length > 0 ? (
-                            <div className="bg-[#191919] text-white px-12 pb-6 rounded-lg">
-                                <div className="text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
+                            <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-gray-100 text-gray-900'} px-12 pb-6 rounded-lg`}>
+                                <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-1`}>{integrationBlock?.props?.resource_name}</div>
                                 <RenderConfig theme="dark">
                                     <BlockList blocks={integrationBlocks} />
                                 </RenderConfig>
@@ -706,13 +691,13 @@ export default function LearningMaterialViewer({
 
                 {/* Chat Container - Only visible when showChatView is true */}
                 {showChatView && (
-                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : 'flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222]'} chat-container`}>
-                        <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-[#222222]">
-                            <h3 className="text-white text-sm font-light">Ask your doubts</h3>
+                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : `flex flex-col h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 ${isDarkMode ? 'bg-[#111111] border-[#222222]' : 'bg-white border-gray-200'}`} chat-container`}>
+                        <div className={`chat-header flex justify-between items-center px-4 py-2 border-b ${isDarkMode ? 'border-[#222222]' : 'border-gray-200'}`}>
+                            <h3 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-sm font-light`}>Ask your doubts</h3>
 
                             <button
                                 onClick={handleAskDoubt}
-                                className="text-white hover:bg-[#222222] rounded-full p-1 transition-colors cursor-pointer"
+                                className={`${isDarkMode ? 'text-white hover:bg-[#222222]' : 'text-gray-600 hover:bg-gray-100'} rounded-full p-1 transition-colors cursor-pointer`}
                                 aria-label="Close chat"
                             >
                                 <X size={18} />
@@ -733,6 +718,7 @@ export default function LearningMaterialViewer({
                             handleViewScorecard={handleViewScorecard}
                             completedQuestionIds={{}}
                             handleRetry={handleRetry}
+                            isDarkMode={isDarkMode}
                         />
                     </div>
                 )}
@@ -800,7 +786,7 @@ export default function LearningMaterialViewer({
                             <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '170px' }} ref={mobileMenuRef}>
                                 {/* Ask a doubt button */}
                                 <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                    <span className={`${isDarkMode ? 'bg-black text-white' : 'bg-gray-900 text-white'} py-2 px-4 rounded-full text-sm shadow-md`}>
                                         Ask a doubt
                                     </span>
                                     <button
@@ -808,7 +794,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             handleAskDoubt();
                                         }}
-                                        className="mobile-action-button rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        className={`mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-purple-600' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
                                         aria-label="Ask a doubt"
                                     >
                                         <MessageCircle className="h-6 w-6" />
@@ -817,7 +803,7 @@ export default function LearningMaterialViewer({
 
                                 {/* Mark as complete button */}
                                 <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                    <span className={`${isDarkMode ? 'bg-black text-white' : 'bg-emerald-600 text-white'} py-2 px-4 rounded-full text-sm shadow-md`}>
                                         Mark as complete
                                     </span>
                                     <button
@@ -825,7 +811,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             onMarkComplete();
                                         }}
-                                        className="mobile-action-button rounded-full bg-green-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        className={`mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors ${isDarkMode ? 'bg-green-700 text-white hover:bg-green-600' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
                                         aria-label="Mark as complete"
                                     >
                                         <CheckCircle className="h-6 w-6" />

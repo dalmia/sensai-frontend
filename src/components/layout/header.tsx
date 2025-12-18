@@ -15,12 +15,18 @@ interface HeaderProps {
     showCreateCourseButton?: boolean;
     showTryDemoButton?: boolean;
     centerSlot?: React.ReactNode;
+    isDarkMode?: boolean;
+    themePreference?: 'dark' | 'light' | 'device';
+    onThemePreferenceChange?: (preference: 'dark' | 'light' | 'device') => void;
 }
 
 export function Header({
     showCreateCourseButton = true,
     showTryDemoButton = false,
-    centerSlot
+    centerSlot,
+    isDarkMode = true,
+    themePreference,
+    onThemePreferenceChange
 }: HeaderProps) {
     const router = useRouter();
     const { data: session } = useSession();
@@ -149,14 +155,17 @@ export function Header({
         }
     };
 
+    const logoSrc = isDarkMode ? "/images/sensai-logo-dark.svg" : "/images/sensai-logo-light.svg";
+    const selectedThemePreference = themePreference ?? (isDarkMode ? 'dark' : 'light');
+
     return (
-        <header className="w-full px-3 py-4 bg-black text-white">
+        <header className={`w-full px-3 py-4 ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
             <div className="max-w-full mx-auto flex justify-between items-center">
                 {/* Logo */}
                 <Link href="/">
                     <div className="cursor-pointer">
                         <Image
-                            src="/images/sensai-logo.svg"
+                            src={logoSrc}
                             alt="SensAI Logo"
                             width={120}
                             height={40}
@@ -184,7 +193,7 @@ export function Header({
                         {showTryDemoButton && (
                             <button
                                 onClick={handleTryDemoClick}
-                                className="hidden md:block px-6 py-3 bg-white/20 text-white text-sm font-medium rounded-full hover:bg-white/30 cursor-pointer"
+                                className={`hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer ${isDarkMode ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-black/10 text-black hover:bg-black/20'}`}
                             >
                                 Try a demo
                             </button>
@@ -192,7 +201,7 @@ export function Header({
                         {showCreateCourseButton && (
                             <button
                                 onClick={handleButtonClick}
-                                className="hidden md:block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                                className={`hidden md:block px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-gray-300 text-gray-800'}`}
                             >
                                 {getButtonText()}
                             </button>
@@ -211,23 +220,65 @@ export function Header({
 
                         {/* Profile dropdown menu */}
                         {profileMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-64 bg-[#111111] rounded-md shadow-lg py-1 z-10">
-                                <div className="px-4 py-3 border-b border-gray-800">
+                            <div className={`absolute right-0 mt-2 w-64 rounded-md shadow-lg py-1 z-10 ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200'}`}>
+                                <div className={`px-4 py-3 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                                     <div className="flex items-center">
                                         <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center mr-3">
                                             <span className="text-white font-medium">{getInitials()}</span>
                                         </div>
                                         <div>
-                                            <div className="text-sm font-medium">{session?.user?.name || "User"}</div>
+                                            <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>{session?.user?.name || "User"}</div>
                                             <div className="text-xs text-gray-400">{session?.user?.email || "user@example.com"}</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="border-t border-gray-800 py-1">
+                                {/* Theme Toggle */}
+                                <div className={`px-4 py-3 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                                    <div className="flex flex-col gap-2">
+                                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Theme</span>
+                                        <div className={`inline-flex w-full rounded-full p-1 ${isDarkMode ? 'bg-[#1F1F1F]' : 'bg-gray-200'}`}>
+                                            <button
+                                                type="button"
+                                                onClick={() => onThemePreferenceChange?.('light')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    selectedThemePreference === 'light'
+                                                        ? (isDarkMode ? 'bg-white text-black' : 'bg-white text-black')
+                                                        : (isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black')
+                                                }`}
+                                            >
+                                                Light
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onThemePreferenceChange?.('dark')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    selectedThemePreference === 'dark'
+                                                        ? (isDarkMode ? 'bg-white text-black' : 'bg-white text-black')
+                                                        : (isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black')
+                                                }`}
+                                            >
+                                                Dark
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onThemePreferenceChange?.('device')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    selectedThemePreference === 'device'
+                                                        ? (isDarkMode ? 'bg-white text-black' : 'bg-white text-black')
+                                                        : (isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-black')
+                                                }`}
+                                            >
+                                                Device
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={`border-t py-1 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                                     <button
                                         onClick={handleLogout}
-                                        className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                                        className={`flex w-full items-center text-left px-4 py-2 text-sm cursor-pointer ${isDarkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
                                     >
                                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

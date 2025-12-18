@@ -47,7 +47,7 @@ function LoginContent() {
                         {/* Logo */}
                         <div className="flex justify-center md:justify-start mb-8">
                             <Image
-                                src="/images/sensai-logo.svg"
+                                src="/images/sensai-logo-dark.svg"
                                 alt="SensAI Logo"
                                 width={240}
                                 height={80}

@@ -17,9 +17,10 @@ interface CourseCardProps {
         };
     };
     onDelete?: (courseId: string | number) => void;
+    isDarkMode?: boolean;
 }
 
-export default function CourseCard({ course, onDelete }: CourseCardProps) {
+export default function CourseCard({ course, onDelete, isDarkMode = true }: CourseCardProps) {
     const params = useParams();
     const router = useRouter();
     const schoolId = params?.id;
@@ -154,7 +155,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
     return (
         <div className="group relative">
             <Link href={getLinkPath()} className="block h-full">
-                <div className={`bg-[#1A1A1A] text-gray-300 rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70`}>
+                <div className={`rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70 ${isDarkMode ? 'bg-[#1A1A1A] text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
                     <h2 className="text-xl font-light mb-2">{course.title}</h2>
                 </div>
             </Link>
@@ -163,13 +164,13 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                     {/* Duplicate Button */}
                     <Tooltip content="Duplicate course">
                         <button
-                            className={`p-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800 ${isDuplicating ? 'opacity-100 cursor-not-allowed' : ''}`}
+                            className={`p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full ${isDarkMode ? 'text-gray-400 hover:text-blue-500 hover:bg-gray-800' : 'text-gray-600 hover:text-blue-500 hover:bg-gray-200'} ${isDuplicating ? 'opacity-100 cursor-not-allowed' : ''}`}
                             aria-label="Duplicate course"
                             onClick={handleDuplicateClick}
                             disabled={isDuplicating}
                         >
                             {isDuplicating ? (
-                                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                <div className={`w-4 h-4 border border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-gray-400' : 'border-gray-600'}`}></div>
                             ) : (
                                 <Copy size={18} />
                             )}
@@ -178,7 +179,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
 
                     {/* Delete Button */}
                     <button
-                        className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
+                        className={`p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full ${isDarkMode ? 'text-gray-400 hover:text-red-500 hover:bg-gray-800' : 'text-gray-600 hover:text-red-500 hover:bg-gray-200'}`}
                         aria-label="Delete course"
                         onClick={handleDeleteClick}
                     >

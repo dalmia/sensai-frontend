@@ -14,6 +14,7 @@ import CreateCourseDialog from '@/components/CreateCourseDialog';
 import Toast from "@/components/Toast";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Cohort, TeamMember, Course } from "@/types";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface School {
     id: number;
@@ -32,6 +33,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const [school, setSchool] = useState<School | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('courses');
+    const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
     const [isEditingName, setIsEditingName] = useState(false);
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -471,10 +473,15 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black text-white">
-                <Header showCreateCourseButton={false} />
+            <div className={`min-h-screen ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                <Header
+                    showCreateCourseButton={false}
+                    isDarkMode={isDarkMode}
+                    themePreference={themePreference}
+                    onThemePreferenceChange={setThemePreference}
+                />
                 <div className="flex justify-center items-center py-12">
-                    <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
                 </div>
             </div>
         );
@@ -482,7 +489,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
     if (!school) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
                 <p>School not found</p>
             </div>
         );
@@ -490,9 +497,14 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
     return (
         <>
-            <Header showCreateCourseButton={false} />
+            <Header
+                showCreateCourseButton={false}
+                isDarkMode={isDarkMode}
+                themePreference={themePreference}
+                onThemePreferenceChange={setThemePreference}
+            />
 
-            <div className="min-h-screen bg-black text-white">
+            <div className={`min-h-screen ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
                 <div className="container mx-auto px-4 py-8">
                     <main>
                         {/* School header with title */}
@@ -508,7 +520,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                 ref={schoolNameRef}
                                                 contentEditable={isEditingName}
                                                 suppressContentEditableWarning
-                                                className={`text-3xl font-light outline-none ${isEditingName ? 'border-b border-white' : ''}`}
+                                                className={`text-3xl font-light outline-none ${isEditingName ? (isDarkMode ? 'border-b border-white' : 'border-b border-black') : ''}`}
                                                 onBlur={handleNameBlur}
                                                 onKeyDown={handleNameKeyDown}
                                             >
@@ -523,12 +535,12 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             </button> */}
                                         </div>
                                         <div className="flex items-center mt-1">
-                                            <p className="text-gray-400">{school.url}</p>
+                                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{school.url}</p>
                                             <a
                                                 href={school.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="ml-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                                className={`ml-2 transition-colors cursor-pointer ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
                                                 aria-label="Open school URL"
                                             >
                                                 <ExternalLink size={14} />
@@ -541,9 +553,13 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
                         {/* Tabs for navigation */}
                         <div className="mb-8">
-                            <div className="flex border-b border-gray-800">
+                            <div className={`flex border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'courses' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`px-4 py-2 font-light cursor-pointer ${
+                                        activeTab === 'courses'
+                                            ? (isDarkMode ? 'text-white border-b-2 border-white' : 'text-black border-b-2 border-black')
+                                            : (isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black')
+                                    }`}
                                     onClick={() => handleTabChange('courses')}
                                 >
                                     <div className="flex items-center">
@@ -552,7 +568,11 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     </div>
                                 </button>
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'cohorts' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`px-4 py-2 font-light cursor-pointer ${
+                                        activeTab === 'cohorts'
+                                            ? (isDarkMode ? 'text-white border-b-2 border-white' : 'text-black border-b-2 border-black')
+                                            : (isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black')
+                                    }`}
                                     onClick={() => handleTabChange('cohorts')}
                                 >
                                     <div className="flex items-center">
@@ -561,7 +581,11 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     </div>
                                 </button>
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'members' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`px-4 py-2 font-light cursor-pointer ${
+                                        activeTab === 'members'
+                                            ? (isDarkMode ? 'text-white border-b-2 border-white' : 'text-black border-b-2 border-black')
+                                            : (isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black')
+                                    }`}
                                     onClick={() => handleTabChange('members')}
                                 >
                                     <div className="flex items-center">
@@ -582,7 +606,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             <div className="flex justify-start items-center mb-6">
                                                 <button
                                                     onClick={() => setIsCreateCourseDialogOpen(true)}
-                                                    className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
+                                                    className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                                                 >
                                                     Create course
                                                 </button>
@@ -597,6 +621,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                             title: course.name,
                                                             org_id: Number(id)
                                                         }}
+                                                        isDarkMode={isDarkMode}
                                                         onDelete={handleCourseDelete}
                                                     />
                                                 ))}
@@ -605,10 +630,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <h2 className="text-4xl font-light mb-4">What if your next big idea became a course?</h2>
-                                            <p className="text-gray-400 mb-8">It might be easier than you think</p>
+                                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-8`}>It might be easier than you think</p>
                                             <button
                                                 onClick={() => setIsCreateCourseDialogOpen(true)}
-                                                className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
+                                                className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                                             >
                                                 Create course
                                             </button>
@@ -624,7 +649,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                         <>
                                             <div className="flex justify-start items-center mb-6">
                                                 <button
-                                                    className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                                    className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                                                     onClick={() => {
                                                         setIsCreateCohortDialogOpen(true);
                                                     }}
@@ -639,6 +664,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         key={cohort.id}
                                                         cohort={cohort}
                                                         schoolId={school.id}
+                                                        isDarkMode={isDarkMode}
                                                         onDelete={handleCohortDelete}
                                                     />
                                                 ))}
@@ -647,9 +673,9 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <h2 className="text-4xl font-light mb-4">Bring your courses to life with cohorts</h2>
-                                            <p className="text-gray-400 mb-8">Create groups of learners and assign them courses to learn together</p>
+                                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-8`}>Create groups of learners and assign them courses to learn together</p>
                                             <button
-                                                className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                                className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                                                 onClick={() => {
                                                     setIsCreateCohortDialogOpen(true);
                                                 }}
@@ -666,7 +692,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                 <div>
                                     <div className="flex justify-start items-center mb-6 gap-4">
                                         <button
-                                            className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                            className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-purple-600 text-white'}`}
                                             onClick={() => setIsInviteDialogOpen(true)}
                                         >
                                             Invite members
@@ -682,16 +708,16 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                         )}
                                     </div>
 
-                                    <div className="overflow-hidden rounded-lg border border-gray-800">
-                                        <table className="min-w-full divide-y divide-gray-800">
-                                            <thead className="bg-gray-900">
+                                    <div className={`overflow-hidden rounded-lg border ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                                        <table className={`min-w-full divide-y ${isDarkMode ? 'divide-gray-800' : 'divide-gray-200'}`}>
+                                            <thead className={`${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                                                 <tr>
                                                     <th scope="col" className="w-10 px-3 py-3 text-left">
                                                         <div className="flex items-center justify-center">
                                                             {hasSelectableMembers() && (
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                                    className={`h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}
                                                                     checked={areAllMembersSelected()}
                                                                     onChange={handleSelectAllMembers}
                                                                     title="Select all members"
@@ -699,11 +725,11 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                             )}
                                                         </div>
                                                     </th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
+                                                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Email</th>
+                                                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Role</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-[#111] divide-y divide-gray-800">
+                                            <tbody className={`${isDarkMode ? 'bg-[#111] divide-y divide-gray-800' : 'bg-white divide-y divide-gray-200'}`}>
                                                 {school.members.map(member => (
                                                     <tr key={member.id}>
                                                         <td className="w-10 px-4 py-4 whitespace-nowrap">
@@ -711,22 +737,26 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                                 {member.role !== 'owner' && !isCurrentUser(member) && (
                                                                     <input
                                                                         type="checkbox"
-                                                                        className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                                        className={`h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}
                                                                         checked={selectedMembers.some(m => m.id === member.id)}
                                                                         onChange={() => handleMemberSelection(member)}
                                                                     />
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{member.email}</td>
+                                                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{member.email}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm flex justify-between items-center">
-                                                            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${member.role === 'owner' ? 'bg-purple-900 text-purple-200' : 'bg-gray-800 text-gray-300'}`}>
+                                                            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${
+                                                                member.role === 'owner'
+                                                                    ? (isDarkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-700')
+                                                                    : (isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700')
+                                                            }`}>
                                                                 {member.role === 'owner' ? 'Owner' : 'Admin'}
                                                             </span>
                                                             {member.role !== 'owner' && !isCurrentUser(member) && (
                                                                 <button
                                                                     onClick={() => handleDeleteMember(member)}
-                                                                    className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors focus:outline-none cursor-pointer"
+                                                                    className={`flex items-center gap-1 transition-colors focus:outline-none cursor-pointer ${isDarkMode ? 'text-gray-400 hover:text-red-500' : 'text-gray-600 hover:text-red-600'}`}
                                                                     aria-label="Remove Member"
                                                                 >
                                                                     <Trash2 size={18} />
@@ -750,6 +780,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 open={isInviteDialogOpen}
                 onClose={() => setIsInviteDialogOpen(false)}
                 onInvite={handleInviteMembers}
+                isDarkMode={isDarkMode}
             />
 
             {/* Delete Member Confirmation Dialog */}
@@ -772,6 +803,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onClose={() => setIsCreateCohortDialogOpen(false)}
                 onCreateCohort={handleCreateCohort}
                 schoolId={id}
+                isDarkMode={isDarkMode}
             />
 
             {/* Create course Dialog */}
@@ -780,6 +812,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onClose={() => setIsCreateCourseDialogOpen(false)}
                 onSuccess={handleCourseCreationSuccess}
                 schoolId={id}
+                isDarkMode={isDarkMode}
             />
 
             {/* Toast notification */}

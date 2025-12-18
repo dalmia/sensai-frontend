@@ -43,6 +43,7 @@ interface LearnerCourseViewProps {
     taskId?: string | null;
     questionId?: string | null;
     onUpdateTaskAndQuestionIdInUrl?: (taskId: string | null, questionId: string | null) => void;
+    isDarkMode?: boolean;
 }
 
 export default function LearnerCourseView({
@@ -60,6 +61,7 @@ export default function LearnerCourseView({
     taskId = null,
     questionId = null,
     onUpdateTaskAndQuestionIdInUrl = () => { },
+    isDarkMode = true,
 }: LearnerCourseViewProps) {
     // Get user from auth context
     const { user } = useAuth();
@@ -354,7 +356,7 @@ export default function LearnerCourseView({
                     questions: formattedQuestions
                 };
 
-                if (questionId && formattedQuestions.some(q => String(q.id) === String(questionId))) {
+                if (questionId && formattedQuestions.some((q: any) => String(q.id) === String(questionId))) {
                     setActiveQuestionId(questionId);
                 } else if (formattedQuestions.length > 0) {
                     setActiveQuestionId(formattedQuestions[0].id);
@@ -952,7 +954,7 @@ export default function LearnerCourseView({
             for (const module of modules) {
                 const item = module.items.find(i => i.id === taskId);
                 if (item) {
-                    openTaskItem(module.id, taskId, questionId);
+                    openTaskItem(module.id, taskId, questionId ?? undefined);
                     break;
                 }
             }
@@ -976,7 +978,7 @@ export default function LearnerCourseView({
     };
 
     return (
-        <div className="bg-black">
+        <div className={isDarkMode ? 'bg-black' : 'bg-white'}>
             {filteredModules.length > 0 ? (
                 <CourseModuleList
                     modules={modulesWithProgress}
@@ -986,11 +988,12 @@ export default function LearnerCourseView({
                     onOpenItem={openTaskItem}
                     completedTaskIds={completedTasks}
                     completedQuestionIds={localCompletedQuestionIds}
+                    isDarkMode={isDarkMode}
                 />
             ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div>
-                        <h2 className="text-4xl font-light mb-4 text-white">
+                        <h2 className={`text-4xl font-light mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}>
                             Your learning adventure awaits!
                         </h2>
                         <p className="text-gray-400 mb-8">
@@ -1021,11 +1024,11 @@ export default function LearnerCourseView({
             {/* Task Viewer Dialog - Using the same pattern as the editor view */}
             {isDialogOpen && activeItem && (
                 <div
-                    className="fixed inset-0 bg-black z-50 overflow-hidden"
+                    className={`fixed inset-0 z-50 overflow-hidden ${isDarkMode ? 'bg-black' : 'bg-white'}`}
                     onClick={handleDialogBackdropClick}
                 >
                     {isAdminView && learnerName && (
-                        <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
+                        <div className={`border-b py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10 ${isDarkMode ? 'bg-[#111111] border-gray-800 text-white' : 'bg-gray-100 border-gray-300 text-black'}`}>
                             <p className="font-light text-sm">
                                 You are viewing this course as <span className="font-medium">{learnerName}</span>
                             </p>
@@ -1048,18 +1051,18 @@ export default function LearnerCourseView({
                         )}
 
                         {/* Sidebar with module tasks - hidden on mobile by default */}
-                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
+                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} border-r flex flex-col overflow-hidden z-10 ${isDarkMode ? 'bg-[#121212] border-gray-800' : 'bg-gradient-to-b from-rose-50 via-white to-white border-rose-100'}`}>
                             {/* Sidebar Header */}
-                            <div className="p-5 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
-                                <h3 className="text-lg font-light text-white truncate">
+                            <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'border-gray-800 bg-[#0A0A0A]' : 'border-emerald-300 bg-emerald-100'}`}>
+                                <h3 className={`text-lg font-light truncate ${isDarkMode ? 'text-white' : 'text-emerald-900'}`}>
                                     {filteredModules.find(m => m.id === activeModuleId)?.title || "Module"}
                                 </h3>
                                 {/* Close button for mobile sidebar */}
                                 <button
                                     onClick={toggleSidebar}
                                     className={`lg:hidden mr-3 flex-shrink-0 mt-1 ${completedTasks[activeItem?.id]
-                                        ? "text-white"
-                                        : "text-gray-400 hover:text-white"
+                                        ? isDarkMode ? "text-white" : "text-black"
+                                        : isDarkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-black"
                                         }`}
                                     aria-label="Close sidebar"
                                 >
@@ -1068,111 +1071,93 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Task List */}
-                            <div className={`overflow-y-auto ${isAdminView ? 'h-[calc(100vh-180px)]' : 'h-[calc(100vh-140px)]'}`}>
-                                {activeModuleId && filteredModules.find(m => m.id === activeModuleId)?.items.map((item) => (
-                                    <div key={item.id}>
-                                        <div
-                                            className={`px-4 py-2 cursor-pointer flex items-center ${item.id === activeItem.id &&
-                                                (
-                                                    (item.type !== 'quiz') ||
-                                                    !activeItem?.questions ||
-                                                    activeItem.questions.length <= 1
-                                                )
-                                                ? "bg-[#222222] border-l-2 border-green-500"
-                                                : completedTasks[item.id]
-                                                    ? "border-l-2 border-green-500 text-green-500"
-                                                    : (item.type === 'quiz') &&
-                                                        // Check if there are any completed questions for this quiz
-                                                        localCompletedQuestionIds[item.id] &&
-                                                        Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                        ? "border-l-2 border-yellow-500"
-                                                        : "hover:bg-[#1A1A1A] border-l-2 border-transparent"
-                                                }`}
-                                            onClick={() => openTaskItem(activeModuleId, item.id)}
-                                        >
-                                            <div className={`flex items-center mr-2}`}>
-                                                {completedTasks[item.id] ? (
-                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                        <CheckCircle size={16} className="text-green-500" />
-                                                    </div>
-                                                ) : item.type === 'assignment' ? (
-                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                        <PenSquare size={16} className="text-rose-400" />
-                                                    </div>
-                                                ) :
-                                                    item.type === 'material' ? (
+                            <div className={`overflow-y-auto ${isAdminView ? 'h-[calc(100vh-160px)]' : 'h-[calc(100vh-120px)]'}`}>
+                                {activeModuleId && filteredModules.find(m => m.id === activeModuleId)?.items.map((item) => {
+                                    const isItemCompleted = completedTasks[item.id] === true;
+                                    const hasQuizProgress = item.type === 'quiz' && localCompletedQuestionIds[item.id] && Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true);
+                                    const isActiveRow = item.id === activeItem.id && ((item.type !== 'quiz') || !activeItem?.questions || activeItem.questions.length <= 1);
+
+                                    const rowClass = isDarkMode
+                                        ? `px-4 py-2 cursor-pointer flex items-center ${isActiveRow ? 'bg-[#222222] border-l-2 border-green-500' : isItemCompleted ? 'border-l-2 border-green-500 text-green-500' : hasQuizProgress ? 'border-l-2 border-yellow-500' : 'hover:bg-[#1A1A1A] border-l-2 border-transparent'}`
+                                        : `px-4 py-2 cursor-pointer flex items-center ${isActiveRow ? 'bg-fuchsia-100 border-l-2 border-fuchsia-500 shadow-sm' : isItemCompleted ? 'border-l-2 border-emerald-400 text-emerald-600 bg-emerald-50' : hasQuizProgress ? 'border-l-2 border-amber-400 bg-amber-50 text-amber-600' : 'border-l-2 border-transparent hover:bg-rose-50 text-slate-900'}`;
+
+                                    const itemTitleClass = isDarkMode
+                                        ? isItemCompleted
+                                            ? 'flex-1 text-sm text-green-500 truncate'
+                                            : hasQuizProgress
+                                                ? 'flex-1 text-sm text-yellow-500 truncate'
+                                                : 'flex-1 text-sm text-gray-200 truncate'
+                                        : `flex-1 text-sm truncate ${isItemCompleted ? 'text-emerald-600' : hasQuizProgress ? 'text-amber-600' : 'text-slate-900'}`;
+
+                                    return (
+                                        <div key={item.id}>
+                                            <div
+                                                className={rowClass}
+                                                onClick={() => openTaskItem(activeModuleId, item.id)}
+                                            >
+                                                <div className={`flex items-center mr-2}`}>
+                                                    {completedTasks[item.id] ? (
                                                         <div className="w-7 h-7 rounded-md flex items-center justify-center">
-                                                            <BookOpen size={16} className="text-blue-400" />
+                                                            <CheckCircle size={16} className="text-green-500" />
+                                                        </div>
+                                                    ) : item.type === 'assignment' ? (
+                                                        <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                            <PenSquare size={16} className={isDarkMode ? 'text-rose-400' : 'text-rose-600'} />
+                                                        </div>
+                                                    ) : item.type === 'material' ? (
+                                                        <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                            <BookOpen size={16} className={isDarkMode ? 'text-blue-400' : 'text-blue-600'} />
                                                         </div>
                                                     ) : (
                                                         <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
-                                                            <ClipboardList size={16} className={
-                                                                localCompletedQuestionIds[item.id] &&
-                                                                    Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                                    ? "text-yellow-500"
-                                                                    : "text-purple-500"
-                                                            } />
+                                                            <ClipboardList size={16} className={hasQuizProgress ? (isDarkMode ? 'text-yellow-500' : 'text-amber-600') : (isDarkMode ? 'text-purple-500' : 'text-purple-600')} />
                                                         </div>
                                                     )}
 
-                                                {/* Add a small generating indicator if the item is still being generated */}
-                                                {item.isGenerating && (
-                                                    <div className="ml-2 animate-pulse">
-                                                        <Loader2 size={12} className="animate-spin text-gray-400" />
+                                                    {item.isGenerating && (
+                                                        <div className="ml-2 animate-pulse">
+                                                            <Loader2 size={12} className="animate-spin text-gray-400" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className={itemTitleClass}>
+                                                    {item.title}
+                                                </div>
+                                            </div>
+
+                                            {(item.type === 'quiz') &&
+                                                item.id === activeItem?.id &&
+                                                activeItem?.questions &&
+                                                activeItem.questions.length > 1 && (
+                                                    <div className={`pl-8 border-l ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                                                        {activeItem.questions.map((question: any) => (
+                                                            <div
+                                                                key={question.id}
+                                                                className={isDarkMode
+                                                                    ? `px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId) ? 'bg-[#222222] border-l-2 border-green-500' : completedQuestions[question.id] ? 'border-l-2 border-green-500 text-green-500' : 'hover:bg-[#1A1A1A] border-l-2 border-transparent'}`
+                                                                    : `px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId) ? 'bg-white border-l-2 border-emerald-400' : completedQuestions[question.id] ? 'border-l-2 border-emerald-400 text-emerald-600 bg-emerald-50' : 'border-l-2 border-transparent hover:bg-gray-100 text-gray-600'}`}
+                                                                onClick={() => activateQuestion(question.id)}
+                                                            >
+                                                                <div className={`flex items-center mr-2 ${completedQuestions[question.id] ? (isDarkMode ? 'text-green-500' : 'text-emerald-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                                                                    {completedQuestions[question.id] && <CheckCircle size={14} />}
+                                                                </div>
+                                                                <div className={`flex-1 text-sm break-words whitespace-normal min-w-0 ${completedQuestions[question.id] ? (isDarkMode ? 'text-green-500' : 'text-emerald-600') : (isDarkMode ? 'text-gray-300' : 'text-gray-700')}`}>
+                                                                    {question.config.title}
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
-                                            </div>
-                                            <div className={`flex-1 text-sm ${completedTasks[item.id]
-                                                ? "text-green-500"
-                                                : (item.type === 'quiz') &&
-                                                    // Match the same condition for the text color
-                                                    localCompletedQuestionIds[item.id] &&
-                                                    Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                    ? "text-yellow-500"
-                                                    : "text-gray-200"
-                                                } truncate`}>
-                                                {item.title}
-                                            </div>
                                         </div>
-
-                                        {/* Show questions as expanded items for active quiz */}
-                                        {(item.type === 'quiz') &&
-                                            item.id === activeItem?.id &&
-                                            activeItem?.questions &&
-                                            activeItem.questions.length > 1 && (
-                                                <div className="pl-8">
-                                                    {activeItem.questions.map((question: any, index: number) => (
-                                                        <div
-                                                            key={question.id}
-                                                            className={`px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId)
-                                                                ? "bg-[#222222] border-l-2 border-green-500"
-                                                                : completedQuestions[question.id]
-                                                                    ? "border-l-2 border-green-500 text-green-500"
-                                                                    : "hover:bg-[#1A1A1A] border-l-2 border-gray-800"
-                                                                }`}
-                                                            onClick={() => activateQuestion(question.id)}
-                                                        >
-                                                            <div className={`flex items-center mr-2 ${completedQuestions[question.id] ? "text-green-500" : "text-gray-400"}`}>
-                                                                {completedQuestions[question.id]
-                                                                    && <CheckCircle size={14} />
-                                                                }
-                                                            </div>
-                                                            <div className={`flex-1 text-sm ${completedQuestions[question.id] ? "text-green-500" : "text-gray-300"} break-words whitespace-normal min-w-0`}>
-                                                                {question.config.title}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
 
                             {/* Back to Course Button - hidden on mobile, fixed at bottom for laptop */}
-                            <div className="hidden lg:block p-4 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
+                            <div className={`hidden lg:block p-3 border-t absolute bottom-0 left-0 right-0 ${isDarkMode ? 'border-gray-800 bg-[#121212]' : 'border-fuchsia-100 bg-fuchsia-50'}`}>
                                 <button
                                     onClick={closeDialog}
-                                    className="w-full flex items-center justify-center px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222] rounded transition-colors cursor-pointer"
+                                    className={`w-full flex items-center justify-center px-3 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222]' : 'text-white bg-fuchsia-600 hover:bg-fuchsia-700 shadow-sm'}`}
                                 >
                                     Back to course
                                 </button>
@@ -1180,23 +1165,22 @@ export default function LearnerCourseView({
                         </div>
 
                         {/* Main Content */}
-                        <div className={`flex-1 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} flex flex-col bg-[#1A1A1A]`}>
+                        <div className={`flex-1 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} flex flex-col ${isDarkMode ? 'bg-[#1A1A1A]' : 'bg-white'}`}>
                             {/* Dialog Header */}
                             <div
-                                className={`flex items-center px-3 justify-between border-b border-gray-800 ${
-                                    // Add background color for completed tasks on mobile
+                                className={`flex items-start justify-between p-4 border-b ${
                                     (completedTasks[activeItem?.id])
-                                        ? "lg:bg-[#111111] bg-green-700"
-                                        : "bg-[#111111]"
-                                    } ${(activeItem?.type === 'material' || completedTasks[activeItem?.id]) ? 'py-3' : 'py-4'}`}
+                                        ? isDarkMode ? 'lg:bg-[#111111] bg-green-700 border-gray-800' : 'lg:bg-emerald-50 bg-emerald-600 border-emerald-500'
+                                        : isDarkMode ? 'bg-[#111111] border-gray-800' : 'bg-gradient-to-r from-rose-50 to-orange-50 border-rose-100'
+                                }`}
                             >
                                 <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
                                     <button
                                         onClick={toggleSidebar}
                                         className={`lg:hidden mr-3 flex-shrink-0 mt-1 ${completedTasks[activeItem?.id]
-                                            ? "text-white"
-                                            : "text-gray-400 hover:text-white"
+                                            ? 'text-white'
+                                            : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
                                             }`}
                                         aria-label="Toggle sidebar"
                                     >
@@ -1209,7 +1193,7 @@ export default function LearnerCourseView({
                                                 contentEditable={false}
                                                 suppressContentEditableWarning
                                                 onKeyDown={handleKeyDown}
-                                                className="text-xl sm:text-2xl lg:text-2xl font-light text-white outline-none break-words hyphens-auto"
+                                                className={`text-xl sm:text-2xl lg:text-2xl font-light outline-none break-words hyphens-auto ${completedTasks[activeItem?.id] ? (isDarkMode ? 'text-white' : 'text-emerald-900') : isDarkMode ? 'text-white' : 'text-fuchsia-900'}`}
                                             >
                                                 {activeItem?.title}
                                             </h2>
@@ -1232,13 +1216,13 @@ export default function LearnerCourseView({
                                     {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
                                         <button
                                             onClick={markTaskComplete}
-                                            className={`hidden lg:flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            className={`hidden lg:flex items-center px-4 py-2 text-sm rounded-full transition-colors border ${isDarkMode ? 'text-white border-emerald-500 hover:bg-[#222222] focus:border-emerald-500 active:border-emerald-500' : 'text-white bg-emerald-500 border-emerald-500 hover:bg-emerald-600 focus:border-emerald-600 active:bg-emerald-700'} ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                             aria-label="Mark complete"
                                             disabled={isMarkingComplete}
                                         >
                                             {isMarkingComplete ? (
                                                 <>
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                                    <div className={`w-4 h-4 border-2 ${isDarkMode ? 'border-white' : 'border-emerald-500'} border-t-transparent rounded-full animate-spin mr-2`}></div>
                                                 </>
                                             ) : (
                                                 <>
@@ -1251,8 +1235,8 @@ export default function LearnerCourseView({
                                     <button
                                         onClick={closeDialog}
                                         className={`transition-colors focus:outline-none cursor-pointer p-1 lg:hidden ${completedTasks[activeItem?.id]
-                                            ? "text-white"
-                                            : "text-gray-400 hover:text-white"
+                                            ? 'text-white'
+                                            : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
                                             }`}
                                     >
                                         <X size={20} />
@@ -1276,7 +1260,7 @@ export default function LearnerCourseView({
                                                 taskId={activeItem.id}
                                                 userId={userId}
                                                 readOnly={true}
-                                                isDarkMode={true}
+                                                isDarkMode={isDarkMode}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
                                                 viewOnly={viewOnly}
                                             />
@@ -1285,16 +1269,15 @@ export default function LearnerCourseView({
                                             <>
                                                 <DynamicLearnerQuizView
                                                     questions={activeItem.questions || []}
-                                                    readOnly={true}
                                                     viewOnly={viewOnly}
-                                                    currentQuestionId={activeQuestionId}
+                                                    currentQuestionId={activeQuestionId ?? undefined}
                                                     onQuestionChange={activateQuestion}
                                                     onSubmitAnswer={handleQuizAnswerSubmit}
                                                     userId={userId}
                                                     isTestMode={isTestMode}
                                                     taskId={activeItem.id}
                                                     completedQuestionIds={completedQuestions}
-                                                    isDarkMode={true}
+                                                isDarkMode={isDarkMode}
                                                     onAiRespondingChange={handleAiRespondingChange}
                                                     className={`${isSidebarOpen ? 'sidebar-visible' : ''}`}
                                                     isAdminView={isAdminView}
@@ -1309,6 +1292,7 @@ export default function LearnerCourseView({
                                                 taskId={activeItem.id}
                                                 isTestMode={isTestMode}
                                                 viewOnly={viewOnly}
+                                                isDarkMode={isDarkMode}
                                                 onTaskComplete={handleTaskCompletion}
                                                 onAiRespondingChange={handleAiRespondingChange}
                                             />
@@ -1319,11 +1303,11 @@ export default function LearnerCourseView({
 
                             {/* Navigation Footer - Hidden on mobile */}
                             {((!isFirstTask() && getPreviousTaskInfo()) || (!isLastTask() && getNextTaskInfo())) && (
-                                <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
+                                <div className={`hidden lg:flex items-center justify-between p-4 border-t ${isDarkMode ? 'border-gray-800 bg-[#111111]' : 'border-emerald-100 bg-emerald-50'}`}>
                                     {!isFirstTask() && getPreviousTaskInfo() && (
                                         <button
                                             onClick={goToPreviousTask}
-                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                            className={`flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white hover:bg-gray-800' : 'text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm'}`}
                                         >
                                             <ChevronLeft size={16} className="mr-1" />
                                             {getPreviousTaskInfo()?.title}
@@ -1334,7 +1318,7 @@ export default function LearnerCourseView({
                                     {!isLastTask() && getNextTaskInfo() && (
                                         <button
                                             onClick={goToNextTask}
-                                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white hover:bg-gray-800 cursor-pointer"
+                                            className={`flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white hover:bg-gray-800' : 'text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm'}`}
                                         >
                                             {getNextTaskInfo()?.title}
                                             <ChevronRight size={16} className="ml-1" />
@@ -1349,11 +1333,11 @@ export default function LearnerCourseView({
 
             {/* Mobile Navigation Footer - Only visible on mobile */}
             {isDialogOpen && activeItem && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#111111] border-t border-gray-800 z-50 px-4 py-3 flex justify-between items-center max-h-[60px]">
+                <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 py-3 flex justify-between items-center max-h-[60px] border-t ${isDarkMode ? 'bg-[#111111] border-gray-800' : 'bg-emerald-500 border-emerald-400 shadow-[0_-4px_12px_rgba(16,185,129,0.25)]'}`}>
                     {!isFirstTask() && getPreviousTaskInfo() ? (
                         <button
                             onClick={goToPreviousTask}
-                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white bg-[#222222] cursor-pointer"
+                            className={`flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white bg-[#222222] hover:bg-[#2e2e2e]' : 'text-emerald-600 bg-white hover:bg-emerald-50'}`}
                             aria-label="Previous task"
                         >
                             <ChevronLeft size={16} className="mr-1" />
@@ -1366,7 +1350,7 @@ export default function LearnerCourseView({
                     {!isLastTask() && getNextTaskInfo() ? (
                         <button
                             onClick={goToNextTask}
-                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white bg-[#222222] cursor-pointer"
+                            className={`flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white bg-[#222222] hover:bg-[#2e2e2e]' : 'text-emerald-600 bg-white hover:bg-emerald-50'}`}
                             aria-label="Next task"
                         >
                             <span className="max-w-[100px] truncate">{getNextTaskInfo()?.title}</span>

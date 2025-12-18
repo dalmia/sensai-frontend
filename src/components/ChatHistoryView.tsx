@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { ArrowDownToLine } from 'lucide-react';
 
 // Code message display component
-const CodeMessageDisplay = ({ code, language }: { code: string, language?: string }) => {
+const CodeMessageDisplay = ({ code, language, isDarkMode }: { code: string, language?: string, isDarkMode: boolean }) => {
     // Check if the code contains language headers (e.g., "// JAVASCRIPT", "// HTML", etc.)
     const hasLanguageHeaders = code.includes('// ') && code.includes('\n');
 
@@ -22,13 +22,13 @@ const CodeMessageDisplay = ({ code, language }: { code: string, language?: strin
         }
 
         return (
-            <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
+            <div className={`w-full rounded overflow-hidden ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-slate-900'}`}>
                 {languageSections.map(([lang, codeSection], index) => (
                     <div key={index} className="mb-2 last:mb-0">
-                        <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+                        <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-slate-800 text-slate-200'}`}>
                             <span>{lang}</span>
                         </div>
-                        <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+                        <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-slate-100'}`}>
                             <code>{codeSection}</code>
                         </pre>
                     </div>
@@ -39,11 +39,11 @@ const CodeMessageDisplay = ({ code, language }: { code: string, language?: strin
 
     // If no language headers, display as a single code block
     return (
-        <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
-            <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+        <div className={`w-full rounded overflow-hidden ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-slate-900'}`}>
+            <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-slate-800 text-slate-200'}`}>
                 <span>{language || 'code'}</span>
             </div>
-            <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+            <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-slate-100'}`}>
                 <code>{code}</code>
             </pre>
         </div>
@@ -62,6 +62,7 @@ interface ChatHistoryViewProps {
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
     onFileDownload?: (fileUuid: string, fileName: string) => void;
+    isDarkMode?: boolean;
 }
 
 const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
@@ -76,6 +77,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     onShowLearnerViewChange,
     isAdminView = false,
     onFileDownload,
+    isDarkMode = true,
 }) => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -317,9 +319,9 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
             <style jsx>{customStyles}</style>
             <div
                 ref={chatContainerRef}
-                className="h-full overflow-y-auto w-full hide-scrollbar pb-8"
+                className={`h-full overflow-y-auto w-full hide-scrollbar pb-8 ${isDarkMode ? 'chat-history-dark' : 'chat-history-light bg-white/60'}`}
             >
-                <div className="flex flex-col space-y-6 pr-2">
+                <div className="flex flex-col space-y-6 px-2">
                     {chatHistory.map((message, index) => (
                         <div key={message.id}>
                             {(() => {
@@ -335,7 +337,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
 
                                 return (
                                     <div className="flex justify-center mb-2">
-                                        <div className="px-3 py-1 rounded-full bg-[#232428] text-gray-200 text-xs font-light select-none">
+                                        <div className={`px-3 py-1 rounded-full text-xs font-light select-none ${isDarkMode ? 'bg-[#232428] text-gray-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
                                             {formatMessageDayLabel(currentDate)}
                                         </div>
                                     </div>
@@ -346,20 +348,42 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                             >
                                 {(() => {
                                     const isFileMessage = message.messageType === 'file' && !!message.fileUuid && !!onFileDownload;
+
+                                    // Timestamp (user messages only, shown below the bubble)
                                     const shouldShowUserTimestamp = message.sender === 'user';
                                     const messageTime = shouldShowUserTimestamp ? formatMessageTime((message as any).timestamp) : '';
                                     const timestampEl = messageTime ? (
-                                        <span className="mt-1 text-[10px] leading-none text-gray-400 font-light select-none">
+                                        <span className={`mt-1 text-[10px] leading-none font-light select-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                             {messageTime}
                                         </span>
                                     ) : null;
 
-                                    const bubbleClassName = `rounded-2xl ${message.messageType === 'audio' ? 'py-2' : 'px-4 py-2'} ${message.messageType === 'audio'
-                                        ? 'w-full sm:w-[75%]'
-                                        : message.messageType === 'code'
-                                            ? 'bg-[#282828] text-white w-[90%]'
-                                            : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
-                                        }`;
+                                    const bubbleVariant = (() => {
+                                        if (message.messageType === 'audio') {
+                                            const audioBase = isDarkMode
+                                                ? (message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white')
+                                                : (message.sender === 'user'
+                                                    ? 'bg-gray-100 text-slate-900 border border-gray-200'
+                                                    : 'bg-white text-slate-900 border border-gray-200');
+                                            return `${audioBase} w-full sm:w-[75%]`;
+                                        }
+
+                                        if (message.messageType === 'code') {
+                                            return isDarkMode
+                                                ? 'bg-[#282828] text-white w-[90%]'
+                                                : 'bg-slate-900 text-slate-100 w-[90%]';
+                                        }
+
+                                        const textBase = isDarkMode
+                                            ? (message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white')
+                                            : (message.sender === 'user'
+                                                ? 'bg-gray-100 text-slate-900 border border-gray-200'
+                                                : 'bg-white text-slate-900 border border-gray-200');
+                                        return `${textBase} max-w-[75%]`;
+                                    })();
+
+                                    // Audio bubbles shouldn't have px-4 (per request)
+                                    const bubbleClassName = `rounded-2xl ${message.messageType === 'audio' ? 'py-2' : 'px-4 py-2'} ${bubbleVariant}`;
 
                                     const bubble = (
                                         <div className={bubbleClassName}>
@@ -367,17 +391,16 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                 currentQuestionConfig?.responseType === 'exam' &&
                                                 onShowLearnerViewChange &&
                                                 isAdminView && (
-                                                    <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-[#35363a] ${message.is_correct !== undefined
+                                                    <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b ${isDarkMode ? 'border-[#35363a]' : 'border-gray-200'} ${message.is_correct !== undefined
                                                         ? message.is_correct
-                                                            ? 'bg-green-900/40'
-                                                            : 'bg-red-900/40'
-                                                        : 'bg-[#232428]'
+                                                            ? (isDarkMode ? 'bg-green-900/40' : 'bg-emerald-100')
+                                                            : (isDarkMode ? 'bg-red-900/40' : 'bg-rose-100')
+                                                        : (isDarkMode ? 'bg-[#232428]' : 'bg-gray-100')
                                                         }`}>
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center">
                                                                 {message.is_correct !== undefined && (
-                                                                    <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'
-                                                                        }`}>
+                                                                    <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'}`}>
                                                                         {message.is_correct ? (
                                                                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -389,20 +412,22 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                                         )}
                                                                     </div>
                                                                 )}
-                                                                <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                                <span className={`text-sm font-light select-none ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Show result</span>
                                                             </div>
                                                             <button
                                                                 onClick={() => onShowLearnerViewChange(!showLearnerView)}
                                                                 className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
-                                                                    ${!showLearnerView ? 'bg-white border-gray-400' : 'bg-[#444950] border-[#444950]'}
+                                                                    ${!showLearnerView
+                                                                        ? (isDarkMode ? 'bg-white border-gray-400' : 'bg-white border-gray-300')
+                                                                        : (isDarkMode ? 'bg-[#444950] border-[#444950]' : 'bg-gray-300 border-gray-300')}
                                                                 `}
                                                                 aria-pressed={!showLearnerView}
                                                                 aria-label="Show result toggle"
                                                                 type="button"
                                                             >
                                                                 <span
-                                                                    className={`inline-block h-5 w-5 transform rounded-full bg-black shadow-md transition-transform duration-200
-                                                                        ${!showLearnerView ? 'translate-x-5' : 'translate-x-1'}
+                                                                    className={`inline-block h-5 w-5 transform rounded-full shadow-md transition-transform duration-200
+                                                                        ${!showLearnerView ? 'translate-x-5 bg-black' : `translate-x-1 ${isDarkMode ? 'bg-black' : 'bg-white'}`}
                                                                     `}
                                                                 />
                                                             </button>
@@ -427,11 +452,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                             ? currentQuestionConfig?.codingLanguages[0]
                                                             : undefined
                                                     }
+                                                    isDarkMode={isDarkMode}
                                                 />
                                             ) : (
                                                 <div>
                                                     {message.sender === 'ai' ? (
-                                                        <div className="text-sm font-sans break-words break-anywhere markdown-content">
+                                                        <div className={`text-sm font-sans break-words break-anywhere markdown-content ${isDarkMode ? '' : 'markdown-content-light'}`}>
                                                             <Markdown
                                                                 remarkPlugins={[remarkGfm]}
                                                             >
@@ -443,11 +469,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                             {message.content}
                                                         </pre>
                                                     )}
+
                                                     {shouldShowViewReport(message) && (
                                                         <div className="my-3">
                                                             <button
                                                                 onClick={() => onViewScorecard(message.scorecard || [])}
-                                                                className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                                className={`${isDarkMode ? 'bg-[#333333] hover:bg-[#444444] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'} px-4 py-2 rounded-full text-xs transition-colors cursor-pointer flex items-center`}
                                                                 type="button"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -457,11 +484,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                             </button>
                                                         </div>
                                                     )}
+
                                                     {isErrorMessage(message) && onRetry && (
                                                         <div className="my-3">
                                                             <button
                                                                 onClick={onRetry}
-                                                                className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                                className={`${isDarkMode ? 'bg-[#333333] hover:bg-[#444444] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'} px-4 py-2 mb-2 rounded-full text-xs transition-colors cursor-pointer flex items-center`}
                                                                 type="button"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -476,22 +504,21 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                         </div>
                                     );
 
-                                    if (!isFileMessage) {
-                                        // Only user messages should show timestamp; keep layout identical otherwise.
-                                        if (message.sender !== 'user' || !timestampEl) return bubble;
-                                        return (
+                                    const bubbleWithTimestamp = (message.sender === 'user' && timestampEl)
+                                        ? (
                                             <div className="w-full flex flex-col items-end">
                                                 {bubble}
                                                 {timestampEl}
                                             </div>
-                                        );
-                                    }
+                                        )
+                                        : bubble;
+
+                                    if (!isFileMessage) return bubbleWithTimestamp;
 
                                     return (
                                         <div className="w-full flex items-start justify-end gap-2">
-                                            <div className="flex flex-col items-end flex-1 min-w-0">
-                                                {bubble}
-                                                {message.sender === 'user' ? timestampEl : null}
+                                            <div className="flex-1 min-w-0">
+                                                {bubbleWithTimestamp}
                                             </div>
                                             <button
                                                 onClick={() => {
@@ -499,7 +526,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                     const fileName = message.fileName!;
                                                     onFileDownload(fileUuid, fileName);
                                                 }}
-                                                className="shrink-0 mt-1 w-8 h-8 rounded-full bg-[#232428] hover:bg-[#2D2D2D] transition-colors cursor-pointer flex items-center justify-center text-gray-200"
+                                                className={`shrink-0 mt-1 w-8 h-8 rounded-full transition-colors cursor-pointer flex items-center justify-center ${isDarkMode ? 'bg-[#232428] hover:bg-[#2D2D2D] text-gray-200' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
                                                 aria-label="Download file"
                                                 title="Download"
                                                 type="button"
@@ -516,12 +543,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     {/* Show "Preparing report" as an AI message */}
                     {showPreparingReport && (
                         <div className="flex justify-start">
-                            <div className="rounded-2xl px-4 py-3 bg-[#1A1A1A] text-white max-w-[75%]">
+                            <div className={`rounded-2xl px-4 py-3 max-w-[75%] ${isDarkMode ? 'bg-[#1A1A1A] text-white' : 'bg-indigo-50 text-indigo-900 border border-indigo-200'}`}>
                                 <div className="flex items-center">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                                    <div className={`w-4 h-4 border-2 rounded-full animate-spin mr-3 ${isDarkMode ? 'border-white border-t-transparent' : 'border-indigo-500 border-t-transparent'}`}></div>
                                     <div className="flex flex-col">
-                                        <p className="text-sm font-light">Preparing report</p>
-                                        <p className="text-xs text-gray-400 mt-1">This may take a moment</p>
+                                        <p className={`text-sm font-light ${isDarkMode ? '' : 'text-indigo-900'}`}>Preparing report</p>
+                                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-indigo-600'}`}>This may take a moment</p>
                                     </div>
                                 </div>
                             </div>
@@ -533,11 +560,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         <div className="flex justify-start items-center my-2 ml-2">
                             <div className="flex items-center justify-center min-w-[20px] min-h-[20px] mr-2">
                                 <div
-                                    className="w-2.5 h-2.5 bg-white rounded-full pulsating-circle"
+                                    className={`w-2.5 h-2.5 rounded-full pulsating-circle ${isDarkMode ? 'bg-white' : 'bg-indigo-500'}`}
                                 ></div>
                             </div>
                             <div className={`${isTransitioning ? 'message-transition-out' : 'message-transition-in'}`}>
-                                <span className="highlight-animation text-sm">
+                                <span className={`text-sm ${isDarkMode ? 'highlight-animation text-white/80' : 'highlight-animation-light text-indigo-600'}`}>
                                     {currentThinkingMessage}
                                 </span>
                             </div>
@@ -556,10 +583,17 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                 .highlight-animation {
                     background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 75%);
                     background-size: 200% auto;
-                    color: rgba(255, 255, 255, 0.6);
                     background-clip: text;
                     -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
+                    animation: highlightText 2s linear infinite;
+                    transition: opacity 0.2s ease-in-out;
+                }
+
+                .highlight-animation-light {
+                    background: linear-gradient(to right, rgba(99,102,241,0) 0%, rgba(99,102,241,0.8) 25%, rgba(79,70,229,1) 50%, rgba(99,102,241,0) 75%);
+                    background-size: 200% auto;
+                    background-clip: text;
+                    -webkit-background-clip: text;
                     animation: highlightText 2s linear infinite;
                     transition: opacity 0.2s ease-in-out;
                 }
@@ -690,6 +724,53 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     & a:hover {
                         text-decoration: underline;
                     }
+                }
+
+                .chat-history-light .markdown-content {
+                    color: #1f2937;
+                }
+
+                .chat-history-light .markdown-content h1,
+                .chat-history-light .markdown-content h2,
+                .chat-history-light .markdown-content h3,
+                .chat-history-light .markdown-content h4,
+                .chat-history-light .markdown-content h5,
+                .chat-history-light .markdown-content h6 {
+                    color: #0f172a;
+                    font-weight: 300;
+                }
+
+                .chat-history-light .markdown-content blockquote {
+                    border-left-color: #cbd5f5;
+                    color: #475569;
+                    background-color: #eef2ff;
+                }
+
+                .chat-history-light .markdown-content pre {
+                    background-color: #0f172a;
+                    color: #e2e8f0;
+                }
+
+                .chat-history-light .markdown-content code {
+                    background-color: rgba(14, 116, 144, 0.12);
+                    color: #0f172a;
+                }
+
+                .chat-history-light .markdown-content table {
+                    border-color: #cbd5f5;
+                }
+
+                .chat-history-light .markdown-content th {
+                    background-color: #e2e8f0;
+                    color: #0f172a;
+                }
+
+                .chat-history-light .markdown-content td {
+                    border-color: #cbd5f5;
+                }
+
+                .markdown-content-light {
+                    color: #1f2937;
                 }
             `}</style>
         </>

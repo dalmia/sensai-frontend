@@ -10,9 +10,10 @@ interface CohortCardProps {
     };
     schoolId?: number | string;
     onDelete?: (cohortId: number) => void;
+    isDarkMode?: boolean;
 }
 
-export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardProps) {
+export default function CohortCard({ cohort, schoolId, onDelete, isDarkMode = true }: CohortCardProps) {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -73,12 +74,12 @@ export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardPro
     return (
         <div className="group relative">
             <Link href={`/school/admin/${schoolId}/cohorts/${cohort.id}`} className="block h-full">
-                <div className={`bg-[#1A1A1A] text-gray-300 rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70`}>
+                <div className={`rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70 ${isDarkMode ? 'bg-[#1A1A1A] text-gray-300' : 'bg-gray-100 text-gray-800'}`}>
                     <h2 className="text-xl font-light mb-2">{cohort.name}</h2>
                 </div>
             </Link>
             <button
-                className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
+                className={`absolute top-3 right-3 p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full ${isDarkMode ? 'text-gray-400 hover:text-red-500 hover:bg-gray-800' : 'text-gray-600 hover:text-red-600 hover:bg-gray-200'}`}
                 aria-label="Delete cohort"
                 onClick={handleDeleteClick}
             >

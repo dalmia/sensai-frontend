@@ -18,6 +18,7 @@ import Tooltip from "@/components/Tooltip";
 import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
 import SettingsDialog from "@/components/SettingsDialog";
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -55,7 +56,7 @@ export default function CreateCourse() {
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
     const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -253,27 +254,6 @@ export default function CreateCourse() {
 
         fetchSchoolDetails();
     }, [courseId]);
-
-    // Check for dark mode
-    useEffect(() => {
-        setIsDarkMode(true);
-        // setIsDarkMode(document.documentElement.classList.contains('dark'));
-
-        // Optional: Listen for changes to the dark mode
-        // const observer = new MutationObserver((mutations) => {
-        //     mutations.forEach((mutation) => {
-        //         if (mutation.attributeName === 'class') {
-        //             setIsDarkMode(document.documentElement.classList.contains('dark'));
-        //         }
-        //     });
-        // });
-
-        // observer.observe(document.documentElement, { attributes: true });
-
-        // return () => {
-        //     observer.disconnect();
-        // };
-    }, []);
 
     // Check for Integration OAuth callback and enable edit mode if coming from published content
     useEffect(() => {
@@ -1931,7 +1911,12 @@ export default function CreateCourse() {
     return (
         <div className="min-h-screen bg-black">
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
-            <Header showCreateCourseButton={false} />
+            <Header
+                showCreateCourseButton={false}
+                isDarkMode={isDarkMode}
+                themePreference={themePreference}
+                onThemePreferenceChange={setThemePreference}
+            />
 
             {/* Add overlay when course is being generated */}
             {isGeneratingCourse && !isCourseStructureGenerated && (
