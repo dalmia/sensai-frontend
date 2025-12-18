@@ -228,7 +228,7 @@ describe('ClientLeaderboardView', () => {
             });
         });
 
-        it('should show medals for top 3 performers with streaks > 0', async () => {
+        it('should show medals for top 3 performers', async () => {
             render(
                 <ClientLeaderboardView
                     cohortId="cohort-1"
@@ -239,9 +239,10 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 const images = screen.getAllByTestId('mock-image');
-                expect(images).toHaveLength(2); // Only John and Jane should have medals (positions 1 and 2 with streaks > 0)
+                expect(images).toHaveLength(3); // All top 3 positions get medals
                 expect(images[0]).toHaveAttribute('src', '/images/leaderboard_1.svg');
                 expect(images[1]).toHaveAttribute('src', '/images/leaderboard_2.svg');
+                expect(images[2]).toHaveAttribute('src', '/images/leaderboard_3.svg');
             });
         });
 
