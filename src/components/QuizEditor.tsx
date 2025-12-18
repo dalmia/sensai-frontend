@@ -1366,7 +1366,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
             return isValid;
         },
-        hasScorecard: () => scorecardManagerRef.current?.hasScorecard() ?? false,
+        hasScorecard: () => {
+            if (questions.length === 0) return false;
+
+            const hasFromConfig = validateScorecard(currentQuestionConfig);
+            const hasFromManager = scorecardManagerRef.current?.hasScorecard?.() ?? false;
+
+            return hasFromConfig || hasFromManager;
+        },
         hasCodingLanguages: () => {
             const isValid = hasCodingLanguages();
             if (!isValid) {

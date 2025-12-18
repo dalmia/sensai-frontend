@@ -671,9 +671,9 @@ export default function LearningMaterialViewer({
                 >
                     <div className="flex-1">
                         {integrationBlocks.length > 0 ? (
-                            <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-gray-100 text-gray-900'} px-12 pb-6 rounded-lg`}>
+                            <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-gray-900'} px-12 pb-6 rounded-lg`}>
                                 <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-1`}>{integrationBlock?.props?.resource_name}</div>
-                                <RenderConfig theme="dark">
+                                <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                     <BlockList blocks={integrationBlocks} />
                                 </RenderConfig>
                             </div>
@@ -683,7 +683,6 @@ export default function LearningMaterialViewer({
                                 onChange={() => { }} // Read-only, no changes
                                 isDarkMode={isDarkMode}
                                 readOnly={true}
-                                className="dark-editor"
                             />
                         )}
                     </div>

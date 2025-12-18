@@ -1987,7 +1987,7 @@ export default function LearnerQuizView({
             `}</style>
 
             <div
-                className={`rounded-md overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'} quiz-view-container ${isDarkMode ? 'quiz-dark' : 'quiz-light'}`}
+                className={`overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'} quiz-view-container ${isDarkMode ? 'quiz-dark' : 'quiz-light'}`}
                 style={{ ['--split-divider-color' as any]: isDarkMode ? '#222222' : '#e5e7eb' }}
             >
                 {/* Left side - Question (33% or 50% depending on layout) */}
@@ -2055,7 +2055,7 @@ export default function LearnerQuizView({
                             {integrationBlocks.length > 0 ? (
                                 <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-gray-900'} px-20 pr-0 pb-6 rounded-lg`}>
                                     <h1 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-0.5`}>{integrationBlock?.props?.resource_name}</h1>
-                                    <RenderConfig theme="dark">
+                                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                         <BlockList blocks={integrationBlocks} />
                                     </RenderConfig>
                                 </div>

@@ -1118,10 +1118,10 @@ export default function LearnerAssignmentView({
                     }
                 }
             `}</style>
-            <div className={`two-column-grid rounded-md overflow-hidden ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className={`two-column-grid overflow-hidden ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'}`}>
                 {/* Left: Problem Statement */}
                 <div
-                    className={`p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 ${isDarkMode ? 'bg-[#1A1A1A] border-[#222222]' : 'bg-gray-50 border-gray-200'}`}
+                    className={`p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 ${isDarkMode ? 'bg-[#1A1A1A] border-[#222222]' : 'bg-white border-gray-200'}`}
                     style={{ overflow: 'auto' }}
                 >
                     {/* Header chip */}
@@ -1151,9 +1151,9 @@ export default function LearnerAssignmentView({
                             }}
                         >
                             {integrationBlocks.length > 0 ? (
-                                <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-gray-100 text-gray-900'} px-20 pr-0 pb-6 rounded-lg`}>
+                                <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-gray-900'} px-20 pr-0 pb-6 rounded-lg`}>
                                     <h1 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-0.5`}>{integrationBlock?.props?.resource_name}</h1>
-                                    <RenderConfig theme="dark">
+                                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                         <BlockList blocks={integrationBlocks as any} />
                                     </RenderConfig>
                                 </div>

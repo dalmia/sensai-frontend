@@ -1054,7 +1054,7 @@ export default function LearnerCourseView({
                         {/* Sidebar with module tasks - hidden on mobile by default */}
                         <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} border-r flex flex-col overflow-hidden z-10 ${isDarkMode ? 'bg-[#121212] border-gray-800' : 'bg-gradient-to-b from-rose-50 via-white to-white border-rose-100'}`}>
                             {/* Sidebar Header */}
-                            <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'border-gray-800 bg-[#0A0A0A]' : 'border-emerald-300 bg-emerald-100'}`}>
+                            <div className={`p-5 border-b flex items-center justify-between ${isDarkMode ? 'border-gray-800 bg-[#0A0A0A]' : 'border-emerald-300 bg-emerald-100'}`}>
                                 <h3 className={`text-lg font-light truncate ${isDarkMode ? 'text-white' : 'text-emerald-900'}`}>
                                     {filteredModules.find(m => m.id === activeModuleId)?.title || "Module"}
                                 </h3>
@@ -1136,7 +1136,7 @@ export default function LearnerCourseView({
                                                                 key={question.id}
                                                                 className={isDarkMode
                                                                     ? `px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId) ? 'bg-[#222222] border-l-2 border-green-500' : completedQuestions[question.id] ? 'border-l-2 border-green-500 text-green-500' : 'hover:bg-[#1A1A1A] border-l-2 border-transparent'}`
-                                                                    : `px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId) ? 'bg-white border-l-2 border-emerald-400' : completedQuestions[question.id] ? 'border-l-2 border-emerald-400 text-emerald-600 bg-emerald-50' : 'border-l-2 border-transparent hover:bg-gray-100 text-gray-600'}`}
+                                                                    : `px-4 py-2 cursor-pointer flex items-center ${String(question.id) === String(activeQuestionId) ? 'bg-gray-100 border-l-2 border-emerald-400' : completedQuestions[question.id] ? 'border-l-2 border-emerald-400 text-emerald-600 bg-emerald-50' : 'border-l-2 border-transparent hover:bg-gray-50 text-gray-600'}`}
                                                                 onClick={() => activateQuestion(question.id)}
                                                             >
                                                                 <div className={`flex items-center mr-2 ${completedQuestions[question.id] ? (isDarkMode ? 'text-green-500' : 'text-emerald-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}>
@@ -1155,7 +1155,7 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Back to Course Button - hidden on mobile, fixed at bottom for laptop */}
-                            <div className={`hidden lg:block p-3 border-t absolute bottom-0 left-0 right-0 ${isDarkMode ? 'border-gray-800 bg-[#121212]' : 'border-fuchsia-100 bg-fuchsia-50'}`}>
+                            <div className={`hidden lg:block p-4 border-t absolute bottom-0 left-0 right-0 ${isDarkMode ? 'border-gray-800 bg-[#121212]' : 'border-fuchsia-100 bg-fuchsia-50'}`}>
                                 <button
                                     onClick={closeDialog}
                                     className={`w-full flex items-center justify-center px-3 py-2 text-sm rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222]' : 'text-white bg-fuchsia-600 hover:bg-fuchsia-700 shadow-sm'}`}
@@ -1169,11 +1169,13 @@ export default function LearnerCourseView({
                         <div className={`flex-1 ${isAdminView ? 'h-[calc(100vh-45px)]' : 'h-full'} flex flex-col ${isDarkMode ? 'bg-[#1A1A1A]' : 'bg-white'}`}>
                             {/* Dialog Header */}
                             <div
-                                className={`flex items-start justify-between p-4 border-b ${
-                                    (completedTasks[activeItem?.id])
+                                className={`flex items-center justify-between border-b 
+                                    ${(completedTasks[activeItem?.id])
                                         ? isDarkMode ? 'lg:bg-[#111111] bg-green-700 border-gray-800' : 'lg:bg-emerald-50 bg-emerald-600 border-emerald-500'
                                         : isDarkMode ? 'bg-[#111111] border-gray-800' : 'bg-gradient-to-r from-rose-50 to-orange-50 border-rose-100'
-                                }`}
+                                    }
+                                    ${(activeItem?.type === 'material' || completedTasks[activeItem?.id]) ? 'p-3' : 'p-4'}
+                                `}
                             >
                                 <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
@@ -1278,7 +1280,7 @@ export default function LearnerCourseView({
                                                     isTestMode={isTestMode}
                                                     taskId={activeItem.id}
                                                     completedQuestionIds={completedQuestions}
-                                                isDarkMode={isDarkMode}
+                                                    isDarkMode={isDarkMode}
                                                     onAiRespondingChange={handleAiRespondingChange}
                                                     className={`${isSidebarOpen ? 'sidebar-visible' : ''}`}
                                                     isAdminView={isAdminView}
