@@ -31,13 +31,7 @@ export default function SchoolPickerDialog({
     onCreateSchool,
     isDarkMode
 }: SchoolPickerDialogProps) {
-    if (!open) return null;
-
-    // Check if user owns any schools
-    const hasOwnedSchool = schools.some(school =>
-        school.role === 'owner'
-    );
-
+    // Hooks must be called before any early returns
     const [resolvedIsDarkMode, setResolvedIsDarkMode] = React.useState<boolean>(isDarkMode ?? true);
     React.useEffect(() => {
         if (typeof isDarkMode === 'boolean') {
@@ -48,6 +42,13 @@ export default function SchoolPickerDialog({
         const storedTheme = window.localStorage.getItem('theme');
         setResolvedIsDarkMode(storedTheme !== 'light');
     }, [isDarkMode]);
+
+    if (!open) return null;
+
+    // Check if user owns any schools
+    const hasOwnedSchool = schools.some(school =>
+        school.role === 'owner'
+    );
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
