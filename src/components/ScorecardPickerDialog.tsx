@@ -231,17 +231,58 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
 
     const assignmentTemplates: ScorecardTemplate[] = [
         {
-            id: 'key-areas',
-            name: 'Key Areas',
+            id: 'assignment-submission',
+            name: 'Assignment Submission',
             icon: <FileText size={16} className="text-white" />,
-            description: "Key areas of project implementation",
+            description: "General rubric to evaluate student submissions to open-ended assignment questions",
             is_template: true,
             criteria: [
-                { name: "Fetching Questions from the API", description: "Ensuring that the API is used correctly to fetch two questions from each difficulty level (easy, medium, and hard).", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Displaying Questions on Screen", description: "Making sure the questions are displayed in the UI at the correct time, including after fetching and when clicking the \"Next\" button.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Managing the Next Button", description: "Properly updating the current question and switching turns between players when the \"Next\" button is clicked.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Score Calculation and Player Turn Logic", description: "Keeping track of the scores, ensuring they are preserved when categories change, and correctly managing turns.", maxScore: 5, minScore: 1, passScore: 3 },
-                { name: "Disabling Previously Used Categories", description: "Preventing players from selecting the same category again once it has already been used.", maxScore: 5, minScore: 1, passScore: 3 }
+                { name: "Understanding of the Problem", description: "Checks if the assignment correctly interprets what the problem is asking and focuses on the right objective.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Approach and Reasoning", description: "Checks if the assignment outlines a clear, logical approach and explains why that approach was chosen.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Implementation Details", description: "Checks if the assignment covers the important steps, structures, or components needed to implement the solution.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Edge Cases and Constraints", description: "Checks if the assignment considers edge cases, limitations, performance, or constraints that might affect the solution.", maxScore: 5, minScore: 1, passScore: 3 },
+            ],
+            new: false
+        },
+        {
+            id: 'python-programming-assignment',
+            name: 'Python Programming',
+            icon: <FileText size={16} className="text-white" />,
+            description: "Evaluate Python coding assignments with a focus on correctness, style, and problem solving",
+            is_template: true,
+            criteria: [
+                { name: "Correctness", description: "Checks if the code produces the expected output for typical and edge case inputs.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Code Quality", description: "Checks if the code follows Python best practices, is readable, and avoids unnecessary complexity.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Problem Decomposition", description: "Checks if the solution is broken down into clear functions or logical steps.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Testing and Edge Cases", description: "Checks if the student has considered edge cases and validated their solution.", maxScore: 5, minScore: 1, passScore: 3 },
+            ],
+            new: false
+        },
+        {
+            id: 'web-development-assignment',
+            name: 'Web Development',
+            icon: <FileText size={16} className="text-white" />,
+            description: "Evaluate frontend or full-stack web development assignments",
+            is_template: true,
+            criteria: [
+                { name: "Functionality", description: "Checks if the core features work as described in the assignment requirements.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Code Structure", description: "Checks if the project is organized logically with clear separation of concerns.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "User Experience", description: "Checks if the interface is usable, responsive, and visually coherent.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Performance and Reliability", description: "Checks if the app loads efficiently and handles errors or edge cases gracefully.", maxScore: 5, minScore: 1, passScore: 3 },
+            ],
+            new: false
+        },
+        {
+            id: 'presentation-skills-assignment',
+            name: 'Presentation Skills',
+            icon: <FileText size={16} className="text-white" />,
+            description: "Evaluate presentations, talks, or project demos",
+            is_template: true,
+            criteria: [
+                { name: "Structure and Flow", description: "Checks if the presentation has a clear introduction, body, and conclusion.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Clarity of Communication", description: "Checks if ideas are explained clearly and at an appropriate level for the audience.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Engagement", description: "Checks if the presenter keeps the audience engaged through pacing, examples, and storytelling.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Use of Visuals", description: "Checks if slides or other visuals are clear, minimal, and support the spoken content.", maxScore: 5, minScore: 1, passScore: 3 },
             ],
             new: false
         },

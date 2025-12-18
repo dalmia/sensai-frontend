@@ -15,11 +15,16 @@ import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import { useAuth } from "@/lib/auth";
 
+interface Settings {
+    allowCopyPaste?: boolean;
+}
+
 interface LearnerAssignmentViewProps {
     problemBlocks?: unknown[];
     title?: string;
     submissionType?: string;
     userId?: string;
+    settings?: Settings;
     taskId?: string;
     isTestMode?: boolean;
     viewOnly?: boolean;
@@ -57,6 +62,7 @@ export default function LearnerAssignmentView({
     title: initialTitle,
     submissionType: initialSubmissionType = "text",
     userId = "",
+    settings: initialSettings,
     taskId = "",
     isTestMode = true,
     viewOnly = false,
@@ -77,7 +83,7 @@ export default function LearnerAssignmentView({
     const [problemBlocks, setProblemBlocks] = useState<unknown[]>(initialProblemBlocks);
     const [title, setTitle] = useState<string>(initialTitle || "");
     const [submissionType, setSubmissionType] = useState<string>(initialSubmissionType);
-    const [settings, setSettings] = useState<{ allowCopyPaste?: boolean }>({});
+    const [settings, setSettings] = useState<Settings>(initialSettings || {});
 
     // Right panel: chat + upload local state
     const [chatHistory, setChatHistory] = useState<ChatMessageLocal[]>([]);
@@ -108,7 +114,7 @@ export default function LearnerAssignmentView({
             const timer = setTimeout(() => setShowToast(false), 3000);
             return () => clearTimeout(timer);
         }
-    }, [showToast]);
+    }, [showToast, toastData]);
 
     // Update the parent component when AI responding state changes
     useEffect(() => {
@@ -196,7 +202,7 @@ export default function LearnerAssignmentView({
         }));
     }, []);
 
-    // Function to store chat history in backend (similar to LearnerQuizView)
+    // Function to store chat history in backend
     const storeChatHistory = useCallback(async (userMessage: ChatMessageLocal, aiResponse: AssignmentResponse) => {
         if (!userId || isTestMode || !taskId) return;
 
@@ -467,7 +473,9 @@ export default function LearnerAssignmentView({
             };
 
             // Immediately add the display message to chat history
-            setChatHistory(prev => [...prev, displayMessage]);
+            if (responseType !== 'file') {
+                setChatHistory(prev => [...prev, displayMessage]);
+            }
 
             // Clear the input field after submission (only for text input)
             if (responseType === 'text') {
@@ -485,7 +493,6 @@ export default function LearnerAssignmentView({
             let presigned_url = '';
             let file_uuid = '';
             if ((responseType === 'audio' && audioData) || (responseType === 'file' && fileData)) {
-                console.log({ responseType });
                 const isAudio = responseType === 'audio';
                 const contentType = isAudio ? 'audio/wav' : 'application/zip';
                 const filename = isAudio ? 'audio.wav' : 'file.zip';
@@ -579,6 +586,16 @@ export default function LearnerAssignmentView({
                 }
             }
 
+            // handle file response for chat history
+            if (responseType === 'file') {
+                const fileUuidValue = fileUuid || file_uuid || '';
+                if (fileUuidValue) {
+                    (displayMessage as any).fileUuid = fileUuidValue;
+                    (displayMessage as any).fileName = responseContent;
+                }
+                setChatHistory(prev => [...prev, displayMessage]);
+            }
+
             // In test mode, include chat history in the request
             const formattedChatHistory = isTestMode ? chatHistory.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -598,7 +615,6 @@ export default function LearnerAssignmentView({
             };
 
             // Call the API with the appropriate request body for streaming response
-            console.log({ requestBody });
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
                 method: 'POST',
                 headers: {
@@ -709,7 +725,7 @@ export default function LearnerAssignmentView({
                                             setShowPreparingReport(true);
                                         }
                                     } catch (err) {
-                                        // Parsing failed - log but don't throw (like LearnerQuizView does)
+                                        // Parsing failed - log but don't throw
                                         // This allows the stream to continue processing even if one line fails
                                         console.error('assignment stream: JSON parse failed', { linePreview: trimmedLine.slice(0, 200) }, err);
                                         // Continue processing other lines instead of crashing
@@ -1080,7 +1096,7 @@ export default function LearnerAssignmentView({
         );
     }
 
-    // Integration logic for Notion blocks (parity with LearnerQuizView)
+    // Integration logic for Notion blocks
     const currentIntegrationType = 'notion';
     type IntegrationBlock = { type?: string; content?: unknown[]; props?: { resource_name?: string } };
     const integrationBlock = (problemBlocks as IntegrationBlock[]).find((block) => block?.type === currentIntegrationType);
@@ -1106,7 +1122,7 @@ export default function LearnerAssignmentView({
             <div className="two-column-grid rounded-md overflow-hidden bg-[#111111]">
                 {/* Left: Problem Statement */}
                 <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]" style={{ overflow: 'auto' }}>
-                    {/* Header chip like LearnerQuizView */}
+                    {/* Header chip */}
                     <div className="flex items-center justify-center w-full mb-6">
                         <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm flex items-center">
                             <span>Problem Statement</span>

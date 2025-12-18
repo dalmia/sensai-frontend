@@ -99,19 +99,21 @@ const PublishConfirmationDialog = ({
     };
 
     return (
-        <ConfirmationDialog
-            open={show}
-            title={title}
-            message={message}
-            onConfirm={handleConfirm}
-            onCancel={onCancel}
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-            type="publish"
-            confirmButtonText={scheduleForLater ? "Schedule" : "Publish"}
-        >
-            {renderScheduleOptions()}
-        </ConfirmationDialog>
+        <div className="z-[100]">
+            <ConfirmationDialog
+                open={show}
+                title={title}
+                message={message}
+                onConfirm={handleConfirm}
+                onCancel={onCancel}
+                isLoading={isLoading}
+                errorMessage={errorMessage}
+                type="publish"
+                confirmButtonText={scheduleForLater ? "Schedule" : "Publish"}
+            >
+                {renderScheduleOptions()}
+            </ConfirmationDialog>
+        </div>
     );
 };
 

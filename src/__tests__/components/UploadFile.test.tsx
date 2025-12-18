@@ -173,6 +173,95 @@ describe('UploadFile', () => {
         expect(screen.getByRole('button', { name: /Choose file/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Upload/i })).toBeInTheDocument();
     });
+
+    it('accepts all file types when fileType is empty', () => {
+        const onComplete = jest.fn();
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload any file" fileType={[]} maxSizeBytes={10 * 1024 * 1024} />);
+
+        const dropZone = screen.getByText(/Upload any file/i).closest('div')!.parentElement!;
+        const anyFile = createFile('document.pdf', 1024, 'application/pdf');
+        fireEvent.drop(dropZone, { dataTransfer: { files: [anyFile] } });
+
+        expect(screen.getByText('document.pdf')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Upload/i })).toBeEnabled();
+    });
+
+    it('accepts all file types when fileType is empty string', () => {
+        const onComplete = jest.fn();
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload any file" fileType="" maxSizeBytes={10 * 1024 * 1024} />);
+
+        const dropZone = screen.getByText(/Upload any file/i).closest('div')!.parentElement!;
+        const anyFile = createFile('image.jpg', 1024, 'image/jpeg');
+        fireEvent.drop(dropZone, { dataTransfer: { files: [anyFile] } });
+
+        expect(screen.getByText('image.jpg')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Upload/i })).toBeEnabled();
+    });
+
+    it('shows empty file type text when fileType is empty', () => {
+        const onComplete = jest.fn();
+        const { container } = render(<UploadFile onComplete={onComplete} placeholderText="Upload any file" fileType={[]} />);
+
+        // When fileType is empty, formatFileTypes returns empty string
+        const fileTypeElement = container.querySelector('.text-xs.text-gray-400');
+        expect(fileTypeElement?.textContent).toBe(' ');
+    });
+
+    it('does not select file when disabled via maybeSelectFile', () => {
+        const onComplete = jest.fn();
+        const { container } = render(<UploadFile onComplete={onComplete} disabled placeholderText="Upload file" fileType={['.zip']} />);
+
+        // Try to select file via input change (even though input is disabled, we can simulate the event)
+        const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = createFile('test.zip', 1024);
+        Object.defineProperty(input, 'files', { value: [file] });
+        fireEvent.change(input);
+
+        // Should not select the file
+        expect(screen.getByText('Upload file')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Upload/i })).toBeDisabled();
+    });
+
+    it('does not upload when simulateUpload is called with disabled=true', () => {
+        const onComplete = jest.fn();
+        render(<UploadFile onComplete={onComplete} disabled placeholderText="Upload file" fileType={['.zip']} />);
+
+        // Manually set a file in state (simulating what would happen if disabled check failed)
+        // But since the component is disabled, simulateUpload should return early
+        const uploadBtn = screen.getByRole('button', { name: /Upload/i });
+        fireEvent.click(uploadBtn);
+
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+
+        // Should not call onComplete
+        expect(onComplete).not.toHaveBeenCalled();
+    });
+
+    it('does not upload when simulateUpload is called without selectedFile', () => {
+        const onComplete = jest.fn();
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload file" fileType={['.zip']} />);
+
+        // Try to trigger upload without selecting a file
+        // The button should be disabled, but let's verify simulateUpload handles it
+        const uploadBtn = screen.getByRole('button', { name: /Upload/i });
+        expect(uploadBtn).toBeDisabled();
+
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+
+        expect(onComplete).not.toHaveBeenCalled();
+    });
+
+    it('formats multiple file types with "or" separator', () => {
+        const onComplete = jest.fn();
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload file" fileType={['.zip', '.pdf', '.doc']} />);
+
+        // Should show file types joined with " or "
+        expect(screen.getByText('.ZIP or .PDF or .DOC')).toBeInTheDocument();
+    });
 });
 
 
