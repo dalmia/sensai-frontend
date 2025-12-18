@@ -288,139 +288,139 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                             <div
                                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
-                                <div
-                                    className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
-                                        ? 'w-full sm:w-[75%]'
-                                        : message.messageType === 'code'
-                                            ? 'bg-[#282828] text-white w-[90%]'
-                                            : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
-                                        }`}
-                                >
-                                    {message.sender === 'ai' && index === lastAiMessageIndex &&
-                                        currentQuestionConfig?.responseType === 'exam' &&
-                                        onShowLearnerViewChange &&
-                                        isAdminView && (
-                                            <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-[#35363a] ${message.is_correct !== undefined
-                                                ? message.is_correct
-                                                    ? 'bg-green-900/40'
-                                                    : 'bg-red-900/40'
-                                                : 'bg-[#232428]'
-                                                }`}>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center">
-                                                        {message.is_correct !== undefined && (
-                                                            <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'
-                                                                }`}>
-                                                                {message.is_correct ? (
-                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                                    </svg>
-                                                                ) : (
-                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                                                    </svg>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        <span className="text-sm text-gray-300 font-light select-none">Show result</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => onShowLearnerViewChange(!showLearnerView)}
-                                                        className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
-                                                            ${!showLearnerView ? 'bg-white border-gray-400' : 'bg-[#444950] border-[#444950]'}
-                                                        `}
-                                                        aria-pressed={!showLearnerView}
-                                                        aria-label="Show result toggle"
-                                                    >
-                                                        <span
-                                                            className={`inline-block h-5 w-5 transform rounded-full bg-black shadow-md transition-transform duration-200
-                                                                ${!showLearnerView ? 'translate-x-5' : 'translate-x-1'}
+                                <div className="flex items-start gap-2">
+                                    <div
+                                        className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
+                                            ? 'w-full sm:w-[75%]'
+                                            : message.messageType === 'code'
+                                                ? 'bg-[#282828] text-white w-[90%]'
+                                                : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
+                                            }`}
+                                    >
+                                        {message.sender === 'ai' && index === lastAiMessageIndex &&
+                                            currentQuestionConfig?.responseType === 'exam' &&
+                                            onShowLearnerViewChange &&
+                                            isAdminView && (
+                                                <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-[#35363a] ${message.is_correct !== undefined
+                                                    ? message.is_correct
+                                                        ? 'bg-green-900/40'
+                                                        : 'bg-red-900/40'
+                                                    : 'bg-[#232428]'
+                                                    }`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            {message.is_correct !== undefined && (
+                                                                <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'
+                                                                    }`}>
+                                                                    {message.is_correct ? (
+                                                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => onShowLearnerViewChange(!showLearnerView)}
+                                                            className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
+                                                                ${!showLearnerView ? 'bg-white border-gray-400' : 'bg-[#444950] border-[#444950]'}
                                                             `}
-                                                        />
-                                                    </button>
+                                                            aria-pressed={!showLearnerView}
+                                                            aria-label="Show result toggle"
+                                                        >
+                                                            <span
+                                                                className={`inline-block h-5 w-5 transform rounded-full bg-black shadow-md transition-transform duration-200
+                                                                    ${!showLearnerView ? 'translate-x-5' : 'translate-x-1'}
+                                                                `}
+                                                            />
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            )}
+                                        {message.messageType === 'audio' && message.audioData ? (
+                                            <div className="flex flex-col space-y-2">
+                                                <audio
+                                                    controls
+                                                    className="w-full"
+                                                    src={`data:audio/wav;base64,${message.audioData}`}
+                                                />
+                                            </div>
+                                        ) : message.messageType === 'code' ? (
+                                            <CodeMessageDisplay
+                                                code={message.content}
+                                                language={
+                                                    Array.isArray(currentQuestionConfig?.codingLanguages) &&
+                                                        currentQuestionConfig?.codingLanguages.length > 0
+                                                        ? currentQuestionConfig?.codingLanguages[0]
+                                                        : undefined
+                                                }
+                                            />
+                                        ) : (
+                                            <div>
+                                                {message.sender === 'ai' ? (
+                                                    <div className="text-sm font-sans break-words break-anywhere markdown-content">
+                                                        <Markdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                        >
+                                                            {message.content}
+                                                        </Markdown>
+                                                    </div>
+                                                ) : (
+                                                    <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">
+                                                        {message.content}
+                                                    </pre>
+                                                )}
+                                                {shouldShowViewReport(message) && (
+                                                    <div className="my-3">
+                                                        <button
+                                                            onClick={() => onViewScorecard(message.scorecard || [])}
+                                                            className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                            </svg>
+                                                            View Report
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {isErrorMessage(message) && onRetry && (
+                                                    <div className="my-3">
+                                                        <button
+                                                            onClick={onRetry}
+                                                            className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                            </svg>
+                                                            Retry
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    {message.messageType === 'audio' && message.audioData ? (
-                                        <div className="flex flex-col space-y-2">
-                                            <audio
-                                                controls
-                                                className="w-full"
-                                                src={`data:audio/wav;base64,${message.audioData}`}
-                                            />
-                                        </div>
-                                    ) : message.messageType === 'code' ? (
-                                        <CodeMessageDisplay
-                                            code={message.content}
-                                            language={
-                                                Array.isArray(currentQuestionConfig?.codingLanguages) &&
-                                                    currentQuestionConfig?.codingLanguages.length > 0
-                                                    ? currentQuestionConfig?.codingLanguages[0]
-                                                    : undefined
-                                            }
-                                        />
-                                    ) : (
-                                        <div>
-                                            {message.sender === 'ai' ? (
-                                                <div className="text-sm font-sans break-words break-anywhere markdown-content">
-                                                    <Markdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                    >
-                                                        {message.content}
-                                                    </Markdown>
-                                                        </div>
-                                            ) : (
-                                                            <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">
-                                                                {message.content}
-                                                            </pre>
-                                            )}
-                                            {shouldShowViewReport(message) && (
-                                                <div className="my-3">
-                                                    <button
-                                                        onClick={() => onViewScorecard(message.scorecard || [])}
-                                                        className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                        </svg>
-                                                        View Report
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {isErrorMessage(message) && onRetry && (
-                                                <div className="my-3">
-                                                    <button
-                                                        onClick={onRetry}
-                                                        className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                        </svg>
-                                                        Retry
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                    </div>
+
+                                    {message.messageType === 'file' && message.fileUuid && onFileDownload && (
+                                        <button
+                                            onClick={() => {
+                                                const fileUuid = message.fileUuid!;
+                                                const fileName = message.fileName!;
+                                                onFileDownload(fileUuid, fileName);
+                                            }}
+                                            className="shrink-0 mt-1 w-8 h-8 rounded-full bg-[#232428] hover:bg-[#2D2D2D] transition-colors cursor-pointer flex items-center justify-center text-gray-200"
+                                            aria-label="Download file"
+                                            title="Download"
+                                        >
+                                            <ArrowDownToLine className="w-4 h-4" />
+                                        </button>
                                     )}
                                 </div>
                             </div>
-                            {message.messageType === 'file' && message.fileUuid && onFileDownload && (
-                                <div
-                                    className={`mt-1 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            const fileUuid = message.fileUuid!;
-                                            const fileName = message.fileName!;
-                                            onFileDownload(fileUuid, fileName);
-                                        }}
-                                        className="flex items-center gap-2 text-xs hover:text-gray-300 transition-colors cursor-pointer"
-                                    >
-                                        <ArrowDownToLine className="w-3 h-3" />
-                                        <span>Download</span>
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     ))}
 
