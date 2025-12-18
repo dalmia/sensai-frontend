@@ -3,6 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import Toast from "@/components/Toast";
 
@@ -11,6 +12,7 @@ export default function JoinCohortPage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const { user, isAuthenticated, isLoading } = useAuth();
+    const { isDarkMode } = useThemePreference();
 
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState<string>("");
@@ -109,13 +111,13 @@ export default function JoinCohortPage() {
     }, [cohortId, isAuthenticated, isLoading, router, slug, user?.email]);
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
+        <div className={`min-h-screen flex flex-col items-center justify-center px-4 ${isDarkMode ? 'bg-black text-white' : 'bg-white text-gray-900'}`}>
             <div className="flex flex-col items-center justify-center max-w-md text-center">
                 {status === "loading" && (
                     <>
-                        <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin mb-6"></div>
+                        <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin mb-6 ${isDarkMode ? 'border-white' : 'border-gray-900'}`}></div>
                         <h1 className="text-3xl font-light mb-4">Adding you to the cohort</h1>
-                        <p className="text-gray-400 mb-8">
+                        <p className={`mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             Just a moment while we get everything set up for you
                         </p>
                     </>
@@ -123,32 +125,32 @@ export default function JoinCohortPage() {
 
                 {status === "success" && (
                     <>
-                        <div className="flex items-center justify-center w-16 h-16 bg-green-600/20 rounded-full mb-6">
-                            <CheckCircle size={32} className="text-green-400" />
+                        <div className={`flex items-center justify-center w-16 h-16 rounded-full mb-6 ${isDarkMode ? 'bg-green-600/20' : 'bg-emerald-50'}`}>
+                            <CheckCircle size={32} className={isDarkMode ? 'text-green-400' : 'text-emerald-600'} />
                         </div>
                         <h1 className="text-3xl font-light mb-4">Welcome aboard!</h1>
-                        <p className="text-gray-400 mb-8">
+                        <p className={`mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             You have been successfully added to the cohort
                         </p>
-                        <div className="flex items-center justify-center gap-3 text-gray-400 mb-8">
+                        <div className={`flex items-center justify-center gap-3 mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             <span>Taking you to the school</span>
-                            <div className="w-4 h-4 border-t-2 border-b-2 border-gray-400 rounded-full animate-spin"></div>
+                            <div className={`w-4 h-4 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-gray-400' : 'border-gray-500'}`}></div>
                         </div>
                     </>
                 )}
 
                 {status === "error" && (
                     <>
-                        <div className="flex items-center justify-center w-16 h-16 bg-red-600/20 rounded-full mb-6">
-                            <AlertCircle size={32} className="text-red-400" />
+                        <div className={`flex items-center justify-center w-16 h-16 rounded-full mb-6 ${isDarkMode ? 'bg-red-600/20' : 'bg-red-50'}`}>
+                            <AlertCircle size={32} className={isDarkMode ? 'text-red-400' : 'text-red-600'} />
                         </div>
                         <h1 className="text-3xl font-light mb-4">Something went wrong</h1>
-                        <p className="text-gray-400 mb-8">
+                        <p className={`mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             {errorMessage}
                         </p>
                         <button
                             onClick={() => router.push(`/school/${slug}?cohort_id=${cohortId}`)}
-                            className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
+                            className={`px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer ${isDarkMode ? 'bg-white text-black' : 'bg-gray-900 text-white'}`}
                         >
                             Back to School
                         </button>
