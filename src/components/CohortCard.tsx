@@ -97,6 +97,7 @@ export default function CohortCard({ cohort, schoolId, onDelete, isDarkMode = tr
                 type="delete"
                 isLoading={isDeleting}
                 errorMessage={deleteError}
+                isDarkMode={isDarkMode}
             />
         </div>
     );

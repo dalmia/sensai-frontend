@@ -1265,7 +1265,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
     return (
         <div
-            className={`flex flex-col h-full overflow-auto ${isDarkMode ? '' : 'bg-white'}`}
+            className={`flex flex-col h-full overflow-auto`}
             style={{ ['--code-mobile-preview-bg' as any]: isDarkMode ? '#111111' : '#ffffff' }}
         >
             {/* Toast notification for input validation */}

@@ -2150,6 +2150,7 @@ export default function LearnerQuizView({
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}
                 type="custom"
+                isDarkMode={isDarkMode}
             />
 
             {/* Exam Submission Confirmation Dialog */}
@@ -2162,6 +2163,7 @@ export default function LearnerQuizView({
                 onConfirm={handleExamSubmissionConfirm}
                 onCancel={handleExamSubmissionCancel}
                 type="custom"
+                isDarkMode={isDarkMode}
             />
 
             {/* Mobile view floating button */}

@@ -755,7 +755,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     return (
         <div
-            className={`flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper ${isDarkMode ? 'chat-dark' : 'chat-light bg-white'}`}
+            className={`flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper ${isDarkMode ? 'chat-dark' : `chat-light ${isViewingCode ? 'bg-gray-200' : 'bg-white'}`}`}
             style={{
                 ['--code-toggle-bg' as any]: isDarkMode ? '#111111' : '#f3f4f6',
                 ['--code-toggle-border' as any]: isDarkMode ? '#333333' : '#e5e7eb',

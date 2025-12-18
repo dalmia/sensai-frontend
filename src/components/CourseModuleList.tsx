@@ -1244,6 +1244,7 @@ export default function CourseModuleList({
                 onCancel={handleCancelModuleDelete}
                 type="delete"
                 data-testid="module-delete-dialog"
+                isDarkMode={isDarkMode}
             />
 
             {/* Task deletion confirmation dialog */}
@@ -1258,6 +1259,7 @@ export default function CourseModuleList({
                         onCancel={handleCancelTaskDelete}
                         type="delete"
                         data-testid="task-delete-dialog"
+                        isDarkMode={isDarkMode}
                     />
                 )
             }

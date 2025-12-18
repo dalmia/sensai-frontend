@@ -22,13 +22,15 @@ const CodeMessageDisplay = ({ code, language, isDarkMode }: { code: string, lang
         }
 
         return (
-            <div className={`w-full rounded overflow-hidden ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-slate-900'}`}>
+            <div
+                className={`w-full rounded overflow-hidden border ${isDarkMode ? 'bg-[#1D1D1D] border-[#35363a]' : 'bg-gray-50 border-gray-200'}`}
+            >
                 {languageSections.map(([lang, codeSection], index) => (
                     <div key={index} className="mb-2 last:mb-0">
-                        <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-slate-800 text-slate-200'}`}>
+                        <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                             <span>{lang}</span>
                         </div>
-                        <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-slate-100'}`}>
+                        <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                             <code>{codeSection}</code>
                         </pre>
                     </div>
@@ -39,11 +41,13 @@ const CodeMessageDisplay = ({ code, language, isDarkMode }: { code: string, lang
 
     // If no language headers, display as a single code block
     return (
-        <div className={`w-full rounded overflow-hidden ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-slate-900'}`}>
-            <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-slate-800 text-slate-200'}`}>
+        <div
+            className={`w-full rounded overflow-hidden border ${isDarkMode ? 'bg-[#1D1D1D] border-[#35363a]' : 'bg-gray-50 border-gray-200'}`}
+        >
+            <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${isDarkMode ? 'bg-[#2D2D2D] text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                 <span>{language || 'code'}</span>
             </div>
-            <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-slate-100'}`}>
+            <pre className={`p-3 overflow-x-auto text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                 <code>{code}</code>
             </pre>
         </div>
@@ -230,6 +234,23 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
       rgba(255,255,255,0) 75%);
       background-size: 200% auto;
       color: rgba(255, 255, 255, 0.6);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: highlightText 2s linear infinite;
+      transition: opacity 0.2s ease-in-out;
+    }
+    
+    .highlight-animation-light {
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0) 0%,
+        rgba(15, 23, 42, 0.65) 25%,
+        rgba(15, 23, 42, 0.65) 50%,
+        rgba(15, 23, 42, 0) 75%
+      );
+      background-size: 200% auto;
+      color: rgba(51, 65, 85, 0.7);
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -560,11 +581,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         <div className="flex justify-start items-center my-2 ml-2">
                             <div className="flex items-center justify-center min-w-[20px] min-h-[20px] mr-2">
                                 <div
-                                    className={`w-2.5 h-2.5 rounded-full pulsating-circle ${isDarkMode ? 'bg-white' : 'bg-indigo-500'}`}
+                                    className={`w-2.5 h-2.5 rounded-full pulsating-circle ${isDarkMode ? 'bg-white' : 'bg-slate-400'}`}
                                 ></div>
                             </div>
                             <div className={`${isTransitioning ? 'message-transition-out' : 'message-transition-in'}`}>
-                                <span className={`text-sm ${isDarkMode ? 'highlight-animation text-white/80' : 'highlight-animation-light text-indigo-600'}`}>
+                                <span className={`text-sm ${isDarkMode ? 'highlight-animation text-white/80' : 'highlight-animation-light text-slate-600'}`}>
                                     {currentThinkingMessage}
                                 </span>
                             </div>
@@ -590,10 +611,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                 }
 
                 .highlight-animation-light {
-                    background: linear-gradient(to right, rgba(99,102,241,0) 0%, rgba(99,102,241,0.8) 25%, rgba(79,70,229,1) 50%, rgba(99,102,241,0) 75%);
+                    background: linear-gradient(to right, rgba(15,23,42,0) 0%, rgba(15,23,42,0.65) 25%, rgba(15,23,42,0.65) 50%, rgba(15,23,42,0) 75%);
                     background-size: 200% auto;
+                    color: rgba(51, 65, 85, 0.7);
                     background-clip: text;
                     -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
                     animation: highlightText 2s linear infinite;
                     transition: opacity 0.2s ease-in-out;
                 }

@@ -199,6 +199,7 @@ export default function CourseCard({ course, onDelete, isDarkMode = true }: Cour
                 type="delete"
                 isLoading={isDeleting}
                 errorMessage={deleteError}
+                isDarkMode={isDarkMode}
             />
         </div>
     );

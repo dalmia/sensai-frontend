@@ -795,6 +795,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onConfirm={confirmDeleteMember}
                 onCancel={() => setIsDeleteConfirmOpen(false)}
                 type="delete"
+                isDarkMode={isDarkMode}
             />
 
             {/* Create cohort Dialog */}

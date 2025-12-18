@@ -2258,6 +2258,7 @@ export default function CreateCourse() {
                 }}
                 confirmButtonText="Remove"
                 type="delete"
+                isDarkMode={isDarkMode}
             />
 
             {/* Toast notification */}
