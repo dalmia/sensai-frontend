@@ -372,6 +372,30 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
         );
     }
 
+    const activeCourseName = courses.length > 0 ? courses[activeCourseIndex]?.name : undefined;
+
+    const activeTaskTitle = taskId
+        ? courseModules
+            .flatMap(m => m.items || [])
+            .find(item => String(item.id) === String(taskId))?.title
+        : undefined;
+
+    const activeQuestionTitle = questionId
+        ? (() => {
+            const task = taskId
+                ? courseModules
+                    .flatMap(m => m.items || [])
+                    .find(item => String(item.id) === String(taskId))
+                : undefined;
+
+            const questions = (task as any)?.questions;
+            if (!Array.isArray(questions)) return undefined;
+
+            const q = questions.find((qq: any) => String(qq?.id) === String(questionId));
+            return q?.title || q?.config?.title;
+        })()
+        : undefined;
+
     return (
         <>
             {/* Admin/Owner Banner */}
@@ -394,6 +418,11 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                             batches={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? availableBatches : []}
                             activeBatchId={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? selectedBatchId : null}
                             onBatchSelect={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? (batchId => setSelectedBatchId(batchId)) : undefined}
+                            activeCourseName={activeCourseName}
+                            taskId={taskId}
+                            questionId={questionId}
+                            activeTaskTitle={activeTaskTitle}
+                            activeQuestionTitle={activeQuestionTitle}
                         />
                     }
                 />

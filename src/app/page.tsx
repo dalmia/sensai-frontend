@@ -15,6 +15,10 @@ export default function Home() {
   const { schools } = useSchools();
   const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
 
+  useEffect(() => {
+    document.title = 'Home · SensAI';
+  }, []);
+
   // Memoize derived data to avoid recalculations
   const {
     teachingCourses,

@@ -94,7 +94,7 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
 
     return (
         <>
-            <div className="p-4 border-t border-gray-800 bg-[#23282d] rounded-lg">
+            <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-lg dark:!border-gray-800 dark:!bg-[#23282d]">
                 {/* Pill Toggle for Drip Publishing */}
                 <div className={`flex items-center ${isDripEnabled ? 'mb-4' : ''}`}>
                     <input
@@ -102,9 +102,9 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
                         id="drip-enabled"
                         checked={isDripEnabled}
                         onChange={(e) => setIsDripEnabled(e.target.checked)}
-                        className="mr-3 h-4 w-4 cursor-pointer bg-[#181818] border-gray-600 rounded focus:ring-2 focus:ring-[#016037] focus:ring-offset-0 checked:bg-[#016037] checked:border-[#016037] transition-colors"
+                        className="mr-3 h-4 w-4 cursor-pointer bg-white border-gray-300 rounded focus:ring-2 focus:ring-[#016037] focus:ring-offset-0 checked:bg-[#016037] checked:border-[#016037] transition-colors dark:!bg-[#181818] dark:!border-gray-600"
                     />
-                    <label htmlFor="drip-enabled" className="text-white text-sm font-light cursor-pointer select-none">
+                    <label htmlFor="drip-enabled" className="text-gray-900 dark:text-white text-sm font-light cursor-pointer select-none">
                         Release modules gradually using a drip schedule
                     </label>
                 </div>
@@ -113,19 +113,19 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
                     <div className="space-y-4">
                         {/* Frequency Row: Every [number] [unit] */}
                         <div className="flex items-center space-x-2">
-                            <span className="text-white text-sm font-light select-none">Every</span>
+                            <span className="text-gray-900 dark:text-white text-sm font-light select-none">Every</span>
                             <input
                                 type="number"
                                 min="1"
                                 value={frequencyValue || ''}
                                 onChange={e => setFrequencyValue(Number(e.target.value))}
                                 placeholder="1"
-                                className="w-20 p-2 bg-[#181818] text-white text-sm font-light px-3 rounded-md border-0 focus:ring-2 focus:ring-[#016037] transition-all outline-none appearance-none text-center"
+                                className="w-20 p-2 bg-white border border-gray-200 text-gray-900 text-sm font-light px-3 rounded-md focus:ring-2 focus:ring-[#016037] transition-all outline-none appearance-none text-center dark:!bg-[#181818] dark:border-0 dark:!text-white"
                             />
                             <select
                                 value={frequencyUnit || 'day'}
                                 onChange={e => setFrequencyUnit(e.target.value)}
-                                className="w-32 p-2 bg-[#181818] text-white text-sm font-light px-4 rounded-md border-0 focus:ring-2 focus:ring-[#016037] transition-all outline-none appearance-none"
+                                className="w-32 p-2 bg-white border border-gray-200 text-gray-900 text-sm font-light px-4 rounded-md focus:ring-2 focus:ring-[#016037] transition-all outline-none appearance-none dark:!bg-[#181818] dark:border-0 dark:!text-white"
                             >
                                 <option value="" disabled>Select unit</option>
                                 {TIME_UNITS.map(unit => (
@@ -140,9 +140,9 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
                                 id="release-date-enabled"
                                 checked={isReleaseDateEnabled}
                                 onChange={(e) => setIsReleaseDateEnabled(e.target.checked)}
-                                className="mr-3 h-4 w-4 cursor-pointer bg-[#181818] border-gray-600 rounded focus:ring-2 focus:ring-[#016037] focus:ring-offset-0 checked:bg-[#016037] checked:border-[#016037] transition-colors"
+                                className="mr-3 h-4 w-4 cursor-pointer bg-white border-gray-300 rounded focus:ring-2 focus:ring-[#016037] focus:ring-offset-0 checked:bg-[#016037] checked:border-[#016037] transition-colors dark:!bg-[#181818] dark:!border-gray-600"
                             />
-                            <label htmlFor="release-date-enabled" className="text-white text-sm font-light cursor-pointer select-none">
+                            <label htmlFor="release-date-enabled" className="text-gray-900 dark:text-white text-sm font-light cursor-pointer select-none">
                                 Set a specific start date and time
                             </label>
                         </div>
@@ -150,7 +150,7 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
                         {/* Combined Date and Time Picker */}
                         {isReleaseDateEnabled && (
                             <div>
-                                <label className="block text-sm text-gray-300 font-light mb-1">Release date & time</label>
+                                <label className="block text-sm text-gray-700 dark:text-gray-300 font-light mb-1">Release date & time</label>
                                 <DatePicker
                                     selected={publishDate}
                                     onChange={(date) => setPublishDate(date)}
@@ -161,15 +161,64 @@ const DripPublishingConfig = forwardRef<DripPublishingConfigRef, DripPublishingC
                                     timeCaption="Time"
                                     minDate={new Date()}
                                     placeholderText="Select release date and time"
-                                    className="bg-[#181818] rounded-md p-2 px-4 w-full text-sm text-white cursor-pointer"
+                                    className="bg-white border border-gray-200 rounded-md p-2 px-4 w-full text-sm text-gray-900 placeholder:text-gray-500 cursor-pointer dark:!bg-[#181818] dark:border-0 dark:!text-white"
                                     wrapperClassName="w-full"
-                                    calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
+                                    popperClassName="drip-publishing-datepicker-popper"
+                                    calendarClassName="bg-white text-gray-900 border border-gray-200 rounded-lg shadow-lg cursor-pointer dark:bg-[#242424] dark:text-white dark:border-gray-700"
                                 />
                             </div>
                         )}
                     </div>
                 )}
             </div>
+
+            {/* Theme react-datepicker popover (calendar + time list) in dark mode only */}
+            <style jsx global>{`
+                .dark .drip-publishing-datepicker-popper .react-datepicker {
+                    background: #242424;
+                    color: #ffffff;
+                    border: 1px solid #374151; /* gray-700 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__month-container,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-container,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-box,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-list {
+                    background: #242424;
+                    color: #ffffff;
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__header,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__header--time {
+                    background: #242424;
+                    border-bottom: 1px solid #374151; /* gray-700 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__current-month,
+                .dark .drip-publishing-datepicker-popper .react-datepicker-time__header,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__day-name {
+                    color: #ffffff;
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__day {
+                    color: #e5e7eb; /* gray-200 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__day--outside-month,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__day--disabled,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-list-item--disabled {
+                    color: #6b7280; /* gray-500 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__day:hover,
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-list-item:hover {
+                    background: #374151; /* gray-700 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__time-list-item {
+                    color: #e5e7eb; /* gray-200 */
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__navigation-icon::before {
+                    border-color: #e5e7eb;
+                }
+                .dark .drip-publishing-datepicker-popper .react-datepicker__triangle {
+                    color: #374151;
+                }
+            `}</style>
 
             {/* Toast notification */}
             <Toast

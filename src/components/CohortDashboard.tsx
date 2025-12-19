@@ -176,7 +176,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                         onClick={() => {
                             if (onAddLearners) onAddLearners();
                         }}
-                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                        className="px-6 py-3 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                     >
                         Add learners
                     </button>
@@ -216,13 +216,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             {view === 'mentor' ? (
                                 // Tabs for mentor view
                                 <div className="w-full">
-                                    <div className="flex items-center border-b border-gray-900 overflow-x-auto scrollbar-hide">
+                                    <div className="flex items-center border-b border-gray-200 dark:border-gray-900 overflow-x-auto scrollbar-hide">
                                         {cohort.courses.map((course, index) => (
                                             <button
                                                 key={course.id}
                                                 className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === localCourseIndex
-                                                    ? 'text-white font-light'
-                                                    : 'text-gray-500 hover:text-gray-300 font-light'
+                                                    ? 'text-black dark:text-white font-light'
+                                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-light'
                                                     }`}
                                                 onClick={() => {
                                                     setActiveCourseId(course.id);
@@ -233,11 +233,11 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                 <span className="relative z-10">{course.name}</span>
                                                 {/* Active indicator */}
                                                 {index === localCourseIndex && (
-                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white" />
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black dark:bg-white" />
                                                 )}
                                                 {/* Hover indicator */}
                                                 {index !== localCourseIndex && (
-                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-300 dark:bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
                                                 )}
                                             </button>
                                         ))}
@@ -246,14 +246,14 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             ) : (
                                 // Dropdown for admin/other views
                                 <>
-                                    <label className="block text-sm text-gray-400 mb-2">
+                                    <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
                                         Select Course
                                     </label>
                                     <div className="relative inline-block">
                                         <button
                                             id="course-dropdown-button"
                                             data-testid="course-dropdown-button"
-                                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
+                                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-gray-100 dark:bg-[#111] text-gray-900 dark:text-white rounded-md hover:bg-gray-200 dark:hover:bg-[#222] transition-colors cursor-pointer"
                                             onClick={() => {
                                                 const dropdown = document.getElementById('course-dropdown');
                                                 if (dropdown) {
@@ -268,12 +268,12 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                         </button>
                                         <div
                                             id="course-dropdown"
-                                            className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
+                                            className="absolute z-10 hidden mt-1 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
                                         >
                                             {cohort.courses.map((course, idx) => (
                                                 <button
                                                     key={course.id}
-                                                    className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''}`}
+                                                    className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-gray-100 dark:bg-[#222]' : ''}`}
                                                     onClick={() => {
                                                         setActiveCourseId(course.id);
                                                         setLocalCourseIndex(idx);
@@ -293,7 +293,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
 
                     {isLoadingMetrics ? (
                         <div className="flex justify-center items-center h-64">
-                            <div className="w-12 h-12 border-t-2 border-white rounded-full animate-spin"></div>
+                            <div className="w-12 h-12 border-t-2 border-b-2 border-foreground rounded-full animate-spin"></div>
                         </div>
                     ) : metricsError ? (
                         <div className="flex flex-col items-center justify-center p-8 border border-red-800 rounded-lg bg-red-900/20">
@@ -308,8 +308,8 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                     ) : courseMetrics && Object.keys(courseMetrics).length > 0 && (
                         <div className="flex gap-6">
                             {/* Task Completion Rate - 75% width */}
-                            <div className="bg-[#111] p-8 rounded-lg w-2/3">
-                                <h3 className="text-gray-400 text-sm mb-6 flex items-center">
+                            <div className="bg-gray-50 dark:bg-[#111] p-8 rounded-lg w-2/3 border border-gray-200 dark:border-transparent">
+                                <h3 className="text-gray-600 dark:text-gray-400 text-sm mb-6 flex items-center">
                                     <span className="inline-block">Task completion</span>
                                     <Tooltip content="Average percentage of tasks completed by a learner" position="top">
                                         <span className="ml-2 inline-flex items-center">
@@ -330,7 +330,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
 
                                     {/* Right column: Progress bar and task count */}
                                     <div className="flex-1 flex flex-col">
-                                        <div className="flex-1 bg-gray-800 h-4 rounded-full overflow-hidden">
+                                        <div className="flex-1 bg-gray-200 dark:bg-gray-800 h-4 rounded-full overflow-hidden">
                                             <div
                                                 className={`h-full rounded-full ${courseMetrics.average_completion < 0.3 ? 'bg-red-400' :
                                                     courseMetrics.average_completion < 0.7 ? 'bg-amber-400' :
@@ -340,7 +340,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             ></div>
                                         </div>
                                         {/* Task count below the progress bar */}
-                                        <div className="text-xs text-gray-400 mt-2 text-right">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-right">
                                             {Math.round(courseMetrics.average_completion * courseMetrics.num_tasks)} / {courseMetrics.num_tasks} tasks
                                         </div>
                                     </div>
@@ -348,8 +348,8 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             </div>
 
                             {/* Active Learners - 25% width */}
-                            <div className="bg-[#111] p-8 rounded-lg w-1/3">
-                                <h3 className="text-gray-400 mb-2 flex items-center">
+                            <div className="bg-gray-50 dark:bg-[#111] p-8 rounded-lg w-1/3 border border-gray-200 dark:border-transparent">
+                                <h3 className="text-gray-600 dark:text-gray-400 mb-2 flex items-center">
                                     <span className="inline-block">Active learners</span>
                                     <Tooltip content="Number of learners who have attempted at least one task" position="top">
                                         <span className="ml-2 inline-flex items-center">
@@ -382,7 +382,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                     }`}>
                                                     {courseMetrics.num_active_learners}
                                                 </span>
-                                                <span className="text-sm text-gray-400 ml-2 whitespace-nowrap">
+                                                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-2 whitespace-nowrap">
                                                     out of {totalLearners}
                                                 </span>
                                             </div>
@@ -397,7 +397,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                     {/* Task Type Metrics - Ultra Simple Direct Cards */}
                     {courseMetrics && Object.keys(courseMetrics).length > 0 && (
                         <div className="mt-8">
-                            <h3 className="text-gray-400 mb-4 flex items-center pl-2">
+                            <h3 className="text-gray-600 dark:text-gray-400 mb-4 flex items-center pl-2">
                                 <span className="inline-block">Completion by type</span>
                                 <Tooltip content="Average completion by a learner for each type of task" position="top">
                                     <span className="ml-2 inline-flex items-center">
@@ -411,7 +411,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                 !courseMetrics.task_type_metrics?.learning_material &&
                                 !courseMetrics.task_type_metrics?.exam &&
                                 !courseMetrics.task_type_metrics?.assignment && (
-                                    <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
+                                    <div className="text-center text-gray-600 dark:text-gray-400 py-16 bg-gray-50 dark:bg-[#111] rounded-lg border border-gray-200 dark:border-transparent">
                                         No task type metrics available
                                     </div>
                                 )}
@@ -484,7 +484,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             <Link
                                 href={`/school/${schoolId}/cohort/${cohortId}/leaderboard${batchId != null ? `?batchId=${batchId}` : ''}`}
                                 className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
-                            bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
+                            bg-gray-100 hover:bg-gray-200 text-gray-900 dark:bg-white/10 dark:hover:bg-white/15 dark:text-gray-200 cursor-pointer"
                             >
                                 <span>View Full Leaderboard</span>
                                 <ChevronRight size={16} className="ml-1 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -498,7 +498,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
             {courseMetrics && Object.keys(courseMetrics).length > 0 && (
                 <div className="mt-8">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-gray-400 flex items-center pl-2">
+                        <h3 className="text-gray-600 dark:text-gray-400 flex items-center pl-2">
                             <span className="inline-block">Completion by learner</span>
                             <Tooltip content="Completion rate for each learner by task type" position="top">
                                 <span className="ml-2 inline-flex items-center">
@@ -510,20 +510,20 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                         {/* Search input */}
                         <div className="relative w-64">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search size={16} className="text-gray-400" />
+                                <Search size={16} className="text-gray-500 dark:text-gray-400" />
                             </div>
                             <input
                                 type="text"
                                 placeholder="Search learners"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-black/30 border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20"
+                                className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 focus:border-black/20 dark:!bg-black/30 dark:border-gray-800 dark:text-white dark:focus:ring-white/20 dark:focus:border-white/20"
                             />
                         </div>
                     </div>
 
                     {/* Student metrics table */}
-                    <div className="bg-[#111] rounded-lg overflow-hidden">
+                    <div className="bg-white dark:bg-[#111] rounded-lg overflow-hidden border border-gray-200 dark:border-transparent">
                         {(() => {
                             // Get all unique student IDs across all task types
                             const studentIds = new Set<string>();
@@ -613,7 +613,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             // Show empty state when no results match search
                             if (filteredStudentIds.length === 0 && searchQuery) {
                                 return (
-                                    <div className="text-center text-gray-400 py-16">
+                                    <div className="text-center text-gray-600 dark:text-gray-400 py-16">
                                         No learners match your search query
                                     </div>
                                 );
@@ -622,11 +622,11 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                             return (
                                 <table className="w-full">
                                     <thead>
-                                        <tr className="border-b border-gray-800">
-                                            <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
+                                        <tr className="border-b border-gray-200 dark:border-gray-800">
+                                            <th className="text-left text-gray-600 dark:text-gray-400 p-4 font-normal">Learner</th>
                                             {courseMetrics.task_type_metrics?.learning_material && (
                                                 <th
-                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    className="text-left text-gray-600 dark:text-gray-400 p-4 font-normal cursor-pointer hover:bg-gray-50 dark:hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('learning_material')}
                                                 >
                                                     <div className="flex items-center">
@@ -643,7 +643,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             )}
                                             {courseMetrics.task_type_metrics?.quiz && (
                                                 <th
-                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    className="text-left text-gray-600 dark:text-gray-400 p-4 font-normal cursor-pointer hover:bg-gray-50 dark:hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('quiz')}
                                                 >
                                                     <div className="flex items-center">
@@ -660,7 +660,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             )}
                                             {courseMetrics.task_type_metrics?.assignment && (
                                                 <th
-                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    className="text-left text-gray-600 dark:text-gray-400 p-4 font-normal cursor-pointer hover:bg-gray-50 dark:hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('assignment')}
                                                 >
                                                     <div className="flex items-center">
@@ -680,6 +680,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                     <tbody>
                                         {filteredStudentIds.map(studentId => {
                                             const member = studentIdToMember.get(studentId);
+                                            if (!member) return null;
 
                                             // Calculate completion percentages for each task type
                                             const learningMaterialCompletion = courseMetrics.task_type_metrics?.learning_material
@@ -711,7 +712,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                             };
 
                                             return (
-                                                <tr key={studentId} className="border-b border-gray-800 hover:bg-black/30">
+                                                <tr key={studentId} className="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-black/30">
                                                     <td className="p-4">
                                                         {formatLearnerName(member)}
                                                     </td>
@@ -747,7 +748,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
                                                         <Link
                                                             href={`/school/${schoolSlug}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
                                                             target="_blank"
-                                                            className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm text-white rounded-md transition-colors cursor-pointer"
+                                                            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-sm text-gray-900 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white rounded-md transition-colors cursor-pointer"
                                                         >
                                                             View as learner
                                                         </Link>

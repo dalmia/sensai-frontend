@@ -135,6 +135,12 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         fetchSchool();
     }, [id, router]);
 
+    // Keep browser tab title in sync with the current school name (admin side)
+    useEffect(() => {
+        if (!school?.name) return;
+        document.title = `${school.name} · SensAI`;
+    }, [school?.name]);
+
     // Handle clicking outside the name edit field
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {

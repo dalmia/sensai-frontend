@@ -118,6 +118,12 @@ export default function CreateCourse() {
     // Add a ref for the heartbeat interval
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Keep browser tab title in sync with the current course name (admin side)
+    useEffect(() => {
+        if (!courseTitle || courseTitle === 'Loading course...') return;
+        document.title = `${courseTitle} · SensAI`;
+    }, [courseTitle]);
+
     // Add these new state variables after the existing state declarations
     const [totalTasksToGenerate, setTotalTasksToGenerate] = useState(0);
     const [generatedTasksCount, setGeneratedTasksCount] = useState(0);

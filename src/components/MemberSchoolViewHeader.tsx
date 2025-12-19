@@ -9,6 +9,11 @@ interface MemberSchoolViewHeaderProps {
     batches?: { id: number, name: string }[];
     activeBatchId?: number | null;
     onBatchSelect?: (batchId: number) => void;
+    activeCourseName?: string;
+    taskId?: string | null;
+    questionId?: string | null;
+    activeTaskTitle?: string;
+    activeQuestionTitle?: string;
 }
 
 const MemberSchoolViewHeader: React.FC<MemberSchoolViewHeaderProps> = ({
@@ -18,6 +23,11 @@ const MemberSchoolViewHeader: React.FC<MemberSchoolViewHeaderProps> = ({
     batches = [],
     activeBatchId = null,
     onBatchSelect,
+    activeCourseName,
+    taskId = null,
+    questionId = null,
+    activeTaskTitle,
+    activeQuestionTitle,
 }) => {
     const cohortDropdownRef = useRef<HTMLDivElement>(null);
     const batchDropdownRef = useRef<HTMLDivElement>(null);
@@ -38,6 +48,41 @@ const MemberSchoolViewHeader: React.FC<MemberSchoolViewHeaderProps> = ({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    // Set sensible browser tab titles for member-side navigation:
+    // - Course: "Course Name · SensAI"
+    // - Task: "Task Title · Course Name · SensAI"
+    // - Question: "Question Title · Task Title · Course Name · SensAI"
+    useEffect(() => {
+        const course = activeCourseName?.trim();
+        const cohort = activeCohort?.name?.trim();
+        const taskTitle = activeTaskTitle?.trim();
+        const questionTitle = activeQuestionTitle?.trim();
+
+        if (questionId) {
+            const q = questionTitle || 'Question';
+            const t = taskTitle || 'Task';
+            const c = course || cohort || 'Course';
+            document.title = `${q} · ${t} · ${c} · SensAI`;
+            return;
+        }
+
+        if (taskId) {
+            const t = taskTitle || 'Task';
+            const c = course || cohort || 'Course';
+            document.title = `${t} · ${c} · SensAI`;
+            return;
+        }
+
+        if (course) {
+            document.title = `${course} · SensAI`;
+            return;
+        }
+
+        if (cohort) {
+            document.title = `${cohort} · SensAI`;
+        }
+    }, [activeCourseName, activeCohort?.name, taskId, questionId, activeTaskTitle, activeQuestionTitle]);
 
     return (
         <>

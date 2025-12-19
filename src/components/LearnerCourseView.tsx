@@ -1025,7 +1025,7 @@ export default function LearnerCourseView({
                     onClick={handleDialogBackdropClick}
                 >
                     {isAdminView && learnerName && (
-                        <div className="border-b py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10 bg-gray-100 dark:bg-[#111111] border-gray-300 dark:border-gray-800 text-black dark:text-white">
+                        <div className="border-b py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10 bg-indigo-100 border-indigo-300 text-indigo-950 dark:bg-indigo-950/70 dark:border-indigo-700 dark:text-indigo-50">
                             <p className="font-light text-sm">
                                 You are viewing this course as <span className="font-medium">{learnerName}</span>
                             </p>

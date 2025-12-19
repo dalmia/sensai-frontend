@@ -155,7 +155,7 @@ export default function CohortCoursesLinkerDropdown({
         <div
             ref={dropdownRef}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-full right-0 mt-2 py-2 w-[400px] bg-[#1A1A1A] rounded-lg shadow-xl z-50">
+            className="absolute top-full right-0 mt-2 py-2 w-[400px] bg-white text-gray-900 border border-gray-200 dark:bg-[#1A1A1A] dark:text-white dark:border-0 rounded-lg shadow-xl z-50">
             <div className="p-4 pb-2">
                 {/* Only show search when there are available courses */}
                 {!(totalSchoolCourses === 0 || availableCourses.length === 0) && (
@@ -163,7 +163,7 @@ export default function CohortCoursesLinkerDropdown({
                         <input
                             type="text"
                             placeholder="Search courses"
-                            className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
+                            className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-black/10 focus:border-black/20 dark:!bg-[#111] dark:border-0 dark:text-white dark:placeholder:text-gray-400 dark:focus:ring-0 dark:focus:border-0"
                             value={courseSearchQuery}
                             onChange={handleCourseSearch}
                         />
@@ -176,12 +176,12 @@ export default function CohortCoursesLinkerDropdown({
                         {tempSelectedCourses.map(course => (
                             <div
                                 key={course.id}
-                                className="flex items-center bg-[#222] px-3 py-1 rounded-full"
+                                className="flex items-center bg-gray-100 border border-gray-200 dark:!bg-[#222] dark:border-0 px-3 py-1 rounded-full"
                             >
-                                <span className="text-white text-sm font-light mr-2">{course.name}</span>
+                                <span className="text-gray-900 dark:text-white text-sm font-light mr-2">{course.name}</span>
                                 <button
                                     onClick={(e) => removeTempCourse(course.id, e)}
-                                    className="text-gray-400 hover:text-white cursor-pointer"
+                                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
                                 >
                                     <X size={14} />
                                 </button>
@@ -211,8 +211,8 @@ export default function CohortCoursesLinkerDropdown({
                         {totalSchoolCourses === 0 ? (
                             // School has no courses at all
                             <>
-                                <h3 className="text-lg font-light mb-1">No courses available</h3>
-                                <p className="text-gray-400 text-sm">Create courses in your school that you can publish to your cohort</p>
+                                <h3 className="text-lg font-light mb-1 text-gray-900 dark:text-white">No courses available</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">Create courses in your school that you can publish to your cohort</p>
                                 <Link
                                     href={`/school/admin/${schoolId}#courses`}
                                     className="mt-4 inline-block px-4 py-3 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity"
@@ -223,8 +223,8 @@ export default function CohortCoursesLinkerDropdown({
                         ) : availableCourses.length === 0 ? (
                             // All school courses are already in the cohort
                             <>
-                                <h3 className="text-lg font-light mb-1">No courses left</h3>
-                                <p className="text-gray-400 text-sm">All courses from your school have been added to this cohort</p>
+                                <h3 className="text-lg font-light mb-1 text-gray-900 dark:text-white">No courses left</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">All courses from your school have been added to this cohort</p>
                                 <Link
                                     href={`/school/admin/${schoolId}#courses`}
                                     className="mt-4 inline-block px-4 py-3 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
@@ -235,14 +235,14 @@ export default function CohortCoursesLinkerDropdown({
                         ) : tempSelectedCourses.length > 0 ? (
                             // All available courses have been temporarily selected
                             <>
-                                <h3 className="text-lg font-light mb-1">All courses selected</h3>
-                                <p className="text-gray-400 text-sm">You have selected all available courses</p>
+                                <h3 className="text-lg font-light mb-1 text-gray-900 dark:text-white">All courses selected</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">You have selected all available courses</p>
                             </>
                         ) : (
                             // Search returned no results
                             <>
-                                <h3 className="text-lg font-light mb-1">No matching courses</h3>
-                                <p className="text-gray-400 text-sm">Try a different search term</p>
+                                <h3 className="text-lg font-light mb-1 text-gray-900 dark:text-white">No matching courses</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">Try a different search term</p>
                             </>
                         )}
                     </div>
@@ -252,13 +252,13 @@ export default function CohortCoursesLinkerDropdown({
                             {filteredCourses.map(course => (
                                 <div
                                     key={course.id}
-                                    className="flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer"
+                                    className="flex items-center px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-[#222] rounded-md cursor-pointer"
                                     onClick={() => selectCourse(course)}
                                 >
-                                    <div className="w-6 h-6 bg-purple-900 rounded-md flex items-center justify-center mr-2">
-                                        <BookOpen size={14} className="text-white" />
+                                    <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-md flex items-center justify-center mr-2">
+                                        <BookOpen size={14} className="text-purple-700 dark:text-white" />
                                     </div>
-                                    <p className="text-white text-sm font-light">{course.name}</p>
+                                    <p className="text-gray-900 dark:text-white text-sm font-light">{course.name}</p>
                                 </div>
                             ))}
                         </div>
@@ -276,7 +276,7 @@ export default function CohortCoursesLinkerDropdown({
             <div className="px-2 py-1">
                 <button
                     data-testid="link-courses"
-                    className="w-full bg-white text-black py-3 rounded-full text-sm hover:bg-gray-200 transition-colors cursor-pointer"
+                    className="w-full bg-gray-100 text-black py-3 rounded-full text-sm hover:bg-gray-200 dark:!text-black dark:!bg-white hover:dark:!bg-gray-100 transition-colors cursor-pointer"
                     onClick={handleAddSelectedCourses}
                     disabled={isLoadingCourses}
                 >

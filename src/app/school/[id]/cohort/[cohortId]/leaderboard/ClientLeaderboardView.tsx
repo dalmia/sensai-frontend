@@ -30,6 +30,14 @@ export default function ClientLeaderboardView({
     const [error, setError] = useState<string | null>(null);
     const { themePreference, setThemePreference } = useThemePreference();
 
+    useEffect(() => {
+        // Only set tab title for the standalone learner leaderboard page.
+        // Admin views embed leaderboard within the cohort dashboard and should not override the cohort page title.
+        if (view !== 'learner') return;
+        if (!cohortName) return;
+        document.title = `Leaderboard · ${cohortName} · SensAI`;
+    }, [cohortName, view]);
+
     // Fetch leaderboard data
     useEffect(() => {
         const fetchLeaderboardData = async () => {
