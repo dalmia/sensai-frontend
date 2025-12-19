@@ -272,8 +272,9 @@ describe('CohortMemberManagement Component', () => {
                 />
             );
 
-            const modalContent = document.querySelector('.bg-\\[\\#1A1A1A\\]');
-            fireEvent.click(modalContent!);
+            // Click inside the modal (should not close due to stopPropagation)
+            const modalInner = document.querySelector('.max-w-lg');
+            fireEvent.click(modalInner!);
 
             expect(mockOnInviteDialogClose).not.toHaveBeenCalled();
         });
@@ -319,13 +320,16 @@ describe('CohortMemberManagement Component', () => {
 
             // Find trash buttons - they appear only when there are multiple email inputs
             // Look for buttons with trash icons inside the invite modal
-            const modal = document.querySelector('.bg-\\[\\#1A1A1A\\]');
-            const trashButtons = modal?.querySelectorAll('button svg.lucide-trash2');
-            expect(trashButtons?.length).toBeGreaterThan(0);
+            const modal = document.querySelector('.max-w-lg');
+            const trashButtons = Array.from(modal?.querySelectorAll('button') ?? []).filter(btn => {
+                const svg = btn.querySelector('svg');
+                const cls = svg?.getAttribute('class') ?? '';
+                return cls.includes('trash');
+            });
+            expect(trashButtons.length).toBeGreaterThan(0);
 
             // Click the parent button of the first trash icon
-            const firstTrashButton = trashButtons?.[0]?.closest('button');
-            fireEvent.click(firstTrashButton!);
+            fireEvent.click(trashButtons[0]);
 
             emailInputs = screen.getAllByPlaceholderText('Enter email address');
             expect(emailInputs.length).toBe(1);

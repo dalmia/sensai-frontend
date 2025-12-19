@@ -54,7 +54,7 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 describe('Layout', () => {
     describe('Metadata', () => {
         it('should have correct title and description', () => {
-            expect(metadata.title).toBe('SensAI');
+            expect(metadata.title).toMatchObject({ default: 'SensAI', template: '%s · SensAI' });
             expect(metadata.description).toBe('The only LMS you need in the era of AI');
         });
     });

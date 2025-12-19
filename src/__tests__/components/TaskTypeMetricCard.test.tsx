@@ -34,11 +34,15 @@ describe('TaskTypeMetricCard Component', () => {
         const { container } = render(<TaskTypeMetricCard {...baseProps} />);
 
         const title = screen.getByText('Quizzes');
-        expect(title).toHaveClass('text-blue-400');
+        expect(title).toHaveClass('text-blue-600');
+        expect(title).toHaveClass('dark:text-blue-400');
 
-        // Check for the progress bar with blue background
-        const progressBar = container.querySelector('.bg-blue-500');
+        // Check for the progress bar (inside the track)
+        const progressTrack = container.querySelector('.h-2.w-full');
+        const progressBar = progressTrack?.querySelector('div');
         expect(progressBar).toBeInTheDocument();
+        expect(progressBar).toHaveClass('bg-blue-600');
+        expect(progressBar).toHaveClass('dark:bg-blue-500');
     });
 
     it('should apply purple color classes when color is purple', () => {
@@ -47,11 +51,15 @@ describe('TaskTypeMetricCard Component', () => {
         );
 
         const title = screen.getByText('Quizzes');
-        expect(title).toHaveClass('text-purple-400');
+        expect(title).toHaveClass('text-purple-600');
+        expect(title).toHaveClass('dark:text-purple-400');
 
-        // Check for the progress bar with purple background
-        const progressBar = container.querySelector('.bg-purple-500');
+        // Check for the progress bar (inside the track)
+        const progressTrack = container.querySelector('.h-2.w-full');
+        const progressBar = progressTrack?.querySelector('div');
         expect(progressBar).toBeInTheDocument();
+        expect(progressBar).toHaveClass('bg-purple-600');
+        expect(progressBar).toHaveClass('dark:bg-purple-500');
     });
 
     it('should set progress bar width based on completion rate', () => {
@@ -60,7 +68,8 @@ describe('TaskTypeMetricCard Component', () => {
         );
 
         // Find the progress bar and check its width style
-        const progressBar = container.querySelector('.bg-blue-500');
+        const progressTrack = container.querySelector('.h-2.w-full');
+        const progressBar = progressTrack?.querySelector('div');
         expect(progressBar).toHaveStyle('width: 30%');
 
         // Check the completion percentage text

@@ -1366,7 +1366,7 @@ export default function LearnerCourseView({
                     {!isFirstTask() && getPreviousTaskInfo() ? (
                         <button
                             onClick={goToPreviousTask}
-                            className="flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer text-white bg-[#222222] hover:bg-[#2e2e2e]"
+                            className="flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#2e2e2e]"
                             aria-label="Previous task"
                         >
                             <ChevronLeft size={16} className="mr-1" />
@@ -1379,7 +1379,7 @@ export default function LearnerCourseView({
                     {!isLastTask() && getNextTaskInfo() ? (
                         <button
                             onClick={goToNextTask}
-                            className="flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer text-white bg-[#222222] hover:bg-[#2e2e2e]"
+                            className="flex items-center px-4 py-2 text-sm rounded-full transition-colors cursor-pointer bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#2e2e2e]"
                             aria-label="Next task"
                         >
                             <span className="max-w-[100px] truncate">{getNextTaskInfo()?.title}</span>
