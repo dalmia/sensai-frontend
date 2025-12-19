@@ -47,6 +47,7 @@ interface AssignmentEditorProps {
     schoolId?: string;
     onValidationError?: (title: string, message: string, emoji?: string) => void;
     isPreviewMode?: boolean;
+    isDarkMode?: boolean;
 }
 
 const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProps>(({
@@ -62,9 +63,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     onPublishCancel,
     onValidationError,
     isPreviewMode = false,
+    isDarkMode = true,
 }, ref) => {
-    // Visual mode
-    const isDarkMode = true;
 
     // Problem statement
     const [problemBlocks, setProblemBlocks] = useState<any[]>([]);
@@ -535,7 +535,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     if (isLoadingAssignment) {
         return (
             <div className="h-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
             </div>
         );
     }
@@ -568,7 +568,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
             ) : (
                 <div className="flex-1 flex flex-col space-y-6 h-full">
                     {/* Settings: Submission Type and Copy/Paste Control */}
-                    <div className="space-y-4 px-6 py-4 bg-[#111111]">
+                    <div className={`space-y-4 px-6 py-4 ${isDarkMode ? 'bg-[#111111]' : 'bg-gray-100'}`}>
                         <div className="flex items-center">
                             <Dropdown
                                 icon={<ClipboardCheck size={16} />}
@@ -603,23 +603,29 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
 
                     {/* Tab navigation */}
                     <div className="flex justify-center">
-                        <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                        <div className={`inline-flex rounded-lg p-1 ${isDarkMode ? 'bg-[#222222]' : 'bg-gray-200'}`}>
                             <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'problem' 
+                                    ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black' 
+                                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
                                 onClick={() => setActiveTab('problem')}
                             >
                                 <HelpCircle size={16} className="mr-2" />
                                 Problem statement
                             </button>
                             <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'evaluation' 
+                                    ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black' 
+                                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
                                 onClick={() => setActiveTab('evaluation')}
                             >
                                 <ClipboardCheck size={16} className="mr-2" />
                                 Evaluation criteria
                             </button>
                             <button
-                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' ? 'bg-[#333333] text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm cursor-pointer ${activeTab === 'knowledge' 
+                                    ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black' 
+                                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
                                 onClick={() => setActiveTab('knowledge')}
                             >
                                 <BookOpen size={16} className="mr-2" />
@@ -634,46 +640,49 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                             <div className="h-full flex flex-col">
                                 {/* Integration */}
                                 {!readOnly && !isLoadingAssignment && (
-                                    <NotionIntegration
-                                        onPageSelect={handleIntegrationPageSelect}
-                                        onPageRemove={handleIntegrationPageRemove}
-                                        isEditMode={!readOnly}
-                                        editorContent={problemContent}
-                                        loading={isLoadingIntegration}
-                                        status={status}
-                                        storedBlocks={integrationBlocks}
-                                        onContentUpdate={(updatedContent) => {
-                                            handleProblemContentChange(updatedContent);
-                                            setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                        }}
-                                        onLoadingChange={setIsLoadingIntegration}
-                                    />
+                                    <div className={`py-2 ${isDarkMode ? '' : 'bg-white'}`}>
+                                        <NotionIntegration
+                                            onPageSelect={handleIntegrationPageSelect}
+                                            onPageRemove={handleIntegrationPageRemove}
+                                            isEditMode={!readOnly}
+                                            editorContent={problemContent}
+                                            loading={isLoadingIntegration}
+                                            isDarkMode={isDarkMode}
+                                            status={status}
+                                            storedBlocks={integrationBlocks}
+                                            onContentUpdate={(updatedContent) => {
+                                                handleProblemContentChange(updatedContent);
+                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                            }}
+                                            onLoadingChange={setIsLoadingIntegration}
+                                        />
+                                    </div>
                                 )}
-                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? `m-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse ${isDarkMode ? 'bg-[#2D1E1E]' : 'bg-red-50'}` : ''}`}>
                                     {isLoadingIntegration ? (
                                         <div className="flex items-center justify-center h-32">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                            <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
                                         </div>
                                     ) : integrationError ? (
                                         <div className="flex flex-col items-center justify-center h-32 text-center">
                                             <div className="text-red-400 text-sm mb-4">
                                                 {integrationError}
                                             </div>
-                                            <div className="text-gray-400 text-xs">
+                                            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                                 The Notion integration may have been disconnected. Please reconnect it.
                                             </div>
                                         </div>
                                     ) : integrationBlocks.length > 0 ? (
-                                        <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                            <RenderConfig theme="dark">
+                                        <div className={`px-16 pb-6 rounded-lg ${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-black'}`}>
+                                            <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${isDarkMode ? 'text-white' : 'text-black'}`}>{integrationBlock?.props?.resource_name}</h1>
+                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                                 <BlockList blocks={integrationBlocks} />
                                             </RenderConfig>
                                         </div>
                                     ) : integrationBlock ? (
                                         <div className="flex flex-col items-center justify-center h-64 text-center">
-                                            <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                            <div className={`text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Notion page is empty</div>
+                                            <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-600'}`}>Please add content to your Notion page and refresh to see changes</div>
                                         </div>
                                     ) : (
                                         <BlockNoteEditor
@@ -701,7 +710,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                 />
 
                                 {/* Scorecard Section */}
-                                <div className={`h-full m-1 ${highlightedField === 'scorecard' ? 'outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-lg p-2' : ''}`}>
+                                <div className={`h-full m-1 ${highlightedField === 'scorecard' ? `outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse rounded-lg p-2 ${isDarkMode ? 'bg-[#2D1E1E]' : 'bg-red-50'}` : ''}`}>
                                     <ScorecardManager
                                         ref={scorecardManagerRef}
                                         schoolId={schoolId}

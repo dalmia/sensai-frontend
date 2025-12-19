@@ -21,7 +21,7 @@ const DynamicLearningMaterialEditor = dynamic(
         ssr: false,
         loading: () => (
             <div className="flex items-center justify-center h-full w-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
             </div>
         )
     }
@@ -34,7 +34,7 @@ const DynamicQuizEditor = dynamic(
         ssr: false,
         loading: () => (
             <div className="flex items-center justify-center h-full w-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
             </div>
         )
     }
@@ -47,7 +47,7 @@ const DynamicAssignmentEditor = dynamic(
         ssr: false,
         loading: () => (
             <div className="flex items-center justify-center h-full w-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
             </div>
         )
     }
@@ -811,7 +811,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 >
                     {/* Dialog Header */}
                     <div
-                        className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'bg-[#111111] border-gray-800' : 'bg-gray-100 border-gray-200'}`}
+                        className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'bg-[#111111] border-transparent' : 'bg-gray-100 border-gray-200'}`}
                     >
                         <div className="flex-1 flex items-center">
                             <h2
@@ -844,7 +844,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     const titleElement = e.currentTarget as HTMLElement;
                                     titleElement.dataset.editing = "true";
                                 }}
-                                className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
+                                className={`text-2xl font-light ${isDarkMode ? 'text-white' : 'text-black'} outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
                                 data-placeholder={activeItem?.type === 'material' ? 'New learning material' : (activeItem?.type === 'quiz' ? 'New quiz' : 'New assignment')}
                             >
                                 {activeItem?.title}
@@ -969,8 +969,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                         timeCaption="Time"
                                                         minDate={new Date()} // Can't schedule in the past
                                                         className={`rounded-md p-2 px-4 w-full cursor-pointer ${isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-gray-900 border border-gray-200'}`}
-                                                        wrapperClassName="w-full"
-                                                        calendarClassName={`${isDarkMode ? 'bg-[#242424] text-white border border-gray-700' : 'bg-white text-gray-900 border border-gray-200'} rounded-lg shadow-lg cursor-pointer`}
+                                                        wrapperClassName={`w-full publish-datepicker-wrapper ${isDarkMode ? 'dark' : ''}`}
+                                                        calendarClassName="publish-datepicker-calendar rounded-lg shadow-lg cursor-pointer"
                                                         inline
                                                     />
                                                     <div className="mt-2 flex justify-end">
@@ -1240,6 +1240,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                     courseId={courseId}
                                     schoolId={schoolId}
+                                    isDarkMode={isDarkMode}
                                     onValidationError={(title, message, emoji) => displayToast(title, message, emoji || '🚫')}
                                     onPublishSuccess={(updatedData?: any) => {
                                         if (updatedData) {

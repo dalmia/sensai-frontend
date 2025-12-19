@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import LearnerCourseView from "@/components/LearnerCourseView";
 import { Module } from "@/types/course";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface ClientPreviewWrapperProps {
     modules: Module[];
@@ -11,6 +12,8 @@ interface ClientPreviewWrapperProps {
 export default function ClientPreviewWrapper({
     modules,
 }: ClientPreviewWrapperProps) {
+    const { isDarkMode } = useThemePreference();
+
     // For preview mode, we use LearnerCourseView directly to ensure full-width display
     // without the sidebar that LearnerCohortView would add
     return (
@@ -19,6 +22,7 @@ export default function ClientPreviewWrapper({
             completedTaskIds={{}}
             completedQuestionIds={{}}
             isTestMode={true}
+            isDarkMode={isDarkMode}
         />
     );
 } 

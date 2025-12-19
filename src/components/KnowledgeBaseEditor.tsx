@@ -45,16 +45,14 @@ const KnowledgeBaseEditor = ({
     };
 
     return (
-        <div className={`w-full h-full flex flex-row overflow-y-auto px-16 space-y-6 ${className}`}>
+        <div className={`w-full h-full bg-white dark:bg-transparent flex flex-row overflow-y-auto px-16 space-y-6 ${className}`}>
             {/* Left column with callout (20-30% width) */}
             <div className="w-[20%]">
-                <div className="bg-[#222222] p-3 rounded-md">
-                    <BookOpen size={16} className="text-amber-400 mb-2" />
-                    <div>
-                        <p className="text-gray-400 text-xs leading-tight mb-2">
-                            These resources are <span className="font-bold text-white">optional</span> and will <span className="font-bold text-white">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
-                        </p>
-                    </div>
+                <div className={`p-3 rounded-md ${isDarkMode ? 'bg-[#1F1F1F] text-gray-200' : 'bg-gray-50 text-gray-700'}`}>
+                    <BookOpen size={16} className={`${isDarkMode ? 'text-amber-300' : 'text-amber-500'} mb-2`} />
+                    <p className="text-xs leading-tight mb-2">
+                        These resources are <span className="font-semibold">optional</span> and will <span className="font-semibold">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
+                    </p>
                 </div>
             </div>
 
