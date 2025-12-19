@@ -246,10 +246,10 @@ const LearningMaterialLinker = ({
     const renderEditableView = () => {
         return (
             <div>
-                <div className={`relative w-md ${isLearningMaterialDropdownOpen ? 'shadow-xl' : ''}`}>
+                <div className={`relative w-md`}>
                     <button
                         data-learning-material-dropdown="true"
-                        className="flex items-center justify-center space-x-2 px-4 py-2 bg-orange-200 dark:bg-orange-300 text-black text-sm font-light rounded-md hover:bg-orange-300 hover:dark:bg-orange-400 transition-colors cursor-pointer mb-3"
+                        className="flex items-center justify-center space-x-2 px-4 py-2 bg-orange-200 dark:bg-gray-100 text-black text-sm font-light rounded-md hover:bg-orange-300 dark:hover:bg-gray-200 transition-colors cursor-pointer mb-3 border-none outline-none ring-0 shadow-none inset-ring-0"
                         onClick={toggleLearningMaterialDropdown}
                     >
                         <Plus size={16} />
@@ -260,7 +260,7 @@ const LearningMaterialLinker = ({
                         <div
                             ref={learningMaterialDropdownRef}
                             onClick={(e) => e.stopPropagation()}
-                            className={`absolute top-full left-0 mt-1 py-2 w-full rounded-lg shadow-xl z-50 ${isLearningMaterialDropdownOpen ? '' : ''} bg-white text-gray-900 dark:bg-[#1A1A1A] dark:text-white`}
+                            className="absolute top-full left-0 mt-1 py-2 w-full rounded-lg shadow-xl z-50 bg-white text-gray-900 border border-gray-200 dark:bg-[#1A1A1A] dark:text-white dark:border-transparent"
                         >
                             <div className="px-4 pb-2">
                                 {/* Add Close Button */}
@@ -282,7 +282,7 @@ const LearningMaterialLinker = ({
                                         <input
                                             type="text"
                                             placeholder="Search by name"
-                                            className="w-full rounded-md pl-9 pr-3 py-2 bg-white text-black border border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:bg-[#111] dark:text-white dark:border-gray-700 dark:focus:ring-gray-600"
+                                            className="w-full rounded-md pl-9 pr-3 py-2 bg-white text-black border border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:bg-[#111] dark:text-white dark:border-transparent dark:focus:ring-gray-600"
                                             value={learningMaterialSearchQuery}
                                             onChange={handleLearningMaterialSearch}
                                         />
@@ -351,14 +351,14 @@ const LearningMaterialLinker = ({
                                         {filteredLearningMaterials.map(material => (
                                             <div
                                                 key={material.id}
-                                                className="flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer"
+                                                className="flex items-center px-3 py-1.5 hover:bg-gray-200 hover:dark:bg-[#222] rounded-md cursor-pointer"
                                                 onClick={() => selectLearningMaterial(material)}
                                             >
-                                                    <div className={`w-6 h-6 rounded-md flex items-center justify-center mr-2 ${material.id % 5 === 0 ? "bg-blue-900" :
-                                                        material.id % 5 === 1 ? "bg-purple-900" :
-                                                            material.id % 5 === 2 ? "bg-green-900" :
-                                                                material.id % 5 === 3 ? "bg-amber-900" :
-                                                                    "bg-rose-900"
+                                                <div className={`w-6 h-6 rounded-md flex items-center justify-center mr-2 ${material.id % 5 === 0 ? "bg-blue-900" :
+                                                    material.id % 5 === 1 ? "bg-purple-900" :
+                                                        material.id % 5 === 2 ? "bg-green-900" :
+                                                            material.id % 5 === 3 ? "bg-amber-900" :
+                                                                "bg-rose-900"
                                                     }`}>
                                                     <FileText size={14} className="text-white" />
                                                 </div>

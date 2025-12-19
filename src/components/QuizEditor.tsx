@@ -1081,52 +1081,26 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [currentQuestionIndex, questions.length, currentQuestionContent]);
 
     // Placeholder component for empty quiz
-    const EmptyQuizPlaceholder = () => {
-        // Keep original minimal styling in dark mode; add contrast card only in light mode
-        if (isDarkMode) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full w-full text-center p-8">
-                    <h3 className="text-xl font-light mb-3 text-white">Questions are the gateway to learning</h3>
-                    <p className="max-w-md mb-8 text-gray-400">
-                        Add questions to create an interactive quiz for your learners
-                    </p>
-                    {status === 'draft' && (
-                        <button
-                            onClick={addQuestion}
-                            className="flex items-center px-5 py-2.5 text-sm rounded-md transition-colors cursor-pointer text-black bg-white hover:bg-gray-100 border border-transparent"
-                            disabled={readOnly}
-                        >
-                            <div className="w-4 h-4 rounded-full border border-transparent flex items-center justify-center mr-2">
-                                <Plus size={10} className="text-black" />
-                            </div>
-                            Add question
-                        </button>
-                    )}
-                </div>
-            );
-        }
-
-        return (
-            <div className="flex flex-col items-center justify-center h-full w-full text-center p-10 rounded-lg border bg-gray-50 border-gray-200">
-                <h3 className="text-xl font-light mb-3 text-gray-900">Questions are the gateway to learning</h3>
-                <p className="max-w-md mb-8 text-gray-700">
-                    Add questions to create an interactive quiz for your learners
-                </p>
-                {status === 'draft' && (
-                    <button
-                        onClick={addQuestion}
-                        className="flex items-center px-5 py-2.5 text-sm rounded-md transition-colors cursor-pointer text-white bg-blue-600 hover:bg-blue-700"
-                        disabled={readOnly}
-                    >
-                        <div className="w-4 h-4 rounded-full flex items-center justify-center mr-2">
-                            <Plus size={10} className="text-white" />
-                        </div>
-                        Add question
-                    </button>
-                )}
-            </div>
-        );
-    };
+    const EmptyQuizPlaceholder = () => (
+        <div className="flex flex-col items-center justify-center h-full w-full text-center p-8 dark:p-8 rounded-lg border border-gray-200 bg-gray-50 dark:border-transparent dark:bg-transparent">
+            <h3 className="text-xl font-light mb-3 text-gray-900 dark:text-white">Questions are the gateway to learning</h3>
+            <p className="max-w-md mb-8 text-gray-700 dark:text-gray-400">
+                Add questions to create an interactive quiz for your learners
+            </p>
+            {status === 'draft' && (
+                <button
+                    onClick={addQuestion}
+                    className="flex items-center px-5 py-2.5 text-sm rounded-md transition-colors cursor-pointer text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100 border border-transparent"
+                    disabled={readOnly}
+                >
+                    <div className="w-4 h-4 rounded-full border border-transparent flex items-center justify-center mr-2">
+                        <Plus size={10} className="text-white dark:text-black" />
+                    </div>
+                    Add question
+                </button>
+            )}
+        </div>
+    );
 
     const handleCancelPublish = () => {
         if (onPublishCancel) {
@@ -1705,7 +1679,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setSelectedQuestionType(getQuestionTypeOption(currentConfig.questionType));
 
             // Set answer type based on config.inputType or default to 'text'
-                setSelectedAnswerType(getAnswerTypeOption(currentConfig.inputType));
+            setSelectedAnswerType(getAnswerTypeOption(currentConfig.inputType));
 
             // Set purpose based on config.purpose or default to 'practice'
             setSelectedPurpose(getPurposeOption(currentConfig.responseType));
@@ -1715,12 +1689,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             if (allowCopyPaste !== undefined) {
                 const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
                 if (copyPasteOption) {
-                    setSelectedCopyPasteControl(copyPasteOption);
+                setSelectedCopyPasteControl(copyPasteOption);
                 } else {
                     setSelectedCopyPasteControl(copyPasteControlOptions[1]);
                 }
             } else {
-            setSelectedCopyPasteControl(copyPasteControlOptions[1]);
+                setSelectedCopyPasteControl(copyPasteControlOptions[1]);
             }
 
             // Set coding languages based on config.codingLanguages or default to first option
@@ -1798,8 +1772,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             {/* Loading indicator */}
             {isLoadingQuestions && (
-                <div className={`absolute inset-0 z-10 flex items-center justify-center ${isDarkMode ? 'bg-[#1A1A1A] bg-opacity-80' : 'bg-white bg-opacity-80'}`}>
-                    <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-transparent' : 'border-black'}`}></div>
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-80 dark:bg-[#1A1A1A] dark:bg-opacity-80">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-transparent"></div>
                 </div>
             )}
 
@@ -1824,13 +1798,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         ) : (
                             <>
                                 {/* Left Sidebar - Questions List */}
-                                <div className={`w-64 h-full flex flex-col overflow-hidden ${isDarkMode ? 'bg-[#121212]' : 'bg-gray-50'}`}>
+                                <div className="w-64 h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#121212]">
                                     {/* Sidebar Header */}
-                                    <div className={`p-4  flex items-center justify-between ${isDarkMode ? 'bg-[#0A0A0A]' : 'bg-gray-100'}`}>
-                                        <h3 className={`text-lg font-light ${isDarkMode ? 'text-white' : 'text-black'}`}>Questions</h3>
+                                    <div className="p-4 flex items-center justify-between bg-gray-100 dark:bg-[#0A0A0A]">
+                                        <h3 className="text-lg font-light text-black dark:text-white">Questions</h3>
                                         <div className={`px-3 py-1 rounded-full text-xs transition-all duration-300 ${questionCountHighlighted
                                             ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight text-white'
-                                            : isDarkMode ? 'bg-[#2A2A2A] border-[#3A3A3A] text-gray-300' : 'bg-gray-200 border-gray-300 text-gray-700'
+                                            : 'bg-gray-200 border-gray-300 text-gray-700 dark:bg-[#2A2A2A] dark:border-[#3A3A3A] dark:text-gray-300'
                                             }`}>
                                             {questions.length}
                                         </div>
@@ -1841,11 +1815,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         <div className="p-3">
                                             <button
                                                 onClick={addQuestion}
-                                                className={`w-full flex items-center justify-center px-4 py-2 text-sm rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed ${isDarkMode ? 'text-black bg-white hover:bg-gray-100' : 'text-white bg-blue-600 hover:bg-blue-700'}`}
+                                                className="w-full flex items-center justify-center px-4 py-2 text-sm rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100"
                                                 disabled={readOnly || isLoadingIntegration}
                                             >
-                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-2 ${isDarkMode ? 'border-black' : 'border-white'}`}>
-                                                    <Plus size={10} className={isDarkMode ? 'text-black' : 'text-white'} />
+                                                <div className="w-4 h-4 rounded-full border flex items-center justify-center mr-2 border-white dark:border-black">
+                                                    <Plus size={10} className="text-white dark:text-black" />
                                                 </div>
                                                 Add question
                                             </button>
@@ -1858,8 +1832,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             <div
                                                 key={question.id}
                                                 className={`px-4 py-3 cursor-pointer flex items-center justify-between group border-l-2 ${index === currentQuestionIndex
-                                                    ? isDarkMode ? "bg-[#222222] border-green-500" : "bg-gray-200 border-green-500"
-                                                    : isDarkMode ? "hover:bg-[#1A1A1A] border-transparent" : "hover:bg-gray-100 border-transparent"
+                                                    ? "bg-gray-200 border-green-500 dark:bg-[#222222]"
+                                                    : "hover:bg-gray-100 border-transparent dark:hover:bg-[#1A1A1A]"
                                                     }`}
                                                 onClick={() => {
                                                     if (checkUnsavedScorecardChanges()) {
@@ -1887,15 +1861,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     <div className="flex-1 min-w-0">
                                                         <div
                                                             className={`text-sm break-words whitespace-normal ${index === currentQuestionIndex 
-                                                                ? isDarkMode ? "text-white" : "text-black" 
-                                                                : isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+                                                                ? "text-black dark:text-white" 
+                                                                : "text-gray-700 dark:text-gray-300"}`}
                                                             data-testid="sidebar-question-label"
                                                         >
                                                             {question.config.title || `Question ${index + 1}`}
                                                         </div>
                                                         <div className={`text-xs truncate ${index === currentQuestionIndex 
-                                                            ? isDarkMode ? "text-gray-300" : "text-gray-600"
-                                                            : isDarkMode ? "text-gray-500" : "text-gray-500"
+                                                            ? "text-gray-600 dark:text-gray-300"
+                                                            : "text-gray-500"
                                                             }`}>
                                                             {question.config.responseType === 'chat' ? 'Practice' : 'Exam'} • {question.config.questionType === 'objective' ? 'Objective' : 'Subjective'} • {question.config.inputType}
                                                         </div>
@@ -1923,14 +1897,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 {/* Main Content Area */}
                                 <div className="flex-1 flex flex-col">
                                     {/* Question Configuration Header */}
-                                    <div className={`flex flex-col space-y-2 p-4  ${isDarkMode ? 'bg-[#111111]' : 'bg-gray-100'}`}>
-                                        <div className={`flex items-center w-full rounded-md ${highlightedField === 'title' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                            <span className={`text-sm flex-shrink-0 w-1/6 mr-2 flex items-center px-3 py-2 rounded-md ${isDarkMode ? 'text-gray-500 hover:bg-[#2A2A2A]' : 'text-gray-600 hover:bg-gray-200'}`}>
+                                    <div className="flex flex-col space-y-2 p-4 bg-gray-100 dark:bg-[#111111]">
+                                        <div className={`flex items-center w-full rounded-md ${highlightedField === 'title' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
+                                            <span className="text-sm flex-shrink-0 w-1/6 mr-2 flex items-center px-3 py-2 rounded-md text-gray-600 hover:bg-gray-200 dark:text-gray-500 dark:hover:bg-[#2A2A2A]">
                                                 <span className="mr-2"><Tag size={16} /></span>
                                                 Title
                                             </span>
                                             <span
-                                                className={`text-base w-full outline-none p-1 rounded-md ${isDarkMode ? 'text-white' : 'text-black'}`}
+                                                className="text-base w-full outline-none p-1 rounded-md text-black dark:text-white"
                                                 contentEditable={!readOnly}
                                                 suppressContentEditableWarning={true}
                                                 onBlur={handleQuestionTitleBlur}
@@ -1982,7 +1956,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         />
                                         {selectedAnswerType.value == 'code' && (
                                             <div className="flex items-center">
-                                                <div className={`w-full ${highlightedField === 'codingLanguage' ? `outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse rounded-md ${isDarkMode ? 'bg-[#2D1E1E]' : 'bg-red-50'}` : ''}`}>
+                                                <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse rounded-md bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
                                                     <Dropdown
                                                         icon={<Code size={16} />}
                                                         title="Languages"
@@ -2000,11 +1974,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                                     {/* Segmented control for editor tabs */}
                                     <div className="flex justify-center py-4 bg-white dark:bg-transparent">
-                                        <div className={`inline-flex rounded-lg p-1 ${isDarkMode ? 'bg-[#222222]' : 'bg-gray-200'}`}>
+                                        <div className="inline-flex rounded-lg p-1 bg-gray-200 dark:bg-[#222222]">
                                             <button
                                                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'question'
-                                                    ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
-                                                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
+                                                    ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                    : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                     }`}
                                                 onClick={() => setActiveEditorTab('question')}
                                             >
@@ -2014,8 +1988,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             {selectedQuestionType.value !== 'subjective' ? (
                                                 <button
                                                     className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'answer'
-                                                        ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
-                                                        : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
+                                                        ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                        : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                         }`}
                                                     onClick={() => setActiveEditorTab('answer')}
                                                 >
@@ -2025,8 +1999,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             ) : (
                                                 <button
                                                     className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'scorecard'
-                                                        ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
-                                                        : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
+                                                        ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                        : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                         }`}
                                                     onClick={() => setActiveEditorTab('scorecard')}
                                                 >
@@ -2036,8 +2010,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             )}
                                             <button
                                                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'knowledge'
-                                                    ? isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-black'
-                                                    : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'
+                                                    ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                    : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                     }`}
                                                 onClick={() => setActiveEditorTab('knowledge')}
                                             >
@@ -2054,7 +2028,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             <div className="w-full h-full flex flex-col">
                                                 {/* Integration */}
                                                 {!readOnly && (
-                                                    <div className={`py-2 ${isDarkMode ? '' : 'bg-white'}`}>
+                                                    <div className="py-2 bg-white dark:bg-transparent">
                                                         <NotionIntegration
                                                             key={`notion-integration-${currentQuestionIndex}`}
                                                             onPageSelect={handleIntegrationPageSelect}
@@ -2073,31 +2047,31 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         />
                                                     </div>
                                                 )}
-                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? `m-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse ${isDarkMode ? 'bg-[#2D1E1E]' : 'bg-red-50'}` : ''}`}>
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
                                                     {isLoadingIntegration ? (
                                                         <div className="flex items-center justify-center h-32">
-                                                            <div className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
                                                         </div>
                                                     ) : integrationError ? (
                                                         <div className="flex flex-col items-center justify-center h-32 text-center">
                                                             <div className="text-red-400 text-sm mb-4">
                                                                 {integrationError}
                                                             </div>
-                                                            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                            <div className="text-xs text-gray-600 dark:text-gray-400">
                                                                 The Notion integration may have been disconnected. Please reconnect it.
                                                             </div>
                                                         </div>
                                                     ) : integrationBlocks.length > 0 ? (
-                                                        <div className={`px-16 pb-6 rounded-lg ${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-black'}`}>
-                                                            <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${isDarkMode ? 'text-white' : 'text-black'}`}>{integrationBlock?.props?.resource_name}</h1>
+                                                        <div className="px-16 pb-6 rounded-lg bg-white text-black dark:bg-[#191919] dark:text-white">
+                                                            <h1 className="text-4xl font-bold mb-4 pl-0.5 text-black dark:text-white">{integrationBlock?.props?.resource_name}</h1>
                                                             <RenderConfig theme={isDarkMode ? "dark" : "light"}>       
                                                                 <BlockList blocks={integrationBlocks} />
                                                             </RenderConfig>
                                                         </div>
                                                     ) : integrationBlock ? (
                                                         <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                            <div className={`text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Notion page is empty</div>
-                                                            <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-600'}`}>Please add content to your Notion page and refresh to see changes</div>
+                                                            <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
+                                                            <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
                                                         </div>
                                                     ) : (
                                                         <BlockNoteEditor
@@ -2114,7 +2088,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (
                                             <div className="w-full h-full flex flex-col">
-                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? `m-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse ${isDarkMode ? 'bg-[#2D1E1E]' : 'bg-red-50'}` : ''}`}
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         // Ensure the correct answer editor keeps focus
@@ -2148,8 +2122,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             <KnowledgeBaseEditor
                                                                 knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
                                                                 linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
-                                                            courseId={courseId}
-                                                            readOnly={readOnly}
+                                                                courseId={courseId}
+                                                                readOnly={readOnly}
                                                                 onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
                                                                     // Update the question config with the new knowledge base blocks
                                                                     const updatedQuestions = [...questions];

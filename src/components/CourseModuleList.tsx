@@ -927,32 +927,32 @@ export default function CourseModuleList({
                                             const isPartiallyComplete = !isItemCompleted && hasPartialQuizProgress;
 
                                             const materialWrapperClass = isItemCompleted
-                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
-                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
+                                                ? 'bg-emerald-500 dark:bg-emerald-500'
+                                                : 'bg-blue-100 dark:bg-blue-900/80';
 
                                             const materialIconColor = isItemCompleted
                                                 ? 'text-white'
-                                                : 'text-rose-600 dark:text-rose-100';
+                                                : 'text-blue-700 dark:text-blue-200';
 
                                             const assignmentWrapperClass = isItemCompleted
-                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
-                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
+                                                ? 'bg-emerald-500 dark:bg-emerald-500'
+                                                : 'bg-rose-100 dark:bg-rose-500/25';
 
                                             const assignmentIconColor = isItemCompleted
                                                 ? 'text-white'
-                                                : 'text-rose-600 dark:text-rose-100';
+                                                : 'text-rose-700 dark:text-rose-100';
 
                                             const quizWrapperClass = isItemCompleted
-                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                ? 'bg-emerald-500 dark:bg-emerald-500'
                                                 : hasPartialQuizProgress
-                                                    ? 'bg-amber-500/80 dark:bg-amber-500/25'
-                                                    : 'bg-indigo-400/25 dark:bg-indigo-500/20';
+                                                    ? 'bg-amber-100 dark:bg-amber-500/25'
+                                                    : 'bg-violet-100 dark:bg-indigo-500/20';
 
                                             const quizIconColor = isItemCompleted
                                                 ? 'text-white'
                                                 : hasPartialQuizProgress
-                                                    ? 'text-white dark:text-yellow-500'
-                                                    : 'text-indigo-700 dark:text-indigo-100';
+                                                    ? 'text-amber-700 dark:text-yellow-500'
+                                                    : 'text-violet-700 dark:text-indigo-100';
 
                                             return (
                                                 <div
@@ -1141,7 +1141,7 @@ export default function CourseModuleList({
                                                                 }
                                                             }
                                                         }}
-                                                        className="flex items-center px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white border border-gray-600 dark:border-gray-400 rounded-full transition-colors cursor-pointer"
+                                                        className="flex items-center px-3 py-1.5 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:hover:bg-blue-800/70 rounded-full transition-colors cursor-pointer"
                                                     >
                                                         <Plus size={14} className="mr-1" />
                                                         Learning material
@@ -1158,7 +1158,7 @@ export default function CourseModuleList({
                                                                 }
                                                             }
                                                         }}
-                                                        className="flex items-center px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white border border-gray-600 dark:border-gray-400 rounded-full transition-colors cursor-pointer"
+                                                        className="flex items-center px-3 py-1.5 text-sm bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-800/70 rounded-full transition-colors cursor-pointer"
                                                     >
                                                         <Plus size={14} className="mr-1" />
                                                         Quiz
@@ -1175,7 +1175,7 @@ export default function CourseModuleList({
                                                                 }
                                                             }
                                                         }}
-                                                        className="flex items-center px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white border border-gray-600 dark:border-gray-400 rounded-full transition-colors cursor-pointer"
+                                                        className="flex items-center px-3 py-1.5 text-sm bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/60 dark:text-rose-200 dark:hover:bg-rose-800/70 rounded-full transition-colors cursor-pointer"
                                                     >
                                                         <Plus size={14} className="mr-1" />
                                                         Assignment

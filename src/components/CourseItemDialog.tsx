@@ -771,48 +771,32 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     const isClosingDraft = confirmationType === 'exit_draft';
 
-    const darkButtonPalettes: Record<string, string> = {
-        blue: 'text-white border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500',
-        green: 'text-white border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500',
-        yellow: 'text-white border-yellow-500 hover:bg-[#222222] focus:border-yellow-500 active:border-yellow-500',
-        yellowStrong: 'text-white border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600',
-        gray: 'text-white border-gray-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500',
-        violet: 'text-white border-violet-600 hover:bg-[#222222] focus:border-violet-600 active:border-violet-600'
+    const getButtonClasses = (tone: 'blue' | 'green' | 'yellow' | 'yellowStrong' | 'gray' | 'violet') => {
+        const base = 'flex items-center px-4 py-2 text-sm bg-transparent rounded-full transition-colors cursor-pointer border';
+        const variants: Record<typeof tone, string> = {
+            blue: 'text-blue-600 border-blue-400 hover:bg-blue-50 focus:border-blue-500 active:border-blue-500 dark:text-white dark:border-blue-500 dark:hover:bg-[#222222]',
+            green: 'text-emerald-600 border-emerald-400 hover:bg-emerald-50 focus:border-emerald-500 active:border-emerald-500 dark:text-white dark:border-green-500 dark:hover:bg-[#222222]',
+            yellow: 'text-amber-600 border-amber-400 hover:bg-amber-50 focus:border-amber-500 active:border-amber-500 dark:text-white dark:border-yellow-500 dark:hover:bg-[#222222]',
+            yellowStrong: 'text-amber-700 border-amber-500 hover:bg-amber-100 focus:border-amber-600 active:border-amber-600 dark:text-white dark:border-amber-600 dark:hover:bg-[#222222]',
+            gray: 'text-gray-700 border-gray-300 hover:bg-gray-100 focus:border-gray-400 active:border-gray-400 dark:text-white dark:border-gray-500 dark:hover:bg-[#222222]',
+            violet: 'text-violet-600 border-violet-300 hover:bg-violet-50 focus:border-violet-400 active:border-violet-400 dark:text-white dark:border-violet-600 dark:hover:bg-[#222222]',
+        };
+        return `${base} ${variants[tone]}`;
     };
-
-    const lightButtonPalettes: Record<string, string> = {
-        blue: 'text-blue-600 border-blue-400 hover:bg-blue-50 focus:border-blue-500 active:border-blue-500',
-        green: 'text-emerald-600 border-emerald-400 hover:bg-emerald-50 focus:border-emerald-500 active:border-emerald-500',
-        yellow: 'text-amber-600 border-amber-400 hover:bg-amber-50 focus:border-amber-500 active:border-amber-500',
-        yellowStrong: 'text-amber-700 border-amber-500 hover:bg-amber-100 focus:border-amber-600 active:border-amber-600',
-        gray: 'text-gray-700 border-gray-300 hover:bg-gray-100 focus:border-gray-400 active:border-gray-400',
-        violet: 'text-violet-600 border-violet-300 hover:bg-violet-50 focus:border-violet-400 active:border-violet-400'
-    };
-
-    const getButtonClasses = (tone: keyof typeof darkButtonPalettes) =>
-        `flex items-center px-4 py-2 text-sm bg-transparent rounded-full transition-colors cursor-pointer border ${
-            isDarkMode ? darkButtonPalettes[tone] : lightButtonPalettes[tone]
-        }`;
 
     return (
         <>
             <div
-                className={`fixed inset-0 z-50 flex flex-col ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}
+                className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-[#111111]"
                 onClick={handleDialogBackdropClick}
             >
                 <div
                     ref={dialogContentRef}
-                    style={{
-                        backgroundColor: isDarkMode ? '#1A1A1A' : '#f5f5f5',
-                        border: 'none'
-                    }}
-                    className="w-full h-full flex flex-col"
+                    className="w-full h-full flex flex-col bg-[#f5f5f5] dark:bg-[#1A1A1A] border-none"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Dialog Header */}
-                    <div
-                        className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'bg-[#111111] border-transparent' : 'bg-gray-100 border-gray-200'}`}
-                    >
+                    <div className="flex items-center justify-between p-4 border-b bg-gray-100 border-gray-200 dark:bg-[#111111] dark:border-transparent">
                         <div className="flex-1 flex items-center">
                             <h2
                                 ref={dialogTitleRef}
@@ -844,7 +828,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     const titleElement = e.currentTarget as HTMLElement;
                                     titleElement.dataset.editing = "true";
                                 }}
-                                className={`text-2xl font-light ${isDarkMode ? 'text-white' : 'text-black'} outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
+                                className={`text-2xl font-light text-black dark:text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
                                 data-placeholder={activeItem?.type === 'material' ? 'New learning material' : (activeItem?.type === 'quiz' ? 'New quiz' : 'New assignment')}
                             >
                                 {activeItem?.title}
@@ -957,7 +941,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             {showSchedulePicker && (
                                                 <div
                                                     ref={datePickerRef}
-                                                    className={`absolute mt-2 top-16 z-50 p-3 rounded-lg shadow-lg ${isDarkMode ? 'bg-[#242424] border border-gray-700' : 'bg-white border border-gray-200'}`}
+                                                    className="absolute mt-2 top-16 z-50 p-3 rounded-lg shadow-lg bg-white border border-gray-200 dark:bg-[#242424] dark:border-gray-700"
                                                 >
                                                     <DatePicker
                                                         selected={scheduledDate}
@@ -968,15 +952,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                         dateFormat="MMMM d, yyyy h:mm aa"
                                                         timeCaption="Time"
                                                         minDate={new Date()} // Can't schedule in the past
-                                                        className={`rounded-md p-2 px-4 w-full cursor-pointer ${isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-gray-900 border border-gray-200'}`}
-                                                        wrapperClassName={`w-full publish-datepicker-wrapper ${isDarkMode ? 'dark' : ''}`}
+                                                        className="rounded-md p-2 px-4 w-full cursor-pointer bg-white text-gray-900 border border-gray-200 dark:bg-[#333333] dark:text-white dark:border-transparent"
+                                                        wrapperClassName="w-full publish-datepicker-wrapper dark:dark"
                                                         calendarClassName="publish-datepicker-calendar rounded-lg shadow-lg cursor-pointer"
                                                         inline
                                                     />
                                                     <div className="mt-2 flex justify-end">
                                                         <button
                                                             onClick={() => setShowSchedulePicker(false)}
-                                                            className={`px-3 py-1 text-xs rounded-md ${isDarkMode ? 'text-white bg-[#444444] hover:bg-[#555555]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+                                                            className="px-3 py-1 text-xs rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-white dark:bg-[#444444] dark:hover:bg-[#555555]"
                                                         >
                                                             Close
                                                         </button>
@@ -1033,7 +1017,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         {/* Close button */}
                         <button
                             onClick={handleCloseRequest}
-                            className={`ml-2 p-2 rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white hover:text-white hover:bg-[#333333]' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                            className="ml-2 p-2 rounded-full transition-colors cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:text-white dark:hover:bg-[#333333]"
                             aria-label="Close dialog"
                         >
                             <X size={24} />
@@ -1333,7 +1317,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     setShowUnsavedScorecardChangesInfo(false);
                 }}
                 type="custom"
-                isDarkMode={isDarkMode}
             />
 
             {/* Toast notification */}
