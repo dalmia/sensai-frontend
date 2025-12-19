@@ -1072,7 +1072,7 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Task List */}
-                            <div className={`overflow-y-auto ${isAdminView ? 'h-[calc(100vh-160px)]' : 'h-[calc(100vh-120px)]'}`}>
+                            <div className={`overflow-y-auto ${isAdminView ? 'h-[calc(100vh-180px)]' : 'h-[calc(100vh-140px)]'}`}>
                                 {activeModuleId && filteredModules.find(m => m.id === activeModuleId)?.items.map((item) => {
                                     const isItemCompleted = completedTasks[item.id] === true;
                                     const hasQuizProgress = item.type === 'quiz' && localCompletedQuestionIds[item.id] && Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true);
