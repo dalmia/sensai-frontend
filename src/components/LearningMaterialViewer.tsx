@@ -17,6 +17,7 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Add imports for Notion rendering
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
@@ -36,13 +37,15 @@ interface LearningMaterialViewerProps {
 export default function LearningMaterialViewer({
     taskId,
     userId = '',
-    isDarkMode = true,
+    isDarkMode: _isDarkMode = true,
     className = "",
     readOnly = true,
     viewOnly = false,
     onMarkComplete,
 }: LearningMaterialViewerProps) {
     const { user } = useAuth();
+    // Use global theme (html.dark) as the source of truth.
+    const { isDarkMode } = useThemePreference();
 
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [taskData, setTaskData] = useState<TaskData | null>(null);
@@ -484,10 +487,16 @@ export default function LearningMaterialViewer({
                         flex-shrink: 0 !important;
                         position: sticky !important;
                         bottom: 0 !important;
-                        background-color: #111111 !important;
+                        background-color: #ffffff !important;
                         z-index: 10 !important;
                         padding-top: 0.5rem !important;
-                        border-top: 1px solid #222222 !important;
+                        border-top: 1px solid #e5e7eb !important;
+                    }
+
+                    /* Dark mode overrides (tailwind uses .dark on <html>) */
+                    .dark .chat-container .input-container {
+                        background-color: #111111 !important;
+                        border-top-color: #222222 !important;
                     }
                     
                     /* Mobile layout view modes */
@@ -557,11 +566,15 @@ export default function LearningMaterialViewer({
                         bottom: 0 !important;
                         top: 0 !important;
                         z-index: 50 !important;
-                        background-color: #111111 !important;
+                        background-color: #ffffff !important;
                         animation: slide-up 0.3s ease-out forwards !important;
                         display: flex !important;
                         flex-direction: column !important;
                         overflow: hidden !important;
+                    }
+
+                    .dark .mobile-chat-container {
+                        background-color: #111111 !important;
                     }
                     
                     .mobile-chat-container.slide-down {
@@ -662,17 +675,19 @@ export default function LearningMaterialViewer({
                 }
             `}</style>
 
-            <div className={`${isDarkMode ? 'bg-[#111111]' : 'bg-white'} material-view-container ${showChatView ? (isMobileView ? 'mode-chat-full' : 'two-column-grid rounded-md overflow-hidden split-view-container') : 'mode-content-full'}`}>
+            <div 
+                className={`bg-white dark:bg-[#111111] material-view-container ${showChatView ? (isMobileView ? 'mode-chat-full' : 'two-column-grid rounded-md overflow-hidden split-view-container') : 'mode-content-full'}`}
+            >
                 {/* Content Container - Always rendered to avoid reloading */}
                 <div
-                    className={`py-6 flex flex-col h-full content-container ${isDarkMode ? 'bg-[#1A1A1A]' : 'bg-white'}`}
+                    className="py-6 flex flex-col h-full content-container bg-white dark:bg-[#1A1A1A]"
                     style={{ overflow: 'auto' }}
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
                         {integrationBlocks.length > 0 ? (
-                            <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-gray-900'} px-12 pb-6 rounded-lg`}>
-                                <div className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-1`}>{integrationBlock?.props?.resource_name}</div>
+                            <div className="bg-white dark:bg-[#191919] text-gray-900 dark:text-white px-12 pb-6 rounded-lg">
+                                <div className="text-gray-900 dark:text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
                                 <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                     <BlockList blocks={integrationBlocks} />
                                 </RenderConfig>
@@ -690,13 +705,13 @@ export default function LearningMaterialViewer({
 
                 {/* Chat Container - Only visible when showChatView is true */}
                 {showChatView && (
-                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : `flex flex-col h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 ${isDarkMode ? 'bg-[#111111] border-[#222222]' : 'bg-white border-gray-200'}`} chat-container`}>
-                        <div className={`chat-header flex justify-between items-center px-4 py-2 border-b ${isDarkMode ? 'border-[#222222]' : 'border-gray-200'}`}>
-                            <h3 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-sm font-light`}>Ask your doubts</h3>
+                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : 'flex flex-col h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 bg-white dark:bg-[#111111] border-gray-200 dark:border-[#222222]'} chat-container`}>
+                        <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-gray-200 dark:border-[#222222]">
+                            <h3 className="text-gray-900 dark:text-white text-sm font-light">Ask your doubts</h3>
 
                             <button
                                 onClick={handleAskDoubt}
-                                className={`${isDarkMode ? 'text-white hover:bg-[#222222]' : 'text-gray-600 hover:bg-gray-100'} rounded-full p-1 transition-colors cursor-pointer`}
+                                className="text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-[#222222] rounded-full p-1 transition-colors cursor-pointer"
                                 aria-label="Close chat"
                             >
                                 <X size={18} />
@@ -773,8 +788,7 @@ export default function LearningMaterialViewer({
                         {/* Only show mobile menu overlay and options when onMarkComplete exists */}
                         {isMobileMenuOpen && onMarkComplete && (
                             <div
-                                className="fixed inset-0 z-10"
-                                style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                                className="fixed inset-0 z-10 bg-black/80"
                                 aria-hidden="true"
                                 onClick={() => setIsMobileMenuOpen(false)}
                             />
@@ -785,7 +799,7 @@ export default function LearningMaterialViewer({
                             <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '170px' }} ref={mobileMenuRef}>
                                 {/* Ask a doubt button */}
                                 <div className="flex items-center gap-3">
-                                    <span className={`${isDarkMode ? 'bg-black text-white' : 'bg-gray-900 text-white'} py-2 px-4 rounded-full text-sm shadow-md`}>
+                                    <span className="bg-gray-900 dark:bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
                                         Ask a doubt
                                     </span>
                                     <button
@@ -793,7 +807,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             handleAskDoubt();
                                         }}
-                                        className={`mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-purple-600' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
+                                        className="mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors bg-purple-600 dark:bg-white text-white dark:text-black hover:bg-purple-700 dark:hover:bg-purple-600"
                                         aria-label="Ask a doubt"
                                     >
                                         <MessageCircle className="h-6 w-6" />
@@ -802,7 +816,7 @@ export default function LearningMaterialViewer({
 
                                 {/* Mark as complete button */}
                                 <div className="flex items-center gap-3">
-                                    <span className={`${isDarkMode ? 'bg-black text-white' : 'bg-emerald-600 text-white'} py-2 px-4 rounded-full text-sm shadow-md`}>
+                                    <span className="bg-emerald-600 dark:bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
                                         Mark as complete
                                     </span>
                                     <button
@@ -810,7 +824,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             onMarkComplete();
                                         }}
-                                        className={`mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors ${isDarkMode ? 'bg-green-700 text-white hover:bg-green-600' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                                        className="mobile-action-button rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors bg-emerald-500 dark:bg-green-700 text-white hover:bg-emerald-600 dark:hover:bg-green-600"
                                         aria-label="Mark as complete"
                                     >
                                         <CheckCircle className="h-6 w-6" />

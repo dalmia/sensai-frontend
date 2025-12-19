@@ -5,13 +5,13 @@ import { BookOpen } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import LearningMaterialLinker from "./LearningMaterialLinker";
 import { extractTextFromBlocks } from "@/lib/utils/blockUtils";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface KnowledgeBaseEditorProps {
     knowledgeBaseBlocks: any[];
     linkedMaterialIds: string[];
     courseId?: string;
     readOnly: boolean;
-    isDarkMode?: boolean;
     onKnowledgeBaseChange: (knowledgeBaseBlocks: any[]) => void;
     onLinkedMaterialsChange: (linkedMaterialIds: string[]) => void;
     className?: string;
@@ -22,11 +22,11 @@ const KnowledgeBaseEditor = ({
     linkedMaterialIds,
     courseId,
     readOnly,
-    isDarkMode = true,
     onKnowledgeBaseChange,
     onLinkedMaterialsChange,
     className = ""
 }: KnowledgeBaseEditorProps) => {
+    const { isDarkMode } = useThemePreference();
     // Reference to the knowledge base editor
     const knowledgeBaseEditorRef = useRef<any>(null);
 

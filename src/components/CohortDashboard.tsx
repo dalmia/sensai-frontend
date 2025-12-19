@@ -37,10 +37,9 @@ interface CohortDashboardProps {
     activeCourseIndex?: number;
     onActiveCourseChange?: (index: number) => void;
     batchId?: number | null;
-    isDarkMode?: boolean;
 }
 
-export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId, isDarkMode = true }: CohortDashboardProps) {
+export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug, onAddLearners, view = 'admin', activeCourseIndex, onActiveCourseChange, batchId }: CohortDashboardProps) {
     // State for course metrics
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);

@@ -8,6 +8,7 @@ import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
 import UploadFile from './UploadFile';
 import isEqual from 'lodash/isEqual';
+import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 // Export interface for code view state to be used by parent components
 export interface CodeViewState {
@@ -52,7 +53,6 @@ interface ChatViewProps {
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
     onFileDownload?: (fileUuid: string, fileName: string) => void;
-    isDarkMode?: boolean;
 }
 
 export interface ChatViewHandle {
@@ -86,9 +86,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     showUploadSection = false,
     onFileUploaded,
     onFileDownload,
-    isDarkMode = true,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const { isDarkMode } = useThemePreference();
 
     // Add ref for CodeEditorView
     const codeEditorRef = useRef<CodeEditorViewHandle>(null);
@@ -576,11 +576,10 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             inputType={currentQuestionConfig?.inputType}
                             viewOnly={viewOnly}
                             responseType={currentQuestionConfig?.responseType}
-                            isDarkMode={isDarkMode}
                         />
                     ) : (
                         <div
-                            className={`flex-1 overflow-y-auto messages-container ${isDarkMode ? '' : 'bg-white/80'}`}
+                            className="flex-1 overflow-y-auto messages-container bg-white/80 dark:bg-transparent"
                             onCopy={() => {
                                 const selection = window.getSelection();
                                 if (selection && selection.toString()) {
@@ -609,36 +608,35 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                 onShowLearnerViewChange={onShowLearnerViewChange}
                                 isAdminView={isAdminView}
                                 onFileDownload={onFileDownload}
-                                isDarkMode={isDarkMode}
                             />
                         </div>
                     )}
 
                     {/* Input area with fixed position at bottom */}
                     {!viewOnly && (
-                        <div className={`pt-2 input-container ${isDarkMode ? 'bg-[#111111]' : 'bg-white border-t border-gray-200'}`}>
+                        <div className="pt-2 input-container bg-white border-t border-gray-200 dark:bg-[#111111] dark:border-transparent">
                             {/* Learning Material Suggestions */}
                             {taskType === 'learning_material' && currentChatHistory.length === 0 && (
                                 <div className="mb-4">
-                                    <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mb-2 flex items-center`}>
+                                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-2 flex items-center">
                                         <Sparkles size={16} className="mr-2" />
                                         <span>A few suggestions to get started</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mb-2">
                                         <button
-                                            className={`px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'}`}
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Explain using an example")}
                                         >
                                             Explain using an example
                                         </button>
                                         <button
-                                            className={`px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'}`}
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-emerald-100 text-emerald-900 hover:bg-emerald-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Summarise it with clear takeaways")}
                                         >
                                             Summarise it with clear takeaways
                                         </button>
                                         <button
-                                            className={`px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-sky-100 text-sky-900 hover:bg-sky-200'}`}
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-sky-100 text-sky-900 hover:bg-sky-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Why is this important to understand")}
                                         >
                                             Why is this important to understand
@@ -660,26 +658,24 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                             fileType={['.zip']}
                                             maxSizeBytes={50 * 1024 * 1024}
                                             placeholderText="Upload your project as a .zip file"
-                                            isDarkMode={isDarkMode}
                                         />
                                     ) : currentQuestionConfig?.inputType === 'audio' ? (
                                         <div className="w-full sm:w-auto">
                                             <AudioInputComponent
                                                 onAudioSubmit={handleAudioSubmit}
                                                 isSubmitting={isSubmitting || isAiResponding}
-                                                isDarkMode={isDarkMode}
                                             />
                                         </div>
                                     ) : (
                                         /* Hide the text input for coding questions in exam mode */
                                         !(currentQuestionConfig?.responseType === 'exam' && isCodingQuestion) && (
-                                            <div className={`relative flex items-center rounded-3xl py-1 overflow-hidden border ${isDarkMode ? 'bg-[#111111] border-[#222222]' : 'bg-gray-50 border-gray-300 shadow-sm'}`}>
+                                            <div className="relative flex items-center rounded-3xl py-1 overflow-hidden border bg-gray-50 border-gray-300 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none">
                                                 <div className="flex-1 flex items-center">
                                                     <textarea
                                                         id="no-border-textarea"
                                                         ref={textareaRef}
                                                         placeholder={taskType === 'learning_material' ? "Type your question here" : "Type your answer here"}
-                                                        className={`ml-2 w-full bg-transparent auto-expanding-textarea ${isDarkMode ? 'text-white' : 'text-slate-900 placeholder:text-slate-400'}`}
+                                                        className="ml-2 w-full bg-transparent auto-expanding-textarea text-slate-900 placeholder:text-slate-400 dark:text-white dark:placeholder:text-gray-500"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}
                                                         onKeyDown={handleTextareaKeyDown}
@@ -727,14 +723,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                     />
                                                 </div>
                                                 <button
-                                                    className={`${isDarkMode ? 'bg-white text-black' : 'bg-white text-black border border-gray-300 shadow-sm'} rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center transition-colors duration-200 ${isSubmitting || isAiResponding ? 'opacity-50' : isDarkMode ? 'hover:opacity-90' : 'hover:bg-gray-50'}`}
+                                                    className={`bg-white text-black border border-gray-300 shadow-sm dark:border-transparent dark:shadow-none rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center transition-colors duration-200 ${isSubmitting || isAiResponding ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:opacity-90'}`}
                                                     onClick={() => handleSubmitAnswer('text')}
                                                     disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
                                                     aria-label="Submit answer"
                                                     type="button"
                                                 >
                                                     {isSubmitting ? (
-                                                        <div className={`w-5 h-5 border-2 border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-black' : 'border-black'}`}></div>
+                                                        <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-black"></div>
                                                     ) : (
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                             <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -755,17 +751,28 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     return (
         <div
-            className={`flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper ${isDarkMode ? 'chat-dark' : `chat-light ${isViewingCode ? 'bg-gray-200' : 'bg-white'}`}`}
-            style={{
-                ['--code-toggle-bg' as any]: isDarkMode ? '#111111' : '#f3f4f6',
-                ['--code-toggle-border' as any]: isDarkMode ? '#333333' : '#e5e7eb',
-                ['--code-toggle-shadow' as any]: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.2)' : 'none',
-                ['--code-toggle-text' as any]: isDarkMode ? '#999999' : '#6b7280',
-                ['--code-toggle-active-bg' as any]: isDarkMode ? '#222222' : '#ffffff',
-                ['--code-toggle-active-text' as any]: isDarkMode ? '#ffffff' : '#0f172a',
-            }}
+            className={`flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper ${isViewingCode ? 'bg-gray-200 dark:!bg-[#111111]' : 'bg-white dark:bg-transparent'}`}
         >
             <style jsx global>{`
+                /* Code toggle colors (used by .code-toggle-switch via CSS vars) */
+                :root {
+                    --code-toggle-bg: #e5e7eb;
+                    --code-toggle-border: #d1d5db;
+                    --code-toggle-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+                    --code-toggle-text: #111827;
+                    --code-toggle-active-bg: #ffffff;
+                    --code-toggle-active-text: #111827;
+                }
+
+                .dark {
+                    --code-toggle-bg: #1D1D1D;
+                    --code-toggle-border: #2D2D2D;
+                    --code-toggle-shadow: none;
+                    --code-toggle-text: #9ca3af;
+                    --code-toggle-active-bg: #2D2D2D;
+                    --code-toggle-active-text: #ffffff;
+                }
+
                 /* Target the specific textarea with an important ID */
                 #no-border-textarea {
                     border: none !important;
@@ -915,8 +922,12 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     }
                 }
 
-                .chat-light .messages-container {
+                .messages-container {
                     background-color: #f8fafc;
+                }
+                
+                .dark .messages-container {
+                    background-color: transparent;
                 }
             `}</style>
 

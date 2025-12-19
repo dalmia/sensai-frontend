@@ -156,4 +156,4 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
             </div>
         </div>
     );
-}
+} 

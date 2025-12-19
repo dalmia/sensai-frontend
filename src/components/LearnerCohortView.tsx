@@ -33,7 +33,6 @@ interface LearnerCohortViewProps {
     taskId?: string | null;
     questionId?: string | null;
     onUpdateTaskAndQuestionIdInUrl?: (taskId: string | null, questionId: string | null) => void;
-    isDarkMode?: boolean;
 }
 
 interface StreakData {
@@ -56,7 +55,6 @@ export default function LearnerCohortView({
     taskId = null,
     questionId = null,
     onUpdateTaskAndQuestionIdInUrl = () => {},
-    isDarkMode = true,
 }: LearnerCohortViewProps) {
     // Add state to manage completed tasks and questions
     const [localCompletedTaskIds, setLocalCompletedTaskIds] = useState<Record<string, boolean>>(completedTaskIds);
@@ -340,9 +338,9 @@ export default function LearnerCohortView({
     }, []);
 
     return (
-        <div className={`${isDarkMode ? 'bg-black' : 'bg-white'} min-h-screen pb-16 lg:pb-0`} role="main">
+        <div className="bg-white dark:bg-black min-h-screen pb-16 lg:pb-0" role="main">
             {courseTitle && (
-                <h1 className={`text-2xl md:text-3xl font-light mb-4 md:mb-6 px-1 sm:px-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                <h1 className="text-2xl md:text-3xl font-light mb-4 md:mb-6 px-1 sm:px-0 text-black dark:text-white">
                     {courseTitle}
                 </h1>
             )}
@@ -355,13 +353,13 @@ export default function LearnerCohortView({
                         <div className="mb-8 sm:mb-10">
                             {/* Desktop Tabs - Hidden on Mobile */}
                             <div className="hidden sm:block w-full">
-                                <div className={`flex items-center border-b overflow-x-auto scrollbar-hide ${isDarkMode ? 'border-gray-900' : 'border-gray-300'}`}>
+                                <div className="flex items-center border-b overflow-x-auto scrollbar-hide border-gray-300 dark:border-gray-900">
                                     {courses.map((course, index) => (
                                         <button
                                             key={course.id}
                                             className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === activeCourseIndex
-                                                ? isDarkMode ? 'text-white font-light' : 'text-black font-light'
-                                                : isDarkMode ? 'text-gray-500 hover:text-gray-300 font-light' : 'text-gray-500 hover:text-gray-700 font-light'
+                                                ? 'text-black dark:text-white font-light'
+                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-light'
                                                 }`}
                                             onClick={() => handleCourseSelect(index)}
                                             ref={el => { courseTabRefs.current[index] = el; }}
@@ -370,12 +368,12 @@ export default function LearnerCohortView({
 
                                             {/* Active indicator - visible only for active tab */}
                                             {index === activeCourseIndex && (
-                                                <div className={`absolute bottom-0 left-0 right-0 h-[1px] ${isDarkMode ? 'bg-white' : 'bg-black'}`} />
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black dark:bg-white" />
                                             )}
 
                                             {/* Hover indicator - visible only on hover for inactive tabs */}
                                             {index !== activeCourseIndex && (
-                                                <div className={`absolute bottom-0 left-0 right-0 h-[1px] scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left bg-gray-300 dark:bg-gray-700" />
                                             )}
                                         </button>
                                     ))}
@@ -387,15 +385,15 @@ export default function LearnerCohortView({
                                 {/* Current course indicator */}
                                 <button
                                     onClick={() => setMobileDropdownOpen(true)}
-                                    className={`w-full text-left py-3 px-1 border-b flex items-center justify-between cursor-pointer group transition-opacity ${isDarkMode ? 'border-gray-800' : 'border-gray-300'}`}
+                                    className="w-full text-left py-3 px-1 border-b flex items-center justify-between cursor-pointer group transition-opacity border-gray-300 dark:border-gray-800"
                                     aria-haspopup="true"
                                 >
                                     <div>
                                         <div className="text-xs text-gray-500 mb-1">Current Course</div>
-                                        <div className={`font-light ${isDarkMode ? 'text-white' : 'text-black'}`}>{getActiveCourse()?.name || "Select Course"}</div>
+                                        <div className="font-light text-black dark:text-white">{getActiveCourse()?.name || "Select Course"}</div>
                                     </div>
-                                    <div className={`rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
-                                        <ChevronDown size={16} className={isDarkMode ? 'text-white' : 'text-black'} />
+                                    <div className="rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity bg-gray-200 dark:bg-gray-800">
+                                        <ChevronDown size={16} className="text-black dark:text-white" />
                                     </div>
                                 </button>
                             </div>
@@ -423,7 +421,6 @@ export default function LearnerCohortView({
                             completedQuestionIds={localCompletedQuestionIds}
                             onTaskComplete={handleTaskComplete}
                             onQuestionComplete={handleQuestionComplete}
-                            isDarkMode={isDarkMode}
                             onDialogClose={handleDialogClose}
                             taskId={taskId}
                             questionId={questionId}
@@ -440,7 +437,6 @@ export default function LearnerCohortView({
                             <LearningStreak
                                 streakDays={streakCount}
                                 activeDays={activeWeekDays}
-                                isDarkMode={isDarkMode}
                             />
                         )}
 
@@ -450,7 +446,6 @@ export default function LearnerCohortView({
                                 schoolId={schoolId}
                                 cohortId={cohortId}
                                 view='learner'
-                                isDarkMode={isDarkMode}
                             // onEmptyData={handleEmptyPerformersData}
                             />
                         )}
@@ -460,11 +455,11 @@ export default function LearnerCohortView({
 
             {/* Mobile Bottom Tabs - Only visible on mobile */}
             {showSidebar && (
-                <div className={`lg:hidden fixed bottom-0 left-0 right-0 border-t z-20 ${isDarkMode ? 'bg-gradient-to-t from-black to-[rgba(0,0,0,0.9)] border-gray-900' : 'bg-gradient-to-t from-white to-[rgba(255,255,255,0.9)] border-gray-300'}`}>
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t z-20 bg-gradient-to-t from-white to-[rgba(255,255,255,0.9)] dark:from-black dark:to-[rgba(0,0,0,0.9)] border-gray-300 dark:border-gray-900">
                     <div className="flex h-16">
                         <button
                             className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Course
-                                ? isDarkMode ? 'text-white' : 'text-black'
+                                ? 'text-black dark:text-white'
                                 : 'text-gray-500'
                                 }`}
                             onClick={() => setActiveMobileTab(MobileTab.Course)}
@@ -476,7 +471,7 @@ export default function LearnerCohortView({
                         </button>
                         <button
                             className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Progress
-                                ? isDarkMode ? 'text-white' : 'text-black'
+                                ? 'text-black dark:text-white'
                                 : 'text-gray-500'
                                 }`}
                             onClick={() => setActiveMobileTab(MobileTab.Progress)}

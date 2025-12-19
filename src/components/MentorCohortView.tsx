@@ -37,7 +37,6 @@ interface MentorCohortViewProps {
     completedTaskIds?: Record<string, boolean>;
     completedQuestionIds?: Record<string, Record<string, boolean>>;
     courses?: Course[];
-    isDarkMode?: boolean;
 }
 
 export default function MentorCohortView({
@@ -50,7 +49,6 @@ export default function MentorCohortView({
     completedTaskIds = {},
     completedQuestionIds = {},
     courses = [],
-    isDarkMode = true
 }: MentorCohortViewProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -88,7 +86,7 @@ export default function MentorCohortView({
     if (batchId === null) {
         return (
             <div className="flex flex-col items-center justify-center py-20 flex-1">
-                <h2 className={`text-4xl font-light mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}>No learners assigned yet</h2>
+                <h2 className="text-4xl font-light mb-4 text-black dark:text-white">No learners assigned yet</h2>
                 <p className="text-gray-400 mb-8">You will see their progress here once they are assigned to you</p>
             </div>
         );
@@ -133,7 +131,7 @@ export default function MentorCohortView({
     if (isLoadingMembers) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className={`w-12 h-12 border-t-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
+                <div className="w-12 h-12 border-t-2 rounded-full animate-spin border-black dark:border-white"></div>
             </div>
         );
     }
@@ -152,12 +150,12 @@ export default function MentorCohortView({
         <div className="w-full">
             {/* View Mode Toggle */}
             <div className="flex justify-center mb-8">
-                <div className={`rounded-full p-1 flex items-center ${isDarkMode ? 'bg-[#333333]' : 'bg-gray-200'}`}>
+                <div className="rounded-full p-1 flex items-center bg-gray-200 dark:bg-[#333333]">
                     <button
                         onClick={() => handleViewModeToggle('mentor')}
                         className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'mentor'
-                            ? isDarkMode ? 'bg-white text-black' : 'bg-white text-black'
-                            : isDarkMode ? 'text-white hover:bg-black' : 'text-gray-700 hover:bg-gray-300'
+                            ? 'bg-white text-black'
+                            : 'text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-black'
                             }`}
                     >
                         <Users size={16} className="mr-2" />
@@ -166,8 +164,8 @@ export default function MentorCohortView({
                     <button
                         onClick={() => handleViewModeToggle('learner')}
                         className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'learner'
-                            ? isDarkMode ? 'bg-white text-black' : 'bg-white text-black'
-                            : isDarkMode ? 'text-white hover:bg-black' : 'text-gray-700 hover:bg-gray-300'
+                            ? 'bg-white text-black'
+                            : 'text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-black'
                             }`}
                     >
                         <Eye size={16} className="mr-2" />
@@ -187,7 +185,6 @@ export default function MentorCohortView({
                     activeCourseIndex={activeCourseIndex}
                     onActiveCourseChange={onActiveCourseChange}
                     batchId={batchId}
-                    isDarkMode={isDarkMode}
                 />
             ) : (
                 <LearnerCohortView
@@ -202,7 +199,6 @@ export default function MentorCohortView({
                     courses={courses}
                     onCourseSelect={onActiveCourseChange}
                     activeCourseIndex={activeCourseIndex}
-                    isDarkMode={isDarkMode}
                 />
             )}
         </div>

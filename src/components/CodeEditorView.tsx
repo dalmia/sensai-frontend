@@ -79,7 +79,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-color: #1a1a1a;
+                    background-color: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
                     display: flex;
                     justify-content: center;
                     align-items: center;
@@ -93,8 +93,8 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                 .iframe-spinner {
                     width: 40px;
                     height: 40px;
-                    border: 4px solid #2a2a2a;
-                    border-top: 4px solid #a0a0a0;
+                    border: 4px solid ${isDarkMode ? '#2a2a2a' : '#e5e7eb'};
+                    border-top: 4px solid ${isDarkMode ? '#a0a0a0' : '#3b82f6'};
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
                 }
@@ -154,8 +154,8 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                         <div className={`animate-spin rounded-full h-6 w-6 border-t-2 border-t-transparent ${isDarkMode ? 'border-white' : 'border-slate-900'}`}></div>
                     </div>
                 ) : !previewContent && !output ? (
-                    <div className={`flex flex-col items-center justify-center h-full preview-placeholder ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <div className={`flex flex-col items-center justify-center h-full preview-placeholder ${isDarkMode ? 'bg-[#1A1A1A] text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-50 mb-4">
                             <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <p>Run your code to see the preview here</p>
@@ -481,6 +481,10 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     const [stdInput, setStdInput] = useState<string>('');
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+    // Monaco can crash during Next.js Fast Refresh (hot reload) with:
+    // "Cannot read properties of undefined (reading 'domNode')"
+    // A minimal, dev-only workaround is to force a clean remount of the Editor on refresh.
+    const [editorInstanceKey, setEditorInstanceKey] = useState(0);
     const keydownDisposableRef = useRef<IDisposable | null>(null);
 
     // Reset active language when languages prop changes
@@ -909,8 +913,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                     body {
                                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                                         padding: 16px;
-                                        background-color: #1a1a1a;
-                                        color: #e2e2e2;
+                                        background-color: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
+                                        color: ${isDarkMode ? '#e2e2e2' : '#1f2937'};
                                         font-size: 12px;
                                     }
                                     table {
@@ -922,28 +926,28 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                         font-weight: 500;
                                         text-align: left;
                                         padding: 6px 8px;
-                                        border-bottom: 1px solid #333;
-                                        color: #a0a0a0;
+                                        border-bottom: 1px solid ${isDarkMode ? '#333' : '#e5e7eb'};
+                                        color: ${isDarkMode ? '#a0a0a0' : '#6b7280'};
                                     }
                                     td {
                                         padding: 6px 8px;
-                                        border-bottom: 1px solid #222;
+                                        border-bottom: 1px solid ${isDarkMode ? '#222' : '#f3f4f6'};
                                     }
                                     tr:hover {
-                                        background-color: #222;
+                                        background-color: ${isDarkMode ? '#222' : '#f9fafb'};
                                     }
                                     .sql-results-title {
                                         margin-bottom: 12px;
-                                        color: #e2e2e2;
+                                        color: ${isDarkMode ? '#e2e2e2' : '#1f2937'};
                                         font-size: 14px;
                                         font-weight: 500;
                                     }
                                     .no-results {
-                                        color: #a0a0a0;
+                                        color: ${isDarkMode ? '#a0a0a0' : '#6b7280'};
                                         padding: 16px;
                                         text-align: center;
                                         font-size: 12px;
-                                        background-color: #222;
+                                        background-color: ${isDarkMode ? '#222' : '#f3f4f6'};
                                         border-radius: 3px;
                                     }
                                 </style>
@@ -976,13 +980,13 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                     body {
                                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                                         padding: 16px;
-                                        background-color: #1a1a1a;
-                                        color: #e2e2e2;
+                                        background-color: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
+                                        color: ${isDarkMode ? '#e2e2e2' : '#1f2937'};
                                         font-size: 12px;
                                     }
                                     .message {
                                         padding: 12px 16px;
-                                        background-color: #252525;
+                                        background-color: ${isDarkMode ? '#252525' : '#f3f4f6'};
                                         border-radius: 3px;
                                         margin-bottom: 16px;
                                         font-size: 12px;
@@ -992,11 +996,11 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                         font-size: 13px;
                                         margin-top: 0;
                                         margin-bottom: 8px;
-                                        color: #e2e2e2;
+                                        color: ${isDarkMode ? '#e2e2e2' : '#1f2937'};
                                     }
                                     .message p {
                                         margin: 4px 0;
-                                        color: #a0a0a0;
+                                        color: ${isDarkMode ? '#a0a0a0' : '#6b7280'};
                                     }
                                 </style>
                             </head>
@@ -1026,17 +1030,17 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 body {
                                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                                     padding: 16px;
-                                    background-color: #1a1a1a;
-                                    color: #e2e2e2;
+                                    background-color: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
+                                    color: ${isDarkMode ? '#e2e2e2' : '#1f2937'};
                                     font-size: 12px;
                                 }
                                 .message {
                                     padding: 16px;
-                                    background-color: #252525;
+                                    background-color: ${isDarkMode ? '#252525' : '#f3f4f6'};
                                     border-radius: 3px;
                                     text-align: center;
                                     font-size: 12px;
-                                    color: #a0a0a0;
+                                    color: ${isDarkMode ? '#a0a0a0' : '#6b7280'};
                                 }
                             </style>
                         </head>
@@ -1189,6 +1193,11 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
     // Update paste prevention when flag changes and cleanup on unmount
     useEffect(() => {
+        // On Fast Refresh React will re-run effects; bumping the key forces Monaco to remount cleanly.
+        if (process.env.NODE_ENV === 'development') {
+            setEditorInstanceKey((k) => k + 1);
+        }
+
         setupPastePreventionHandler();
         return () => {
             if (keydownDisposableRef.current) {
@@ -1197,6 +1206,12 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 } catch { }
                 keydownDisposableRef.current = null;
             }
+
+            // Best-effort cleanup to avoid Monaco scheduling renders against a disposed DOM node.
+            try {
+                editorRef.current?.dispose?.();
+            } catch { }
+            editorRef.current = null;
         };
     }, [disableCopyPaste, lastCopiedCode]);
 
@@ -1370,6 +1385,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 {/* Code editor */}
                 <div className={`${showInputPanel ? 'flex-none' : 'flex-1'} ${showInputPanel ? 'h-2/3' : ''}`}>
                     <Editor
+                        key={editorInstanceKey}
                         height="100%"
                         language={getMonacoLanguage(activeLanguage)}
                         value={code[activeLanguage]}
@@ -1459,7 +1475,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 <div>
                     <button
                         onClick={handleSubmit}
-                        className={`flex items-center space-x-2 rounded-full px-4 py-2 cursor-pointer ${isDarkMode ? 'bg-white hover:bg-gray-200 text-black' : 'bg-white hover:bg-gray-50 text-black border border-gray-200 shadow-sm'}`}
+                        className={`flex items-center space-x-2 rounded-full px-4 py-2 cursor-pointer ${isDarkMode ? 'bg-[#222222] hover:bg-[#2e2e2e] text-white' : 'bg-white hover:bg-gray-50 text-black border border-gray-200 shadow-sm'}`}
                     >
                         <Send size={16} />
                         <span>Submit</span>

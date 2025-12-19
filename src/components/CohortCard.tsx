@@ -99,4 +99,4 @@ export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardPro
             />
         </div>
     );
-}
+} 

@@ -3,10 +3,9 @@ import React, { useMemo } from "react";
 interface LearningStreakProps {
     streakDays: number;
     activeDays: string[]; // Days that are active in the streak (e.g., ['M', 'T', 'S_0', 'S_6'])
-    isDarkMode?: boolean;
 }
 
-export default function LearningStreak({ streakDays, activeDays, isDarkMode = true }: LearningStreakProps) {
+export default function LearningStreak({ streakDays, activeDays }: LearningStreakProps) {
     // Get current day in IST
     const getCurrentDayInIST = useMemo(() => {
         // Create a date in IST (UTC+5:30)
@@ -25,8 +24,8 @@ export default function LearningStreak({ streakDays, activeDays, isDarkMode = tr
         const currentDayIndex = getCurrentDayInIST;
 
         // Calculate days before and after to create a balanced view with current day in center
-        let reorderedDays = [];
-        let reorderedIdentifiers = [];
+        const reorderedDays = [];
+        const reorderedIdentifiers = [];
 
         // Add 3 days before the current day
         for (let i = 3; i > 0; i--) {
@@ -79,13 +78,13 @@ export default function LearningStreak({ streakDays, activeDays, isDarkMode = tr
     };
 
     return (
-        <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-[#121212] border-gray-800' : 'bg-white border-gray-300'}`}>
-            <div className={`px-4 py-3 border-b ${isDarkMode ? 'bg-[#2A2000] border-gray-800' : 'bg-[#F6C16E] border-[#D39228]'}`}>
-                <h3 className={`text-lg font-light ${isDarkMode ? 'text-white' : 'text-black'}`}>Learning Streak</h3>
+        <div className="rounded-lg border overflow-hidden bg-white border-gray-300 dark:bg-[#121212] dark:border-gray-800">
+            <div className="px-4 py-3 border-b bg-[#F6C16E] border-[#D39228] dark:bg-[#2A2000] dark:border-gray-800">
+                <h3 className="text-lg font-light text-black dark:text-white">Learning Streak</h3>
             </div>
 
             <div className="p-4">
-                <div className={`text-3xl font-light mb-4 flex items-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                <div className="text-3xl font-light mb-4 flex items-center text-black dark:text-white">
                     {streakDays} Day{streakDays === 1 ? "" : "s"}
                     {randomEmoji && <span className="ml-2" role="img" aria-label="Energizing emoji">{randomEmoji}</span>}
                 </div>
@@ -98,7 +97,7 @@ export default function LearningStreak({ streakDays, activeDays, isDarkMode = tr
                                 flex-1 h-8 flex items-center justify-center rounded mx-1.5
                                 ${isDayActive(index)
                                     ? "bg-[#F9B84E] text-black font-light"
-                                    : isDarkMode ? "bg-gray-800 text-gray-400 font-light" : "bg-gray-200 text-gray-600 font-light"}
+                                    : "bg-gray-200 text-gray-600 font-light dark:bg-gray-800 dark:text-gray-400"}
                                 ${index === 3 ? "border-2 border-[#F9B84E] bg-opacity-80" : ""}
                             `}
                         >

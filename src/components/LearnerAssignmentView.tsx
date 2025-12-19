@@ -14,6 +14,7 @@ import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import { useAuth } from "@/lib/auth";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface Settings {
     allowCopyPaste?: boolean;
@@ -68,11 +69,13 @@ export default function LearnerAssignmentView({
     isTestMode = true,
     viewOnly = false,
     className = "",
-    isDarkMode = true,
+    isDarkMode: _isDarkMode = true,
     onTaskComplete,
     onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
     const { user } = useAuth();
+    // Use global theme (html.dark) as the source of truth.
+    const { isDarkMode } = useThemePreference();
 
     // Data fetching state
     const [isLoadingAssignment, setIsLoadingAssignment] = useState(true);
@@ -1090,7 +1093,7 @@ export default function LearnerAssignmentView({
     if (isLoadingAssignment) {
         return (
             <div className={`w-full h-full flex items-center justify-center ${className}`}>
-                <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-gray-700'} border-t-transparent`}></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-700 dark:border-white border-t-transparent"></div>
             </div>
         );
     }
@@ -1118,18 +1121,18 @@ export default function LearnerAssignmentView({
                     }
                 }
             `}</style>
-            <div className={`two-column-grid overflow-hidden ${isDarkMode ? 'bg-[#111111]' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className="two-column-grid overflow-hidden bg-white border border-gray-200 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none">
                 {/* Left: Problem Statement */}
                 <div
-                    className={`p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 ${isDarkMode ? 'bg-[#1A1A1A] border-[#222222]' : 'bg-white border-gray-200'}`}
+                    className="p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 bg-white border-gray-200 dark:bg-[#1A1A1A] dark:border-[#222222]"
                     style={{ overflow: 'auto' }}
                 >
                     {/* Header chip */}
                     <div className="flex items-center justify-center w-full mb-6">
-                        <div className={`${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-700'} px-3 py-1 rounded-full text-sm flex items-center`}>
+                        <div className="px-3 py-1 rounded-full text-sm flex items-center bg-gray-100 text-gray-700 dark:bg-[#222222] dark:text-white">
                             <span>Problem Statement</span>
                             {isCompleted && (
-                                <CheckCircle size={14} className={`ml-2 flex-shrink-0 ${isDarkMode ? 'text-green-500' : 'text-emerald-500'}`} />
+                                <CheckCircle size={14} className="ml-2 flex-shrink-0 text-emerald-500 dark:text-green-500" />
                             )}
                         </div>
                     </div>
@@ -1151,8 +1154,8 @@ export default function LearnerAssignmentView({
                             }}
                         >
                             {integrationBlocks.length > 0 ? (
-                                <div className={`${isDarkMode ? 'bg-[#191919] text-white' : 'bg-white text-gray-900'} px-20 pr-0 pb-6 rounded-lg`}>
-                                    <h1 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} text-4xl font-bold mb-4 pl-0.5`}>{integrationBlock?.props?.resource_name}</h1>
+                                <div className="px-20 pr-0 pb-6 rounded-lg bg-white text-gray-900 dark:bg-[#191919] dark:text-white">
+                                    <h1 className="text-4xl font-bold mb-4 pl-0.5 text-gray-900 dark:text-white">{integrationBlock?.props?.resource_name}</h1>
                                     <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                         <BlockList blocks={integrationBlocks as any} />
                                     </RenderConfig>
@@ -1173,7 +1176,7 @@ export default function LearnerAssignmentView({
                 </div>
 
                 {/* Right: Upload + Chat */}
-                <div className={`flex flex-col h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 chat-container ${isDarkMode ? 'bg-[#111111] border border-[#222222]' : 'bg-white border border-gray-200'}`}>
+                <div className="flex flex-col h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 chat-container bg-white border border-gray-200 dark:bg-[#111111] dark:border-[#222222]">
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView

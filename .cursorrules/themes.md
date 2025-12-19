@@ -10,6 +10,17 @@ The app uses Tailwind's class-based dark mode with CSS variables:
 2. **CSS variables** in `globals.css` define colors for `:root` (light) and `.dark` (dark)
 3. **Tailwind's `dark:` prefix** enables automatic theme switching in components
 
+### Tailwind v4 Configuration (CRITICAL)
+
+This project uses **Tailwind v4**, which requires a different dark mode setup than v3:
+
+```css
+/* In globals.css - REQUIRED for class-based dark mode in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+**DO NOT** use `darkMode: ["class"]` in `tailwind.config.js` - this is the Tailwind v3 approach and won't work in v4.
+
 ### Theme Source of Truth
 
 - **Default**: Dark mode is the default
@@ -21,7 +32,7 @@ The app uses Tailwind's class-based dark mode with CSS variables:
 **Use Tailwind's `dark:` prefix** - components automatically respond to theme changes:
 
 ```tsx
-// ✅ PREFERRED: Uses dark: variants
+// ✅ PREFERRED: Uses dark: variants - instant theme switching, no reload needed
 <div className="bg-white dark:bg-black text-black dark:text-white">
 
 // ✅ ALSO GOOD: Uses CSS variables that auto-switch
@@ -32,16 +43,86 @@ The app uses Tailwind's class-based dark mode with CSS variables:
 
 ```tsx
 // ❌ AVOID: Prop drilling and ternary conditionals
+// This causes theme changes to require page reloads!
 <div className={`${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
 ```
+
+### Why `isDarkMode` Conditionals Cause Problems
+
+**The State Synchronization Issue:**
+
+When you use `isDarkMode` from `useThemePreference()` for conditional styling:
+
+1. User clicks theme toggle
+2. Hook calls `applyDarkClass()` which adds/removes `.dark` class on `<html>`
+3. Hook calls `setIsDarkMode()` to update React state
+4. **Problem**: CSS responds instantly to `.dark` class, but React components wait for state update
+5. **Result**: Visual mismatch or need for page reload
+
+**The Solution**: Use `dark:` variants which respond directly to the CSS class, bypassing React state entirely.
 
 ### When to Use `isDarkMode` Prop
 
 Only pass `isDarkMode` to components that truly need it:
 
 1. **Third-party libraries** that require a theme prop (BlockNote editor, Monaco editor)
-2. **Dynamic image sources** (e.g., logo switching between light/dark versions)
+2. **Dynamic color calculations in JavaScript** (see MutationObserver pattern below)
 3. **Complex conditional logic** that CSS alone cannot handle
+
+### JavaScript Color Calculations (MutationObserver Pattern)
+
+When you need to compute colors in JavaScript based on theme (e.g., for canvas, dynamic backgrounds):
+
+```tsx
+// ❌ WRONG: Using hook state - can be out of sync with DOM
+const { isDarkMode } = useThemePreference();
+const bgColor = isDarkMode ? '#000' : '#fff'; // May not update correctly!
+
+// ✅ CORRECT: Watch DOM directly with MutationObserver
+const [isDarkModeDOM, setIsDarkModeDOM] = useState(true);
+
+useEffect(() => {
+  const checkDarkMode = () => {
+    setIsDarkModeDOM(document.documentElement.classList.contains('dark'));
+  };
+  
+  checkDarkMode();
+  
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'class') {
+        checkDarkMode();
+      }
+    });
+  });
+  
+  observer.observe(document.documentElement, { attributes: true });
+  return () => observer.disconnect();
+}, []);
+
+// Now use isDarkModeDOM for color calculations
+const bgColor = isDarkModeDOM ? '#000' : '#fff';
+```
+
+### CSS Override Issues (globals.css)
+
+**CRITICAL**: The `globals.css` file may contain `!important` rules that override Tailwind classes:
+
+```css
+/* Example problematic rules in globals.css */
+.dark .bg-gray-200 { background-color: #1A1A1A !important; }
+.dark .text-black { color: #FFFFFF !important; }
+```
+
+**Workaround**: Use arbitrary hex values to bypass these overrides:
+
+```tsx
+// ❌ May be overridden by globals.css !important rules
+<div className="bg-gray-200 dark:bg-gray-800">
+
+// ✅ Arbitrary values bypass !important overrides
+<div className="bg-[#e5e7eb] dark:bg-[#222222]">
+```
 
 ### Recommended Class Patterns
 
@@ -80,6 +161,93 @@ These are defined in `globals.css` and switch automatically:
 - `--destructive` / `--destructive-foreground`
 
 Use them via Tailwind: `bg-background`, `text-foreground`, `border-border`, etc.
+
+---
+
+## Migration Guide: `isDarkMode` to `dark:` Variants
+
+### Step-by-Step Refactoring
+
+1. **Identify conditionals**: Search for `isDarkMode ?` in the component
+
+2. **Convert each conditional**:
+   ```tsx
+   // Before
+   className={isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}
+   
+   // After
+   className="bg-white dark:bg-black text-black dark:text-white"
+   ```
+
+3. **Handle complex conditionals** (multiple conditions):
+   ```tsx
+   // Before
+   className={`${isActive 
+     ? isDarkMode ? 'bg-green-900' : 'bg-green-100' 
+     : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}
+   
+   // After - use string concatenation
+   className={`${isActive 
+     ? 'bg-green-100 dark:bg-green-900' 
+     : 'bg-gray-100 dark:bg-gray-800'}`}
+   ```
+
+4. **Remove unused `isDarkMode` prop/import** after converting all usages
+
+5. **Keep `isDarkMode` only for**:
+   - Third-party library props (BlockNote, Monaco)
+   - JavaScript color calculations (use MutationObserver pattern)
+
+### Refactoring Checklist
+
+- [ ] Convert all `isDarkMode ?` conditionals to `dark:` variants
+- [ ] Remove `isDarkMode` prop from component interface (if no longer needed)
+- [ ] Remove `isDarkMode` from parent component prop passing
+- [ ] Update any child components that received the prop
+- [ ] Test theme switching without page reload
+- [ ] Verify both themes match original visual appearance
+
+---
+
+## Common Pitfalls & Solutions
+
+### Pitfall 1: Theme Change Requires Page Reload
+
+**Symptom**: Clicking theme toggle doesn't update component until page refresh
+
+**Cause**: Using `isDarkMode` conditionals for styling
+
+**Solution**: Convert to `dark:` variants
+
+### Pitfall 2: Light Mode Colors Showing in Dark Mode
+
+**Symptom**: Vibrant light-mode colors appear even when page is in dark mode
+
+**Cause**: JavaScript color calculation using stale `isDarkMode` state
+
+**Solution**: Use MutationObserver to watch `.dark` class on `<html>` element
+
+### Pitfall 3: `dark:` Classes Not Working
+
+**Symptom**: `dark:bg-gray-800` has no effect
+
+**Possible Causes**:
+1. Missing `@custom-variant dark` in globals.css (Tailwind v4)
+2. `!important` overrides in globals.css
+3. Parent element missing dark class propagation
+
+**Solutions**:
+1. Add `@custom-variant dark (&:where(.dark, .dark *));` to globals.css
+2. Use arbitrary values: `dark:bg-[#1f2937]` instead of `dark:bg-gray-800`
+3. Ensure `.dark` class is on `<html>` element
+
+### Pitfall 4: Hydration Mismatch
+
+**Symptom**: Flash of wrong theme on page load, console hydration warnings
+
+**Cause**: Server renders with different theme than client
+
+**Solution**: The `useThemePreference` hook handles this - ensure `hasHydrated` state is used if needed for conditional rendering
 
 ---
 
@@ -206,3 +374,25 @@ Use them via Tailwind: `bg-background`, `text-foreground`, `border-border`, etc.
 - Anything that distracts from the primary action
 - **CRITICAL**: Never add "helpful" UI elements that weren't explicitly requested
 
+---
+
+## Quick Reference: Decision Tree
+
+```
+Need to style based on theme?
+│
+├─ Is it static CSS styling?
+│  └─ YES → Use `dark:` variants ✅
+│
+├─ Is it for a third-party library (BlockNote, Monaco)?
+│  └─ YES → Pass `isDarkMode` from useThemePreference() ✅
+│
+├─ Is it a JavaScript color calculation?
+│  └─ YES → Use MutationObserver pattern to watch .dark class ✅
+│
+├─ Is it an image that changes per theme?
+│  └─ YES → Use `dark:hidden` / `hidden dark:block` pattern ✅
+│
+└─ None of the above?
+   └─ Default to `dark:` variants ✅
+```

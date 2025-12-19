@@ -186,22 +186,22 @@ export function Header({
 
                 {/* Right side actions */}
                 <div className="flex items-center space-x-4 pr-1">
-                    {showTryDemoButton && (
-                        <button
-                            onClick={handleTryDemoClick}
+                        {showTryDemoButton && (
+                            <button
+                                onClick={handleTryDemoClick}
                             className="hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer bg-black/10 dark:bg-white/20 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/30"
-                        >
-                            Try a demo
-                        </button>
-                    )}
-                    {showCreateCourseButton && (
-                        <button
-                            onClick={handleButtonClick}
+                            >
+                                Try a demo
+                            </button>
+                        )}
+                        {showCreateCourseButton && (
+                            <button
+                                onClick={handleButtonClick}
                             className="hidden md:block px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer bg-[#d1d5db] dark:bg-white text-[#1f2937] dark:text-black"
-                        >
-                            {getButtonText()}
-                        </button>
-                    )}
+                            >
+                                {getButtonText()}
+                            </button>
+                        )}
 
                     {/* Profile dropdown */}
                     <div className="relative" ref={profileMenuRef}>
@@ -366,16 +366,16 @@ export function Header({
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-3">
-                                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                            Create a course
-                                        </span>
-                                        <button
-                                            onClick={handleCreateCourseButtonClick}
-                                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
-                                            aria-label="Create a course"
-                                        >
-                                            <Book className="h-6 w-6" />
-                                        </button>
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Create a course
+                                    </span>
+                                    <button
+                                        onClick={handleCreateCourseButtonClick}
+                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                        aria-label="Create a course"
+                                    >
+                                        <Book className="h-6 w-6" />
+                                    </button>
                                     </div>
                                 )}
                             </div>
@@ -404,4 +404,4 @@ export function Header({
             )}
         </header>
     );
-}
+} 

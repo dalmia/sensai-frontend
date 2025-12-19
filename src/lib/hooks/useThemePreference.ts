@@ -46,7 +46,7 @@ export function useThemePreference() {
   // On mount: read from localStorage and apply
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const stored = localStorage.getItem('theme') as ThemePreference | null;
     const preference = (stored === 'dark' || stored === 'light' || stored === 'device') ? stored : 'dark';
     const isDark = getIsDarkMode(preference);

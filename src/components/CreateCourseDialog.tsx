@@ -137,4 +137,4 @@ export default function CreateCourseDialog({
             </div>
         </div>
     );
-}
+} 

@@ -6,6 +6,7 @@ import CourseItemDialog from "@/components/CourseItemDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Tooltip from "@/components/Tooltip"; // Import the Tooltip component
 import { formatScheduleDate } from "@/lib/utils/dateFormat"; // Import the utility function
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 
 interface CourseModuleListProps {
@@ -30,7 +31,6 @@ interface CourseModuleListProps {
     completedQuestionIds?: Record<string, Record<string, boolean>>; // Add prop for partially completed quiz questions
     schoolId?: string; // Add school ID for fetching scorecards
     courseId?: string; // Add courseId for fetching learning materials
-    isDarkMode?: boolean;
 
     // Dialog-related props
     isDialogOpen?: boolean;
@@ -74,7 +74,6 @@ export default function CourseModuleList({
     completedQuestionIds = {}, // Default empty object for completed question IDs
     schoolId,
     courseId,
-    isDarkMode = true,
 
     // Dialog-related props
     isDialogOpen = false,
@@ -95,6 +94,37 @@ export default function CourseModuleList({
     onQuestionChange = () => { },
     onDuplicateItem,
 }: CourseModuleListProps) {
+    // Get theme preference for child components that need it
+    const { isDarkMode } = useThemePreference();
+    
+    // Track dark mode from DOM to ensure proper color calculations and re-renders
+    const [isDarkModeDOM, setIsDarkModeDOM] = useState(true);
+    
+    useEffect(() => {
+        // Initial check
+        const checkDarkMode = () => {
+            if (typeof document !== 'undefined') {
+                setIsDarkModeDOM(document.documentElement.classList.contains('dark'));
+            }
+        };
+        
+        checkDarkMode();
+        
+        // Watch for class changes on html element
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    checkDarkMode();
+                }
+            });
+        });
+        
+        if (typeof document !== 'undefined') {
+            observer.observe(document.documentElement, { attributes: true });
+        }
+        
+        return () => observer.disconnect();
+    }, []);
 
     // Compute a vibrant inverse color for light mode modules to make them pop
     const getEffectiveBackgroundColor = (inputColor?: string, moduleIndex = 0): string | undefined => {
@@ -134,10 +164,10 @@ export default function CourseModuleList({
 
         const rgb = toRgb(inputColor);
         if (!rgb) {
-            return isDarkMode ? inputColor : getSequentialPaletteColor(moduleIndex);
+            return isDarkModeDOM ? inputColor : getSequentialPaletteColor(moduleIndex);
         }
 
-        if (isDarkMode) {
+        if (isDarkModeDOM) {
             return inputColor;
         }
 
@@ -682,12 +712,8 @@ export default function CourseModuleList({
                                             onToggleModule(module.id);
                                         }}
                                         className={`hidden sm:block mr-2 transition-colors ${module.unlockAt
-                                            ? isDarkMode
-                                                ? 'text-gray-500 cursor-not-allowed'
-                                                : 'text-gray-400 cursor-not-allowed'
-                                            : isDarkMode
-                                                ? 'text-gray-400 hover:text-white cursor-pointer'
-                                                : 'text-gray-700 hover:text-black cursor-pointer'}`}
+                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                            : 'text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer'}`}
                                         aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                         disabled={!!module.unlockAt}
                                     >
@@ -708,7 +734,7 @@ export default function CourseModuleList({
                                         ) : (
                                             <div className="flex items-center">
                                                 <h2
-                                                    className={`text-lg sm:text-xl font-light ${module.unlockAt ? 'text-gray-400' : isDarkMode ? 'text-white' : 'text-black'}`}
+                                                    className={`text-lg sm:text-xl font-light ${module.unlockAt ? 'text-gray-400' : 'text-black dark:text-white'}`}
                                                 >
                                                     {module.title || "New Module"}
                                                 </h2>
@@ -833,7 +859,7 @@ export default function CourseModuleList({
                                                 onToggleModule(module.id);
 
                                             }}
-                                            className={`flex items-center px-3 py-1 text-sm focus:outline-none focus:ring-0 focus:border-0 transition-colors rounded-full border ${module.unlockAt ? (isDarkMode ? 'text-gray-500 border-gray-600 bg-gray-800' : 'text-gray-400 border-gray-300 bg-gray-100') + ' cursor-not-allowed' : (isDarkMode ? 'text-gray-400 hover:text-white border-gray-700 bg-gray-900' : 'text-gray-600 hover:text-black border-gray-300 bg-gray-100') + ' cursor-pointer'}`}
+                                            className={`flex items-center px-3 py-1 text-sm focus:outline-none focus:ring-0 focus:border-0 transition-colors rounded-full border ${module.unlockAt ? 'text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 cursor-pointer'}`}
                                             aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                             disabled={!!module.unlockAt}
                                         >
@@ -858,13 +884,13 @@ export default function CourseModuleList({
                                         {getIsExpanded(module.id) ? (
                                             <div className="px-4 pb-2">
                                                 <div className="flex justify-end items-center mb-1">
-                                                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         {module.progress}%
                                                     </div>
                                                 </div>
-                                                <div className={`w-full h-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700">
                                                     <div
-                                                        className={`h-2 rounded-full transition-all duration-300 ${isDarkMode ? 'bg-green-500' : 'bg-green-600'}`}
+                                                        className="h-2 rounded-full transition-all duration-300 bg-green-600 dark:bg-green-500"
                                                         style={{ width: `${module.progress}%` }}
                                                     ></div>
                                                 </div>
@@ -872,13 +898,13 @@ export default function CourseModuleList({
                                         ) : (
                                             <div className="px-4 pb-4">
                                                 <div className="flex justify-end items-center mb-1">
-                                                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         {module.progress}%
                                                     </div>
                                                 </div>
-                                                <div className={`w-full h-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700">
                                                     <div
-                                                        className={`h-2 rounded-full transition-all duration-300 ${isDarkMode ? 'bg-green-500' : 'bg-green-600'}`}
+                                                        className="h-2 rounded-full transition-all duration-300 bg-green-600 dark:bg-green-500"
                                                         style={{ width: `${module.progress}%` }}
                                                     ></div>
                                                 </div>
@@ -891,7 +917,7 @@ export default function CourseModuleList({
                             {/* Module content - only visible when expanded */}
                             {getIsExpanded(module.id) && (
                                 <div className="px-4 pb-4">
-                                    <div className={`pl-2 sm:pl-6 border-l ml-2 space-y-2 ${isDarkMode ? 'border-gray-400' : 'border-black/20'}`}>
+                                    <div className="pl-2 sm:pl-6 border-l ml-2 space-y-2 border-black/20 dark:border-gray-400">
                                         {module.items.map((item, itemIndex) => {
                                             const isItemCompleted = completedItems[item.id];
                                             const itemQuizEntries = completedQuestionIds[item.id] || {};
@@ -901,54 +927,32 @@ export default function CourseModuleList({
                                             const isPartiallyComplete = !isItemCompleted && hasPartialQuizProgress;
 
                                             const materialWrapperClass = isItemCompleted
-                                                ? isDarkMode
-                                                    ? 'bg-emerald-400/80'
-                                                    : 'bg-emerald-400/90'
-                                                : isDarkMode
-                                                    ? 'bg-rose-500/25'
-                                                    : 'bg-rose-200/30';
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
 
                                             const materialIconColor = isItemCompleted
                                                 ? 'text-white'
-                                                : isDarkMode
-                                                    ? 'text-rose-100'
-                                                    : 'text-rose-600';
+                                                : 'text-rose-600 dark:text-rose-100';
 
                                             const assignmentWrapperClass = isItemCompleted
-                                                ? isDarkMode
-                                                    ? 'bg-emerald-400/80'
-                                                    : 'bg-emerald-400/90'
-                                                : isDarkMode
-                                                    ? 'bg-rose-500/25'
-                                                    : 'bg-rose-200/30';
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
 
                                             const assignmentIconColor = isItemCompleted
                                                 ? 'text-white'
-                                                : isDarkMode
-                                                    ? 'text-rose-100'
-                                                    : 'text-rose-600';
+                                                : 'text-rose-600 dark:text-rose-100';
 
                                             const quizWrapperClass = isItemCompleted
-                                                ? isDarkMode
-                                                    ? 'bg-emerald-400/80'
-                                                    : 'bg-emerald-400/90'
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
                                                 : hasPartialQuizProgress
-                                                    ? isDarkMode
-                                                        ? 'bg-amber-500/25'
-                                                        : 'bg-amber-400/30'
-                                                    : isDarkMode
-                                                        ? 'bg-indigo-500/20'
-                                                        : 'bg-indigo-400/25';
+                                                    ? 'bg-amber-500/80 dark:bg-amber-500/25'
+                                                    : 'bg-indigo-400/25 dark:bg-indigo-500/20';
 
                                             const quizIconColor = isItemCompleted
                                                 ? 'text-white'
                                                 : hasPartialQuizProgress
-                                                    ? isDarkMode
-                                                        ? 'text-yellow-500'
-                                                        : 'text-amber-600'
-                                                    : isDarkMode
-                                                        ? 'text-indigo-100'
-                                                        : 'text-indigo-700';
+                                                    ? 'text-white dark:text-yellow-500'
+                                                    : 'text-indigo-700 dark:text-indigo-100';
 
                                             return (
                                                 <div
@@ -956,12 +960,8 @@ export default function CourseModuleList({
                                                     data-testid={`module-item-${item.id}`}
                                                     className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2
                                                         ${isPartiallyComplete
-                                                            ? isDarkMode
-                                                                ? 'bg-amber-500/20 hover:bg-amber-500/30'
-                                                                : 'bg-amber-100 hover:bg-amber-200'
-                                                            : isDarkMode
-                                                                ? 'hover:bg-gray-700/50'
-                                                                : 'hover:bg-white/70'}
+                                                            ? 'bg-white/80 dark:bg-amber-500/20 hover:bg-white dark:hover:bg-amber-500/30 ring-1 ring-amber-400/50 dark:ring-amber-500/30'
+                                                            : 'hover:bg-white/70 dark:hover:bg-gray-700/50'}
                                                         ${isItemCompleted ? 'opacity-60' : ''}
                                                         ${item.isGenerating ? 'opacity-40 pointer-events-none' : ''}`}
                                                     onClick={() => {
@@ -1001,22 +1001,16 @@ export default function CourseModuleList({
                                                 </div>
                                                 <div className="flex-1">
                                                 <div className={`text-base font-light ${isItemCompleted
-                                                        ? isDarkMode
-                                                            ? 'line-through text-white'
-                                                            : 'line-through text-gray-600'
+                                                        ? 'line-through text-gray-600 dark:text-white'
                                                         : isPartiallyComplete
-                                                            ? isDarkMode
-                                                                ? 'text-amber-200'
-                                                                : 'text-amber-600'
-                                                            : isDarkMode
-                                                                ? 'text-white'
-                                                                : 'text-slate-950'
+                                                            ? 'text-amber-800 dark:text-amber-200'
+                                                            : 'text-slate-950 dark:text-white'
                                                         } outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2`}>
                                                         {item.title}
 
                                                         {/* Always display question count for quizzes (except drafts) */}
                                                         {item.type === 'quiz' && item.status !== 'draft' && (
-                                                            <span className={`inline-block ml-2 text-sm font-normal ${isPartiallyComplete ? (isDarkMode ? 'text-amber-200' : 'text-amber-600') : isDarkMode ? 'text-gray-400' : 'text-indigo-700'}`}>
+                                                            <span className={`inline-block ml-2 text-sm font-normal ${isPartiallyComplete ? 'text-amber-800 dark:text-amber-200' : 'text-indigo-700 dark:text-gray-400'}`}>
                                                                 ({totalQuizEntries > 0
                                                                     ? mode === 'view' && !isItemCompleted && hasPartialQuizProgress
                                                                         ? `${completedQuizCount}/${(item as Quiz).numQuestions}`
@@ -1119,9 +1113,7 @@ export default function CourseModuleList({
                                                         <button
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isItemCompleted
                                                                 ? 'bg-emerald-400 border border-emerald-500 shadow-md'
-                                                                : isDarkMode
-                                                                    ? 'border border-gray-500 hover:border-white'
-                                                                    : 'border border-gray-600 hover:border-gray-800 bg-white/70'
+                                                                : 'border border-gray-600 dark:border-gray-500 hover:border-gray-800 dark:hover:border-white bg-white/70 dark:bg-transparent'
                                                                 }`}
                                                             aria-label={isItemCompleted ? 'Mark as incomplete' : 'Mark as completed'}
                                                         >

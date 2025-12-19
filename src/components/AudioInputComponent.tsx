@@ -7,7 +7,6 @@ interface AudioInputComponentProps {
     onAudioSubmit: (audioBlob: Blob) => void;
     isSubmitting: boolean;
     isDisabled?: boolean;
-    isDarkMode?: boolean;
 }
 
 // Shared waveform rendering function to avoid duplication
@@ -15,19 +14,15 @@ const renderWaveformBar = (
     value: number,
     index: number,
     total: number,
-    isPlayed: boolean = false,
-    isDarkMode: boolean = true
+    isPlayed: boolean = false
 ) => {
     // Apply exponential scaling to emphasize differences
     const scaledHeight = Math.pow(value, 0.7) * 100;
 
-    const barClassName = isDarkMode
-        ? (isPlayed
-            ? 'bg-gradient-to-t from-white to-white/60'
-            : 'bg-gradient-to-t from-white to-white/40')
-        : (isPlayed
-            ? 'bg-gradient-to-t from-slate-900 to-slate-900/50'
-            : 'bg-gradient-to-t from-slate-800 to-slate-800/30');
+    // Use light mode styles by default, dark mode via dark: prefix
+    const barClassName = isPlayed
+        ? 'bg-gradient-to-t from-slate-900 to-slate-900/50 dark:from-white dark:to-white/60'
+        : 'bg-gradient-to-t from-slate-800 to-slate-800/30 dark:from-white dark:to-white/40';
 
     return (
         <div
@@ -46,11 +41,11 @@ const renderWaveformBar = (
 };
 
 // Live Recording Waveform component
-const LiveWaveform = ({ waveformData, isDarkMode }: { waveformData: number[], isDarkMode: boolean }) => {
+const LiveWaveform = ({ waveformData }: { waveformData: number[] }) => {
     return (
         <div className="w-full h-full flex items-end justify-between px-1 mb-4">
             {waveformData.map((value, index) =>
-                renderWaveformBar(value, index, waveformData.length, false, isDarkMode)
+                renderWaveformBar(value, index, waveformData.length, false)
             )}
         </div>
     );
@@ -59,25 +54,23 @@ const LiveWaveform = ({ waveformData, isDarkMode }: { waveformData: number[], is
 // Snapshot Waveform component for playback
 const SnapshotWaveform = ({
     waveformData,
-    playbackProgress,
-    isDarkMode
+    playbackProgress
 }: {
     waveformData: number[],
-    playbackProgress: number,
-    isDarkMode: boolean
+    playbackProgress: number
 }) => {
     return (
         <div className="w-full h-full flex items-end justify-between relative px-1 mb-4">
             {/* Playback progress overlay */}
             <div
-                className={`absolute top-0 bottom-0 left-0 z-10 pointer-events-none ${isDarkMode ? 'bg-white opacity-20' : 'bg-slate-900/10'}`}
+                className="absolute top-0 bottom-0 left-0 z-10 pointer-events-none bg-slate-900/10 dark:bg-white dark:opacity-20"
                 style={{ width: `${playbackProgress * 100}%` }}
             ></div>
 
             {waveformData.map((value, index) => {
                 // Determine if this bar is in the played portion
                 const isPlayed = (index / waveformData.length) < playbackProgress;
-                return renderWaveformBar(value, index, waveformData.length, isPlayed, isDarkMode);
+                return renderWaveformBar(value, index, waveformData.length, isPlayed);
             })}
         </div>
     );
@@ -105,7 +98,6 @@ export default function AudioInputComponent({
     onAudioSubmit,
     isSubmitting,
     isDisabled = false,
-    isDarkMode = true,
 }: AudioInputComponentProps) {
     // Basic states
     const [isRecording, setIsRecording] = useState(false);
@@ -466,7 +458,7 @@ export default function AudioInputComponent({
             {isRecording && (
                 <div className="absolute -top-10 left-0 right-0 text-center flex items-center justify-center z-20">
                     <div
-                        className={`rounded-full px-4 py-2 shadow-md flex items-center ${isDarkMode ? 'bg-black/80' : 'bg-white/95 border border-gray-200'}`}
+                        className="rounded-full px-4 py-2 shadow-md flex items-center bg-white/95 border border-gray-200 dark:bg-black/80 dark:border-transparent"
                     >
                         <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
                         <span className="text-red-500 font-light text-sm">Recording {formatTime(recordingDuration)}</span>
@@ -485,11 +477,11 @@ export default function AudioInputComponent({
 
             {/* Delete confirmation dialog */}
             {showDeleteConfirmation && (
-                <div className={`absolute -top-20 left-0 right-0 rounded-lg p-3 shadow-lg z-20 ${isDarkMode ? 'bg-[#222222]' : 'bg-white border border-gray-200'}`}>
-                    <p className={`text-sm mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Are you sure you want to delete this recording?</p>
+                <div className="absolute -top-20 left-0 right-0 rounded-lg p-3 shadow-lg z-20 bg-white border border-gray-200 dark:bg-[#222222] dark:border-transparent">
+                    <p className="text-sm mb-2 text-gray-900 dark:text-white">Are you sure you want to delete this recording?</p>
                     <div className="flex justify-end space-x-2">
                         <button
-                            className={`text-xs bg-transparent px-2 py-1 rounded-md cursor-pointer ${isDarkMode ? 'text-white hover:bg-[#333333]' : 'text-gray-700 hover:bg-gray-100'}`}
+                            className="text-xs bg-transparent px-2 py-1 rounded-md cursor-pointer text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-[#333333]"
                             onClick={cancelDelete}
                         >
                             Cancel
@@ -505,19 +497,19 @@ export default function AudioInputComponent({
             )}
 
             {/* Main container */}
-            <div className={`relative flex items-center rounded-full overflow-hidden px-3 py-2 ${isDarkMode ? 'bg-[#111111] border border-[#222222]' : 'bg-gray-50 border border-gray-200'}`}>
+            <div className="relative flex items-center rounded-full overflow-hidden px-3 py-2 bg-gray-50 border border-gray-200 dark:bg-[#111111] dark:border-[#222222]">
                 {/* Record/Play/Stop button */}
                 {isSubmitting ? (
-                    <div className={`w-5 h-5 border-2 border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-slate-900'}`}></div>
+                    <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-slate-900 dark:border-white"></div>
                 ) : (
                     <button
-                        className={`w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 rounded-full flex items-center justify-center cursor-pointer mr-3 ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-white text-gray-800 hover:bg-gray-100 border border-gray-200'}`}
+                        className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 rounded-full flex items-center justify-center cursor-pointer mr-3 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333] dark:border-transparent"
                         onClick={isRecording ? stopRecording : audioBlob ? togglePlayback : startRecording}
                         disabled={isDisabled}
                         type="button"
                     >
                         {isRecording ? (
-                            <div className={`w-3 h-3 ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></div>
+                            <div className="w-3 h-3 bg-gray-900 dark:bg-white"></div>
                         ) : audioBlob ? (
                             isPlaying ? <Pause size={16} /> : <><Play size={14} className="sm:hidden" /> <Play size={16} className="hidden sm:block" /></>
                         ) : (
@@ -540,15 +532,14 @@ export default function AudioInputComponent({
                         >
                             {/* Waveform visualization - show different components based on state */}
                             {isRecording && liveWaveformData.length > 0 ? (
-                                <LiveWaveform waveformData={liveWaveformData} isDarkMode={isDarkMode} />
+                                <LiveWaveform waveformData={liveWaveformData} />
                             ) : audioBlob && snapshotWaveformData.length > 0 ? (
                                 <SnapshotWaveform
                                     waveformData={snapshotWaveformData}
                                     playbackProgress={playbackProgress}
-                                    isDarkMode={isDarkMode}
                                 />
                             ) : (
-                                <div className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Click the microphone to start recording</div>
+                                <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Click the microphone to start recording</div>
                             )}
                         </div>
 
@@ -557,7 +548,7 @@ export default function AudioInputComponent({
                             <div className="ml-2 sm:ml-3 flex-shrink-0 flex space-x-1 sm:space-x-2">
                                 {/* Delete button */}
                                 <button
-                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer ${isDarkMode ? 'bg-[#222222] text-white hover:bg-[#333333]' : 'bg-white text-gray-800 hover:bg-gray-100 border border-gray-200'}`}
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer bg-white text-gray-800 hover:bg-gray-100 border border-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333] dark:border-transparent"
                                     onClick={handleDeleteClick}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Delete audio"
@@ -569,21 +560,21 @@ export default function AudioInputComponent({
 
                                 {/* Submit button */}
                                 <button
-                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer ${isDarkMode ? 'bg-white' : 'bg-black'}`}
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer bg-black dark:bg-white"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Submit audio"
                                     type="button"
                                 >
                                     {isSubmitting ? (
-                                        <div className={`w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-black' : 'border-white'}`}></div>
+                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-transparent rounded-full animate-spin border-white dark:border-black"></div>
                                     ) : (
                                         <>
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:hidden">
-                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke={isDarkMode ? 'black' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" className="stroke-white dark:stroke-black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="hidden sm:block">
-                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke={isDarkMode ? 'black' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" className="stroke-white dark:stroke-black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                         </>
                                     )}
