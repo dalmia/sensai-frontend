@@ -1019,7 +1019,6 @@ export default function LearnerCourseView({
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}
                 type="custom"
-                isDarkMode={isDarkMode}
             />
 
             {/* Task Viewer Dialog - Using the same pattern as the editor view */}
@@ -1376,7 +1375,6 @@ export default function LearnerCourseView({
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}
                 type="custom"
-                isDarkMode={isDarkMode}
             />
         </div>
     );

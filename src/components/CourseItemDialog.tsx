@@ -1293,7 +1293,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 type={isClosingDraft ? 'save' : 'delete'}
                 showCloseButton={isClosingDraft}
                 onClose={() => setShowCloseConfirmation(false)}
-                isDarkMode={isDarkMode}
             />
 
             {/* Save confirmation dialog */}
@@ -1306,7 +1305,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 onConfirm={handleConfirmSavePublished}
                 onCancel={handleCancelSave}
                 type="publish"
-                isDarkMode={isDarkMode}
             />
 
             {/* Unsaved scorecard confirmation dialog */}
@@ -1319,7 +1317,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 onConfirm={handleDiscardScorecardChanges}
                 onCancel={handleGoBackToScorecard}
                 type="delete"
-                isDarkMode={isDarkMode}
             />
 
             <ConfirmationDialog

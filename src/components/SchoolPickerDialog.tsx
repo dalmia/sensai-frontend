@@ -20,7 +20,6 @@ interface SchoolPickerDialogProps {
     schools: School[];
     onSelectSchool: (schoolId: string) => void;
     onCreateSchool: () => void;
-    isDarkMode?: boolean;
 }
 
 export default function SchoolPickerDialog({
@@ -29,20 +28,7 @@ export default function SchoolPickerDialog({
     schools,
     onSelectSchool,
     onCreateSchool,
-    isDarkMode
 }: SchoolPickerDialogProps) {
-    // Hooks must be called before any early returns
-    const [resolvedIsDarkMode, setResolvedIsDarkMode] = React.useState<boolean>(isDarkMode ?? true);
-    React.useEffect(() => {
-        if (typeof isDarkMode === 'boolean') {
-            setResolvedIsDarkMode(isDarkMode);
-            return;
-        }
-        if (typeof window === 'undefined') return;
-        const storedTheme = window.localStorage.getItem('theme');
-        setResolvedIsDarkMode(storedTheme !== 'light');
-    }, [isDarkMode]);
-
     if (!open) return null;
 
     // Check if user owns any schools
@@ -53,15 +39,15 @@ export default function SchoolPickerDialog({
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div
-                className={`w-full max-w-md rounded-lg shadow-2xl ${resolvedIsDarkMode ? 'bg-[#1A1A1A]' : 'bg-white border border-gray-200'}`}
+                className="w-full max-w-md rounded-lg shadow-2xl bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-transparent"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Dialog Header */}
                 <div className="flex justify-between items-center p-6">
-                    <h2 className={`text-xl font-light ${resolvedIsDarkMode ? 'text-white' : 'text-black'}`}>Select a School</h2>
+                    <h2 className="text-xl font-light text-black dark:text-white">Select a School</h2>
                     <button
                         onClick={onClose}
-                        className={`transition-colors focus:outline-none cursor-pointer ${resolvedIsDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}`}
+                        className="transition-colors focus:outline-none cursor-pointer text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     >
                         <X size={24} />
                     </button>
@@ -74,12 +60,11 @@ export default function SchoolPickerDialog({
                             <button
                                 key={school.id}
                                 onClick={() => onSelectSchool(school.id)}
-                                className={`w-full px-4 py-3 text-left rounded-lg transition-colors focus:outline-none cursor-pointer flex justify-between items-center ${resolvedIsDarkMode ? 'bg-[#0D0D0D] text-white hover:bg-gray-800' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
+                                className="w-full px-4 py-3 text-left rounded-lg transition-colors focus:outline-none cursor-pointer flex justify-between items-center bg-[#f3f4f6] dark:bg-[#111111] text-black dark:text-white hover:bg-[#e5e7eb] dark:hover:bg-[#2d3748]"
                             >
                                 <span>{school.name}</span>
                                 {(school.role === 'owner' || school.role === 'admin') && (
-                                    <span className={`text-xs px-2 py-1 rounded-full text-white ${school.role === 'owner' ? 'bg-purple-700' : 'bg-blue-600'
-                                        }`}>
+                                    <span className={`text-xs px-2 py-1 rounded-full text-white ${school.role === 'owner' ? 'bg-purple-700' : 'bg-blue-600'}`}>
                                         {school.role === 'owner' ? 'Owner' : 'Admin'}
                                     </span>
                                 )}
@@ -89,14 +74,14 @@ export default function SchoolPickerDialog({
                 </div>
 
                 {/* Dialog Footer */}
-                {!hasOwnedSchool && (<div className="flex justify-end gap-4 p-6">
+                {!hasOwnedSchool && (
+                    <div className="flex justify-end gap-4 p-6">
                     <button
                         onClick={onCreateSchool}
-                        className={`px-6 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${resolvedIsDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
+                            className="px-6 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer bg-black dark:bg-white text-white dark:text-black"
                     >
                         Create a School
                     </button>
-
                 </div>
                 )}
             </div>

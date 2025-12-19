@@ -1754,7 +1754,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onConfirm={deleteQuestion}
                 onCancel={() => setShowDeleteConfirm(false)}
                 type="delete"
-                isDarkMode={isDarkMode}
             />
 
             {/* Publish Confirmation Dialog */}

@@ -476,9 +476,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             <div className={`min-h-screen ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
                 <Header
                     showCreateCourseButton={false}
-                    isDarkMode={isDarkMode}
-                    themePreference={themePreference}
-                    onThemePreferenceChange={setThemePreference}
                 />
                 <div className="flex justify-center items-center py-12">
                     <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
@@ -499,9 +496,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         <>
             <Header
                 showCreateCourseButton={false}
-                isDarkMode={isDarkMode}
-                themePreference={themePreference}
-                onThemePreferenceChange={setThemePreference}
             />
 
             <div className={`min-h-screen ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
@@ -621,7 +615,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                             title: course.name,
                                                             org_id: Number(id)
                                                         }}
-                                                        isDarkMode={isDarkMode}
                                                         onDelete={handleCourseDelete}
                                                     />
                                                 ))}
@@ -664,7 +657,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         key={cohort.id}
                                                         cohort={cohort}
                                                         schoolId={school.id}
-                                                        isDarkMode={isDarkMode}
                                                         onDelete={handleCohortDelete}
                                                     />
                                                 ))}
@@ -780,7 +772,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 open={isInviteDialogOpen}
                 onClose={() => setIsInviteDialogOpen(false)}
                 onInvite={handleInviteMembers}
-                isDarkMode={isDarkMode}
             />
 
             {/* Delete Member Confirmation Dialog */}
@@ -795,7 +786,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onConfirm={confirmDeleteMember}
                 onCancel={() => setIsDeleteConfirmOpen(false)}
                 type="delete"
-                isDarkMode={isDarkMode}
             />
 
             {/* Create cohort Dialog */}
@@ -804,7 +794,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onClose={() => setIsCreateCohortDialogOpen(false)}
                 onCreateCohort={handleCreateCohort}
                 schoolId={id}
-                isDarkMode={isDarkMode}
             />
 
             {/* Create course Dialog */}
@@ -813,7 +802,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 onClose={() => setIsCreateCourseDialogOpen(false)}
                 onSuccess={handleCourseCreationSuccess}
                 schoolId={id}
-                isDarkMode={isDarkMode}
             />
 
             {/* Toast notification */}

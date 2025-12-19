@@ -1234,9 +1234,8 @@ export default function CourseModuleList({
             />
 
             {/* Module deletion confirmation dialog */}
-            < ConfirmationDialog
-                open={moduleToDelete !== null
-                }
+            <ConfirmationDialog
+                open={moduleToDelete !== null}
                 title="Are you sure you want to delete this module?"
                 message="All tasks within this module will be permanently removed. This action cannot be undone."
                 confirmButtonText="Delete"
@@ -1244,25 +1243,21 @@ export default function CourseModuleList({
                 onCancel={handleCancelModuleDelete}
                 type="delete"
                 data-testid="module-delete-dialog"
-                isDarkMode={isDarkMode}
             />
 
             {/* Task deletion confirmation dialog */}
-            {
-                taskToDelete && (
-                    <ConfirmationDialog
-                        open={taskToDelete !== null}
-                        title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
-                        message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
-                        confirmButtonText={`Delete`}
-                        onConfirm={handleConfirmTaskDelete}
-                        onCancel={handleCancelTaskDelete}
-                        type="delete"
-                        data-testid="task-delete-dialog"
-                        isDarkMode={isDarkMode}
-                    />
-                )
-            }
+            {taskToDelete && (
+                <ConfirmationDialog
+                    open={taskToDelete !== null}
+                    title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
+                    message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
+                    confirmButtonText={`Delete`}
+                    onConfirm={handleConfirmTaskDelete}
+                    onCancel={handleCancelTaskDelete}
+                    type="delete"
+                    data-testid="task-delete-dialog"
+                />
+            )}
         </>
     );
 } 

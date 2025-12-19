@@ -89,10 +89,10 @@ describe('CohortCard Component', () => {
             render(<CohortCard cohort={mockCohort} schoolId={456} />);
 
             const card = screen.getByText('Test Cohort').closest('div');
-            expect(card).toHaveClass('bg-[#1A1A1A]', 'text-gray-300', 'rounded-lg', 'p-6', 'h-full', 'transition-all', 'hover:opacity-90', 'cursor-pointer', 'border-b-2', 'border-opacity-70');
+            expect(card).toHaveClass('bg-gray-100', 'text-gray-800', 'rounded-lg', 'p-6', 'h-full', 'transition-all', 'hover:opacity-90', 'cursor-pointer', 'border-b-2', 'border-opacity-70');
 
             const deleteButton = screen.getByRole('button', { name: /delete cohort/i });
-            expect(deleteButton).toHaveClass('absolute', 'top-3', 'right-3', 'p-2', 'text-gray-400', 'hover:text-red-500', 'opacity-0', 'group-hover:opacity-100');
+            expect(deleteButton).toHaveClass('absolute', 'top-3', 'right-3', 'p-2', 'text-gray-600', 'opacity-0', 'group-hover:opacity-100');
         });
 
         it('should have correct accessibility attributes', () => {

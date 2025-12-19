@@ -33,9 +33,6 @@ interface ConfirmationDialogProps {
     // Close button props
     showCloseButton?: boolean;
     onClose?: () => void;
-
-    // Theme prop
-    isDarkMode?: boolean;
 }
 
 export default function ConfirmationDialog({
@@ -68,9 +65,6 @@ export default function ConfirmationDialog({
     // Close button props
     showCloseButton = false,
     onClose,
-
-    // Theme prop with default (dark mode by default for backward compatibility)
-    isDarkMode = true
 }: ConfirmationDialogProps) {
     // Handle both 'open' and 'show' props for backward compatibility
     const isVisible = open !== undefined ? open : (show !== undefined ? show : false);
@@ -113,19 +107,19 @@ export default function ConfirmationDialog({
 
     return (
         <div
-            className={`fixed inset-0 backdrop-blur-sm z-[100] flex items-center justify-center p-4 ${isDarkMode ? 'bg-black/40' : 'bg-black/30'}`}
+            className="fixed inset-0 backdrop-blur-sm z-[100] flex items-center justify-center p-4 bg-black/30 dark:bg-black/40"
             onClick={(e) => {
                 e.stopPropagation();
                 onClickOutside ? onClickOutside() : onCancel();
             }}
         >
             <div
-                className={`w-full max-w-md rounded-lg shadow-2xl relative ${isDarkMode ? 'bg-[#1A1A1A]' : 'bg-white'}`}
+                className="w-full max-w-md rounded-lg shadow-2xl relative bg-white dark:bg-[#1A1A1A]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {showCloseButton && (
                     <button
-                        className={`absolute top-4 right-4 transition-colors focus:outline-none cursor-pointer ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}
+                        className="absolute top-4 right-4 transition-colors focus:outline-none cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
                         onClick={(e) => {
                             e.stopPropagation();
                             handleClose();
@@ -135,8 +129,8 @@ export default function ConfirmationDialog({
                     </button>
                 )}
                 <div className="p-6">
-                    <h2 className={`text-xl font-light mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{displayTitle}</h2>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>{displayMessage}</p>
+                    <h2 className="text-xl font-light mb-4 text-gray-900 dark:text-white">{displayTitle}</h2>
+                    <p className="text-gray-600 dark:text-gray-300">{displayMessage}</p>
                     {errorMessage && (
                         <p className="mt-4 text-red-400 text-sm">{errorMessage}</p>
                     )}
@@ -154,7 +148,7 @@ export default function ConfirmationDialog({
                             e.stopPropagation();
                             onCancel();
                         }}
-                        className={`px-4 py-2 transition-colors focus:outline-none cursor-pointer ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}
+                        className="px-4 py-2 transition-colors focus:outline-none cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
                         disabled={isLoading}
                     >
                         {cancelButtonText}
@@ -183,4 +177,4 @@ export default function ConfirmationDialog({
             </div>
         </div>
     );
-} 
+}
