@@ -779,7 +779,7 @@ export default function LearningMaterialViewer({
                                 }
                             }}
                             className={`fixed right-6 bottom-12 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
-                            style={{ bottom: '60px' }}
+                            style={{ bottom: '80px' }}
                             aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
                         >
                             {isMobileMenuOpen ? (
