@@ -450,7 +450,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                         <div className="my-3">
                                                             <button
                                                                 onClick={() => onViewScorecard(message.scorecard || [])}
-                                                                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-[#333333] dark:hover:bg-[#444444] px-4 py-2 rounded-full text-xs transition-colors cursor-pointer flex items-center"
+                                                                className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-[#333333] dark:hover:bg-[#444444] px-4 py-2 rounded-full text-xs transition-colors cursor-pointer flex items-center"
                                                                 type="button"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

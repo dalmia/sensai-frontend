@@ -1240,7 +1240,7 @@ export default function LearnerCourseView({
                                     {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
                                         <button
                                             onClick={markTaskComplete}
-                                            className={`hidden lg:flex items-center px-4 py-2 text-sm rounded-full transition-colors border text-white border-gray-900 bg-gray-900 dark:border-emerald-500 dark:bg-transparent hover:bg-gray-800 dark:hover:bg-[#222222] focus:border-gray-800 dark:focus:border-emerald-500 active:bg-gray-700 dark:active:bg-[#222222] ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            className={`hidden lg:flex items-center px-4 py-2 text-sm rounded-full transition-colors border text-white border-indigo-600 bg-indigo-600 hover:bg-indigo-700 focus:border-indigo-700 active:bg-indigo-800 dark:border-emerald-500 dark:bg-transparent dark:hover:bg-[#222222] dark:focus:border-emerald-500 dark:active:bg-[#222222] ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                             aria-label="Mark complete"
                                             disabled={isMarkingComplete}
                                         >
