@@ -552,7 +552,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
             />
 
             {isPreviewMode ? (
-                <div className="w-full h-full">
+                <div className="w-full h-full ">
                     <LearnerAssignmentView
                         problemBlocks={problemBlocks}
                         title={getDialogTitle()}
@@ -566,7 +566,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                     />
                 </div>
             ) : (
-                <div className="flex-1 flex flex-col space-y-6 h-full">
+                <div className="flex-1 flex flex-col space-y-6 h-full bg-white dark:bg-transparent">
                     {/* Settings: Submission Type and Copy/Paste Control */}
                     <div className="space-y-4 px-6 py-4 bg-gray-100 dark:bg-[#111111]">
                         <div className="flex items-center">

@@ -989,7 +989,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             ) : activeItem?.status === 'published' && !isEditMode && !previewMode && (
                                 <>
                                     {activeItem.scheduled_publish_at && (
-                                        <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(activeItem.scheduled_publish_at))}`} position="top">
+                                        <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(activeItem.scheduled_publish_at))}`} position="bottom">
                                             <button
                                                 className={getButtonClasses('yellowStrong')}
                                                 aria-label="Scheduled publishing information"
