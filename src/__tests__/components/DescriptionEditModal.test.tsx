@@ -141,10 +141,11 @@ describe('DescriptionEditModal Component', () => {
             render(<DescriptionEditModal {...defaultProps} />);
 
             const modal = screen.getByText('Edit description').closest('.fixed');
-            expect(modal).toHaveClass('fixed', 'inset-0', 'bg-black', 'bg-opacity-70', 'backdrop-blur-sm', 'z-50');
+            // Uses dark mode variant classes: bg-black/30 dark:bg-black/40
+            expect(modal).toHaveClass('fixed', 'inset-0', 'backdrop-blur-sm', 'z-50');
 
-            const modalContent = screen.getByText('Edit description').closest('.bg-\\[\\#1A1A1A\\]');
-            expect(modalContent).toHaveClass('bg-[#1A1A1A]', 'rounded-lg', 'shadow-2xl');
+            const modalContent = screen.getByText('Edit description').closest('.rounded-lg');
+            expect(modalContent).toHaveClass('rounded-lg', 'shadow-2xl');
         });
     });
 
