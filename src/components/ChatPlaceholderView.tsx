@@ -22,12 +22,12 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
             {!isChatHistoryLoaded && !isTestMode ? (
                 // Loading spinner while chat history is loading
                 <div className="flex flex-col items-center justify-center">
-                    <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mb-4 border-slate-900 dark:border-white"></div>
                 </div>
             ) : (
                 // Show placeholder text only when history is loaded but empty
                 <>
-                    <h2 className="text-4xl font-light text-white mb-6 text-center">
+                    <h2 className="text-4xl font-light mb-6 text-center text-slate-900 dark:text-white">
                         {viewOnly
                             ? taskType === 'assignment'
                                 ? 'No submission yet'
@@ -41,7 +41,7 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                         : 'Ready for a challenge?'
                         }
                     </h2>
-                    <div className="text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
+                    <div className="text-gray-600 dark:text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
                         {viewOnly
                             ? taskType === 'assignment'
                                 ? <p>There is no submission history for this assignment</p>
@@ -50,18 +50,18 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                 ? <p>Ask your doubt here and AI will help you understand the material better</p>
                                 : taskType === 'assignment'
                                     ? (
-                                        <p className="text-gray-300 font-light text-center mt-1">
+                                        <p className="text-gray-600 dark:text-gray-300 font-light text-center mt-1">
                                             Upload your project as a .zip file. Make sure to include all the relevant files. Be careful as you can upload your submission just once.
                                         </p>
                                     )
                                     : responseType === 'exam'
                                         ? (
-                                            <div className="bg-[#1a1a1a] rounded-xl px-6 py-5 flex flex-col items-center justify-center max-w-lg mx-auto">
+                                            <div className="bg-gray-50 border border-gray-200 dark:bg-[#1a1a1a] dark:border-transparent rounded-xl px-6 py-5 flex flex-col items-center justify-center max-w-lg mx-auto">
                                                 <span className="flex items-center gap-2 mb-2">
-                                                    <span className="text-red-400 text-lg" style={{ fontWeight: 300 }}>●</span>
-                                                    <span className="text-red-400 font-light text-base">One-time Submission</span>
+                                                    <span className="text-rose-500 dark:text-red-400 text-lg" style={{ fontWeight: 300 }}>●</span>
+                                                    <span className="text-rose-600 dark:text-red-400 font-light text-base">One-time Submission</span>
                                                 </span>
-                                                <span className="text-gray-300 font-light text-center mt-1">
+                                                <span className="text-gray-600 dark:text-gray-300 font-light text-center mt-1">
                                                     {inputType === 'code'
                                                         ? `Think through your answer carefully, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
                                                         : `Think through your answer carefully, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`}

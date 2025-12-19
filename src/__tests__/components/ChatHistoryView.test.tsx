@@ -181,7 +181,7 @@ describe('ChatHistoryView Component', () => {
         );
 
         // Check for some thinking message (specific text might vary)
-        const thinkingElement = screen.getByText(/.+/i, { selector: '.highlight-animation' });
+        const thinkingElement = screen.getByText(/.+/i, { selector: '.thinking-text-animation' });
         expect(thinkingElement).toBeInTheDocument();
 
         // Advance timers to see message change
@@ -190,7 +190,7 @@ describe('ChatHistoryView Component', () => {
         });
 
         // Should still have a thinking message element
-        expect(screen.getByText(/.+/i, { selector: '.highlight-animation' })).toBeInTheDocument();
+        expect(screen.getByText(/.+/i, { selector: '.thinking-text-animation' })).toBeInTheDocument();
     });
 
     it('displays error messages correctly', () => {
@@ -234,7 +234,7 @@ describe('ChatHistoryView Component', () => {
         );
 
         // Look for any thinking message in the highlight-animation element
-        const thinkingMsg = screen.getByText(/.+/i, { selector: '.highlight-animation' });
+        const thinkingMsg = screen.getByText(/.+/i, { selector: '.thinking-text-animation' });
         expect(thinkingMsg).toBeInTheDocument();
     });
 
@@ -255,8 +255,8 @@ describe('ChatHistoryView Component', () => {
         render(<ChatHistoryView {...defaultProps} />);
 
         // Check for message containers with the expected background colors
-        const userMessages = document.querySelectorAll('.bg-\\[\\#333333\\]');
-        const aiMessages = document.querySelectorAll('.bg-\\[\\#1A1A1A\\]');
+        const userMessages = document.querySelectorAll('.dark\\:bg-\\[\\#333333\\]');
+        const aiMessages = document.querySelectorAll('.dark\\:bg-\\[\\#1A1A1A\\]');
 
         // Verify there are user message containers
         expect(userMessages.length).toBeGreaterThan(0);

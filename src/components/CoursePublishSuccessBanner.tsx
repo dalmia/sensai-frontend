@@ -105,12 +105,12 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
                 </div>
 
                 {/* Right panel - Text */}
-                <div className="w-2/3 bg-white flex flex-col justify-between p-12">
+                <div className="w-2/3 bg-white text-[#000] flex flex-col justify-between p-12">
                     <div className="mb-auto">
-                        <h2 className="text-3xl font-light text-black mb-6 animate-slideUp">{title}</h2>
+                        <h2 className="text-3xl font-light text-[#000] mb-6 animate-slideUp">{title}</h2>
 
                         <div className="pl-3 border-l-2 border-gray-200 animate-slideUp" style={{ animationDelay: '0.2s' }}>
-                            <p className="text-gray-600 text-sm">
+                            <p className="text-[#4b5563] text-sm">
                                 {description}
                             </p>
                         </div>
@@ -123,7 +123,7 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
                             onClick={handleCopyInviteLink}
                             className={`w-full py-3 border font-medium rounded-md transition-colors duration-300 cursor-pointer group flex items-center justify-center ${isCopied
                                 ? 'border-green-300 text-green-700 bg-green-50'
-                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                : 'border-gray-300 text-[#374151] hover:bg-gray-50'
                                 }`}
                         >
                             {isCopied ? (
@@ -142,7 +142,7 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
                         {/* Back Button */}
                         <button
                             onClick={onClose}
-                            className="w-full py-3 border border-black text-black font-medium rounded-md hover:bg-black hover:text-white transition-colors duration-300 cursor-pointer group"
+                            className="w-full py-3 border border-black text-[#000] font-medium rounded-md hover:bg-black hover:text-white transition-colors duration-300 cursor-pointer group"
                         >
                             {isCohortSource ? "Back to Cohort" : "Back to Course"}
                         </button>

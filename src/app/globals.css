@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -82,49 +85,6 @@ h6 {
 button,
 .button {
   letter-spacing: 0.01em;
-}
-
-/* Dialog styling for dark mode */
-.dark [role="dialog"],
-.dark [data-state="open"],
-.dark .dialog-content,
-.dark [data-radix-popper-content-wrapper],
-.dark [data-radix-dialog-content],
-.dark [data-radix-dialog-overlay],
-.dark div[role="dialog"],
-.dark div[role="dialog"]>div {
-  background-color: #1A1A1A !important;
-}
-
-/* Ensure all dialog elements in dark mode have the correct background */
-.dark .bg-gray-50,
-.dark .bg-gray-100,
-.dark .bg-gray-200,
-.dark .bg-gray-900,
-.dark .dark\:bg-gray-900 {
-  background-color: #1A1A1A !important;
-}
-
-/* Ensure hover states in dark mode have the correct color */
-.dark .hover\:bg-gray-50:hover,
-.dark .hover\:bg-gray-100:hover,
-.dark .dark\:hover\:bg-gray-900:hover {
-  background-color: #2A2A2A !important;
-}
-
-/* Ensure text colors in dark mode are correct */
-.dark .text-gray-400,
-.dark .text-gray-500,
-.dark .text-gray-600,
-.dark .text-gray-700,
-.dark .text-gray-800,
-.dark .text-gray-900 {
-  color: #CCCCCC !important;
-}
-
-.dark .text-black,
-.dark .dark\:text-white {
-  color: #FFFFFF !important;
 }
 
 /* Override focus styles to prevent blue outlines */

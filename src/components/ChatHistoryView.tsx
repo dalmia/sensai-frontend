@@ -22,13 +22,15 @@ const CodeMessageDisplay = ({ code, language }: { code: string, language?: strin
         }
 
         return (
-            <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
+            <div
+                className="w-full rounded overflow-hidden border bg-gray-50 border-gray-200 dark:bg-[#1D1D1D] dark:border-[#35363a]"
+            >
                 {languageSections.map(([lang, codeSection], index) => (
                     <div key={index} className="mb-2 last:mb-0">
-                        <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+                        <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-gray-100 text-gray-600 dark:bg-[#2D2D2D] dark:text-gray-300">
                             <span>{lang}</span>
                         </div>
-                        <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+                        <pre className="p-3 overflow-x-auto text-xs text-gray-800 dark:text-gray-200">
                             <code>{codeSection}</code>
                         </pre>
                     </div>
@@ -39,11 +41,13 @@ const CodeMessageDisplay = ({ code, language }: { code: string, language?: strin
 
     // If no language headers, display as a single code block
     return (
-        <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
-            <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+        <div
+            className="w-full rounded overflow-hidden border bg-gray-50 border-gray-200 dark:bg-[#1D1D1D] dark:border-[#35363a]"
+        >
+            <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-gray-100 text-gray-600 dark:bg-[#2D2D2D] dark:text-gray-300">
                 <span>{language || 'code'}</span>
             </div>
-            <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+            <pre className="p-3 overflow-x-auto text-xs text-gray-800 dark:text-gray-200">
                 <code>{code}</code>
             </pre>
         </div>
@@ -214,27 +218,6 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
       animation: pulsate 1.5s ease-in-out infinite;
     }
 
-    @keyframes highlightText {
-      0% {
-        background-position: -200% center;
-      }
-      100% {
-        background-position: 300% center;
-      }
-    }
-
-    .highlight-animation {
-      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, 
-      rgba(255,255,255,0) 75%);
-      background-size: 200% auto;
-      color: rgba(255, 255, 255, 0.6);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: highlightText 2s linear infinite;
-      transition: opacity 0.2s ease-in-out;
-    }
-
     .message-transition-out {
       opacity: 0.5;
     }
@@ -315,11 +298,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     return (
         <>
             <style jsx>{customStyles}</style>
-            <div
-                ref={chatContainerRef}
-                className="h-full overflow-y-auto w-full hide-scrollbar pb-8"
-            >
-                <div className="flex flex-col space-y-6 pr-2">
+                <div
+                    ref={chatContainerRef}
+                    className="h-full overflow-y-auto w-full hide-scrollbar pb-8 bg-white/60 dark:bg-transparent"
+                >
+                <div className="flex flex-col space-y-6 px-2">
                     {chatHistory.map((message, index) => (
                         <div key={message.id}>
                             {(() => {
@@ -335,7 +318,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
 
                                 return (
                                     <div className="flex justify-center mb-2">
-                                        <div className="px-3 py-1 rounded-full bg-[#232428] text-gray-200 text-xs font-light select-none">
+                                        <div className="px-3 py-1 rounded-full text-xs font-light select-none bg-gray-100 text-gray-700 border border-gray-200 dark:bg-[#232428] dark:text-gray-200 dark:border-transparent">
                                             {formatMessageDayLabel(currentDate)}
                                         </div>
                                     </div>
@@ -346,20 +329,38 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                             >
                                 {(() => {
                                     const isFileMessage = message.messageType === 'file' && !!message.fileUuid && !!onFileDownload;
+
+                                    // Timestamp (user messages only, shown below the bubble)
                                     const shouldShowUserTimestamp = message.sender === 'user';
                                     const messageTime = shouldShowUserTimestamp ? formatMessageTime((message as any).timestamp) : '';
                                     const timestampEl = messageTime ? (
-                                        <span className="mt-1 text-[10px] leading-none text-gray-400 font-light select-none">
+                                        <span className="mt-1 text-[10px] leading-none font-light select-none text-gray-500 dark:text-gray-400">
                                             {messageTime}
                                         </span>
                                     ) : null;
 
-                                    const bubbleClassName = `rounded-2xl ${message.messageType === 'audio' ? 'py-2' : 'px-4 py-2'} ${message.messageType === 'audio'
-                                        ? 'w-full sm:w-[75%]'
-                                        : message.messageType === 'code'
-                                            ? 'bg-[#282828] text-white w-[90%]'
-                                            : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
-                                        }`;
+                                    const bubbleVariant = (() => {
+                                    if (message.messageType === 'audio') {
+                                        const audioBase = message.sender === 'user'
+                                            ? 'bg-[#f3f4f6] text-slate-900 border border-gray-200 dark:bg-transparent dark:text-white dark:border-transparent'
+                                            : 'bg-white text-slate-900 border border-gray-200 dark:bg-[#1A1A1A] dark:text-white dark:border-transparent';
+                                        return `${audioBase} w-full sm:w-[75%]`;
+                                    }
+
+                                    if (message.messageType === 'code') {
+                                        // Code blocks already have their own container styling (CodeMessageDisplay).
+                                        // Keep the chat "bubble" transparent to avoid double backgrounds/padding.
+                                        return 'bg-transparent text-slate-900 dark:bg-transparent dark:text-white border-0 w-[90%]';
+                                    }
+
+                                    const textBase = message.sender === 'user'
+                                        ? 'bg-[#f3f4f6] text-slate-900 border border-gray-200 dark:bg-[#333333] dark:text-white dark:border-transparent'
+                                        : 'bg-white text-slate-900 border border-gray-200 dark:bg-[#1A1A1A] dark:text-white dark:border-transparent';
+                                    return `${textBase} max-w-[75%]`;
+                                    })();
+
+                                    // Audio + code shouldn't have the extra bubble padding (prevents "double container" look)
+                                    const bubbleClassName = `rounded-2xl ${(message.messageType === 'audio' || message.messageType === 'code') ? 'py-2' : 'px-4 py-2'} ${bubbleVariant}`;
 
                                     const bubble = (
                                         <div className={bubbleClassName}>
@@ -367,17 +368,16 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                 currentQuestionConfig?.responseType === 'exam' &&
                                                 onShowLearnerViewChange &&
                                                 isAdminView && (
-                                                    <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-[#35363a] ${message.is_correct !== undefined
+                                                    <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-gray-200 dark:border-[#35363a] ${message.is_correct !== undefined
                                                         ? message.is_correct
-                                                            ? 'bg-green-900/40'
-                                                            : 'bg-red-900/40'
-                                                        : 'bg-[#232428]'
+                                                            ? 'bg-emerald-100 dark:bg-green-900/40'
+                                                            : 'bg-rose-100 dark:bg-red-900/40'
+                                                        : 'bg-gray-100 dark:bg-[#232428]'
                                                         }`}>
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center">
                                                                 {message.is_correct !== undefined && (
-                                                                    <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'
-                                                                        }`}>
+                                                                    <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'}`}>
                                                                         {message.is_correct ? (
                                                                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -389,20 +389,22 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                                         )}
                                                                     </div>
                                                                 )}
-                                                                <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                                <span className="text-sm font-light select-none text-gray-700 dark:text-gray-300">Show result</span>
                                                             </div>
                                                             <button
                                                                 onClick={() => onShowLearnerViewChange(!showLearnerView)}
                                                                 className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
-                                                                    ${!showLearnerView ? 'bg-white border-gray-400' : 'bg-[#444950] border-[#444950]'}
+                                                                    ${!showLearnerView
+                                                                        ? 'bg-white border-gray-300 dark:border-gray-400'
+                                                                        : 'bg-gray-300 border-gray-300 dark:bg-[#444950] dark:border-[#444950]'}
                                                                 `}
                                                                 aria-pressed={!showLearnerView}
                                                                 aria-label="Show result toggle"
                                                                 type="button"
                                                             >
                                                                 <span
-                                                                    className={`inline-block h-5 w-5 transform rounded-full bg-black shadow-md transition-transform duration-200
-                                                                        ${!showLearnerView ? 'translate-x-5' : 'translate-x-1'}
+                                                                    className={`inline-block h-5 w-5 transform rounded-full shadow-md transition-transform duration-200
+                                                                        ${!showLearnerView ? 'translate-x-5 bg-black' : 'translate-x-1 bg-white dark:bg-black'}
                                                                     `}
                                                                 />
                                                             </button>
@@ -443,11 +445,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                             {message.content}
                                                         </pre>
                                                     )}
+
                                                     {shouldShowViewReport(message) && (
                                                         <div className="my-3">
                                                             <button
                                                                 onClick={() => onViewScorecard(message.scorecard || [])}
-                                                                className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                                className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-[#333333] dark:hover:bg-[#444444] px-4 py-2 rounded-full text-xs transition-colors cursor-pointer flex items-center"
                                                                 type="button"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -457,11 +460,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                             </button>
                                                         </div>
                                                     )}
+
                                                     {isErrorMessage(message) && onRetry && (
                                                         <div className="my-3">
                                                             <button
                                                                 onClick={onRetry}
-                                                                className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-[#333333] dark:hover:bg-[#444444] px-4 py-2 mb-2 rounded-full text-xs transition-colors cursor-pointer flex items-center"
                                                                 type="button"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -476,22 +480,21 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                         </div>
                                     );
 
-                                    if (!isFileMessage) {
-                                        // Only user messages should show timestamp; keep layout identical otherwise.
-                                        if (message.sender !== 'user' || !timestampEl) return bubble;
-                                        return (
+                                    const bubbleWithTimestamp = (message.sender === 'user' && timestampEl)
+                                        ? (
                                             <div className="w-full flex flex-col items-end">
                                                 {bubble}
                                                 {timestampEl}
                                             </div>
-                                        );
-                                    }
+                                        )
+                                        : bubble;
+
+                                    if (!isFileMessage) return bubbleWithTimestamp;
 
                                     return (
                                         <div className="w-full flex items-start justify-end gap-2">
-                                            <div className="flex flex-col items-end flex-1 min-w-0">
-                                                {bubble}
-                                                {message.sender === 'user' ? timestampEl : null}
+                                            <div className="flex-1 min-w-0">
+                                                {bubbleWithTimestamp}
                                             </div>
                                             <button
                                                 onClick={() => {
@@ -499,7 +502,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                                     const fileName = message.fileName!;
                                                     onFileDownload(fileUuid, fileName);
                                                 }}
-                                                className="shrink-0 mt-1 w-8 h-8 rounded-full bg-[#232428] hover:bg-[#2D2D2D] transition-colors cursor-pointer flex items-center justify-center text-gray-200"
+                                                className="shrink-0 mt-1 w-8 h-8 rounded-full transition-colors cursor-pointer flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white dark:bg-[#232428] dark:hover:bg-[#2D2D2D] dark:text-gray-200"
                                                 aria-label="Download file"
                                                 title="Download"
                                                 type="button"
@@ -516,12 +519,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     {/* Show "Preparing report" as an AI message */}
                     {showPreparingReport && (
                         <div className="flex justify-start">
-                            <div className="rounded-2xl px-4 py-3 bg-[#1A1A1A] text-white max-w-[75%]">
+                            <div className="rounded-2xl px-4 py-3 max-w-[75%] bg-indigo-50 text-indigo-900 border border-indigo-200 dark:bg-[#1A1A1A] dark:text-white dark:border-transparent">
                                 <div className="flex items-center">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                                    <div className="w-4 h-4 border-2 rounded-full animate-spin mr-3 border-indigo-500 border-t-transparent dark:border-white dark:border-t-transparent"></div>
                                     <div className="flex flex-col">
-                                        <p className="text-sm font-light">Preparing report</p>
-                                        <p className="text-xs text-gray-400 mt-1">This may take a moment</p>
+                                        <p className="text-sm font-light text-indigo-900 dark:text-white">Preparing report</p>
+                                        <p className="text-xs mt-1 text-indigo-600 dark:text-gray-400">This may take a moment</p>
                                     </div>
                                 </div>
                             </div>
@@ -533,11 +536,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         <div className="flex justify-start items-center my-2 ml-2">
                             <div className="flex items-center justify-center min-w-[20px] min-h-[20px] mr-2">
                                 <div
-                                    className="w-2.5 h-2.5 bg-white rounded-full pulsating-circle"
+                                    className="w-2.5 h-2.5 rounded-full pulsating-circle bg-slate-400 dark:bg-white"
                                 ></div>
                             </div>
                             <div className={`${isTransitioning ? 'message-transition-out' : 'message-transition-in'}`}>
-                                <span className="highlight-animation text-sm">
+                                <span className="text-sm thinking-text-animation">
                                     {currentThinkingMessage}
                                 </span>
                             </div>
@@ -553,10 +556,30 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     100% { background-position: 300% center; }
                 }
                 
-                .highlight-animation {
-                    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 75%);
+                /* CSS variables for theme-aware gradients - these update instantly on theme change */
+                :root {
+                    --thinking-gradient-start: rgba(15, 23, 42, 0);
+                    --thinking-gradient-mid: rgba(15, 23, 42, 0.65);
+                    --thinking-text-color: rgba(51, 65, 85, 0.7);
+                }
+                
+                :root.dark, .dark {
+                    --thinking-gradient-start: rgba(255, 255, 255, 0);
+                    --thinking-gradient-mid: rgba(255, 255, 255, 0.9);
+                    --thinking-text-color: rgba(255, 255, 255, 0.8);
+                }
+                
+                /* Single class using CSS variables - responds to theme changes without reload */
+                .thinking-text-animation {
+                    background: linear-gradient(
+                        to right,
+                        var(--thinking-gradient-start) 0%,
+                        var(--thinking-gradient-mid) 25%,
+                        var(--thinking-gradient-mid) 50%,
+                        var(--thinking-gradient-start) 75%
+                    );
                     background-size: 200% auto;
-                    color: rgba(255, 255, 255, 0.6);
+                    color: var(--thinking-text-color);
                     background-clip: text;
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
@@ -564,17 +587,19 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     transition: opacity 0.2s ease-in-out;
                 }
 
-                /* Markdown content styling */
+                /* Markdown content styling - Light mode (default) */
                 .markdown-content {
                     /* General spacing */
                     line-height: 1.6;
+                    color: #1f2937;
                     
                     /* Headings */
                     & h1, & h2, & h3, & h4, & h5, & h6 {
                         margin-top: 1.5em;
                         margin-bottom: 0.75em;
                         line-height: 1.3;
-                        font-weight: 400;
+                        font-weight: 300;
+                        color: #0f172a;
                     }
                     
                     & h1 {
@@ -616,13 +641,14 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     
                     /* Blockquotes */
                     & blockquote {
-                        border-left: 3px solid #444;
+                        border-left: 3px solid #cbd5f5;
                         padding-left: 1em;
                         margin-left: 0;
                         margin-right: 0;
                         margin-top: 1em;
                         margin-bottom: 1em;
-                        color: #bbb;
+                        color: #475569;
+                        background-color: #eef2ff;
                     }
                     
                     /* Code blocks */
@@ -630,13 +656,15 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         margin-top: 0.8em;
                         margin-bottom: 1em;
                         padding: 0.8em;
-                        background-color: #282828;
+                        background-color: #0f172a;
+                        color: #e2e8f0;
                         border-radius: 4px;
                         overflow-x: auto;
                     }
                     
                     & code {
-                        background-color: rgba(40, 40, 40, 0.6);
+                        background-color: rgba(14, 116, 144, 0.12);
+                        color: #0f172a;
                         border-radius: 3px;
                         padding: 0.2em 0.4em;
                         font-size: 0.9em;
@@ -644,6 +672,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     
                     & pre > code {
                         background-color: transparent;
+                        color: inherit;
                         padding: 0;
                         border-radius: 0;
                     }
@@ -654,16 +683,18 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         margin-bottom: 1em;
                         border-collapse: collapse;
                         width: 100%;
+                        border-color: #cbd5f5;
                     }
                     
                     & th, & td {
-                        border: 1px solid #444;
+                        border: 1px solid #cbd5f5;
                         padding: 0.5em 0.8em;
                         text-align: left;
                     }
                     
                     & th {
-                        background-color: #2d2d2d;
+                        background-color: #e2e8f0;
+                        color: #0f172a;
                     }
                     
                     /* Horizontal rule */
@@ -671,7 +702,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         margin-top: 1.5em;
                         margin-bottom: 1.5em;
                         border: 0;
-                        border-top: 1px solid #444;
+                        border-top: 1px solid #cbd5f5;
                     }
                     
                     /* Images */
@@ -683,12 +714,64 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     
                     /* Links */
                     & a {
-                        color: #5e9eff;
+                        color: #2563eb;
                         text-decoration: none;
                     }
                     
                     & a:hover {
                         text-decoration: underline;
+                    }
+                }
+
+                /* Markdown content styling - Dark mode */
+                .dark .markdown-content {
+                    color: #e2e8f0;
+                    
+                    & h1, & h2, & h3, & h4, & h5, & h6 {
+                        color: #f1f5f9;
+                        font-weight: 400;
+                    }
+                    
+                    & blockquote {
+                        border-left-color: #444;
+                        color: #bbb;
+                        background-color: transparent;
+                    }
+                    
+                    & pre {
+                        background-color: #282828;
+                        color: #e2e8f0;
+                    }
+                    
+                    & code {
+                        background-color: rgba(40, 40, 40, 0.6);
+                        color: #e2e8f0;
+                    }
+                    
+                    & pre > code {
+                        background-color: transparent;
+                        color: inherit;
+                    }
+                    
+                    & table {
+                        border-color: #444;
+                    }
+                    
+                    & th, & td {
+                        border-color: #444;
+                    }
+                    
+                    & th {
+                        background-color: #2d2d2d;
+                        color: #e2e8f0;
+                    }
+                    
+                    & hr {
+                        border-top-color: #444;
+                    }
+                    
+                    & a {
+                        color: #5e9eff;
                     }
                 }
             `}</style>

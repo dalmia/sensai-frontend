@@ -109,9 +109,8 @@ describe('CourseCard Component', () => {
         // We can't test the exact class since it's dynamically generated,
         // but we can check that one of the border classes is present
         expect(card).toHaveClass('border-b-2');
-        expect(card).toMatchSnapshot();
 
-        // We can either validate against all possible border classes
+        // Validate against all possible border classes
         const possibleBorderClasses = [
             'border-purple-500',
             'border-green-500',

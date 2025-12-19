@@ -26,7 +26,6 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
-    // Add state for duplicate functionality
     const [isDuplicating, setIsDuplicating] = useState(false);
 
     // Generate a unique border color based on the course id
@@ -42,14 +41,11 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
             'border-orange-500'
         ];
 
-        // Handle string IDs by converting to a number
         let idNumber: number;
         if (typeof course.id === 'string') {
-            // Use string hash code
             idNumber = Array.from(course.id).reduce(
                 (hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0
             );
-            // Ensure positive number
             idNumber = Math.abs(idNumber);
         } else {
             idNumber = course.id;
@@ -60,20 +56,15 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
 
     // Determine the correct link path
     const getLinkPath = () => {
-        // If this is being viewed by a learner, use the school slug path
         if (course.role && course.role !== 'admin' && course.org?.slug) {
-            // Include course_id and cohort_id as query parameters to help with selection on the school page
             return `/school/${course.org.slug}?course_id=${course.id}&cohort_id=${course.cohort_id}`;
         }
-        // If we have an org_id from the API, use that for the school-specific course path
         else if (course.org_id) {
             return `/school/admin/${course.org_id}/courses/${course.id}`;
         }
-        // If we're in a school context, use the school-specific course path
         return `/school/admin/${schoolId}/courses/${course.id}`;
     };
 
-    // Check if this is an admin view
     const isAdminView = schoolId;
 
     const handleDeleteClick = (e: React.MouseEvent) => {
@@ -86,7 +77,6 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
         e.preventDefault();
         e.stopPropagation();
 
-        // Otherwise, handle internally
         if (!isDuplicating) {
             setIsDuplicating(true);
 
@@ -106,12 +96,9 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                 }
 
                 const newCourseData = await response.json();
-
-                // Navigate to the new course page
                 router.push(`/school/admin/${schoolId}/courses/${newCourseData.id}`);
             } catch (error) {
                 console.error('Error duplicating course:', error);
-                // You could add a toast notification here if needed
             } finally {
                 setIsDuplicating(false);
             }
@@ -134,10 +121,8 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                 throw new Error('Failed to delete course');
             }
 
-            // Close the dialog after successful deletion
             setIsDeleteConfirmOpen(false);
 
-            // Call the onDelete callback if provided
             if (onDelete) {
                 onDelete(course.id);
             }
@@ -150,11 +135,10 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
         }
     };
 
-
     return (
         <div className="group relative">
             <Link href={getLinkPath()} className="block h-full">
-                <div className={`bg-[#1A1A1A] text-gray-300 rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70`}>
+                <div className={`rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70 bg-gray-100 dark:bg-[#1A1A1A] text-gray-700 dark:text-gray-300`}>
                     <h2 className="text-xl font-light mb-2">{course.title}</h2>
                 </div>
             </Link>
@@ -163,13 +147,13 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                     {/* Duplicate Button */}
                     <Tooltip content="Duplicate course">
                         <button
-                            className={`p-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800 ${isDuplicating ? 'opacity-100 cursor-not-allowed' : ''}`}
+                            className={`p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full text-gray-600 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-200 dark:hover:bg-gray-800 ${isDuplicating ? 'opacity-100 cursor-not-allowed' : ''}`}
                             aria-label="Duplicate course"
                             onClick={handleDuplicateClick}
                             disabled={isDuplicating}
                         >
                             {isDuplicating ? (
-                                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-4 h-4 border border-t-transparent rounded-full animate-spin border-gray-600 dark:border-gray-400"></div>
                             ) : (
                                 <Copy size={18} />
                             )}
@@ -178,7 +162,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
 
                     {/* Delete Button */}
                     <button
-                        className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
+                        className="p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full text-gray-600 dark:text-gray-400 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-800"
                         aria-label="Delete course"
                         onClick={handleDeleteClick}
                     >

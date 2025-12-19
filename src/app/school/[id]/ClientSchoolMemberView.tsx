@@ -15,6 +15,7 @@ import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
 import MentorCohortView from "@/components/MentorCohortView";
 import MemberSchoolViewHeader from '@/components/MemberSchoolViewHeader';
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface School {
     id: number;
@@ -51,6 +52,8 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     const [courseModules, setCourseModules] = useState<Module[]>([]);
     const [showCohortSelector, setShowCohortSelector] = useState<boolean>(false);
     const [isAdminOrOwner, setIsAdminOrOwner] = useState<boolean>(false);
+    // Hook to apply theme class to HTML element
+    useThemePreference();
 
     // Add state for completion data
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
@@ -330,12 +333,12 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
     // Show loading state while auth is loading
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-black text-white">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <div className="hidden sm:block">
                     <Header showCreateCourseButton={false} />
                 </div>
                 <div className="flex justify-center items-center py-12">
-                    <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-black dark:border-white"></div>
                 </div>
             </div>
         );
@@ -350,12 +353,12 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black text-white">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <div className="hidden sm:block">
                     <Header showCreateCourseButton={false} />
                 </div>
                 <div className="flex justify-center items-center py-12">
-                    <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-black dark:border-white"></div>
                 </div>
             </div>
         );
@@ -363,17 +366,41 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
 
     if (!school) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-black dark:text-white">
                 <p>School not found</p>
             </div>
         );
     }
 
+    const activeCourseName = courses.length > 0 ? courses[activeCourseIndex]?.name : undefined;
+
+    const activeTaskTitle = taskId
+        ? courseModules
+            .flatMap(m => m.items || [])
+            .find(item => String(item.id) === String(taskId))?.title
+        : undefined;
+
+    const activeQuestionTitle = questionId
+        ? (() => {
+            const task = taskId
+                ? courseModules
+                    .flatMap(m => m.items || [])
+                    .find(item => String(item.id) === String(taskId))
+                : undefined;
+
+            const questions = (task as any)?.questions;
+            if (!Array.isArray(questions)) return undefined;
+
+            const q = questions.find((qq: any) => String(qq?.id) === String(questionId));
+            return q?.title || q?.config?.title;
+        })()
+        : undefined;
+
     return (
         <>
             {/* Admin/Owner Banner */}
             {isAdminOrOwner && (
-                <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 text-center shadow-sm">
+                <div className="border-b py-3 px-4 text-center shadow-sm bg-gray-100 dark:bg-[#111111] border-gray-300 dark:border-gray-800 text-black dark:text-white">
                     <p className="font-light text-sm">
                         You are viewing all the cohorts in this school because you are an admin. Learners only see the cohorts they are enrolled in.
                     </p>
@@ -391,17 +418,22 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                             batches={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? availableBatches : []}
                             activeBatchId={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? selectedBatchId : null}
                             onBatchSelect={activeCohort?.role === 'mentor' && availableBatches.length > 1 ? (batchId => setSelectedBatchId(batchId)) : undefined}
+                            activeCourseName={activeCourseName}
+                            taskId={taskId}
+                            questionId={questionId}
+                            activeTaskTitle={activeTaskTitle}
+                            activeQuestionTitle={activeQuestionTitle}
                         />
                     }
                 />
             </div>
-            <div className="min-h-screen bg-black text-white">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <div className="container mx-auto">
                     <main>
                         {cohorts.length === 0 && (
                             <div className="pt-24 px-4">
                                 <div className="flex flex-col items-center justify-center py-12 rounded-lg text-center">
-                                    <h3 className="text-xl font-light mb-2">No cohorts available</h3>
+                                    <h3 className="text-xl font-light mb-2 text-black dark:text-white">No cohorts available</h3>
                                     <p className="text-gray-400">You are not enrolled in any cohorts for this school</p>
                                 </div>
                             </div>
@@ -411,7 +443,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                             <>
                                 {loadingCourses ? (
                                     <div className="flex justify-center items-center py-12">
-                                        <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                                        <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-black dark:border-white"></div>
                                     </div>
                                 ) : courseError ? (
                                     <div className="mt-12 text-center px-4">
@@ -422,7 +454,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                     fetchCohortCourses(activeCohort.id);
                                                 }
                                             }}
-                                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
+                                            className="px-4 py-2 rounded-md transition-colors bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700"
                                         >
                                             Try Again
                                         </button>
@@ -487,7 +519,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
 
                                         {courses.length === 0 ? (
                                             <div className="pt-12 text-center px-4">
-                                                <h3 className="text-xl font-light mb-2">No courses available</h3>
+                                                <h3 className="text-xl font-light mb-2 text-black dark:text-white">No courses available</h3>
                                                 <p className="text-gray-400">There are no courses in this cohort yet</p>
                                             </div>
                                         ) : (

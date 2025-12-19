@@ -420,7 +420,7 @@ export default function BlockNoteEditor({
     return (
         <div
             ref={editorContainerRef}
-            className={`h-full dark-editor-container ${className}`}
+            className={`h-full ${className}`}
             // Add click handler to prevent event propagation
             onClick={(e) => {
                 e.stopPropagation();

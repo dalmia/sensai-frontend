@@ -216,7 +216,7 @@ describe('MemberSchoolViewHeader Component', () => {
             const dropdownOption = activeCohortOptions.find(option =>
                 option.tagName === 'LI'
             );
-            expect(dropdownOption).toHaveClass('text-white', 'font-light');
+            expect(dropdownOption).toHaveClass('dark:text-white', 'font-light');
         });
     });
 
@@ -307,7 +307,7 @@ describe('MemberSchoolViewHeader Component', () => {
             const dropdownOption = activeBatchOptions.find(option =>
                 option.tagName === 'LI'
             );
-            expect(dropdownOption).toHaveClass('text-white', 'font-light');
+            expect(dropdownOption).toHaveClass('dark:text-white', 'font-light');
         });
 
         it('shows "Select Batch" when no active batch is selected', () => {

@@ -20,7 +20,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SensAI",
+  title: {
+    default: "SensAI",
+    template: "%s · SensAI",
+  },
   description: "The only LMS you need in the era of AI",
 };
 

@@ -319,8 +319,8 @@ describe('Home Page', () => {
                 const teachingTab = screen.getByText('Created by you').closest('button');
                 const mentoringTab = screen.getByText('Mentored by you').closest('button');
 
-                expect(teachingTab).toHaveClass('bg-[#333333]');
-                expect(mentoringTab).toHaveClass('text-gray-400');
+                expect(teachingTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
+                expect(mentoringTab).toHaveClass('dark:text-[#9ca3af]');
 
                 // Should show teaching courses
                 expect(screen.getByTestId('course-card-course-1')).toBeInTheDocument();
@@ -334,7 +334,7 @@ describe('Home Page', () => {
                 const mentoringTab = screen.getByText('Mentored by you').closest('button');
                 fireEvent.click(mentoringTab!);
 
-                expect(mentoringTab).toHaveClass('bg-[#333333]');
+                expect(mentoringTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
 
                 // Should show mentoring courses
                 expect(screen.getByTestId('course-card-course-5')).toBeInTheDocument();
@@ -369,8 +369,8 @@ describe('Home Page', () => {
                 const mentoringTab = screen.getByText('Mentored by you').closest('button');
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
 
-                expect(mentoringTab).toHaveClass('bg-[#333333]');
-                expect(learningTab).toHaveClass('text-gray-400');
+                expect(mentoringTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
+                expect(learningTab).toHaveClass('dark:text-[#9ca3af]');
 
                 // Should show mentoring courses
                 expect(screen.getByTestId('course-card-course-5')).toBeInTheDocument();
@@ -384,7 +384,7 @@ describe('Home Page', () => {
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
                 fireEvent.click(learningTab!);
 
-                expect(learningTab).toHaveClass('bg-[#333333]');
+                expect(learningTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
 
                 // Should show learning courses
                 expect(screen.getByTestId('course-card-course-3')).toBeInTheDocument();
@@ -420,9 +420,9 @@ describe('Home Page', () => {
                 const mentoringTab = screen.getByText('Mentored by you').closest('button');
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
 
-                expect(teachingTab).toHaveClass('bg-[#333333]');
-                expect(mentoringTab).toHaveClass('text-gray-400');
-                expect(learningTab).toHaveClass('text-gray-400');
+                expect(teachingTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
+                expect(mentoringTab).toHaveClass('dark:text-[#9ca3af]');
+                expect(learningTab).toHaveClass('dark:text-[#9ca3af]');
 
                 // Should show teaching courses
                 expect(screen.getByTestId('course-card-course-1')).toBeInTheDocument();
@@ -438,7 +438,7 @@ describe('Home Page', () => {
                 const mentoringTab = screen.getByText('Mentored by you').closest('button');
                 fireEvent.click(mentoringTab!);
 
-                expect(mentoringTab).toHaveClass('bg-[#333333]');
+                expect(mentoringTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
                 expect(screen.getByTestId('course-card-course-5')).toBeInTheDocument();
                 expect(screen.getByTestId('course-card-course-6')).toBeInTheDocument();
 
@@ -446,7 +446,7 @@ describe('Home Page', () => {
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
                 fireEvent.click(learningTab!);
 
-                expect(learningTab).toHaveClass('bg-[#333333]');
+                expect(learningTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
                 expect(screen.getByTestId('course-card-course-3')).toBeInTheDocument();
                 expect(screen.getByTestId('course-card-course-4')).toBeInTheDocument();
 
@@ -454,7 +454,7 @@ describe('Home Page', () => {
                 const teachingTab = screen.getByText('Created by you').closest('button');
                 fireEvent.click(teachingTab!);
 
-                expect(teachingTab).toHaveClass('bg-[#333333]');
+                expect(teachingTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
                 expect(screen.getByTestId('course-card-course-1')).toBeInTheDocument();
                 expect(screen.getByTestId('course-card-course-2')).toBeInTheDocument();
             });
@@ -486,8 +486,8 @@ describe('Home Page', () => {
                 const teachingTab = screen.getByText('Created by you').closest('button');
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
 
-                expect(teachingTab).toHaveClass('bg-[#333333]');
-                expect(learningTab).toHaveClass('text-gray-400');
+                expect(teachingTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
+                expect(learningTab).toHaveClass('dark:text-[#9ca3af]');
 
                 // Should show teaching courses
                 expect(screen.getByTestId('course-card-course-1')).toBeInTheDocument();
@@ -501,7 +501,7 @@ describe('Home Page', () => {
                 const learningTab = screen.getByText('Enrolled courses').closest('button');
                 fireEvent.click(learningTab!);
 
-                expect(learningTab).toHaveClass('bg-[#333333]');
+                expect(learningTab).toHaveClass('bg-white', 'dark:bg-[#333333]');
 
                 // Should show learning courses
                 expect(screen.getByTestId('course-card-course-3')).toBeInTheDocument();

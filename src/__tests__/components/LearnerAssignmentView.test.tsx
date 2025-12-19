@@ -168,6 +168,9 @@ describe('LearnerAssignmentView', () => {
         render(<LearnerAssignmentView taskId="61" userId="71" viewOnly={true} isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
 
+        // Count fetch calls made before the button click
+        const initialCallCount = (global.fetch as any).mock.calls.length;
+
         // Mock FileReader to track if it's called
         const fileReaderSpy = jest.spyOn(global, 'FileReader' as any);
 
@@ -178,9 +181,9 @@ describe('LearnerAssignmentView', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // FileReader should not be called because handleFileSubmit returns early
-        // We verify this by checking that no fetch calls were made for file upload
-        const fetchCalls = (global.fetch as any).mock.calls;
-        const uploadCalls = fetchCalls.filter((call: any) =>
+        // We verify this by checking that no NEW fetch calls were made after the button click
+        const fetchCallsAfterClick = (global.fetch as any).mock.calls.slice(initialCallCount);
+        const uploadCalls = fetchCallsAfterClick.filter((call: any) =>
             call[0]?.includes('/file/create-presigned') ||
             call[0]?.includes('/file/upload-local')
         );

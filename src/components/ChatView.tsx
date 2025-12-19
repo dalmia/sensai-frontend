@@ -8,6 +8,7 @@ import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
 import UploadFile from './UploadFile';
 import isEqual from 'lodash/isEqual';
+import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 // Export interface for code view state to be used by parent components
 export interface CodeViewState {
@@ -87,6 +88,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     onFileDownload,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const { isDarkMode } = useThemePreference();
 
     // Add ref for CodeEditorView
     const codeEditorRef = useRef<CodeEditorViewHandle>(null);
@@ -548,6 +550,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
                     disableCopyPaste={disableCopyPaste}
+                    isDarkMode={isDarkMode}
                     onCodeChange={(updatedCode) => {
                         setTimeout(() => {
                             setCodeContent(updatedCode);
@@ -576,7 +579,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                         />
                     ) : (
                         <div
-                            className="flex-1 overflow-y-auto messages-container"
+                            className="flex-1 overflow-y-auto messages-container bg-white/80 dark:bg-transparent"
                             onCopy={() => {
                                 const selection = window.getSelection();
                                 if (selection && selection.toString()) {
@@ -611,29 +614,29 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
                     {/* Input area with fixed position at bottom */}
                     {!viewOnly && (
-                        <div className="pt-2 bg-[#111111] input-container">
+                        <div className="pt-2 input-container bg-white border-t border-gray-200 dark:bg-[#111111] dark:border-transparent">
                             {/* Learning Material Suggestions */}
                             {taskType === 'learning_material' && currentChatHistory.length === 0 && (
                                 <div className="mb-4">
-                                    <div className="text-gray-400 text-sm mb-2 flex items-center">
+                                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-2 flex items-center">
                                         <Sparkles size={16} className="mr-2" />
                                         <span>A few suggestions to get started</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mb-2">
                                         <button
-                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Explain using an example")}
                                         >
                                             Explain using an example
                                         </button>
                                         <button
-                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-emerald-100 text-emerald-900 hover:bg-emerald-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Summarise it with clear takeaways")}
                                         >
                                             Summarise it with clear takeaways
                                         </button>
                                         <button
-                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            className="px-3 py-1.5 rounded-full text-sm transition-colors cursor-pointer bg-sky-100 text-sky-900 hover:bg-sky-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333]"
                                             onClick={() => handleSuggestionClick("Why is this important to understand")}
                                         >
                                             Why is this important to understand
@@ -666,13 +669,13 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                     ) : (
                                         /* Hide the text input for coding questions in exam mode */
                                         !(currentQuestionConfig?.responseType === 'exam' && isCodingQuestion) && (
-                                            <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
+                                            <div className="relative flex items-center rounded-3xl py-1 overflow-hidden border bg-gray-50 border-gray-300 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none">
                                                 <div className="flex-1 flex items-center">
                                                     <textarea
                                                         id="no-border-textarea"
                                                         ref={textareaRef}
                                                         placeholder={taskType === 'learning_material' ? "Type your question here" : "Type your answer here"}
-                                                        className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
+                                                        className="ml-2 w-full bg-transparent auto-expanding-textarea text-slate-900 placeholder:text-slate-400 dark:text-white dark:placeholder:text-gray-500"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}
                                                         onKeyDown={handleTextareaKeyDown}
@@ -720,14 +723,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                     />
                                                 </div>
                                                 <button
-                                                    className={`bg-white rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center ${isSubmitting || isAiResponding ? 'opacity-50' : ''}`}
+                                                    className={`bg-white text-black border border-gray-300 shadow-sm dark:border-transparent dark:shadow-none rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center transition-colors duration-200 ${isSubmitting || isAiResponding ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:opacity-90'}`}
                                                     onClick={() => handleSubmitAnswer('text')}
                                                     disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
                                                     aria-label="Submit answer"
                                                     type="button"
                                                 >
                                                     {isSubmitting ? (
-                                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                                        <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-black"></div>
                                                     ) : (
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                             <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -747,8 +750,29 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     };
 
     return (
-        <div className="flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper">
+        <div
+            className={`flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper ${isViewingCode ? 'bg-gray-200 dark:!bg-[#111111]' : 'bg-white dark:bg-transparent'}`}
+        >
             <style jsx global>{`
+                /* Code toggle colors (used by .code-toggle-switch via CSS vars) */
+                :root {
+                    --code-toggle-bg: #e5e7eb;
+                    --code-toggle-border: #d1d5db;
+                    --code-toggle-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+                    --code-toggle-text: #111827;
+                    --code-toggle-active-bg: #ffffff;
+                    --code-toggle-active-text: #111827;
+                }
+
+                .dark {
+                    --code-toggle-bg: #1D1D1D;
+                    --code-toggle-border: #2D2D2D;
+                    --code-toggle-shadow: none;
+                    --code-toggle-text: #9ca3af;
+                    --code-toggle-active-bg: #2D2D2D;
+                    --code-toggle-active-text: #ffffff;
+                }
+
                 /* Target the specific textarea with an important ID */
                 #no-border-textarea {
                     border: none !important;
@@ -861,9 +885,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     height: 32px;
                     border-radius: 16px;
                     overflow: hidden;
-                    background-color: #111111;
-                    border: 1px solid #333333;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                    background-color: var(--code-toggle-bg);
+                    border: 1px solid var(--code-toggle-border);
+                    box-shadow: var(--code-toggle-shadow);
                 }
                 
                 .code-toggle-option {
@@ -874,7 +898,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     padding: 0 12px;
                     cursor: pointer;
                     user-select: none;
-                    color: #999999;
+                    color: var(--code-toggle-text);
                     font-size: 12px;
                     transition: all 0.2s ease;
                     position: relative;
@@ -882,8 +906,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                 }
                 
                 .code-toggle-option.active {
-                    color: #ffffff;
-                    background-color: #222222;
+                    color: var(--code-toggle-active-text);
+                    background-color: var(--code-toggle-active-bg);
                 }
                 
                 /* Responsive styles for audio component */
@@ -896,6 +920,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     .audio-recorder-container {
                         width: 100% !important;
                     }
+                }
+
+                .messages-container {
+                    background-color: #f8fafc;
+                }
+                
+                .dark .messages-container {
+                    background-color: transparent;
                 }
             `}</style>
 

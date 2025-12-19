@@ -6,6 +6,7 @@ import CourseItemDialog from "@/components/CourseItemDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Tooltip from "@/components/Tooltip"; // Import the Tooltip component
 import { formatScheduleDate } from "@/lib/utils/dateFormat"; // Import the utility function
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 
 interface CourseModuleListProps {
@@ -93,6 +94,158 @@ export default function CourseModuleList({
     onQuestionChange = () => { },
     onDuplicateItem,
 }: CourseModuleListProps) {
+    // Get theme preference for child components that need it
+    const { isDarkMode } = useThemePreference();
+    
+    // Track dark mode from DOM to ensure proper color calculations and re-renders
+    const [isDarkModeDOM, setIsDarkModeDOM] = useState(true);
+    
+    useEffect(() => {
+        // Initial check
+        const checkDarkMode = () => {
+            if (typeof document !== 'undefined') {
+                setIsDarkModeDOM(document.documentElement.classList.contains('dark'));
+            }
+        };
+        
+        checkDarkMode();
+        
+        // Watch for class changes on html element
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    checkDarkMode();
+                }
+            });
+        });
+        
+        if (typeof document !== 'undefined') {
+            observer.observe(document.documentElement, { attributes: true });
+        }
+        
+        return () => observer.disconnect();
+    }, []);
+
+    // Compute a vibrant inverse color for light mode modules to make them pop
+    const getEffectiveBackgroundColor = (inputColor?: string, moduleIndex = 0): string | undefined => {
+        if (!inputColor) return undefined;
+
+        const toRgb = (color: string): { r: number; g: number; b: number } | null => {
+            let hex = color.trim();
+            if (hex.startsWith('rgb')) {
+                const match = hex.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+                if (match) {
+                    return { r: parseInt(match[1], 10), g: parseInt(match[2], 10), b: parseInt(match[3], 10) };
+                }
+                return null;
+            }
+            if (hex.startsWith('#')) hex = hex.slice(1);
+            if (hex.length === 3) {
+                hex = hex.split('').map(c => c + c).join('');
+            }
+            if (hex.length !== 6) return null;
+            const num = parseInt(hex, 16);
+            const r = (num >> 16) & 0xff;
+            const g = (num >> 8) & 0xff;
+            const b = num & 0xff;
+            return { r, g, b };
+        };
+
+        const fallbackPalette = ['#F9C80E', '#4ECDC4', '#FF6B6B', '#9575DE', '#FF9F1C', '#43AA8B'];
+        const getFallbackColor = (color: string) => {
+            const hash = color.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const paletteIndex = (hash + moduleIndex) % fallbackPalette.length;
+            return fallbackPalette[paletteIndex];
+        };
+
+        const getSequentialPaletteColor = (index: number) => fallbackPalette[index % fallbackPalette.length];
+        const paletteColor = getSequentialPaletteColor(moduleIndex);
+        const paletteRgb = toRgb(paletteColor) ?? { r: 255, g: 226, b: 89 };
+
+        const rgb = toRgb(inputColor);
+        if (!rgb) {
+            return isDarkModeDOM ? inputColor : getSequentialPaletteColor(moduleIndex);
+        }
+
+        if (isDarkModeDOM) {
+            return inputColor;
+        }
+
+        const rgbToHsl = (r: number, g: number, b: number): { h: number; s: number; l: number } => {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s = 0;
+            const l = (max + min) / 2;
+            if (max !== min) {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r:
+                        h = (g - b) / d + (g < b ? 6 : 0);
+                        break;
+                    case g:
+                        h = (b - r) / d + 2;
+                        break;
+                    case b:
+                        h = (r - g) / d + 4;
+                        break;
+                }
+                h /= 6;
+            }
+            return { h, s, l };
+        };
+
+        const hslToRgb = (h: number, s: number, l: number): { r: number; g: number; b: number } => {
+            const hue2rgb = (p: number, q: number, t: number) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+
+            let r: number, g: number, b: number;
+
+            if (s === 0) {
+                r = g = b = l; // achromatic
+            } else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1 / 3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1 / 3);
+            }
+
+            return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+        };
+
+        const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+        if (s < 0.2) {
+            return getSequentialPaletteColor(moduleIndex);
+        }
+
+        // Push saturation towards 1 for richer colors
+        const vibrantS = Math.min(0.98, Math.max(0.75, s + 0.4));
+        // Drive lightness high but keep enough contrast for text
+        const vibrantL = Math.min(0.94, Math.max(0.75, l + 0.45));
+        const { r, g, b } = hslToRgb(h, vibrantS, vibrantL);
+
+        const blend = (value: number, target: number) => Math.round(value * 0.7 + target * 0.3);
+        const blendedR = blend(r, paletteRgb.r);
+        const blendedG = blend(g, paletteRgb.g);
+        const blendedB = blend(b, paletteRgb.b);
+        const newlyBright = `rgb(${blendedR}, ${blendedG}, ${blendedB})`;
+
+        // Detect if color is still too muted (close to gray) and switch to fallback palette
+        const isMuted = vibrantS < 0.4 || Math.abs(blendedR - blendedG) < 15 && Math.abs(blendedG - blendedB) < 15;
+        if (isMuted) {
+            return getSequentialPaletteColor(moduleIndex);
+        }
+
+        return newlyBright;
+    };
 
     // Track completed items - initialize with completedTaskIds prop
     const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(completedTaskIds);
@@ -542,7 +695,7 @@ export default function CourseModuleList({
                         <div
                             key={module.id}
                             className="border-none rounded-lg transition-colors"
-                            style={{ backgroundColor: module.backgroundColor }}
+                            style={{ backgroundColor: getEffectiveBackgroundColor(module.backgroundColor, index) }}
                         >
                             <div className="flex flex-col">
                                 {/* Module header with title and buttons */}
@@ -558,7 +711,9 @@ export default function CourseModuleList({
 
                                             onToggleModule(module.id);
                                         }}
-                                        className={`hidden sm:block mr-2 transition-colors ${module.unlockAt ? 'text-gray-500 cursor-not-allowed' : 'text-gray-400 hover:text-white cursor-pointer'}`}
+                                        className={`hidden sm:block mr-2 transition-colors ${module.unlockAt
+                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                            : 'text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer'}`}
                                         aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                         disabled={!!module.unlockAt}
                                     >
@@ -579,7 +734,7 @@ export default function CourseModuleList({
                                         ) : (
                                             <div className="flex items-center">
                                                 <h2
-                                                    className={`text-lg sm:text-xl font-light ${module.unlockAt ? 'text-gray-400' : 'text-white'}`}
+                                                    className={`text-lg sm:text-xl font-light ${module.unlockAt ? 'text-gray-400' : 'text-black dark:text-white'}`}
                                                 >
                                                     {module.title || "New Module"}
                                                 </h2>
@@ -704,7 +859,7 @@ export default function CourseModuleList({
                                                 onToggleModule(module.id);
 
                                             }}
-                                            className={`flex items-center px-3 py-1 text-sm focus:outline-none focus:ring-0 focus:border-0 transition-colors rounded-full border ${module.unlockAt ? 'text-gray-500 border-gray-600 bg-gray-800 cursor-not-allowed' : 'text-gray-400 hover:text-white border-gray-700 bg-gray-900 cursor-pointer'}`}
+                                            className={`flex items-center px-3 py-1 text-sm focus:outline-none focus:ring-0 focus:border-0 transition-colors rounded-full border ${module.unlockAt ? 'text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 cursor-pointer'}`}
                                             aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                             disabled={!!module.unlockAt}
                                         >
@@ -729,13 +884,13 @@ export default function CourseModuleList({
                                         {getIsExpanded(module.id) ? (
                                             <div className="px-4 pb-2">
                                                 <div className="flex justify-end items-center mb-1">
-                                                    <div className="text-sm text-gray-400">
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         {module.progress}%
                                                     </div>
                                                 </div>
-                                                <div className="w-full bg-gray-700 h-2 rounded-full">
+                                                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700">
                                                     <div
-                                                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                                        className="h-2 rounded-full transition-all duration-300 bg-green-600 dark:bg-green-500"
                                                         style={{ width: `${module.progress}%` }}
                                                     ></div>
                                                 </div>
@@ -743,13 +898,13 @@ export default function CourseModuleList({
                                         ) : (
                                             <div className="px-4 pb-4">
                                                 <div className="flex justify-end items-center mb-1">
-                                                    <div className="text-sm text-gray-400">
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         {module.progress}%
                                                     </div>
                                                 </div>
-                                                <div className="w-full bg-gray-700 h-2 rounded-full">
+                                                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700">
                                                     <div
-                                                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                                        className="h-2 rounded-full transition-all duration-300 bg-green-600 dark:bg-green-500"
                                                         style={{ width: `${module.progress}%` }}
                                                     ></div>
                                                 </div>
@@ -762,68 +917,80 @@ export default function CourseModuleList({
                             {/* Module content - only visible when expanded */}
                             {getIsExpanded(module.id) && (
                                 <div className="px-4 pb-4">
-                                    <div className="pl-2 sm:pl-6 border-l border-gray-400 ml-2 space-y-2">
-                                        {module.items.map((item, itemIndex) => (
-                                            <div
-                                                key={item.id}
-                                                data-testid={`module-item-${item.id}`}
-                                                className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""
-                                                    } ${item.isGenerating ? "opacity-40 pointer-events-none" : ""
-                                                    }`}
-                                                onClick={() => {
-                                                    if (!onOpenItem || item.isGenerating) return;
-                                                    let questionId: string | undefined = undefined;
-                                                    if (item.type === 'quiz' && completedQuestionIds[item.id]) {
-                                                        const questionIds = Object.keys(completedQuestionIds[item.id]);
-                                                        if (questionIds.length > 0) {
-                                                            questionId = questionIds[0];
+                                    <div className="pl-2 sm:pl-6 border-l ml-2 space-y-2 border-black/20 dark:border-gray-400">
+                                        {module.items.map((item, itemIndex) => {
+                                            const isItemCompleted = completedItems[item.id];
+                                            const itemQuizEntries = completedQuestionIds[item.id] || {};
+                                            const hasPartialQuizProgress = item.type === 'quiz' && Object.values(itemQuizEntries).some(Boolean);
+                                            const totalQuizEntries = Object.keys(itemQuizEntries).length;
+                                            const completedQuizCount = Object.values(itemQuizEntries).filter(Boolean).length;
+                                            const isPartiallyComplete = !isItemCompleted && hasPartialQuizProgress;
+
+                                            const materialWrapperClass = isItemCompleted
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
+
+                                            const materialIconColor = isItemCompleted
+                                                ? 'text-white'
+                                                : 'text-rose-600 dark:text-rose-100';
+
+                                            const assignmentWrapperClass = isItemCompleted
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                : 'bg-rose-200/30 dark:bg-rose-500/25';
+
+                                            const assignmentIconColor = isItemCompleted
+                                                ? 'text-white'
+                                                : 'text-rose-600 dark:text-rose-100';
+
+                                            const quizWrapperClass = isItemCompleted
+                                                ? 'bg-emerald-400/90 dark:bg-emerald-400/80'
+                                                : hasPartialQuizProgress
+                                                    ? 'bg-amber-500/80 dark:bg-amber-500/25'
+                                                    : 'bg-indigo-400/25 dark:bg-indigo-500/20';
+
+                                            const quizIconColor = isItemCompleted
+                                                ? 'text-white'
+                                                : hasPartialQuizProgress
+                                                    ? 'text-white dark:text-yellow-500'
+                                                    : 'text-indigo-700 dark:text-indigo-100';
+
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    data-testid={`module-item-${item.id}`}
+                                                    className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2
+                                                        ${isPartiallyComplete
+                                                            ? 'bg-white/80 dark:bg-amber-500/20 hover:bg-white dark:hover:bg-amber-500/30 ring-1 ring-amber-400/50 dark:ring-amber-500/30'
+                                                            : 'hover:bg-white/70 dark:hover:bg-gray-700/50'}
+                                                        ${isItemCompleted ? 'opacity-60' : ''}
+                                                        ${item.isGenerating ? 'opacity-40 pointer-events-none' : ''}`}
+                                                    onClick={() => {
+                                                        if (!onOpenItem || item.isGenerating) return;
+                                                        let questionId: string | undefined = undefined;
+                                                        if (item.type === 'quiz' && totalQuizEntries > 0) {
+                                                            const questionIds = Object.keys(itemQuizEntries);
+                                                            if (questionIds.length > 0) {
+                                                                questionId = questionIds[0];
+                                                            }
                                                         }
-                                                    }
-                                                    onOpenItem(module.id, item.id, questionId);
-                                                }}
-                                            >
-                                                <div className={`flex items-center justify-center mr-4 sm:mr-2 ${completedItems[item.id]
-                                                    ? "opacity-50"
-                                                    : "opacity-100"
-                                                    }`}>
-                                                    {/* Enhanced visual distinction with color and better icons */}
-                                                    {item.type === 'material' ? (
-                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
-                                                            ? "bg-green-500/15"
-                                                            : "bg-blue-500/15"
-                                                            }`}>
-                                                            <BookOpen size={16} className={`${completedItems[item.id]
-                                                                ? "text-green-500"
-                                                                : "text-blue-400"
-                                                                }`} />
-                                                        </div>
-                                                    ) : item.type === 'assignment' ? (
-                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
-                                                            ? "bg-green-500/15"
-                                                            : "bg-rose-500/15"
-                                                            }`}>
-                                                            <PenSquare size={16} className={`${completedItems[item.id]
-                                                                ? "text-green-500"
-                                                                : "text-rose-400"
-                                                                }`} />
-                                                        </div>
-                                                    ) : (
-                                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
-                                                            ? "bg-green-500/15"
-                                                            : (completedQuestionIds[item.id] &&
-                                                                Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                                ? "bg-yellow-500/15"
-                                                                : "bg-purple-500/15")
-                                                            }`}>
-                                                            <ClipboardList size={16} className={completedItems[item.id]
-                                                                ? "text-green-500"
-                                                                : completedQuestionIds[item.id] &&
-                                                                    Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                                    ? "text-yellow-500"
-                                                                    : "text-white"
-                                                            } />
-                                                        </div>
-                                                    )}
+                                                        onOpenItem(module.id, item.id, questionId);
+                                                    }}
+                                                >
+                                                    <div className={`flex items-center justify-center mr-4 sm:mr-2 ${isItemCompleted ? 'opacity-95' : 'opacity-100'}`}>
+                                                        {/* Enhanced visual distinction with color and better icons */}
+                                                        {item.type === 'material' ? (
+                                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center ${materialWrapperClass}`}>
+                                                                <BookOpen size={16} className={materialIconColor} />
+                                                            </div>
+                                                        ) : item.type === 'assignment' ? (
+                                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center ${assignmentWrapperClass}`}>
+                                                                <PenSquare size={16} className={assignmentIconColor} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center ${quizWrapperClass}`}>
+                                                                <ClipboardList size={16} className={quizIconColor} />
+                                                            </div>
+                                                        )}
 
                                                     {/* Add a small generating indicator if the item is still being generated */}
                                                     {item.isGenerating && (
@@ -833,29 +1000,22 @@ export default function CourseModuleList({
                                                     )}
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className={`text-base font-light ${completedItems[item.id]
-                                                        ? "line-through text-white"
-                                                        : (item.type === 'quiz') &&
-                                                            completedQuestionIds[item.id] &&
-                                                            Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                            ? "text-yellow-500"
-                                                            : "text-white"
+                                                <div className={`text-base font-light ${isItemCompleted
+                                                        ? 'line-through text-gray-600 dark:text-white'
+                                                        : isPartiallyComplete
+                                                            ? 'text-amber-800 dark:text-amber-200'
+                                                            : 'text-slate-950 dark:text-white'
                                                         } outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2`}>
                                                         {item.title}
 
                                                         {/* Always display question count for quizzes (except drafts) */}
                                                         {item.type === 'quiz' && item.status !== 'draft' && (
-                                                            <span className={`inline-block ml-2 text-sm font-normal ${!completedItems[item.id] &&
-                                                                completedQuestionIds[item.id] &&
-                                                                Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                                ? "text-yellow-500"
-                                                                : "text-gray-400"
-                                                                }`}>
-                                                                ({completedQuestionIds[item.id]
-                                                                    ? mode === 'view' && !completedItems[item.id] && Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                                        ? `${Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / ${(item as Quiz).numQuestions}`
-                                                                        : `${Object.keys(completedQuestionIds[item.id]).length} question${Object.keys(completedQuestionIds[item.id]).length === 1 ? "" : "s"}`
-                                                                    : `${(item as Quiz).numQuestions} question${(item as Quiz).numQuestions === 1 ? "" : "s"}`})
+                                                            <span className={`inline-block ml-2 text-sm font-normal ${isPartiallyComplete ? 'text-amber-800 dark:text-amber-200' : 'text-indigo-700 dark:text-gray-400'}`}>
+                                                                ({totalQuizEntries > 0
+                                                                    ? mode === 'view' && !isItemCompleted && hasPartialQuizProgress
+                                                                        ? `${completedQuizCount}/${(item as Quiz).numQuestions}`
+                                                                        : `${totalQuizEntries} question${totalQuizEntries === 1 ? '' : 's'}`
+                                                                    : `${(item as Quiz).numQuestions} question${(item as Quiz).numQuestions === 1 ? '' : 's'}`})
                                                             </span>
                                                         )}
                                                     </div>
@@ -951,20 +1111,21 @@ export default function CourseModuleList({
                                                 {mode === 'view' && (
                                                     <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                                         <button
-                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer ${completedItems[item.id]
-                                                                ? "bg-green-500 border-0"
-                                                                : "border border-gray-500 hover:border-white"
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isItemCompleted
+                                                                ? 'bg-emerald-400 border border-emerald-500 shadow-md'
+                                                                : 'border border-gray-600 dark:border-gray-500 hover:border-gray-800 dark:hover:border-white bg-white/70 dark:bg-transparent'
                                                                 }`}
-                                                            aria-label={completedItems[item.id] ? "Mark as incomplete" : "Mark as completed"}
+                                                            aria-label={isItemCompleted ? 'Mark as incomplete' : 'Mark as completed'}
                                                         >
-                                                            {completedItems[item.id] ? (
-                                                                <Check size={12} className="text-white" />
+                                                            {isItemCompleted ? (
+                                                                <Check size={16} className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
                                                             ) : null}
                                                         </button>
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
+                                            );
+                                        })}
 
                                         {/* Add item buttons - only in edit mode */}
                                         {mode === 'edit' && (
@@ -1061,12 +1222,12 @@ export default function CourseModuleList({
                 focusEditor={focusEditor}
                 schoolId={schoolId}
                 courseId={courseId}
+                isDarkMode={isDarkMode}
             />
 
             {/* Module deletion confirmation dialog */}
-            < ConfirmationDialog
-                open={moduleToDelete !== null
-                }
+            <ConfirmationDialog
+                open={moduleToDelete !== null}
                 title="Are you sure you want to delete this module?"
                 message="All tasks within this module will be permanently removed. This action cannot be undone."
                 confirmButtonText="Delete"
@@ -1077,20 +1238,18 @@ export default function CourseModuleList({
             />
 
             {/* Task deletion confirmation dialog */}
-            {
-                taskToDelete && (
-                    <ConfirmationDialog
-                        open={taskToDelete !== null}
-                        title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
-                        message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
-                        confirmButtonText={`Delete`}
-                        onConfirm={handleConfirmTaskDelete}
-                        onCancel={handleCancelTaskDelete}
-                        type="delete"
-                        data-testid="task-delete-dialog"
-                    />
-                )
-            }
+            {taskToDelete && (
+                <ConfirmationDialog
+                    open={taskToDelete !== null}
+                    title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
+                    message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
+                    confirmButtonText={`Delete`}
+                    onConfirm={handleConfirmTaskDelete}
+                    onCancel={handleCancelTaskDelete}
+                    type="delete"
+                    data-testid="task-delete-dialog"
+                />
+            )}
         </>
     );
 } 

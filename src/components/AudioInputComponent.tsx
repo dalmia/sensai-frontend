@@ -10,9 +10,20 @@ interface AudioInputComponentProps {
 }
 
 // Shared waveform rendering function to avoid duplication
-const renderWaveformBar = (value: number, index: number, total: number, isPlayed: boolean = false) => {
+const renderWaveformBar = (
+    value: number,
+    index: number,
+    total: number,
+    isPlayed: boolean = false
+) => {
     // Apply exponential scaling to emphasize differences
     const scaledHeight = Math.pow(value, 0.7) * 100;
+
+    // Use light mode styles by default, dark mode via dark: prefix
+    const barClassName = isPlayed
+        ? 'bg-gradient-to-t from-slate-900 to-slate-900/50 dark:from-white dark:to-white/60'
+        : 'bg-gradient-to-t from-slate-800 to-slate-800/30 dark:from-white dark:to-white/40';
+
     return (
         <div
             key={index}
@@ -20,7 +31,7 @@ const renderWaveformBar = (value: number, index: number, total: number, isPlayed
             style={{ width: `${100 / total}%` }}
         >
             <div
-                className={`w-1 rounded-sm ${isPlayed ? 'bg-gradient-to-t from-white to-white/60' : 'bg-gradient-to-t from-white to-white/40'}`}
+                className={`w-1 rounded-sm ${barClassName}`}
                 style={{
                     height: `${Math.max(scaledHeight, 3)}%`
                 }}
@@ -34,7 +45,7 @@ const LiveWaveform = ({ waveformData }: { waveformData: number[] }) => {
     return (
         <div className="w-full h-full flex items-end justify-between px-1 mb-4">
             {waveformData.map((value, index) =>
-                renderWaveformBar(value, index, waveformData.length)
+                renderWaveformBar(value, index, waveformData.length, false)
             )}
         </div>
     );
@@ -52,7 +63,7 @@ const SnapshotWaveform = ({
         <div className="w-full h-full flex items-end justify-between relative px-1 mb-4">
             {/* Playback progress overlay */}
             <div
-                className="absolute top-0 bottom-0 left-0 bg-white opacity-20 z-10 pointer-events-none"
+                className="absolute top-0 bottom-0 left-0 z-10 pointer-events-none bg-slate-900/10 dark:bg-white dark:opacity-20"
                 style={{ width: `${playbackProgress * 100}%` }}
             ></div>
 
@@ -86,7 +97,7 @@ const getSupportedMimeType = () => {
 export default function AudioInputComponent({
     onAudioSubmit,
     isSubmitting,
-    isDisabled = false
+    isDisabled = false,
 }: AudioInputComponentProps) {
     // Basic states
     const [isRecording, setIsRecording] = useState(false);
@@ -446,7 +457,9 @@ export default function AudioInputComponent({
             {/* Recording status and timer */}
             {isRecording && (
                 <div className="absolute -top-10 left-0 right-0 text-center flex items-center justify-center z-20">
-                    <div className="bg-black/80 rounded-full px-4 py-2 shadow-md flex items-center">
+                    <div
+                        className="rounded-full px-4 py-2 shadow-md flex items-center bg-white/95 border border-gray-200 dark:bg-black/80 dark:border-transparent"
+                    >
                         <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
                         <span className="text-red-500 font-light text-sm">Recording {formatTime(recordingDuration)}</span>
                     </div>
@@ -464,11 +477,11 @@ export default function AudioInputComponent({
 
             {/* Delete confirmation dialog */}
             {showDeleteConfirmation && (
-                <div className="absolute -top-20 left-0 right-0 bg-[#222222] rounded-lg p-3 shadow-lg z-20">
-                    <p className="text-white text-sm mb-2">Are you sure you want to delete this recording?</p>
+                <div className="absolute -top-20 left-0 right-0 rounded-lg p-3 shadow-lg z-20 bg-white border border-gray-200 dark:bg-[#222222] dark:border-transparent">
+                    <p className="text-sm mb-2 text-gray-900 dark:text-white">Are you sure you want to delete this recording?</p>
                     <div className="flex justify-end space-x-2">
                         <button
-                            className="text-white text-xs bg-transparent hover:bg-[#333333] px-2 py-1 rounded-md cursor-pointer"
+                            className="text-xs bg-transparent px-2 py-1 rounded-md cursor-pointer text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-[#333333]"
                             onClick={cancelDelete}
                         >
                             Cancel
@@ -484,19 +497,19 @@ export default function AudioInputComponent({
             )}
 
             {/* Main container */}
-            <div className="relative flex items-center bg-[#111111] rounded-full overflow-hidden border border-[#222222] px-3 py-2">
+            <div className="relative flex items-center rounded-full overflow-hidden px-3 py-2 bg-gray-50 border border-gray-200 dark:bg-[#111111] dark:border-[#222222]">
                 {/* Record/Play/Stop button */}
                 {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-slate-900 dark:border-white"></div>
                 ) : (
                     <button
-                        className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] cursor-pointer mr-3"
+                        className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 rounded-full flex items-center justify-center cursor-pointer mr-3 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333] dark:border-transparent"
                         onClick={isRecording ? stopRecording : audioBlob ? togglePlayback : startRecording}
                         disabled={isDisabled}
                         type="button"
                     >
                         {isRecording ? (
-                            <div className="w-3 h-3 bg-white"></div>
+                            <div className="w-3 h-3 bg-gray-900 dark:bg-white"></div>
                         ) : audioBlob ? (
                             isPlaying ? <Pause size={16} /> : <><Play size={14} className="sm:hidden" /> <Play size={16} className="hidden sm:block" /></>
                         ) : (
@@ -526,7 +539,7 @@ export default function AudioInputComponent({
                                     playbackProgress={playbackProgress}
                                 />
                             ) : (
-                                <div className="text-gray-400 text-xs sm:text-sm">Click the microphone to start recording</div>
+                                <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Click the microphone to start recording</div>
                             )}
                         </div>
 
@@ -535,7 +548,7 @@ export default function AudioInputComponent({
                             <div className="ml-2 sm:ml-3 flex-shrink-0 flex space-x-1 sm:space-x-2">
                                 {/* Delete button */}
                                 <button
-                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] cursor-pointer"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer bg-white text-gray-800 hover:bg-gray-100 border border-gray-200 dark:bg-[#222222] dark:text-white dark:hover:bg-[#333333] dark:border-transparent"
                                     onClick={handleDeleteClick}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Delete audio"
@@ -547,21 +560,21 @@ export default function AudioInputComponent({
 
                                 {/* Submit button */}
                                 <button
-                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white cursor-pointer"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer bg-black dark:bg-white"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Submit audio"
                                     type="button"
                                 >
                                     {isSubmitting ? (
-                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-t-transparent rounded-full animate-spin border-white dark:border-black"></div>
                                     ) : (
                                         <>
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:hidden">
-                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" className="stroke-white dark:stroke-black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="hidden sm:block">
-                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" className="stroke-white dark:stroke-black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                         </>
                                     )}

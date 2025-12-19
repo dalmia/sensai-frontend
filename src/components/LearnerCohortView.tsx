@@ -338,9 +338,9 @@ export default function LearnerCohortView({
     }, []);
 
     return (
-        <div className="bg-black min-h-screen pb-16 lg:pb-0" role="main">
+        <div className="bg-white dark:bg-black min-h-screen pb-16 lg:pb-0" role="main">
             {courseTitle && (
-                <h1 className="text-2xl md:text-3xl font-light text-white mb-4 md:mb-6 px-1 sm:px-0">
+                <h1 className="text-2xl md:text-3xl font-light mb-4 md:mb-6 px-1 sm:px-0 text-black dark:text-white">
                     {courseTitle}
                 </h1>
             )}
@@ -353,13 +353,13 @@ export default function LearnerCohortView({
                         <div className="mb-8 sm:mb-10">
                             {/* Desktop Tabs - Hidden on Mobile */}
                             <div className="hidden sm:block w-full">
-                                <div className="flex items-center border-b border-gray-900 overflow-x-auto scrollbar-hide">
+                                <div className="flex items-center border-b overflow-x-auto scrollbar-hide border-gray-300 dark:border-gray-900">
                                     {courses.map((course, index) => (
                                         <button
                                             key={course.id}
                                             className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === activeCourseIndex
-                                                ? 'text-white font-light'
-                                                : 'text-gray-500 hover:text-gray-300 font-light'
+                                                ? 'text-black dark:text-white font-light'
+                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-light'
                                                 }`}
                                             onClick={() => handleCourseSelect(index)}
                                             ref={el => { courseTabRefs.current[index] = el; }}
@@ -368,12 +368,12 @@ export default function LearnerCohortView({
 
                                             {/* Active indicator - visible only for active tab */}
                                             {index === activeCourseIndex && (
-                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white" />
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black dark:bg-white" />
                                             )}
 
                                             {/* Hover indicator - visible only on hover for inactive tabs */}
                                             {index !== activeCourseIndex && (
-                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left bg-gray-300 dark:bg-gray-700" />
                                             )}
                                         </button>
                                     ))}
@@ -385,15 +385,15 @@ export default function LearnerCohortView({
                                 {/* Current course indicator */}
                                 <button
                                     onClick={() => setMobileDropdownOpen(true)}
-                                    className="w-full text-left py-3 px-1 border-b border-gray-800 flex items-center justify-between cursor-pointer group transition-opacity"
+                                    className="w-full text-left py-3 px-1 border-b flex items-center justify-between cursor-pointer group transition-opacity border-gray-300 dark:border-gray-800"
                                     aria-haspopup="true"
                                 >
                                     <div>
                                         <div className="text-xs text-gray-500 mb-1">Current Course</div>
-                                        <div className="text-white font-light">{getActiveCourse()?.name || "Select Course"}</div>
+                                        <div className="font-light text-black dark:text-white">{getActiveCourse()?.name || "Select Course"}</div>
                                     </div>
-                                    <div className="bg-gray-800 rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity">
-                                        <ChevronDown size={16} className="text-white transition-colors" />
+                                    <div className="rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity bg-gray-200 dark:bg-gray-800">
+                                        <ChevronDown size={16} className="text-black dark:text-white" />
                                     </div>
                                 </button>
                             </div>
@@ -455,11 +455,11 @@ export default function LearnerCohortView({
 
             {/* Mobile Bottom Tabs - Only visible on mobile */}
             {showSidebar && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-[rgba(0,0,0,0.9)] border-t border-gray-900 z-20">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t z-20 bg-gradient-to-t from-white to-[rgba(255,255,255,0.9)] dark:from-black dark:to-[rgba(0,0,0,0.9)] border-gray-300 dark:border-gray-900">
                     <div className="flex h-16">
                         <button
                             className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Course
-                                ? 'text-white'
+                                ? 'text-black dark:text-white'
                                 : 'text-gray-500'
                                 }`}
                             onClick={() => setActiveMobileTab(MobileTab.Course)}
@@ -471,7 +471,7 @@ export default function LearnerCohortView({
                         </button>
                         <button
                             className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Progress
-                                ? 'text-white'
+                                ? 'text-black dark:text-white'
                                 : 'text-gray-500'
                                 }`}
                             onClick={() => setActiveMobileTab(MobileTab.Progress)}

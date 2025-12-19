@@ -13,6 +13,7 @@ import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Add imports for Notion rendering
 import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
@@ -30,7 +31,6 @@ export interface MobileViewMode {
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
     onSubmitAnswer?: (questionId: string, answer: string) => void;
-    isDarkMode?: boolean;
     className?: string;
     viewOnly?: boolean;
     currentQuestionId?: string;
@@ -47,7 +47,6 @@ export interface LearnerQuizViewProps {
 export default function LearnerQuizView({
     questions = [],
     onSubmitAnswer,
-    isDarkMode = true,
     className = "",
     viewOnly = false,
     currentQuestionId,
@@ -61,6 +60,8 @@ export default function LearnerQuizView({
     isAdminView = false,
 }: LearnerQuizViewProps) {
     const { user } = useAuth();
+    // Use global theme (html.dark) as the source of truth to avoid reload-required mismatches.
+    const { isDarkMode } = useThemePreference();
 
     // Constant message for exam submission confirmation
     const EXAM_CONFIRMATION_MESSAGE = "Thank you for your submission. We will review it shortly";
@@ -1401,13 +1402,13 @@ export default function LearnerQuizView({
 
     // Integration logic for questions
     const currentIntegrationType = 'notion';
-    const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
+    const integrationBlock = currentQuestionContent.find((block: { type?: string }) => block.type === currentIntegrationType);
     const integrationBlocks = integrationBlock?.content || [];
 
     const initialContent = integrationBlock ? undefined : currentQuestionContent;
 
     // Get current question config
-    const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config
+    const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config;
 
     // Focus the input field directly
     useEffect(() => {
@@ -1588,7 +1589,8 @@ export default function LearnerQuizView({
     // Track if button has completed entrance animation
     const [showButtonEntrance, setShowButtonEntrance] = useState(true);
     // Default behavior: disable copy/paste unless explicitly enabled via settings.allowCopyPaste === true
-    const disableCopyPaste = currentQuestionConfig?.settings?.allowCopyPaste === false;
+    const questionSettings = (currentQuestionConfig as any)?.settings;
+    const disableCopyPaste = questionSettings?.allowCopyPaste === false;
 
     // Effect to start pulsing animation after entrance animation completes
     useEffect(() => {
@@ -1694,6 +1696,40 @@ export default function LearnerQuizView({
         <div className={`w-full h-full ${className}`}>
             {/* Add the custom styles */}
             <style jsx>{customStyles}</style>
+            <style jsx global>{`
+                /* Theme-aware CSS variables for quiz view */
+                :root {
+                    --quiz-split-divider-color: #e5e7eb;
+                    --quiz-input-container-bg: #ffffff;
+                    --quiz-input-container-border: #e5e7eb;
+                    --quiz-mobile-code-preview-bg: #f3f4f6;
+                }
+                
+                :root.dark, .dark {
+                    --quiz-split-divider-color: #222222;
+                    --quiz-input-container-bg: #111111;
+                    --quiz-input-container-border: #222222;
+                    --quiz-mobile-code-preview-bg: #111111;
+                }
+
+                /* Light mode: make BlockNote question content background truly white (no gray tint on focus) */
+                .quiz-view-container.quiz-light {
+                    --bn-colors-editor-background: #ffffff;
+                    --bn-colors-border: #e5e7eb;
+                    --bn-colors-shadow: transparent;
+                }
+
+                .quiz-view-container.quiz-light :where(.bn-container, .bn-editor, .bn-content, .ProseMirror) {
+                    background-color: #ffffff !important;
+                    box-shadow: none !important;
+                }
+
+                .quiz-view-container.quiz-light :where(.ProseMirror, [contenteditable="true"]):focus,
+                .quiz-view-container.quiz-light :where(.ProseMirror, [contenteditable="true"]):focus-visible {
+                    outline: none !important;
+                    box-shadow: none !important;
+                }
+            `}</style>
             <style jsx>{`
                 .three-column-grid {
                     display: grid;
@@ -1737,8 +1773,6 @@ export default function LearnerQuizView({
                     justify-content: center;
                     align-items: center;
                     height: 100%;
-                    background-color: #1A1A1A;
-                    color: #666666;
                     font-size: 0.9rem;
                     text-align: center;
                     padding: 1rem;
@@ -1788,10 +1822,10 @@ export default function LearnerQuizView({
                         flex-shrink: 0 !important;
                         position: sticky !important;
                         bottom: 0 !important;
-                        background-color: #111111 !important;
+                        background-color: var(--quiz-input-container-bg) !important;
                         z-index: 10 !important;
                         padding-top: 0.5rem !important;
-                        border-top: 1px solid #222222 !important;
+                        border-top: 1px solid var(--quiz-input-container-border) !important;
                     }
                 }
 
@@ -1954,19 +1988,30 @@ export default function LearnerQuizView({
                     .quiz-view-container.mode-split {
                         grid-template-rows: 50% 50% !important;
                     }
+
+                    /* Clear demarcation between panes in split mode (color only; no layout changes) */
+                    .quiz-view-container.mode-split .question-container {
+                        border-bottom: 2px solid var(--quiz-split-divider-color) !important;
+                    }
+
+                    .quiz-view-container.mode-split .chat-container {
+                        border-top: 0 !important; /* avoid double border with question bottom border */
+                    }
                 }
             `}</style>
 
-            <div className={`rounded-md overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-[#111111] quiz-view-container`}>
+            <div
+                className={`overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-white border border-gray-200 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none quiz-view-container ${isDarkMode ? 'quiz-dark' : 'quiz-light'}`}
+            >
                 {/* Left side - Question (33% or 50% depending on layout) */}
-                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
+                <div className="p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container bg-white border-gray-200 dark:bg-[#1A1A1A] dark:border-[#222222]"
                     style={{ overflow: 'auto' }}>
                     {/* Navigation controls at the top of left side - only show if more than one question */}
                     {validQuestions.length > 1 ? (
                         <div className="flex items-center justify-between w-full mb-6">
                             <div className="w-10 h-10">
                                 <button
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center bg-[#222222] text-white ${currentQuestionIndex > 0 ? 'hover:bg-[#333333] cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-600'} ${currentQuestionIndex > 0 ? (isDarkMode ? 'hover:bg-[#333333] cursor-pointer' : 'hover:bg-gray-200 cursor-pointer') : 'opacity-50 cursor-not-allowed'}`}
                                     onClick={goToPreviousQuestion}
                                     disabled={currentQuestionIndex <= 0}
                                 >
@@ -1974,18 +2019,18 @@ export default function LearnerQuizView({
                                 </button>
                             </div>
 
-                            <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm flex items-center">
+                            <div className="px-3 py-1 rounded-full text-sm flex items-center bg-indigo-100 text-indigo-900 dark:bg-[#222222] dark:text-white">
                                 <span>Question {currentQuestionIndex + 1} / {validQuestions.length}</span>
                                 {validQuestions[currentQuestionIndex] &&
                                     completedQuestionIds &&
                                     completedQuestionIds[validQuestions[currentQuestionIndex].id] && (
-                                        <CheckCircle size={14} className="ml-2 text-green-500 flex-shrink-0" />
+                                        <CheckCircle size={14} className="ml-2 flex-shrink-0 text-emerald-500 dark:text-green-500" />
                                     )}
                             </div>
 
                             <div className="w-10 h-10">
                                 <button
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center bg-[#222222] text-white ${currentQuestionIndex < validQuestions.length - 1 ? 'hover:bg-[#333333] cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-600'} ${currentQuestionIndex < validQuestions.length - 1 ? (isDarkMode ? 'hover:bg-[#333333] cursor-pointer' : 'hover:bg-gray-200 cursor-pointer') : 'opacity-50 cursor-not-allowed'}`}
                                     onClick={goToNextQuestion}
                                     disabled={currentQuestionIndex >= validQuestions.length - 1}
                                 >
@@ -1995,7 +2040,7 @@ export default function LearnerQuizView({
                         </div>
                     ) : (
                         <div className="flex items-center justify-center w-full mb-6">
-                            <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm">
+                            <div className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 dark:bg-[#222222] dark:text-white">
                                 Question
                             </div>
                         </div>
@@ -2021,9 +2066,9 @@ export default function LearnerQuizView({
                             }}
                         > {/* Increased negative margin to align with navigation arrow */}
                             {integrationBlocks.length > 0 ? (
-                                <div className="bg-[#191919] text-white px-20 pr-0 pb-6 rounded-lg">
-                                    <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                    <RenderConfig theme="dark">
+                                <div className="px-20 pr-0 pb-6 rounded-lg bg-white text-gray-900 dark:bg-[#191919] dark:text-white">
+                                    <h1 className="text-4xl font-bold mb-4 pl-0.5 text-gray-900 dark:text-white">{integrationBlock?.props?.resource_name}</h1>
+                                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                         <BlockList blocks={integrationBlocks} />
                                     </RenderConfig>
                                 </div>
@@ -2043,13 +2088,14 @@ export default function LearnerQuizView({
                 </div>
 
                 {/* Middle column - Chat/Code View */}
-                <div className="flex flex-col bg-[#111111] h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container">
+                <div className="flex flex-col h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 chat-container bg-white border border-gray-200 dark:bg-[#111111] dark:border-[#222222]">
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView
                             activeScorecard={activeScorecard}
                             handleBackToChat={handleBackToChat}
                             lastUserMessage={getLastUserMessage as ChatMessage | null}
+                            isDarkMode={isDarkMode}
                         />
                     ) : (
                         /* Use the ChatView component */
@@ -2077,6 +2123,7 @@ export default function LearnerQuizView({
                             onShowLearnerViewChange={setShowLearnerView}
                             isAdminView={isAdminView}
                             userId={userId}
+                            isDarkMode={isDarkMode}
                             ref={chatViewRef}
                         />
                     )}
@@ -2084,13 +2131,14 @@ export default function LearnerQuizView({
 
                 {/* Third column - Code Preview (only shown for coding questions) */}
                 {isCodeQuestion && codeViewState.isViewingCode && (
-                    <div className="border-l border-[#222222] bg-[#111111] h-full overflow-auto">
+                <div className="border-l h-full overflow-auto border-gray-200 bg-gray-50 dark:border-[#222222] dark:bg-[#111111]">
                         <CodePreview
                             isRunning={codeViewState.isRunning}
                             previewContent={codeViewState.previewContent}
                             output={codeViewState.output}
                             isWebPreview={codeViewState.hasWebLanguages}
                             executionTime={codeViewState.executionTime}
+                            isDarkMode={isDarkMode}
                             onClear={() => {
                                 // Clear the code output in the codeViewState
                                 setCodeViewState(prev => ({

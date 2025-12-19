@@ -76,6 +76,7 @@ interface CourseItemDialogProps {
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
     courseId?: string; // Add courseId prop for learning materials
+    isDarkMode?: boolean;
 }
 
 const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
@@ -100,6 +101,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     focusEditor,
     schoolId,
     courseId,
+    isDarkMode = true,
 }) => {
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
@@ -769,16 +771,39 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     const isClosingDraft = confirmationType === 'exit_draft';
 
+    const darkButtonPalettes: Record<string, string> = {
+        blue: 'text-white border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500',
+        green: 'text-white border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500',
+        yellow: 'text-white border-yellow-500 hover:bg-[#222222] focus:border-yellow-500 active:border-yellow-500',
+        yellowStrong: 'text-white border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600',
+        gray: 'text-white border-gray-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500',
+        violet: 'text-white border-violet-600 hover:bg-[#222222] focus:border-violet-600 active:border-violet-600'
+    };
+
+    const lightButtonPalettes: Record<string, string> = {
+        blue: 'text-blue-600 border-blue-400 hover:bg-blue-50 focus:border-blue-500 active:border-blue-500',
+        green: 'text-emerald-600 border-emerald-400 hover:bg-emerald-50 focus:border-emerald-500 active:border-emerald-500',
+        yellow: 'text-amber-600 border-amber-400 hover:bg-amber-50 focus:border-amber-500 active:border-amber-500',
+        yellowStrong: 'text-amber-700 border-amber-500 hover:bg-amber-100 focus:border-amber-600 active:border-amber-600',
+        gray: 'text-gray-700 border-gray-300 hover:bg-gray-100 focus:border-gray-400 active:border-gray-400',
+        violet: 'text-violet-600 border-violet-300 hover:bg-violet-50 focus:border-violet-400 active:border-violet-400'
+    };
+
+    const getButtonClasses = (tone: keyof typeof darkButtonPalettes) =>
+        `flex items-center px-4 py-2 text-sm bg-transparent rounded-full transition-colors cursor-pointer border ${
+            isDarkMode ? darkButtonPalettes[tone] : lightButtonPalettes[tone]
+        }`;
+
     return (
         <>
             <div
-                className="fixed inset-0 z-50 bg-[#111111] flex flex-col"
+                className={`fixed inset-0 z-50 flex flex-col ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}
                 onClick={handleDialogBackdropClick}
             >
                 <div
                     ref={dialogContentRef}
                     style={{
-                        backgroundColor: '#1A1A1A',
+                        backgroundColor: isDarkMode ? '#1A1A1A' : '#f5f5f5',
                         border: 'none'
                     }}
                     className="w-full h-full flex flex-col"
@@ -786,8 +811,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 >
                     {/* Dialog Header */}
                     <div
-                        className="flex items-center justify-between p-4 border-b"
-                        style={{ backgroundColor: '#111111' }}
+                        className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'bg-[#111111] border-gray-800' : 'bg-gray-100 border-gray-200'}`}
                     >
                         <div className="flex-1 flex items-center">
                             <h2
@@ -831,7 +855,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             {((activeItem?.type === 'quiz' && hasQuizQuestions) || activeItem?.type === 'assignment') && (
                                 <button
                                     onClick={togglePreviewMode}
-                                    className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500 rounded-full transition-colors cursor-pointer"
+                                    className={getButtonClasses('blue')}
                                     aria-label={previewMode ? "Exit preview" : `Preview ${activeItem?.type}`}
                                 >
                                     {previewMode ? (
@@ -861,7 +885,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                     handleConfirmSaveDraft();
                                                 });
                                             }}
-                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500 rounded-full transition-colors cursor-pointer mr-3"
+                                            className={`${getButtonClasses('yellow')} mr-3`}
                                             aria-label={`Save ${activeItem?.type} draft`}
                                         >
                                             <Check size={16} className="mr-2" />
@@ -906,7 +930,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                     onSetShowPublishConfirmation(true);
                                                 });
                                             }}
-                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
+                                            className={getButtonClasses('green')}
                                             aria-label={`Publish ${activeItem?.type}`}
                                         >
                                             <Zap size={16} className="mr-2" />
@@ -921,7 +945,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         <div className="flex items-center mr-3">
                                             <button
                                                 onClick={() => setShowSchedulePicker(!showSchedulePicker)}
-                                                className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600 rounded-full transition-colors cursor-pointer"
+                                                className={getButtonClasses('yellowStrong')}
                                                 aria-label="Set scheduled publication date"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -931,7 +955,10 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                 {formatScheduleDate(scheduledDate)}
                                             </button>
                                             {showSchedulePicker && (
-                                                <div ref={datePickerRef} className="absolute mt-2 top-16 z-50 bg-[#242424] p-3 border border-gray-700 rounded-lg shadow-lg">
+                                                <div
+                                                    ref={datePickerRef}
+                                                    className={`absolute mt-2 top-16 z-50 p-3 rounded-lg shadow-lg ${isDarkMode ? 'bg-[#242424] border border-gray-700' : 'bg-white border border-gray-200'}`}
+                                                >
                                                     <DatePicker
                                                         selected={scheduledDate}
                                                         onChange={(date) => verifyScheduledDateAndSchedule(date)}
@@ -941,15 +968,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                         dateFormat="MMMM d, yyyy h:mm aa"
                                                         timeCaption="Time"
                                                         minDate={new Date()} // Can't schedule in the past
-                                                        className="bg-[#333333] rounded-md p-2 px-4 w-full text-white cursor-pointer"
+                                                        className={`rounded-md p-2 px-4 w-full cursor-pointer ${isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-gray-900 border border-gray-200'}`}
                                                         wrapperClassName="w-full"
-                                                        calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
+                                                        calendarClassName={`${isDarkMode ? 'bg-[#242424] text-white border border-gray-700' : 'bg-white text-gray-900 border border-gray-200'} rounded-lg shadow-lg cursor-pointer`}
                                                         inline
                                                     />
                                                     <div className="mt-2 flex justify-end">
                                                         <button
                                                             onClick={() => setShowSchedulePicker(false)}
-                                                            className="px-3 py-1 text-xs text-white bg-[#444444] hover:bg-[#555555] rounded-md"
+                                                            className={`px-3 py-1 text-xs rounded-md ${isDarkMode ? 'text-white bg-[#444444] hover:bg-[#555555]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                                                         >
                                                             Close
                                                         </button>
@@ -960,7 +987,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     )}
                                     <button
                                         onClick={handleSaveClick}
-                                        className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
+                                            className={getButtonClasses('green')}
                                         aria-label="Save changes"
                                     >
                                         <Check size={16} className="mr-2" />
@@ -968,7 +995,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </button>
                                     <button
                                         onClick={handleCancelEditClick}
-                                        className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-gray-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500 rounded-full transition-colors cursor-pointer"
+                                            className={getButtonClasses('gray')}
                                         aria-label="Cancel editing"
                                     >
                                         <X size={16} className="mr-2" />
@@ -980,7 +1007,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     {activeItem.scheduled_publish_at && (
                                         <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(activeItem.scheduled_publish_at))}`} position="top">
                                             <button
-                                                className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600 rounded-full transition-colors"
+                                                className={getButtonClasses('yellowStrong')}
                                                 aria-label="Scheduled publishing information"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -993,7 +1020,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     )}
                                     <button
                                         onClick={onEnableEditMode}
-                                        className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-violet-600 hover:bg-[#222222] focus:border-violet-600 active:border-violet-600 rounded-full transition-colors cursor-pointer"
+                                            className={getButtonClasses('violet')}
                                         aria-label="Edit item"
                                     >
                                         <Pencil size={16} className="mr-2" />
@@ -1006,7 +1033,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         {/* Close button */}
                         <button
                             onClick={handleCloseRequest}
-                            className="ml-2 p-2 text-white hover:text-white rounded-full hover:bg-[#333333] transition-colors cursor-pointer"
+                            className={`ml-2 p-2 rounded-full transition-colors cursor-pointer ${isDarkMode ? 'text-white hover:text-white hover:bg-[#333333]' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                             aria-label="Close dialog"
                         >
                             <X size={24} />
@@ -1027,7 +1054,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishConfirm={onPublishConfirm}
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
-                                isDarkMode={true}
+                                isDarkMode={isDarkMode}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
@@ -1115,8 +1142,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Notify parent component
                                     onQuizContentChange(questions);
                                 }}
-                                    isPreviewMode={previewMode}
-                                isDarkMode={true}
+                                isPreviewMode={previewMode}
+                                isDarkMode={isDarkMode}
                                 readOnly={activeItem.status === 'published' && !isEditMode}
                                 taskId={activeItem.id}
                                 status={activeItem.status}
@@ -1305,6 +1332,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     setShowUnsavedScorecardChangesInfo(false);
                 }}
                 type="custom"
+                isDarkMode={isDarkMode}
             />
 
             {/* Toast notification */}

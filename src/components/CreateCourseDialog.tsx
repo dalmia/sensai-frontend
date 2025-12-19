@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 
 interface CreateCourseDialogProps {
     open: boolean;
@@ -14,7 +13,7 @@ export default function CreateCourseDialog({
     open,
     onClose,
     onSuccess,
-    schoolId
+    schoolId,
 }: CreateCourseDialogProps) {
     const [courseName, setCourseName] = useState('');
     const [error, setError] = useState('');
@@ -80,9 +79,12 @@ export default function CreateCourseDialog({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={onClose}
+        >
             <div
-                className="w-full max-w-md bg-[#1A1A1A] rounded-lg shadow-2xl"
+                className="w-full max-w-md rounded-lg shadow-2xl bg-white dark:bg-[#1A1A1A] text-black dark:text-white border border-gray-200 dark:border-transparent"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Dialog Content */}
@@ -98,7 +100,7 @@ export default function CreateCourseDialog({
                                     if (error) setError('');
                                 }}
                                 placeholder="What will you name your course?"
-                                className={`w-full px-4 py-3 bg-[#0D0D0D] text-white text-lg rounded-lg font-light placeholder-gray-500 outline-none ${error ? 'border border-red-500' : 'border-none'}`}
+                                className={`w-full px-4 py-3 text-lg rounded-lg font-light placeholder-gray-500 outline-none bg-white dark:bg-[#0D0D0D] text-black dark:text-white border ${error ? 'border-red-500' : 'border-gray-300 dark:border-transparent'}`}
                                 disabled={isLoading}
                             />
                             {error && (
@@ -112,19 +114,19 @@ export default function CreateCourseDialog({
                 <div className="flex justify-end gap-4 p-6">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                        className="px-4 py-2 transition-colors focus:outline-none cursor-pointer text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                         disabled={isLoading}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className={`px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer ${isLoading ? 'opacity-70' : ''}`}
+                        className={`px-6 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer bg-purple-600 dark:bg-white text-white dark:text-black ${isLoading ? 'opacity-70' : ''}`}
                         disabled={isLoading}
                     >
                         {isLoading ? (
                             <span className="flex items-center justify-center">
-                                <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg className="animate-spin h-5 w-5 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>

@@ -1107,7 +1107,7 @@ describe('LearnerCourseView Component', () => {
             });
 
             // Find the backdrop element (the outermost dialog div with fixed positioning)
-            const backdrop = document.querySelector('.fixed.inset-0.bg-black.z-50.overflow-hidden');
+            const backdrop = document.querySelector('.fixed.inset-0.z-50.overflow-hidden');
             expect(backdrop).toBeInTheDocument();
 
             // Click on the backdrop to close the dialog

@@ -204,7 +204,7 @@ export default function CreateBatchDialog({
             onClick={() => handleLearnerSelection(learner)}
             className={`flex items-center space-x-3 p-4 rounded-lg transition-colors cursor-pointer ${selectedLearners.some(l => l.id === learner.id)
                 ? 'bg-purple-600 text-white'
-                : 'bg-[#222] text-gray-300 hover:bg-[#333]'
+                : 'bg-[#f3f4f6] dark:bg-[#222] text-gray-700 dark:text-gray-300 hover:bg-[#e5e7eb] dark:hover:bg-[#333]'
                 }`}
         >
             <div className="flex items-center space-x-3">
@@ -227,7 +227,7 @@ export default function CreateBatchDialog({
             onClick={() => handleMentorSelection(mentor)}
             className={`flex items-center space-x-3 p-4 rounded-lg transition-colors cursor-pointer ${selectedMentors.some(m => m.id === mentor.id)
                 ? 'bg-blue-600 text-white'
-                : 'bg-[#222] text-gray-300 hover:bg-[#333]'
+                : 'bg-[#f3f4f6] dark:bg-[#222] text-gray-700 dark:text-gray-300 hover:bg-[#e5e7eb] dark:hover:bg-[#333]'
                 }`}
         >
             <div className="flex items-center space-x-3">
@@ -247,7 +247,7 @@ export default function CreateBatchDialog({
     const LearnerColumn = ({ useGridLayout = false }: { useGridLayout?: boolean }) => (
         <div className="space-y-4 flex-1 min-h-0 flex flex-col">
             <div className="flex-shrink-0">
-                <p className={`text-sm ${learnerSelectionError ? 'text-red-500' : 'text-gray-400'}`}>Select learners to be added to the batch</p>
+                <p className={`text-sm ${learnerSelectionError ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}>Select learners to be added to the batch</p>
                 {selectedLearners.length > 0 && (
                     <div className="flex items-center space-x-3 mt-2">
                         <Tooltip content={selectedLearners.length === filteredLearners.length ? "Deselect all" : "Select all"} position="right">
@@ -258,7 +258,7 @@ export default function CreateBatchDialog({
                                 className="h-4 w-4 rounded border-2 border-gray-400 focus:ring-purple-500 focus:ring-2 cursor-pointer appearance-none checked:bg-purple-600 checked:border-transparent relative before:content-['✓'] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:text-white before:text-xs before:font-bold before:opacity-0 checked:before:opacity-100 before:transition-opacity before:duration-200"
                             />
                         </Tooltip>
-                        <span className="text-gray-400 text-sm leading-4">{selectedLearners.length} selected</span>
+                        <span className="text-gray-600 dark:text-gray-400 text-sm leading-4">{selectedLearners.length} selected</span>
                     </div>
                 )}
             </div>
@@ -274,7 +274,7 @@ export default function CreateBatchDialog({
     const MentorColumn = () => (
         <div className="space-y-4 flex-1 min-h-0 flex flex-col">
             <div className="flex-shrink-0">
-                <p className="text-gray-400 text-sm">Select mentors to guide the batch (optional)</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Select mentors to guide the batch (optional)</p>
                 {selectedMentors.length > 0 && (
                     <div className="flex items-center space-x-3 mt-2">
                         <Tooltip content={selectedMentors.length === filteredMentors.length ? "Deselect all" : "Select all"} position="right">
@@ -285,7 +285,7 @@ export default function CreateBatchDialog({
                                 className="h-4 w-4 rounded border-2 border-gray-400 focus:ring-blue-500 focus:ring-2 cursor-pointer appearance-none checked:bg-blue-600 checked:border-transparent relative before:content-['✓'] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:text-white before:text-xs before:font-bold before:opacity-0 checked:before:opacity-100 before:transition-opacity before:duration-200"
                             />
                         </Tooltip>
-                        <span className="text-gray-400 text-sm leading-4">{selectedMentors.length} selected</span>
+                        <span className="text-gray-600 dark:text-gray-400 text-sm leading-4">{selectedMentors.length} selected</span>
                     </div>
                 )}
             </div>
@@ -393,7 +393,7 @@ export default function CreateBatchDialog({
                     <div className="flex items-center space-x-4">
                         <button
                             onClick={handleEnterEdit}
-                            className="flex items-center space-x-2 px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                            className="flex items-center space-x-2 px-4 py-2 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                         >
                             <Pencil size={16} />
                             <span>Edit</span>
@@ -425,21 +425,21 @@ export default function CreateBatchDialog({
                                 if (batchNameError && e.target.value.trim()) setBatchNameError(false);
                             }}
                             placeholder="Enter batch name"
-                            className={`text-lg font-light bg-transparent outline-none text-white w-full placeholder-gray-500 border ${batchNameError ? 'border-red-500' : 'border-none'}`}
+                            className={`text-lg font-light bg-transparent outline-none text-black dark:text-white w-full placeholder-gray-500 border ${batchNameError ? 'border-red-500' : 'border-none'}`}
                         />
                     </div>
                     <div className="flex items-center space-x-4">
                         <button
                             onClick={handleEditSave}
                             disabled={saveDisabled}
-                            className="flex items-center space-x-2 px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center space-x-2 px-4 py-2 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Check size={16} />
                             <span>Save</span>
                         </button>
                         <button
                             onClick={handleCancelEdit}
-                            className="flex items-center space-x-2 px-4 py-2 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-[#333] text-gray-900 dark:text-white text-sm font-medium rounded-full hover:bg-gray-200 dark:hover:bg-[#444] transition-colors cursor-pointer"
                         >
                             <X size={16} />
                             <span>Cancel</span>
@@ -460,21 +460,21 @@ export default function CreateBatchDialog({
                         onChange={(e) => setBatchName(e.target.value)}
                         onKeyDown={handleNameKeyDown}
                         placeholder="Enter batch name"
-                        className="text-lg font-light bg-transparent border-none outline-none text-white w-full placeholder-gray-500 h-12"
+                        className="text-lg font-light bg-transparent border-none outline-none text-black dark:text-white w-full placeholder-gray-500 h-12"
                     />
                 </div>
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={handleCreate}
                         disabled={selectedLearners.length === 0 || !batchName.trim() || isCreating}
-                        className="flex items-center space-x-2 px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center space-x-2 px-6 py-3 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Check size={16} />
                         <span>{isCreating ? 'Creating...' : 'Create'}</span>
                     </button>
                     <button
                         onClick={onClose}
-                        className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        className="flex items-center justify-center w-10 h-10 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                     >
                         <X size={24} />
                     </button>
@@ -504,7 +504,7 @@ export default function CreateBatchDialog({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search by email"
-                                className="w-full pl-10 px-4 py-2 bg-[#0D0D0D] text-white text-lg rounded-lg font-light placeholder-gray-500 outline-none border-none"
+                                className="w-full pl-10 px-4 py-2 bg-gray-100 text-black dark:!bg-[#0D0D0D] dark:text-white text-lg rounded-lg font-light placeholder-gray-500 outline-none border border-gray-200 dark:border-none"
                             />
                         </div>
                     </div>
@@ -590,7 +590,7 @@ export default function CreateBatchDialog({
     // ---------------- Main Render ----------------
     if (inline) {
         return (
-            <div className={`w-full h-full text-white flex flex-col rounded-lg min-h-0 ${currentMode == 'edit' ? 'bg-[#1A1A1A]' : ''}`}>
+            <div className={`w-full h-full text-black dark:text-white flex flex-col rounded-lg min-h-0 bg-white dark:bg-transparent ${currentMode == 'edit' ? 'dark:bg-[#1A1A1A]' : ''}`}>
                 {renderHeader()}
                 {renderContent()}
             </div>
@@ -599,7 +599,7 @@ export default function CreateBatchDialog({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="w-2/3 h-3/4 bg-[#1A1A1A] text-white flex flex-col rounded-lg min-h-0">
+            <div className="w-2/3 h-3/4 bg-white dark:bg-[#1A1A1A] text-black dark:text-white flex flex-col rounded-lg min-h-0">
                 {renderHeader()}
                 {renderContent()}
             </div>

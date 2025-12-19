@@ -6,11 +6,13 @@ import { useAuth } from '@/lib/auth';
 import { useSchools } from '@/lib/api';
 import UnauthorizedError from '@/components/UnauthorizedError';
 import { Header } from '@/components/layout/header';
+import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const { schools, isLoading: schoolsLoading } = useSchools();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+    const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
     const pathname = usePathname();
 
     // Extract school ID from the URL if we are in a specific school admin view
@@ -45,10 +47,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Show loading state
     if (authLoading || schoolsLoading || isAuthorized === null) {
         return (
-            <div className="min-h-screen bg-black text-white">
-                <Header showCreateCourseButton={false} />
+            <div className={`min-h-screen ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                <Header
+                    showCreateCourseButton={false}
+                    isDarkMode={isDarkMode}
+                    themePreference={themePreference}
+                    onThemePreferenceChange={setThemePreference}
+                />
                 <div className="flex justify-center items-center py-12">
-                    <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className={`w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin ${isDarkMode ? 'border-white' : 'border-black'}`}></div>
                 </div>
             </div>
         );

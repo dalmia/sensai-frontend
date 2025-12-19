@@ -10,6 +10,7 @@ import CreateCourseDialog from "@/components/CreateCourseDialog";
 import SchoolPickerDialog from "@/components/SchoolPickerDialog";
 import { ChevronDown, Plus, X, Book, School } from "lucide-react";
 import { Cohort } from "@/types";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface HeaderProps {
     showCreateCourseButton?: boolean;
@@ -20,10 +21,11 @@ interface HeaderProps {
 export function Header({
     showCreateCourseButton = true,
     showTryDemoButton = false,
-    centerSlot
+    centerSlot,
 }: HeaderProps) {
     const router = useRouter();
     const { data: session } = useSession();
+    const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
     const [isSchoolPickerOpen, setIsSchoolPickerOpen] = useState(false);
@@ -68,12 +70,10 @@ export function Header({
         setProfileMenuOpen(!profileMenuOpen);
     };
 
-
     // Toggle mobile actions menu
     const toggleMobileActions = () => {
         setMobileActionsOpen(!mobileActionsOpen);
     };
-
 
     // Handle button click based on school ownership
     const handleButtonClick = (e: React.MouseEvent) => {
@@ -113,7 +113,6 @@ export function Header({
     // Handle success callback from CreateCourseDialog
     const handleCourseCreationSuccess = (courseData: { id: string; name: string }) => {
         if (hasOwnedSchool && schoolId) {
-            // Redirect to the new course page - dialog will be unmounted during navigation
             router.push(`/school/admin/${schoolId}/courses/${courseData.id}`);
         } else {
             router.push("/school/admin/create");
@@ -150,21 +149,29 @@ export function Header({
     };
 
     return (
-        <header className="w-full px-3 py-4 bg-black text-white">
+        <header className="w-full px-3 py-4 bg-white dark:bg-black text-black dark:text-white">
             <div className="max-w-full mx-auto flex justify-between items-center">
-                {/* Logo */}
+                {/* Logo - show different logos based on theme */}
                 <Link href="/">
                     <div className="cursor-pointer">
+                        {/* Dark mode logo */}
                         <Image
-                            src="/images/sensai-logo.svg"
+                            src="/images/sensai-logo-dark.svg"
                             alt="SensAI Logo"
                             width={120}
                             height={40}
-                            className="w-[100px] h-auto sm:w-[120px]"
-                            style={{
-                                maxWidth: '100%',
-                                height: 'auto'
-                            }}
+                            className="hidden dark:block w-[100px] h-auto sm:w-[120px]"
+                            style={{ maxWidth: '100%', height: 'auto' }}
+                            priority
+                        />
+                        {/* Light mode logo */}
+                        <Image
+                            src="/images/sensai-logo-light.svg"
+                            alt="SensAI Logo"
+                            width={120}
+                            height={40}
+                            className="block dark:hidden w-[100px] h-auto sm:w-[120px]"
+                            style={{ maxWidth: '100%', height: 'auto' }}
                             priority
                         />
                     </div>
@@ -179,12 +186,10 @@ export function Header({
 
                 {/* Right side actions */}
                 <div className="flex items-center space-x-4 pr-1">
-
-                    <>
                         {showTryDemoButton && (
                             <button
                                 onClick={handleTryDemoClick}
-                                className="hidden md:block px-6 py-3 bg-white/20 text-white text-sm font-medium rounded-full hover:bg-white/30 cursor-pointer"
+                            className="hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer bg-black/10 dark:bg-white/20 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/30"
                             >
                                 Try a demo
                             </button>
@@ -192,18 +197,16 @@ export function Header({
                         {showCreateCourseButton && (
                             <button
                                 onClick={handleButtonClick}
-                                className="hidden md:block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                            className="hidden md:block px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer bg-[#d1d5db] dark:bg-white text-[#1f2937] dark:text-black"
                             >
                                 {getButtonText()}
                             </button>
                         )}
-                    </>
-
 
                     {/* Profile dropdown */}
                     <div className="relative" ref={profileMenuRef}>
                         <button
-                            className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center hover:bg-purple-600 transition-colors focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                            className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center hover:bg-purple-600 transition-colors focus:outline-none cursor-pointer"
                             onClick={toggleProfileMenu}
                         >
                             <span className="text-white font-medium">{getInitials()}</span>
@@ -211,23 +214,65 @@ export function Header({
 
                         {/* Profile dropdown menu */}
                         {profileMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-64 bg-[#111111] rounded-md shadow-lg py-1 z-10">
-                                <div className="px-4 py-3 border-b border-gray-800">
+                            <div className="absolute right-0 mt-2 w-64 rounded-md shadow-lg py-1 z-10 bg-white dark:bg-[#111111] border border-gray-200 dark:border-transparent">
+                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
                                     <div className="flex items-center">
                                         <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center mr-3">
                                             <span className="text-white font-medium">{getInitials()}</span>
                                         </div>
                                         <div>
-                                            <div className="text-sm font-medium">{session?.user?.name || "User"}</div>
-                                            <div className="text-xs text-gray-400">{session?.user?.email || "user@example.com"}</div>
+                                            <div className="text-sm font-medium text-black dark:text-white">{session?.user?.name || "User"}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{session?.user?.email || "user@example.com"}</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="border-t border-gray-800 py-1">
+                                {/* Theme Toggle */}
+                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-sm text-[#374151] dark:text-gray-300">Theme</span>
+                                        <div className="inline-flex w-full rounded-full p-1 bg-[#e5e7eb] dark:bg-[#1F1F1F]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setThemePreference('light')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    themePreference === 'light'
+                                                        ? 'bg-white text-[#000000]'
+                                                        : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
+                                                }`}
+                                            >
+                                                Light
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setThemePreference('dark')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    themePreference === 'dark'
+                                                        ? 'bg-white text-[#000000]'
+                                                        : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
+                                                }`}
+                                            >
+                                                Dark
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setThemePreference('device')}
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                                                    themePreference === 'device'
+                                                        ? 'bg-white text-[#000000]'
+                                                        : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
+                                                }`}
+                                            >
+                                                Device
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t py-1 border-gray-200 dark:border-gray-800">
                                     <button
                                         onClick={handleLogout}
-                                        className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer"
+                                        className="flex w-full items-center text-left px-4 py-2 text-sm cursor-pointer text-[#374151] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                                     >
                                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -247,8 +292,7 @@ export function Header({
                     {/* Semi-transparent overlay */}
                     {mobileActionsOpen && (
                         <div
-                            className="fixed inset-0 z-10"
-                            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                            className="fixed inset-0 z-10 bg-black/80"
                             aria-hidden="true"
                             onClick={() => setMobileActionsOpen(false)}
                         />
@@ -280,7 +324,7 @@ export function Header({
                         {/* Action buttons that appear when FAB is clicked */}
                         {mobileActionsOpen && (
                             <div className="fixed bottom-24 right-6 flex flex-col gap-4 items-end z-20">
-                                {/* Try a demo Button - only shown if not already a learner */}
+                                {/* Try a demo Button */}
                                 {showTryDemoButton && (
                                     <div className="flex items-center gap-3">
                                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
@@ -306,7 +350,6 @@ export function Header({
                                     </div>
                                 )}
 
-
                                 {/* Go To School Button - only shown if hasOwnedSchool is true */}
                                 {hasOwnedSchool ? (
                                     <div className="flex items-center gap-3">
@@ -321,7 +364,8 @@ export function Header({
                                             <School className="h-6 w-6" />
                                         </button>
                                     </div>
-                                ) : /* Create Course Button */ <div className="flex items-center gap-3">
+                                ) : (
+                                    <div className="flex items-center gap-3">
                                     <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
                                         Create a course
                                     </span>
@@ -332,7 +376,8 @@ export function Header({
                                     >
                                         <Book className="h-6 w-6" />
                                     </button>
-                                </div>}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

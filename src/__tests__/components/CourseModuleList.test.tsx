@@ -841,12 +841,12 @@ describe('CourseModuleList Component', () => {
                 />
             );
 
-            // Should show yellow styling for partial completion
+            // Should show amber styling for partial completion (dark mode default)
             const quizTitle = screen.getByText('Partial Quiz');
-            expect(quizTitle).toHaveClass('text-yellow-500');
+            expect(quizTitle).toHaveClass('dark:text-amber-200');
 
-            // Should show progress ratio
-            expect(screen.getByText('(1 / 3)')).toBeInTheDocument();
+            // Should show progress ratio (format: count/total)
+            expect(screen.getByText('(1/3)')).toBeInTheDocument();
         });
 
         it('toggles completion checkbox in view mode', async () => {

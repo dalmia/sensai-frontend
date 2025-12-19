@@ -80,7 +80,7 @@ describe('CohortCoursesLinkerDropdown', () => {
 
         // Course should appear in the selected area (with X button)
         const selectedArea = screen.getByText('JavaScript Basics').closest('div');
-        expect(selectedArea).toHaveClass('bg-[#222]');
+        expect(selectedArea).toHaveClass('dark:!bg-[#222]');
 
         // The course should be removed from the available list
         const courseList = screen.getAllByText('JavaScript Basics');
@@ -104,7 +104,7 @@ describe('CohortCoursesLinkerDropdown', () => {
 
         // Course should not be in selected area anymore
         const selectedCourses = screen.queryAllByText('JavaScript Basics').filter(
-            el => el.closest('div')?.classList.contains('bg-[#222]')
+            el => el.closest('div')?.classList.contains('dark:!bg-[#222]')
         );
         expect(selectedCourses.length).toBe(0);
 

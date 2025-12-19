@@ -650,7 +650,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 const learnerButton = screen.getByText('Learner View').closest('button');
-                expect(learnerButton).toHaveClass('text-white');
+                expect(learnerButton).toHaveClass('text-gray-700', 'dark:text-white');
                 expect(learnerButton).not.toHaveClass('bg-white', 'text-black');
             });
         });

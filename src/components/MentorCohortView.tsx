@@ -48,7 +48,7 @@ export default function MentorCohortView({
     courseModules = [],
     completedTaskIds = {},
     completedQuestionIds = {},
-    courses = []
+    courses = [],
 }: MentorCohortViewProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -82,11 +82,11 @@ export default function MentorCohortView({
         updateUrlWithViewMode(mode);
     };
 
-    // Show placeholder if batchId is null
+    // Show placeholder if batchId === null
     if (batchId === null) {
         return (
             <div className="flex flex-col items-center justify-center py-20 flex-1">
-                <h2 className="text-4xl font-light mb-4">No learners assigned yet</h2>
+                <h2 className="text-4xl font-light mb-4 text-black dark:text-white">No learners assigned yet</h2>
                 <p className="text-gray-400 mb-8">You will see their progress here once they are assigned to you</p>
             </div>
         );
@@ -131,7 +131,7 @@ export default function MentorCohortView({
     if (isLoadingMembers) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="w-12 h-12 border-t-2 border-white rounded-full animate-spin"></div>
+                <div className="w-12 h-12 border-t-2 rounded-full animate-spin border-black dark:border-white"></div>
             </div>
         );
     }
@@ -150,12 +150,12 @@ export default function MentorCohortView({
         <div className="w-full">
             {/* View Mode Toggle */}
             <div className="flex justify-center mb-8">
-                <div className="bg-[#333333] rounded-full p-1 flex items-center">
+                <div className="rounded-full p-1 flex items-center bg-gray-200 dark:bg-[#333333]">
                     <button
                         onClick={() => handleViewModeToggle('mentor')}
                         className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'mentor'
                             ? 'bg-white text-black'
-                            : 'text-white hover:bg-black'
+                            : 'text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-black'
                             }`}
                     >
                         <Users size={16} className="mr-2" />
@@ -165,7 +165,7 @@ export default function MentorCohortView({
                         onClick={() => handleViewModeToggle('learner')}
                         className={`flex items-center px-4 py-2 rounded-full text-sm font-light transition-all cursor-pointer ${viewMode === 'learner'
                             ? 'bg-white text-black'
-                            : 'text-white hover:bg-black'
+                            : 'text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-black'
                             }`}
                     >
                         <Eye size={16} className="mr-2" />

@@ -158,6 +158,12 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         }
     }, [showToast]);
 
+    // Keep browser tab title in sync with the current cohort name (admin side)
+    useEffect(() => {
+        if (!cohort?.name) return;
+        document.title = `${cohort.name} · SensAI`;
+    }, [cohort?.name]);
+
     const fetchAvailableCourses = async () => {
         setIsLoadingCourses(true);
         setCourseError(null);
@@ -670,10 +676,10 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black text-white">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <Header showCreateCourseButton={false} />
                 <div className="flex justify-center items-center py-12">
-                    <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-t-2 border-b-2 border-foreground rounded-full animate-spin"></div>
                 </div>
             </div>
         );
@@ -681,7 +687,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     if (!cohort) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white flex items-center justify-center">
                 <p>Cohort not found</p>
             </div>
         );
@@ -698,20 +704,16 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     outline: none !important;
                     box-shadow: none !important;
                 }
-                
-                input::placeholder {
-                    color: #666666 !important;
-                }
             `}</style>
             <Header showCreateCourseButton={false} />
-            <div className="min-h-screen bg-black text-white">
+            <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <div className="container mx-auto px-4 py-8">
                     <main>
                         <div className="mb-4">
                             <div className="flex flex-col">
                                 <Link
                                     href={`/school/admin/${schoolId}#cohorts`}
-                                    className="flex items-center text-gray-400 hover:text-white transition-colors mb-4"
+                                    className="flex items-center text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors mb-4"
                                 >
                                     <ArrowLeft size={16} className="mr-2" />
                                     Back to cohorts
@@ -751,7 +753,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 </button>
                                                 <button
                                                     onClick={cancelCohortNameEditing}
-                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-100 dark:bg-[#333] text-gray-900 dark:text-white text-sm font-medium rounded-full hover:bg-gray-200 dark:hover:bg-[#444] transition-colors cursor-pointer"
                                                     data-testid="cancel-cohort-name-button"
                                                 >
                                                     <X size={16} />
@@ -762,7 +764,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                             <>
                                                 <button
                                                     onClick={enableCohortNameEditing}
-                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-50 dark:bg-[#333] border border-gray-200 dark:border-transparent text-gray-900 dark:text-white text-sm font-medium rounded-full hover:bg-gray-100 dark:hover:bg-[#444] transition-colors cursor-pointer"
                                                     data-testid="edit-cohort-name-button"
                                                 >
                                                     <Pencil size={16} />
@@ -781,7 +783,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 <div className="relative">
                                                     <button
                                                         data-dropdown-toggle="true"
-                                                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#e5e7eb] text-[#000000] dark:bg-[#e5e7eb] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                                                         onClick={() => {
                                                             setIsDropdownOpen(!isDropdownOpen);
                                                             if (!isDropdownOpen) {
@@ -820,22 +822,22 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                             {cohort.courses.map(course => (
                                                 <div
                                                     key={course.id}
-                                                    className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
+                                                    className="flex items-center bg-gray-100 dark:bg-[#222] px-4 py-2 rounded-full group hover:bg-gray-200 dark:hover:bg-[#333] transition-colors"
                                                 >
                                                     <Tooltip content="Settings" position="top">
                                                         <button
                                                             onClick={() => handleOpenSettingsDialog(course)}
-                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                            className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer flex items-center mr-2"
                                                             aria-label="View settings"
                                                         >
                                                             <Settings size={16} />
                                                         </button>
                                                     </Tooltip>
-                                                    <span className="text-white text-sm font-light">{course.name}</span>
+                                                    <span className="text-black dark:text-white text-sm font-light">{course.name}</span>
                                                     <Tooltip content="Remove" position="top">
                                                         <button
                                                             onClick={() => initiateCourseUnlink(course)}
-                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
+                                                            className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer flex items-center ml-2"
                                                             aria-label="Remove course from cohort"
                                                         >
                                                             <X size={16} />
@@ -851,11 +853,11 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                         {/* Full-width tabs */}
                         <div className="mb-8">
-                            <div className="flex border-b border-gray-800">
+                            <div className="flex border-b border-gray-200 dark:border-gray-800">
                                 {/* Show Dashboard tab only when courses exist */}
                                 {cohort?.courses && cohort.courses.length > 0 && (
                                     <button
-                                        className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'dashboard' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                        className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'dashboard' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'}`}
                                         onClick={() => setTab('dashboard')}
                                     >
                                         <div className="flex items-center justify-center">
@@ -865,7 +867,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     </button>
                                 )}
                                 <button
-                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'learners' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'learners' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'}`}
                                     onClick={() => setTab('learners')}
                                 >
                                     <div className="flex items-center justify-center">
@@ -874,7 +876,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     </div>
                                 </button>
                                 <button
-                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'mentors' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'mentors' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'}`}
                                     onClick={() => setTab('mentors')}
                                 >
                                     <div className="flex items-center justify-center">
@@ -883,7 +885,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     </div>
                                 </button>
                                 <button
-                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'batches' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                    className={`flex-1 px-4 py-2 font-light cursor-pointer ${tab === 'batches' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'}`}
                                     onClick={() => setTab('batches')}
                                 >
                                     <div className="flex items-center justify-center">
@@ -953,16 +955,16 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                             <>
                                 {isLoadingBatches ? (
                                     <div className="flex justify-center items-center py-8">
-                                        <div className="w-8 h-8 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                                        <div className="w-8 h-8 border-t-2 border-b-2 border-foreground rounded-full animate-spin"></div>
                                     </div>
                                 ) : batches.length === 0 ? (
                                     // Single placeholder when no batches
                                     <div className="flex flex-col items-center justify-center py-20">
                                         <h4 className="text-2xl font-light mb-4">Organize into batches</h4>
-                                        <p className="text-gray-400 text-center mb-8">Create your first batch to organize learners into small groups with mentors</p>
+                                        <p className="text-gray-600 dark:text-gray-400 text-center mb-8">Create your first batch to organize learners into small groups with mentors</p>
                                         <button
                                             onClick={handleOpenBatchDialog}
-                                            className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                            className="px-6 py-3 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
                                         >
                                             Create batch
                                         </button>
@@ -971,11 +973,11 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     // Split screen when batches exist
                                     <div className="flex h-[600px]">
                                         {/* Left side - Batch list (30%) */}
-                                        <div className="w-[30%] border-r border-gray-800 pr-6">
+                                        <div className="w-[30%] border-r border-gray-200 dark:border-gray-800 pr-6">
                                             <div className="flex items-center justify-between mb-6">
                                                 <button
                                                     onClick={handleOpenBatchDialog}
-                                                    className="px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                                                    className="px-4 py-2 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
                                                 >
                                                     Create batch
                                                 </button>
@@ -991,7 +993,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                     value={batchSearchQuery}
                                                     onChange={(e) => setBatchSearchQuery(e.target.value)}
                                                     placeholder="Search batches"
-                                                    className="w-full pl-10 pr-4 py-2 bg-[#0D0D0D] text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border-none"
+                                                    className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#0D0D0D] text-black dark:text-white text-sm rounded-lg font-light placeholder-gray-500 outline-none border border-gray-200 dark:border-none"
                                                 />
                                             </div>
                                             <div className="space-y-3 h-[calc(600px-110px)] overflow-y-auto pb-1">
@@ -1008,8 +1010,8 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                                 key={batch.id}
                                                                 onClick={() => setSelectedBatch(batch)}
                                                                 className={`w-full text-left p-4 rounded-lg transition-colors cursor-pointer ${selectedBatch?.id === batch.id
-                                                                    ? 'bg-white text-gray-900'
-                                                                    : 'bg-[#222] text-gray-300 hover:bg-[#333]'
+                                                                    ? 'bg-foreground text-background dark:bg-white dark:text-[#111827]'
+                                                                    : 'bg-gray-100 dark:bg-[#222] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#333]'
                                                                     }`}
                                                             >
                                                                 <div className="flex flex-col">
@@ -1045,7 +1047,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                             ) : (
                                                 <div className="flex flex-col items-center mt-10 h-full">
                                                     <h4 className="text-2xl font-light mb-2">No batch selected yet</h4>
-                                                    <p className="text-gray-400 text-center">
+                                                    <p className="text-gray-600 dark:text-gray-400 text-center">
                                                         Select a batch to manage it
                                                     </p>
                                                 </div>

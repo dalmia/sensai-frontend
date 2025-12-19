@@ -67,7 +67,7 @@ export default function TopPerformers({
             // const validPerformers = performersData.filter(performer => performer.streakDays > 0 || performer.tasksSolved > 0);
 
             // Get top performers but filter out those with 0 streak days
-            let topPerformers = validPerformers.slice(0, 3); // Take top 3 of those
+            const topPerformers = validPerformers.slice(0, 3); // Take top 3 of those
 
             let currentUser = undefined;
 
@@ -159,13 +159,13 @@ export default function TopPerformers({
         }
     };
 
-    // Create tooltip portal
+    // Create tooltip portal with theme-aware color
     const renderTooltipPortal = () => {
         if (!showTooltip || typeof document === 'undefined') return null;
 
         return createPortal(
             <div
-                className="fixed px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap"
+                className="fixed px-2 py-1 text-xs rounded shadow-lg whitespace-nowrap bg-[#B7833A] dark:bg-gray-800 text-white"
                 style={{
                     top: `${tooltipPosition.top}px`,
                     left: `${tooltipPosition.left}px`,
@@ -175,7 +175,7 @@ export default function TopPerformers({
             >
                 Refresh
                 <div
-                    className="absolute w-2 h-2 bg-gray-800 rotate-45"
+                    className="absolute w-2 h-2 rotate-45 bg-[#B7833A] dark:bg-gray-800"
                     style={{
                         top: '100%',
                         left: '50%',
@@ -189,9 +189,9 @@ export default function TopPerformers({
     };
 
     return (
-        <div className="bg-[#121212] rounded-lg border border-gray-800 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-800 bg-[#2A2000] flex justify-between items-center">
-                <h3 className="text-lg font-light text-white">Top Performers</h3>
+        <div className="rounded-lg border overflow-hidden bg-white border-gray-300 dark:bg-[#121212] dark:border-gray-800">
+            <div className="px-4 py-3 border-b flex justify-between items-center border-[#D39228] bg-[#F6C16E] dark:border-gray-800 dark:bg-[#2A2000]">
+                <h3 className="text-lg font-light text-black dark:text-white">Top Performers</h3>
                 <div className="flex items-center space-x-2">
                     <div className="relative">
                         <button
@@ -201,8 +201,7 @@ export default function TopPerformers({
                             onMouseLeave={() => setShowTooltip(false)}
                             onFocus={() => setShowTooltip(true)}
                             onBlur={() => setShowTooltip(false)}
-                            className="group p-1.5 rounded-md transition-all duration-200 
-                            bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
+                            className="group p-1.5 rounded-md transition-all duration-200 cursor-pointer bg-[#B7833A] hover:bg-[#A6732F] text-white border border-[#8F6020] dark:bg-white/10 dark:hover:bg-white/15 dark:text-gray-200 dark:border-transparent"
                             aria-label="Refresh leaderboard"
                             disabled={isRefreshing}
                         >
@@ -217,8 +216,7 @@ export default function TopPerformers({
                     </div>
                     <button
                         onClick={navigateToLeaderboard}
-                        className="group px-2.5 py-1 text-sm font-light rounded-md transition-all duration-200 flex items-center 
-                        bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
+                        className="group px-2.5 py-1 text-sm font-light rounded-md transition-all duration-200 flex items-center cursor-pointer bg-[#B7833A] hover:bg-[#A6732F] text-white border border-[#8F6020] dark:bg-white/10 dark:hover:bg-white/15 dark:text-gray-200 dark:border-transparent"
                         aria-label="See all performers"
                     >
                         <span>See All</span>
@@ -227,7 +225,7 @@ export default function TopPerformers({
                 </div>
             </div>
 
-            <div className="divide-y divide-gray-800">
+            <div className="divide-y divide-gray-300 dark:divide-gray-800">
                 {loading ? (
                     // Show loading spinner while data is being fetched
                     <div className="py-12 px-8 text-center">
@@ -244,8 +242,7 @@ export default function TopPerformers({
                         return (
                             <div
                                 key={performer.position}
-                                className={`p-4 flex items-center ${isCurrentUser ? 'bg-blue-900/20' : ''
-                                    }`}
+                                className={`p-4 flex items-center ${isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                             >
                                 {performer.position <= 3 ? (
                                     <div className="w-12 h-12 mr-4 flex items-center justify-center">
@@ -264,18 +261,18 @@ export default function TopPerformers({
                                     </div>
                                 )}
                                 <div className="flex-1">
-                                    <div className="text-base font-medium text-white flex items-center">
+                                    <div className="text-base font-medium flex items-center text-black dark:text-white">
                                         {performer.name}
                                         {isCurrentUser && (
-                                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400">
+                                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                                 You
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-sm text-gray-400">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                         Streak: {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
                                     </div>
-                                    <div className="text-sm text-gray-400">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
                                         Solved: {performer.tasksSolved} Task{performer.tasksSolved === 1 ? "" : "s"}
                                     </div>
                                 </div>
@@ -284,23 +281,23 @@ export default function TopPerformers({
                     })
                 ) : currentUser ? (
                     // Show only current user with top performer styling when performers list is empty
-                    <div className="p-4 flex items-center bg-blue-900/20">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-blue-900/20">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center font-light text-base border-2 text-blue-500 border-blue-500">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 flex items-center">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-blue-100 dark:bg-blue-900/20">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center font-light text-base border-2 text-blue-700 border-blue-400 dark:text-blue-500 dark:border-blue-500">
                                 {currentUser.position}
                             </div>
                         </div>
                         <div className="flex-1">
-                            <div className="text-base font-medium text-white flex items-center">
+                            <div className="text-base font-medium flex items-center text-black dark:text-white">
                                 {currentUser.name}
-                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400">
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                     You
                                 </span>
                             </div>
-                            <div className="text-sm text-gray-400">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Streak: {currentUser.streakDays} Day{currentUser.streakDays === 1 ? "" : "s"}
                             </div>
-                            <div className="text-sm text-gray-400">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Solved: {currentUser.tasksSolved} Task{currentUser.tasksSolved === 1 ? "" : "s"}
                             </div>
                         </div>
@@ -323,25 +320,25 @@ export default function TopPerformers({
                 {/* Show current user if they're not in top performers and performers list is not empty */}
                 {!loading && currentUser && !isCurrentUserInTopPerformers && performers.length > 0 && (
                     <>
-                        <div className="px-4 bg-gray-900 text-center text-xs text-gray-400">
+                        <div className="bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 px-4 text-center text-xs">
                         </div>
-                        <div className="p-4 flex items-center bg-gray-900/20">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-blue-900/20">
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-light text-base border-2 text-blue-500 border-blue-500">
+                        <div className="p-4 flex items-center bg-blue-50 dark:bg-gray-900/20">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-blue-100 dark:bg-blue-900/20">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-light text-base border-2 text-blue-700 border-blue-400 dark:text-blue-500 dark:border-blue-500">
                                     {currentUser.position}
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <div className="text-base font-medium text-white flex items-center">
+                                <div className="text-base font-medium flex items-center text-black dark:text-white">
                                     {currentUser.name}
-                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400">
+                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                         You
                                     </span>
                                 </div>
-                                <div className="text-sm text-gray-400">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
                                     Streak: {currentUser.streakDays} Day{currentUser.streakDays === 1 ? "" : "s"}
                                 </div>
-                                <div className="text-sm text-gray-400">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
                                     Solved: {currentUser.tasksSolved} Task{currentUser.tasksSolved === 1 ? "" : "s"}
                                 </div>
                             </div>

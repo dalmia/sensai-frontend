@@ -73,12 +73,12 @@ export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardPro
     return (
         <div className="group relative">
             <Link href={`/school/admin/${schoolId}/cohorts/${cohort.id}`} className="block h-full">
-                <div className={`bg-[#1A1A1A] text-gray-300 rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70`}>
+                <div className={`rounded-lg p-6 h-full transition-all hover:opacity-90 cursor-pointer border-b-2 ${getBorderColor()} border-opacity-70 bg-gray-100 dark:bg-[#1A1A1A] text-gray-800 dark:text-gray-300`}>
                     <h2 className="text-xl font-light mb-2">{cohort.name}</h2>
                 </div>
             </Link>
             <button
-                className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full hover:bg-gray-800"
+                className="absolute top-3 right-3 p-2 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer rounded-full text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-800"
                 aria-label="Delete cohort"
                 onClick={handleDeleteClick}
             >

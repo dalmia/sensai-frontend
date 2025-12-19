@@ -71,9 +71,9 @@ export default async function AdminLearnerViewPage({
         }
 
         return (
-            <div className="min-h-screen bg-black">
+            <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
                 {/* Admin learner view banner */}
-                <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
+                <div className="bg-indigo-100 border-b border-indigo-300 text-indigo-950 dark:bg-indigo-950/70 dark:border-indigo-700 dark:text-indigo-50 py-3 px-4 flex justify-center items-center shadow-sm sticky top-0 z-10">
                     <p className="font-light text-sm">
                         You are viewing this course as <span className="font-medium">{learnerName}</span>
                     </p>
@@ -84,7 +84,7 @@ export default async function AdminLearnerViewPage({
                         <Suspense fallback={<div>Loading...</div>}>
                             {modules.length > 0 ? (
                                 <>
-                                    <h1 className="text-2xl sm:text-4xl font-light text-white mb-8 sm:mb-16">{courseData.name}</h1>
+                                    <h1 className="text-2xl sm:text-4xl font-light text-black dark:text-white mb-8 sm:mb-16">{courseData.name}</h1>
                                     <ClientLearnerViewWrapper
                                         modules={modules}
                                         learnerId={learnerId}
@@ -97,10 +97,10 @@ export default async function AdminLearnerViewPage({
                             ) : (
                                 <div className="flex items-center justify-center flex-1">
                                     <div className="flex flex-col items-center justify-center text-center max-w-md">
-                                        <h1 className="text-4xl font-light text-white mb-6">
+                                        <h1 className="text-4xl font-light text-black dark:text-white mb-6">
                                             No content available
                                         </h1>
-                                        <p className="text-gray-400 text-lg">
+                                        <p className="text-gray-600 dark:text-gray-400 text-lg">
                                             This course doesn't have any content yet.
                                         </p>
                                     </div>

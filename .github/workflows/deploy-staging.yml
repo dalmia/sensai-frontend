@@ -57,7 +57,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd sensai-frontend && git checkout main && git pull && git checkout ${{ github.ref_name }} && git pull origin ${{ github.ref_name }} && cp docker-compose.dev.yml ../ && git checkout main && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
+            cd sensai-frontend && git checkout main && git pull && \
+            if [ "${{ github.ref_name }}" != "main" ]; then \
+              git branch -D ${{ github.ref_name }} 2>/dev/null || true && \
+              git fetch origin ${{ github.ref_name }} && \
+              git checkout ${{ github.ref_name }}; \
+            fi && \
+            cp docker-compose.dev.yml ../ && git checkout main && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
 
       - name: Notify Slack on Success
         uses: slackapi/slack-github-action@v2.1.1
