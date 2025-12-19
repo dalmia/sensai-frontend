@@ -2092,7 +2092,7 @@ export default function CreateCourse() {
                                 <button
                                     ref={publishButtonRef}
                                     data-dropdown-toggle="true"
-                                    className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
+                                    className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] dark:bg-[#016037] border-0 hover:bg-[#017045] dark:hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
                                     onClick={() => openCohortSelectionDialog('publish')}
                                 >
                                     <span className="mr-2 text-base">🚀</span>

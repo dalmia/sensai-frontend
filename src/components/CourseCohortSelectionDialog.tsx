@@ -158,7 +158,7 @@ export const CourseCohortSelectionDialog = ({
     return (
         <div
             ref={dropdownRef}
-            className="fixed z-50 py-2 w-[400px] bg-[#1A1A1A] rounded-lg shadow-xl"
+            className="fixed z-50 py-2 w-[400px] bg-white dark:bg-[#1A1A1A] rounded-lg shadow-xl border border-gray-200 dark:border-transparent"
             onClick={(e) => e.stopPropagation()}
             style={{
                 top: `${position.top}px`,
@@ -168,7 +168,7 @@ export const CourseCohortSelectionDialog = ({
         >
             <div className="p-4 pb-2">
                 {/* Add label at the top */}
-                <h3 className="text-white text-sm font-light mb-3">Select the cohort of learners to share this course with</h3>
+                <h3 className="text-gray-900 dark:text-white text-sm font-light mb-3">Select the cohort of learners to share this course with</h3>
 
                 {/* Only show search when not loading */}
                 {!showLoading && (
@@ -179,7 +179,7 @@ export const CourseCohortSelectionDialog = ({
                                 <input
                                     type="text"
                                     placeholder="Search for a cohort"
-                                    className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
+                                    className="w-full bg-gray-100 dark:bg-[#111] rounded-md px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                                     value={searchQuery}
                                     onChange={onSearchChange}
                                 />
@@ -195,9 +195,9 @@ export const CourseCohortSelectionDialog = ({
                 </div>
             ) : hasError ? (
                 <div className="p-4 text-center">
-                    <p className="text-red-400 mb-2">{errorMessage}</p>
+                    <p className="text-red-500 dark:text-red-400 mb-2">{errorMessage}</p>
                     <button
-                        className="text-green-400 hover:text-green-300 cursor-pointer"
+                        className="text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300 cursor-pointer"
                         onClick={onRetry}
                     >
                         Try again
@@ -208,11 +208,11 @@ export const CourseCohortSelectionDialog = ({
                     {totalSchoolCohorts === 0 ? (
                         // School has no cohorts at all
                         <>
-                            <h3 className="text-lg text-white font-light mb-1">No cohorts available</h3>
-                            <p className="text-gray-400 text-sm">Create cohorts in your school that you can publish courses to</p>
+                            <h3 className="text-lg text-gray-900 dark:text-white font-light mb-1">No cohorts available</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">Create cohorts in your school that you can publish courses to</p>
                             <button
                                 onClick={handleCreateCohortClick}
-                                className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                className="mt-4 inline-block px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                             >
                                 Create cohort
                             </button>
@@ -220,11 +220,11 @@ export const CourseCohortSelectionDialog = ({
                     ) : totalSchoolCohorts > 0 && cohorts.length === 0 ? (
                         // All cohorts have been assigned to the course already
                         <>
-                            <h3 className="text-lg text-white font-light mb-1">All cohorts assigned</h3>
-                            <p className="text-gray-400 text-sm">All available cohorts are already assigned to this course</p>
+                            <h3 className="text-lg text-gray-900 dark:text-white font-light mb-1">All cohorts assigned</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">All available cohorts are already assigned to this course</p>
                             <button
                                 onClick={onAutoCreateAndPublish}
-                                className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                className="mt-4 inline-block px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                             >
                                 Make a new cohort
                             </button>
@@ -232,8 +232,8 @@ export const CourseCohortSelectionDialog = ({
                     ) : (
                         // Search returned no results
                         <>
-                            <h3 className="text-lg text-white font-light mb-1">No matching cohorts</h3>
-                            <p className="text-gray-400 text-sm">Try a different search term</p>
+                            <h3 className="text-lg text-gray-900 dark:text-white font-light mb-1">No matching cohorts</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">Try a different search term</p>
                         </>
                     )}
                 </div>
@@ -247,7 +247,7 @@ export const CourseCohortSelectionDialog = ({
                                 return (
                                     <div
                                         key={cohort.id}
-                                        className={`flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer ${isSelected ? 'bg-[#222]' : ''}`}
+                                        className={`flex items-center px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-[#222] rounded-md cursor-pointer ${isSelected ? 'bg-gray-100 dark:bg-[#222]' : ''}`}
                                         onClick={() => onSelectCohort(isSelected ? null : cohort)}
                                     >
                                         {isSelected && (
@@ -255,7 +255,7 @@ export const CourseCohortSelectionDialog = ({
                                                 <Check size={12} className="text-white" />
                                             </div>
                                         )}
-                                        <p className="text-white text-sm font-light">{cohort.name}</p>
+                                        <p className="text-gray-900 dark:text-white text-sm font-light">{cohort.name}</p>
                                     </div>
                                 );
                             })}
@@ -282,7 +282,7 @@ export const CourseCohortSelectionDialog = ({
                             {buttonText}
                         </button>
                         <button
-                            className="w-full bg-transparent border border-gray-600 text-white py-3 rounded-full text-sm hover:bg-[#222] transition-colors cursor-pointer"
+                            className="w-full bg-transparent border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white py-3 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-[#222] transition-colors cursor-pointer"
                             onClick={onAutoCreateAndPublish}
                             disabled={showLoading}
                         >
