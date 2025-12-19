@@ -91,20 +91,20 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
     }, [templateElement]);
 
     return (
-        <div className="absolute z-[100] w-[350px] bg-[#2F2F2F] rounded-lg shadow-xl p-2" style={previewStyle}>
+        <div className="absolute z-[100] w-[350px] bg-gray-100 dark:bg-[#2F2F2F] rounded-lg shadow-xl p-2 border border-gray-200 dark:border-transparent" style={previewStyle}>
             {/* Header with name */}
-            <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
+            <div className="p-5 pb-3 bg-white dark:bg-[#1F1F1F] mb-2 rounded-t-lg">
                 <div className="flex items-center mb-4">
                     {template.icon && (
-                        <div className="w-6 h-6 bg-[#712828] rounded flex items-center justify-center mr-2">
-                            {template.icon}
+                        <div className="w-6 h-6 bg-rose-200 dark:bg-[#712828] rounded flex items-center justify-center mr-2">
+                            <span className="text-rose-700 dark:text-white">{template.icon}</span>
                         </div>
                     )}
-                    <h3 className="text-white text-lg font-normal">{template.name}</h3>
+                    <h3 className="text-gray-900 dark:text-white text-lg font-normal">{template.name}</h3>
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-3 gap-2 mb-2 text-xs text-gray-300">
+                <div className="grid grid-cols-3 gap-2 mb-2 text-xs text-gray-600 dark:text-gray-300">
                     <div className="px-2">Parameter</div>
                     <div className="px-2">Description</div>
                     <div className="px-2">Maximum</div>
@@ -118,7 +118,7 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
                         const pillColor = pillColors[index % pillColors.length];
 
                         return (
-                            <div key={index} className="grid grid-cols-3 gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
+                            <div key={index} className="grid grid-cols-3 gap-2 bg-gray-200 dark:bg-[#2A2A2A] rounded-md p-1 text-gray-900 dark:text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span
                                         className="inline-block px-2 py-0.5 rounded-full text-xs text-white truncate"
@@ -128,7 +128,7 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
                                     </span>
                                 </div>
                                 <div className="px-2 py-1 flex items-center">
-                                    <div className="h-3 bg-[#333] rounded w-full"></div>
+                                    <div className="h-3 bg-gray-300 dark:bg-[#333] rounded w-full"></div>
                                 </div>
                                 <div className="px-2 py-1 text-sm text-center">{criterion.maxScore}</div>
                             </div>
@@ -139,7 +139,7 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
 
             {/* Description text - show for both standard and user types */}
             {template.description && (
-                <p className="text-white text-sm font-normal px-1">{template.description}</p>
+                <p className="text-gray-700 dark:text-white text-sm font-normal px-1">{template.description}</p>
             )}
         </div>
     );
@@ -307,19 +307,19 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         if (!hasSchoolScorecards) return null;
 
         return (
-            <div className={`flex border-b border-[#333333]`}>
+            <div className="flex border-b border-gray-200 dark:border-[#333333]">
                 <button
                     className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'yours' ?
-                        'text-white border-b-2 border-white' :
-                        'text-gray-400 hover:text-white'}`}
+                        'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white' :
+                        'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
                     onClick={() => setActiveTab('yours')}
                 >
                     Your Scorecards
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'templates' ?
-                        'text-white border-b-2 border-white' :
-                        'text-gray-400 hover:text-white'}`}
+                        'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white' :
+                        'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}
                     onClick={() => setActiveTab('templates')}
                 >
                     Templates
@@ -347,17 +347,17 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                             placeholder="Search your scorecards"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
+                            className="w-full bg-gray-100 dark:bg-[#111] rounded-md px-3 py-2 text-gray-900 dark:text-white border border-gray-200 dark:border-transparent focus:outline-none"
                         />
                     </div>
                 </div>
 
-                <div className="h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+                <div className="h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-[#333] scrollbar-track-transparent">
                     {filteredScorecards.length > 0 ? (
                         filteredScorecards.map((template) => (
                             <div
                                 key={template.id}
-                                className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
+                                className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
                                 onClick={() => onSelectTemplate(template)}
                                 onMouseEnter={(e) => {
                                     setHoveredTemplate(template.id);
@@ -368,7 +368,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                                     setHoveredElement(null);
                                 }}
                             >
-                                <span className="text-white text-sm">{template.name}</span>
+                                <span className="text-gray-900 dark:text-white text-sm">{template.name}</span>
                                 {/* {template.new && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-700 text-white ml-2">
                                         NEW
@@ -377,7 +377,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                             </div>
                         ))
                     ) : (
-                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
                                 {searchQuery
                                     ? 'No scorecards match your search'
                                     : 'No scorecards available'
@@ -405,13 +405,13 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         return (
             <div>
                 {!hasSchoolScorecards && (
-                    <div className="px-4 py-2 text-sm text-gray-400">Templates</div>
+                    <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">Templates</div>
                 )}
 
                 {templates.map((template) => (
                     <div
                         key={template.id}
-                        className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
+                        className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
                         onClick={() => onSelectTemplate(template)}
                         onMouseEnter={(e) => {
                             setHoveredTemplate(template.id);
@@ -422,10 +422,10 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                             setHoveredElement(null);
                         }}
                     >
-                        <div className="w-8 h-8 bg-[#712828] rounded flex items-center justify-center mr-3">
-                            {template.icon}
+                        <div className="w-8 h-8 bg-rose-200 dark:bg-[#712828] rounded flex items-center justify-center mr-3">
+                            <span className="text-rose-700 dark:text-white">{template.icon}</span>
                         </div>
-                        <span className="text-white text-sm">{template.name}</span>
+                        <span className="text-gray-900 dark:text-white text-sm">{template.name}</span>
 
                         {/* Preview on hover */}
                         {hoveredTemplate === template.id && hoveredElement && (
@@ -446,7 +446,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             onClick={onClose}
         >
             <div
-                className="absolute bg-[#1E1E1E] rounded-lg shadow-lg w-[296px] overflow-visible"
+                className="absolute bg-white dark:bg-[#1E1E1E] rounded-lg shadow-lg w-[296px] overflow-visible border border-gray-200 dark:border-transparent"
                 style={{
                     top: dialogPosition.top,
                     left: dialogPosition.left
@@ -455,10 +455,10 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             >
                 {/* Header */}
                 <div className="flex justify-between items-center p-4">
-                    <h2 className="text-white text-lg font-normal">New scorecard</h2>
+                    <h2 className="text-gray-900 dark:text-white text-lg font-normal">New scorecard</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer"
                         aria-label="Close"
                     >
                         <X size={20} />
@@ -467,13 +467,13 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
 
                 {/* Create new option */}
                 <div
-                    className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors"
+                    className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] cursor-pointer transition-colors"
                     onClick={onCreateNew}
                 >
-                    <div className="w-8 h-8 bg-[#313131] rounded flex items-center justify-center mr-3">
-                        <Plus size={20} className="text-white" />
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-[#313131] rounded flex items-center justify-center mr-3">
+                        <Plus size={20} className="text-gray-700 dark:text-white" />
                     </div>
-                    <span className="text-white text-sm">New empty scorecard</span>
+                    <span className="text-gray-900 dark:text-white text-sm">New empty scorecard</span>
                 </div>
 
                 {/* Tab navigation */}

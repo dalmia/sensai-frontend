@@ -224,9 +224,9 @@ const LearningMaterialLinker = ({
                     {selectedLearningMaterials.map(material => (
                         <div
                             key={material.id}
-                            className="flex items-center bg-[#222] px-3 py-1 rounded-full"
+                            className="flex items-center bg-gray-100 dark:bg-[#222] px-3 py-1 rounded-full"
                         >
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center mr-2 ${material.id % 5 === 0 ? "bg-blue-900" :
+                            <div className={`w-5  h-5 rounded-md flex items-center justify-center mr-2 ${material.id % 5 === 0 ? "bg-blue-900" :
                                 material.id % 5 === 1 ? "bg-purple-900" :
                                     material.id % 5 === 2 ? "bg-green-900" :
                                         material.id % 5 === 3 ? "bg-amber-900" :
@@ -234,7 +234,7 @@ const LearningMaterialLinker = ({
                                 }`}>
                                 <FileText size={12} className="text-white" />
                             </div>
-                            <span className="text-white text-sm font-light">{material.title}</span>
+                            <span className="text-gray-900 dark:text-white text-sm font-light">{material.title}</span>
                         </div>
                     ))}
                 </div>

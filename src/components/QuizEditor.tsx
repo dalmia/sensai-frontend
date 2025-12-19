@@ -2158,7 +2158,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             />
                                         ) : (
                                             // Scorecard tab - use ScorecardManager component
-                                            <div className="h-full w-full">
+                                            <div className="h-full w-full bg-white dark:bg-transparent">
                                                 <ScorecardManager
                                                     key={`scorecard-manager-${questions[currentQuestionIndex]?.id || currentQuestionIndex}`}
                                                     ref={scorecardManagerRef}

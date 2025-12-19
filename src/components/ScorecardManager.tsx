@@ -780,20 +780,20 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
             ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center">
                         <div className="max-w-md">
-                            <h3 className="text-xl font-light text-white mb-3">
+                            <h3 className="text-xl font-light text-gray-800 dark:text-white mb-3">
                                 What is a scorecard?
                             </h3>
-                            <p className="text-gray-400 mb-6">
+                            <p className="text-gray-500 dark:text-gray-400 mb-6">
                                 A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
                             </p>
                             <button
-                                className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
+                                className="flex items-center px-5 py-2.5 text-sm text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
                                 ref={scorecardButtonRef}
                                 onClick={handleOpenScorecardDialog}
                                 disabled={readOnly}
                             >
-                                <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
-                                    <Plus size={12} className="text-black" />
+                                <div className="w-5 h-5 rounded-full border border-white dark:border-black flex items-center justify-center mr-2">
+                                    <Plus size={12} className="text-white dark:text-black" />
                                 </div>
                                 Add a scorecard
                             </button>
