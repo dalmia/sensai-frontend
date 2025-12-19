@@ -1195,7 +1195,7 @@ describe('CreateCourse Page', () => {
 
         // The component should set dark mode to true by default based on the useEffect
         // This is mainly testing the useEffect that sets dark mode
-        expect(document.documentElement.classList.contains('dark')).toBeFalsy(); // Default in test environment
+        expect(document.documentElement.classList.contains('dark')).toBeTruthy();
     });
 
     it('should handle cohort fetch error', async () => {

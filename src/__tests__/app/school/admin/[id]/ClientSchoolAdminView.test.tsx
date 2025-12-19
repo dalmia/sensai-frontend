@@ -1194,7 +1194,7 @@ describe('ClientSchoolAdminView', () => {
 
             await waitFor(() => {
                 const membersTab = screen.getByText('Team');
-                expect(membersTab.parentElement).toHaveClass('text-white border-b-2 border-white');
+                expect(membersTab.parentElement).toHaveClass('border-b-2', 'dark:text-white', 'dark:border-white');
             });
         });
 

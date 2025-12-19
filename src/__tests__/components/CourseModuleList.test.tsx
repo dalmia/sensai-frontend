@@ -843,7 +843,7 @@ describe('CourseModuleList Component', () => {
 
             // Should show amber styling for partial completion (dark mode default)
             const quizTitle = screen.getByText('Partial Quiz');
-            expect(quizTitle).toHaveClass('text-amber-200');
+            expect(quizTitle).toHaveClass('dark:text-amber-200');
 
             // Should show progress ratio (format: count/total)
             expect(screen.getByText('(1/3)')).toBeInTheDocument();

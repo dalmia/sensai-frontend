@@ -296,16 +296,17 @@ describe('InviteMembersDialog Component', () => {
         // Focus the input
         fireEvent.focus(emailInput);
 
-        // Check that the email icon shows a focus color (this depends on your component implementation)
-        // For example, if your component adds a 'text-white' class to the icon when focused:
+        // Check that the email icon shows focus styling
         const mailIcon = emailInput.closest('div')?.querySelector('svg');
-        expect(mailIcon).toHaveClass('text-white');
+        expect(mailIcon).not.toBeNull();
+        expect(mailIcon).toHaveClass('text-black');
+        expect(mailIcon).toHaveClass('dark:text-white');
 
         // Blur the input
         fireEvent.blur(emailInput);
 
         // Icon should return to normal state
-        expect(mailIcon).not.toHaveClass('text-white');
+        expect(mailIcon).toHaveClass('text-gray-500');
     });
 
     it('should clear validation error when invalid email becomes valid', () => {

@@ -53,7 +53,7 @@ describe('LearnerScorecard Component', () => {
         expect(screen.getByText('70%')).toBeInTheDocument();
 
         // Check for categories - using querySelector with specific parent containers to avoid duplicates
-        const summary = container.querySelector('.bg-zinc-900.rounded-xl.p-5');
+        const summary = container.querySelector('.rounded-xl.p-5');
         expect(summary?.textContent).toContain('Understanding');
         expect(summary?.textContent).toContain('Implementation');
         expect(summary?.textContent).toContain('Code Quality');
@@ -73,8 +73,8 @@ describe('LearnerScorecard Component', () => {
         const { container } = render(<LearnerScorecard scorecard={mockScorecard} />);
 
         // Verify that feedback is visible initially (expanded by default)
-        expect(container.querySelector('.border-emerald-900\\/30')).toBeInTheDocument();
-        expect(container.querySelector('.border-amber-900\\/30')).toBeInTheDocument();
+        expect(container.querySelector('.dark\\:border-emerald-900\\/30')).toBeInTheDocument();
+        expect(container.querySelector('.dark\\:border-amber-900\\/30')).toBeInTheDocument();
 
         // Click on the first category header to collapse it
         const firstCategoryHeader = container.querySelector('[data-testid="detail-0"] .p-4');
@@ -92,7 +92,7 @@ describe('LearnerScorecard Component', () => {
         const firstCategoryHeader = container.querySelector('[data-testid="detail-0"] .p-4');
 
         // Feedback should be visible initially (expanded by default)
-        expect(container.querySelector('.border-emerald-900\\/30')).toBeInTheDocument();
+        expect(container.querySelector('.dark\\:border-emerald-900\\/30')).toBeInTheDocument();
 
         // Click to collapse
         fireEvent.click(firstCategoryHeader!);

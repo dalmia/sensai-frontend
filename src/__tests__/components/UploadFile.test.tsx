@@ -203,8 +203,9 @@ describe('UploadFile', () => {
         const { container } = render(<UploadFile onComplete={onComplete} placeholderText="Upload any file" fileType={[]} />);
 
         // When fileType is empty, formatFileTypes returns empty string
-        const fileTypeElement = container.querySelector('.text-xs.text-gray-400');
-        expect(fileTypeElement?.textContent).toBe(' ');
+        const fileTypeElement = container.querySelector('.text-xs.text-gray-500');
+        expect(fileTypeElement).toBeInTheDocument();
+        expect(fileTypeElement?.textContent?.trim()).toBe('');
     });
 
     it('does not select file when disabled via maybeSelectFile', () => {
