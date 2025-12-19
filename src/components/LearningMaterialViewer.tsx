@@ -31,6 +31,7 @@ interface LearningMaterialViewerProps {
     readOnly?: boolean;
     viewOnly?: boolean;
     onMarkComplete?: () => void;
+    onChatOpenChange?: (isOpen: boolean) => void;
 }
 
 export default function LearningMaterialViewer({
@@ -40,6 +41,7 @@ export default function LearningMaterialViewer({
     readOnly = true,
     viewOnly = false,
     onMarkComplete,
+    onChatOpenChange,
 }: LearningMaterialViewerProps) {
     const { user } = useAuth();
     // Use global theme (html.dark) as the source of truth.
@@ -74,6 +76,13 @@ export default function LearningMaterialViewer({
 
     // Mobile view mode for responsive layout
     const [mobileViewMode, setMobileViewMode] = useState<'content-full' | 'chat-full' | 'split'>('split');
+
+    // Notify parent when the chat overlay opens/closes.
+    // Important: do this in an effect (not inside a state updater) to avoid
+    // "Cannot update a component while rendering a different component" warnings.
+    useEffect(() => {
+        onChatOpenChange?.(showChatView);
+    }, [showChatView, onChatOpenChange]);
 
 
     const currentIntegrationType = 'notion';
@@ -523,7 +532,7 @@ export default function LearningMaterialViewer({
                         display: flex !important;
                         height: 100% !important;
                     }
-                    
+
                     .material-view-container.mode-split {
                         grid-template-rows: 50% 50% !important;
                     }
@@ -563,7 +572,8 @@ export default function LearningMaterialViewer({
                         right: 0 !important;
                         bottom: 0 !important;
                         top: 0 !important;
-                        z-index: 50 !important;
+                        /* Ensure the chat overlay sits above the course mobile footer (prev/next) */
+                        z-index: 70 !important;
                         background-color: #ffffff !important;
                         animation: slide-up 0.3s ease-out forwards !important;
                         display: flex !important;
@@ -673,6 +683,19 @@ export default function LearningMaterialViewer({
                 }
             `}</style>
 
+            {/* Theme fixes for mobile chat in dark mode.
+                NOTE: These must be global selectors; otherwise `.dark` won't match due to styled-jsx scoping. */}
+            <style jsx global>{`
+                .dark .chat-container .input-container {
+                    background-color: #111111 !important;
+                    border-top-color: #222222 !important;
+                }
+
+                .dark .mobile-chat-container {
+                    background-color: #111111 !important;
+                }
+            `}</style>
+
             <div 
                 className={`bg-white dark:bg-[#111111] material-view-container ${showChatView ? (isMobileView ? 'mode-chat-full' : 'two-column-grid rounded-md overflow-hidden split-view-container') : 'mode-content-full'}`}
             >
@@ -730,7 +753,6 @@ export default function LearningMaterialViewer({
                             handleViewScorecard={handleViewScorecard}
                             completedQuestionIds={{}}
                             handleRetry={handleRetry}
-                            isDarkMode={isDarkMode}
                         />
                     </div>
                 )}
@@ -757,7 +779,7 @@ export default function LearningMaterialViewer({
                                 }
                             }}
                             className={`fixed right-6 bottom-12 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
-                            style={{ bottom: '100px' }}
+                            style={{ bottom: '60px' }}
                             aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
                         >
                             {isMobileMenuOpen ? (
@@ -794,7 +816,7 @@ export default function LearningMaterialViewer({
 
                         {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
                         {isMobileMenuOpen && onMarkComplete && (
-                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '170px' }} ref={mobileMenuRef}>
+                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '130px' }} ref={mobileMenuRef}>
                                 {/* Ask a doubt button */}
                                 <div className="flex items-center gap-3">
                                     <span className="bg-gray-900 dark:bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">

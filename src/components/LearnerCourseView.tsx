@@ -100,6 +100,10 @@ export default function LearnerCourseView({
     // Add state for mobile sidebar visibility
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    // Tracks whether the "Ask a doubt" chat overlay is open (mobile).
+    // Used to hide the prev/next footer so the chat input isn't covered.
+    const [isAskDoubtOpen, setIsAskDoubtOpen] = useState(false);
+
     // List of encouragement messages
     const encouragementMessages = [
         "Great job! 🎯",
@@ -970,6 +974,13 @@ export default function LearnerCourseView({
         }
     }, [questionId, activeItem?.id, taskId]);
 
+    // If the dialog closes, ensure any chat-overlay state is reset.
+    useEffect(() => {
+        if (!isDialogOpen) {
+            setIsAskDoubtOpen(false);
+        }
+    }, [isDialogOpen]);
+
     // Toggle sidebar visibility for mobile
     const toggleSidebar = () => {
         setIsSidebarOpen(prev => !prev);
@@ -1282,6 +1293,7 @@ export default function LearnerCourseView({
                                                 readOnly={true}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
                                                 viewOnly={viewOnly}
+                                                onChatOpenChange={setIsAskDoubtOpen}
                                             />
                                         )}
                                         {(activeItem?.type === 'quiz') && (
@@ -1349,7 +1361,7 @@ export default function LearnerCourseView({
             )}
 
             {/* Mobile Navigation Footer - Only visible on mobile */}
-            {isDialogOpen && activeItem && (
+            {isDialogOpen && activeItem && !isAskDoubtOpen && (
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 py-3 flex justify-between items-center max-h-[60px] border-t bg-white dark:bg-[#111111] border-gray-200 dark:border-gray-800 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] dark:shadow-none">
                     {!isFirstTask() && getPreviousTaskInfo() ? (
                         <button
