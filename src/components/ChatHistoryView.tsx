@@ -348,7 +348,9 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                     }
 
                                     if (message.messageType === 'code') {
-                                        return 'bg-slate-900 text-slate-100 dark:bg-[#282828] dark:text-white w-[90%]';
+                                        // Code blocks already have their own container styling (CodeMessageDisplay).
+                                        // Keep the chat "bubble" transparent to avoid double backgrounds/padding.
+                                        return 'bg-transparent text-slate-900 dark:bg-transparent dark:text-white border-0 w-[90%]';
                                     }
 
                                     const textBase = message.sender === 'user'
@@ -357,8 +359,8 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                     return `${textBase} max-w-[75%]`;
                                     })();
 
-                                    // Audio bubbles shouldn't have px-4 (per request)
-                                    const bubbleClassName = `rounded-2xl ${message.messageType === 'audio' ? 'py-2' : 'px-4 py-2'} ${bubbleVariant}`;
+                                    // Audio + code shouldn't have the extra bubble padding (prevents "double container" look)
+                                    const bubbleClassName = `rounded-2xl ${(message.messageType === 'audio' || message.messageType === 'code') ? 'py-2' : 'px-4 py-2'} ${bubbleVariant}`;
 
                                     const bubble = (
                                         <div className={bubbleClassName}>
