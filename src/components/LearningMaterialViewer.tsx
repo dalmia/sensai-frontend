@@ -27,7 +27,6 @@ import "katex/dist/katex.min.css";
 interface LearningMaterialViewerProps {
     taskId?: string;
     userId?: string;
-    isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
     viewOnly?: boolean;
@@ -37,7 +36,6 @@ interface LearningMaterialViewerProps {
 export default function LearningMaterialViewer({
     taskId,
     userId = '',
-    isDarkMode: _isDarkMode = true,
     className = "",
     readOnly = true,
     viewOnly = false,

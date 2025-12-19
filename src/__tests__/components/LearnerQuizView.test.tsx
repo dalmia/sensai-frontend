@@ -378,7 +378,7 @@ describe('LearnerQuizView Component', () => {
         });
 
         it('applies dark mode styling', () => {
-            render(<LearnerQuizView {...defaultProps} isDarkMode={true} />);
+            render(<LearnerQuizView {...defaultProps} />);
             expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
         });
 

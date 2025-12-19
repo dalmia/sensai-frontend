@@ -76,32 +76,32 @@ When you need to compute colors in JavaScript based on theme (e.g., for canvas, 
 ```tsx
 // ❌ WRONG: Using hook state - can be out of sync with DOM
 const { isDarkMode } = useThemePreference();
-const bgColor = isDarkMode ? '#000' : '#fff'; // May not update correctly!
+const bgColor = isDarkMode ? "#000" : "#fff"; // May not update correctly!
 
 // ✅ CORRECT: Watch DOM directly with MutationObserver
 const [isDarkModeDOM, setIsDarkModeDOM] = useState(true);
 
 useEffect(() => {
   const checkDarkMode = () => {
-    setIsDarkModeDOM(document.documentElement.classList.contains('dark'));
+    setIsDarkModeDOM(document.documentElement.classList.contains("dark"));
   };
-  
+
   checkDarkMode();
-  
+
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.attributeName === 'class') {
+      if (mutation.attributeName === "class") {
         checkDarkMode();
       }
     });
   });
-  
+
   observer.observe(document.documentElement, { attributes: true });
   return () => observer.disconnect();
 }, []);
 
 // Now use isDarkModeDOM for color calculations
-const bgColor = isDarkModeDOM ? '#000' : '#fff';
+const bgColor = isDarkModeDOM ? "#000" : "#fff";
 ```
 
 ### CSS Override Issues (globals.css)
@@ -110,8 +110,12 @@ const bgColor = isDarkModeDOM ? '#000' : '#fff';
 
 ```css
 /* Example problematic rules in globals.css */
-.dark .bg-gray-200 { background-color: #1A1A1A !important; }
-.dark .text-black { color: #FFFFFF !important; }
+.dark .bg-gray-200 {
+  background-color: #1a1a1a !important;
+}
+.dark .text-black {
+  color: #ffffff !important;
+}
 ```
 
 **Workaround**: Use arbitrary hex values to bypass these overrides:
@@ -126,16 +130,16 @@ const bgColor = isDarkModeDOM ? '#000' : '#fff';
 
 ### Recommended Class Patterns
 
-| Element | Classes |
-|---------|---------|
-| **Page wrapper** | `bg-white dark:bg-black text-black dark:text-white` |
-| **Card / panel** | `bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222]` |
-| **Content panel** | `bg-gray-50 dark:bg-[#1A1A1A] border-gray-200 dark:border-[#222222]` |
-| **Input** | `bg-white dark:bg-[#161925] border-gray-300 dark:border-gray-800 text-black dark:text-white` |
-| **Chips / pills** | `bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-white` |
-| **Primary button** | `bg-purple-600 dark:bg-white text-white dark:text-black` |
-| **Cancel/secondary** | `text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white` |
-| **Spinner** | `border-black dark:border-white` |
+| Element              | Classes                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| **Page wrapper**     | `bg-white dark:bg-black text-black dark:text-white`                                          |
+| **Card / panel**     | `bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222]`                    |
+| **Content panel**    | `bg-gray-50 dark:bg-[#1A1A1A] border-gray-200 dark:border-[#222222]`                         |
+| **Input**            | `bg-white dark:bg-[#161925] border-gray-300 dark:border-gray-800 text-black dark:text-white` |
+| **Chips / pills**    | `bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-white`                                |
+| **Primary button**   | `bg-purple-600 dark:bg-white text-white dark:text-black`                                     |
+| **Cancel/secondary** | `text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white`                    |
+| **Spinner**          | `border-black dark:border-white`                                                             |
 
 ### Logo Switching Pattern
 
@@ -171,24 +175,26 @@ Use them via Tailwind: `bg-background`, `text-foreground`, `border-border`, etc.
 1. **Identify conditionals**: Search for `isDarkMode ?` in the component
 
 2. **Convert each conditional**:
+
    ```tsx
    // Before
    className={isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}
-   
+
    // After
    className="bg-white dark:bg-black text-black dark:text-white"
    ```
 
 3. **Handle complex conditionals** (multiple conditions):
+
    ```tsx
    // Before
-   className={`${isActive 
-     ? isDarkMode ? 'bg-green-900' : 'bg-green-100' 
+   className={`${isActive
+     ? isDarkMode ? 'bg-green-900' : 'bg-green-100'
      : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}
-   
+
    // After - use string concatenation
-   className={`${isActive 
-     ? 'bg-green-100 dark:bg-green-900' 
+   className={`${isActive
+     ? 'bg-green-100 dark:bg-green-900'
      : 'bg-gray-100 dark:bg-gray-800'}`}
    ```
 
@@ -232,14 +238,94 @@ Use them via Tailwind: `bg-background`, `text-foreground`, `border-border`, etc.
 **Symptom**: `dark:bg-gray-800` has no effect
 
 **Possible Causes**:
+
 1. Missing `@custom-variant dark` in globals.css (Tailwind v4)
 2. `!important` overrides in globals.css
 3. Parent element missing dark class propagation
 
 **Solutions**:
+
 1. Add `@custom-variant dark (&:where(.dark, .dark *));` to globals.css
 2. Use arbitrary values: `dark:bg-[#1f2937]` instead of `dark:bg-gray-800`
 3. Ensure `.dark` class is on `<html>` element
+
+---
+
+## Additional Learnings (from a real debugging session)
+
+These are the “gotchas” that actually caused issues during implementation, and what to do next time.
+
+### 1) Dark styles “not applying” is often **specificity/order**, not Tailwind
+
+**Symptom**: In DevTools you see `class="bg-gray-200 dark:bg-[#1A1A1A]"` but the element still looks like `bg-gray-200` in dark mode. When you remove the light class, the dark color appears.
+
+**Common Causes**:
+
+- A global stylesheet (often `globals.css` or a component-level `style jsx global`) has `!important` rules that override Tailwind utilities.
+- Component CSS-in-JS injects styles later than Tailwind, winning the cascade.
+- In Tailwind v4, dark-mode support depends on the `@custom-variant dark ...` rule; if it’s missing/mis-scoped, `dark:` classes may not generate or may not match.
+
+**Debug Checklist**:
+
+- Inspect the element → check the “Styles” panel and confirm which rule is winning.
+- Search for `!important` overrides (especially anything targeting `.dark .bg-*`, `.bg-*`, or element selectors).
+- Confirm `.dark` is on `<html>` (not a nested wrapper), since the app’s convention relies on that.
+
+**Pragmatic Fixes (minimal impact)**:
+
+- Prefer arbitrary values (`bg-[#...]`) to bypass broad overrides.
+- If there’s an override you can’t easily remove safely, use Tailwind important variants:
+  - `dark:!bg-[#...]`, `dark:hover:!bg-[#...]`
+  - Use this sparingly and only where needed (it’s a “break glass” tool).
+
+### 2) Avoid “theme state” for CSS when `dark:` can do it
+
+**Symptom**: Theme toggle updates some areas, but others need reload or look mismatched.
+
+**Cause**: Styling is driven by `isDarkMode` state/props (ternaries) in some parts, while other parts rely on `.dark` + Tailwind `dark:`. They can get out of sync.
+
+**Rule**: For static styling, use `dark:` utilities only. Avoid `isDarkMode ? ... : ...` for class names.
+
+### 3) Third‑party libraries: keep `isDarkMode`, but don’t let it leak into layout styling
+
+Some libraries require a theme prop:
+
+- Monaco (`@monaco-editor/react`): `theme="vs-dark" | "vs"`
+- Notion renderer (`RenderConfig theme="dark" | "light"`)
+- BlockNote editor (theme prop)
+
+**Best practice**:
+
+- Get `isDarkMode` locally (from `useThemePreference()`) inside the component that owns the library.
+- Keep surrounding layout/panels styled via `dark:` so they react instantly to `.dark`.
+
+### 4) Fast Refresh / Hot Reload can break Monaco unless you remount safely
+
+**Symptom**: After a code change + hot reload, Monaco throws runtime errors (e.g. `Cannot read properties of undefined (reading 'domNode')`), but a full refresh fixes it.
+
+**Why**: Monaco schedules internal renders/layout; Fast Refresh can replace DOM nodes while Monaco still holds references.
+
+**Minimal dev-only mitigation**:
+
+- Force `<Editor />` remount on refresh using a `key` that changes in dev.
+- Dispose editor instance on cleanup (`editor.dispose()`), best effort.
+
+**Note**: Keep this dev-only when possible to avoid changing prod behavior.
+
+### 5) Avoid accidental “double containers” (especially for code/audio blocks)
+
+**Symptom**: A code block or audio player looks like it has a weird extra bubble/padding/background.
+
+**Cause**: The chat bubble container adds padding/background, and the inner component (code/audio) also has its own container styling → double UI chrome.
+
+**Fix pattern**:
+
+- Make the outer bubble transparent / minimal for those message types.
+- Let the inner component own its visual container.
+
+### 6) Keep changes strictly scoped to the user request
+
+**Lesson**: When the task is “fix styling X,” avoid refactors (prop drilling, theme architecture changes, etc.). If a broader cause exists, apply the smallest change that resolves the symptom first (then optionally propose deeper cleanup separately).
 
 ### Pitfall 4: Hydration Mismatch
 

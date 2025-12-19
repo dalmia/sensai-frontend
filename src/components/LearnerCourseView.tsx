@@ -9,7 +9,6 @@ import confetti from "canvas-confetti";
 import SuccessSound from "./SuccessSound";
 import ModuleCompletionSound from "./ModuleCompletionSound";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Dynamically import viewer components to avoid SSR issues
 const DynamicLearningMaterialViewer = dynamic(
@@ -65,9 +64,6 @@ export default function LearnerCourseView({
     // Get user from auth context
     const { user } = useAuth();
     const userId = viewOnly ? learnerId : user?.id || '';
-    
-    // Get theme preference for child components that need it
-    const { isDarkMode } = useThemePreference();
 
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
     const [activeItem, setActiveItem] = useState<any>(null);
@@ -1284,7 +1280,6 @@ export default function LearnerCourseView({
                                                 taskId={activeItem.id}
                                                 userId={userId}
                                                 readOnly={true}
-                                                isDarkMode={isDarkMode}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
                                                 viewOnly={viewOnly}
                                             />
@@ -1301,7 +1296,6 @@ export default function LearnerCourseView({
                                                     isTestMode={isTestMode}
                                                     taskId={activeItem.id}
                                                     completedQuestionIds={completedQuestions}
-                                                    isDarkMode={isDarkMode}
                                                     onAiRespondingChange={handleAiRespondingChange}
                                                     className={`${isSidebarOpen ? 'sidebar-visible' : ''}`}
                                                     isAdminView={isAdminView}
@@ -1316,7 +1310,6 @@ export default function LearnerCourseView({
                                                 taskId={activeItem.id}
                                                 isTestMode={isTestMode}
                                                 viewOnly={viewOnly}
-                                                isDarkMode={isDarkMode}
                                                 onTaskComplete={handleTaskCompletion}
                                                 onAiRespondingChange={handleAiRespondingChange}
                                             />

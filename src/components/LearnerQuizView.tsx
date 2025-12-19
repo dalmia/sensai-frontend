@@ -31,7 +31,6 @@ export interface MobileViewMode {
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
     onSubmitAnswer?: (questionId: string, answer: string) => void;
-    isDarkMode?: boolean;
     className?: string;
     viewOnly?: boolean;
     currentQuestionId?: string;
@@ -48,7 +47,6 @@ export interface LearnerQuizViewProps {
 export default function LearnerQuizView({
     questions = [],
     onSubmitAnswer,
-    isDarkMode: _isDarkMode = true,
     className = "",
     viewOnly = false,
     currentQuestionId,
@@ -63,7 +61,6 @@ export default function LearnerQuizView({
 }: LearnerQuizViewProps) {
     const { user } = useAuth();
     // Use global theme (html.dark) as the source of truth to avoid reload-required mismatches.
-    // Keep the prop for backward compatibility but don't rely on it for styling.
     const { isDarkMode } = useThemePreference();
 
     // Constant message for exam submission confirmation

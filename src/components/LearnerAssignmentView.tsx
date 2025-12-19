@@ -30,7 +30,6 @@ interface LearnerAssignmentViewProps {
     isTestMode?: boolean;
     viewOnly?: boolean;
     className?: string;
-    isDarkMode?: boolean;
     onTaskComplete?: (taskId: string, isComplete: boolean) => void;
     onAiRespondingChange?: (isResponding: boolean) => void;
 }
@@ -69,7 +68,6 @@ export default function LearnerAssignmentView({
     isTestMode = true,
     viewOnly = false,
     className = "",
-    isDarkMode: _isDarkMode = true,
     onTaskComplete,
     onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
