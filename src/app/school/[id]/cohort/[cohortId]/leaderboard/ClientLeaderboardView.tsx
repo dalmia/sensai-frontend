@@ -110,8 +110,6 @@ export default function ClientLeaderboardView({
                 <div className="hidden sm:block">
                     <Header
                         showCreateCourseButton={false}
-                        themePreference={themePreference}
-                        onThemePreferenceChange={setThemePreference}
                     />
                 </div>
             )}
