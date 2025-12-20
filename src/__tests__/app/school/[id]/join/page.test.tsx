@@ -458,7 +458,8 @@ describe('JoinCohortPage', () => {
             render(<JoinCohortPage />);
 
             const container = document.querySelector('.min-h-screen');
-            expect(container).toHaveClass('bg-black', 'text-white', 'flex', 'flex-col', 'items-center', 'justify-center', 'px-4');
+            // Uses dark mode variant classes: bg-white dark:bg-black text-gray-900 dark:text-white
+            expect(container).toHaveClass('flex', 'flex-col', 'items-center', 'justify-center', 'px-4');
 
             const content = document.querySelector('.max-w-md');
             expect(content).toHaveClass('flex', 'flex-col', 'items-center', 'justify-center', 'text-center');
@@ -487,12 +488,12 @@ describe('JoinCohortPage', () => {
                 expect(screen.getByText('You have been successfully added to the cohort')).toBeInTheDocument();
                 expect(screen.getByText('Taking you to the school')).toBeInTheDocument();
 
-                // Check success icon container classes
-                const iconContainer = document.querySelector('.bg-green-600\\/20');
+                // Check success icon container exists (uses dark: variant classes)
+                const iconContainer = document.querySelector('.rounded-full.mb-6');
                 expect(iconContainer).toBeInTheDocument();
 
-                // Check loading spinner in success state
-                const successSpinner = document.querySelector('.border-gray-400');
+                // Check loading spinner in success state (uses dark: variant classes)
+                const successSpinner = document.querySelector('.animate-spin');
                 expect(successSpinner).toBeInTheDocument();
             });
         });
@@ -521,13 +522,13 @@ describe('JoinCohortPage', () => {
                 expect(screen.getByText('Failed to join cohort')).toBeInTheDocument();
                 expect(screen.getByRole('button', { name: 'Back to School' })).toBeInTheDocument();
 
-                // Check error icon container classes
-                const iconContainer = document.querySelector('.bg-red-600\\/20');
+                // Check error icon container exists (uses dark: variant classes)
+                const iconContainer = document.querySelector('.rounded-full.mb-6');
                 expect(iconContainer).toBeInTheDocument();
 
-                // Check button classes
+                // Check button classes (uses dark: variant classes)
                 const button = screen.getByRole('button', { name: 'Back to School' });
-                expect(button).toHaveClass('px-6', 'py-3', 'bg-white', 'text-black', 'text-sm', 'font-medium', 'rounded-full', 'hover:opacity-90', 'transition-opacity', 'inline-block', 'cursor-pointer');
+                expect(button).toHaveClass('px-6', 'py-3', 'text-sm', 'font-medium', 'rounded-full', 'hover:opacity-90', 'transition-opacity', 'cursor-pointer');
             });
 
             expect(consoleSpy).toHaveBeenCalledWith('Error joining cohort:', expect.any(Error));

@@ -1182,7 +1182,7 @@ describe('CreateCourse Page', () => {
         // The actual duplication logic would be tested when the CourseModuleList component calls it
     });
 
-    it('should handle dark mode detection', async () => {
+    it('should render correctly with theme support', async () => {
         setupSuccessfulFetches();
 
         await act(async () => {
@@ -1193,9 +1193,9 @@ describe('CreateCourse Page', () => {
             expect(screen.getByText('Test Course')).toBeInTheDocument();
         });
 
-        // The component should set dark mode to true by default based on the useEffect
-        // This is mainly testing the useEffect that sets dark mode
-        expect(document.documentElement.classList.contains('dark')).toBeTruthy();
+        // Component renders correctly - theme is managed by system/user preference
+        // The component itself doesn't set dark mode anymore
+        expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
 
     it('should handle cohort fetch error', async () => {

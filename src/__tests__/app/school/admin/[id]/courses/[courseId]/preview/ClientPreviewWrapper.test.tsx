@@ -4,20 +4,14 @@ import '@testing-library/jest-dom';
 import ClientPreviewWrapper from '@/app/school/admin/[id]/courses/[courseId]/preview/ClientPreviewWrapper';
 import { Module } from '@/types/course';
 
-// Mock useThemePreference hook
-jest.mock('@/lib/hooks/useThemePreference', () => ({
-    useThemePreference: () => ({ isDarkMode: true })
-}));
-
 // Mock the LearnerCourseView component
 jest.mock('@/components/LearnerCourseView', () => {
-    return jest.fn(({ modules, completedTaskIds, completedQuestionIds, isTestMode, isDarkMode }) => (
+    return jest.fn(({ modules, completedTaskIds, completedQuestionIds, isTestMode }) => (
         <div data-testid="learner-course-view">
             <div data-testid="modules-count">{modules.length}</div>
             <div data-testid="completed-task-ids">{JSON.stringify(completedTaskIds)}</div>
             <div data-testid="completed-question-ids">{JSON.stringify(completedQuestionIds)}</div>
             <div data-testid="is-test-mode">{isTestMode.toString()}</div>
-            <div data-testid="is-dark-mode">{isDarkMode?.toString()}</div>
             {modules.map((module: Module) => (
                 <div key={module.id} data-testid={`module-${module.id}`}>
                     {module.title}
@@ -55,8 +49,7 @@ describe('ClientPreviewWrapper', () => {
                     modules: testModules,
                     completedTaskIds: {},
                     completedQuestionIds: {},
-                    isTestMode: true,
-                    isDarkMode: true
+                    isTestMode: true
                 },
                 undefined
             );
@@ -147,15 +140,15 @@ describe('ClientPreviewWrapper', () => {
             );
         });
 
-        it('should pass exactly five props to LearnerCourseView', () => {
+        it('should pass exactly four props to LearnerCourseView', () => {
             const testModules: Module[] = [{ id: 'test', title: 'Test', position: 1, items: [] }];
 
             render(<ClientPreviewWrapper modules={testModules} />);
 
             const [props] = mockLearnerCourseView.mock.calls[0];
-            expect(Object.keys(props)).toHaveLength(5);
+            expect(Object.keys(props)).toHaveLength(4);
             expect(Object.keys(props)).toEqual(
-                expect.arrayContaining(['modules', 'completedTaskIds', 'completedQuestionIds', 'isTestMode', 'isDarkMode'])
+                expect.arrayContaining(['modules', 'completedTaskIds', 'completedQuestionIds', 'isTestMode'])
             );
         });
     });
