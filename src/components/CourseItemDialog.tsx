@@ -77,6 +77,7 @@ interface CourseItemDialogProps {
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
     courseId?: string; // Add courseId prop for learning materials
+    updateModuleItem?: (moduleId: string, itemId: string, updates: Partial<ModuleItem>) => void;
 }
 
 const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
@@ -101,6 +102,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     focusEditor,
     schoolId,
     courseId,
+    updateModuleItem,
 }) => {
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
@@ -1067,12 +1069,18 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 taskId={activeItem.id}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                 onUnpublishSuccess = {(updatedData: TaskData) => {
-                                    if (updatedData) {
-                                        // Only the following items would change after unpublishing a task. Hence following the same
+                                    if (updatedData && activeModuleId && updateModuleItem) {
+                                        // Update activeItem reference
                                         activeItem.status = updatedData.status
                                         activeItem.scheduled_publish_at = updatedData.scheduled_publish_at
+
+                                        // Update the parent module list directly with the new status
+                                        updateModuleItem(activeModuleId, activeItem.id, {
+                                            status: updatedData.status,
+                                            scheduled_publish_at: updatedData.scheduled_publish_at
+                                        });
                                     }
-                                    
+
                                     navigateBackWindowHistoryIfDialogWasOpen()
                                     displayToast("Task Unpublished", "Your learning material has been unpublished", "⛔");
                                 }}
@@ -1243,12 +1251,18 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     onSetShowPublishConfirmation(false);
                                 }}
                                 onUnPublishSuccess={(taskData: TaskData) => {
-                                    if (taskData) {
-                                        // Only the following items would change after unpublishing a task. Hence following the same
+                                    if (taskData && activeModuleId && updateModuleItem) {
+                                        // Update activeItem reference
                                         activeItem.status = taskData.status
                                         activeItem.scheduled_publish_at = taskData.scheduled_publish_at
+
+                                        // Update the parent module list directly with the new status
+                                        updateModuleItem(activeModuleId, activeItem.id, {
+                                            status: taskData.status,
+                                            scheduled_publish_at: taskData.scheduled_publish_at
+                                        });
                                     }
-                                    
+
                                     navigateBackWindowHistoryIfDialogWasOpen()
                                     displayToast("Task Unpublished", "Your learning material has been unpublished", "⛔");
                                 }}

@@ -97,6 +97,40 @@ export const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
     return null;
 };
 
+/**
+ * Sanitizes question data from the backend by removing position properties.
+ * The backend includes position properties in blocks, but the frontend editor doesn't use them.
+ * This ensures clean comparison between original and edited data.
+ */
+const sanitizeQuestionDataFromBackend = (questions: QuizQuestion[]): QuizQuestion[] => {
+    return questions.map(question => {
+        // Sanitize content blocks
+        const sanitizedContent = question.content.map((block: any) => {
+            const { position, ...blockWithoutPosition } = block;
+            return blockWithoutPosition;
+        });
+
+        // Sanitize correctAnswer blocks if they exist
+        let sanitizedCorrectAnswer = question.config.correctAnswer;
+        if (sanitizedCorrectAnswer && Array.isArray(sanitizedCorrectAnswer)) {
+            sanitizedCorrectAnswer = sanitizedCorrectAnswer.map((block: any) => {
+                const { position, ...blockWithoutPosition } = block;
+                return blockWithoutPosition;
+            });
+        }
+
+        // Return sanitized question
+        return {
+            ...question,
+            content: sanitizedContent,
+            config: {
+                ...question.config,
+                correctAnswer: sanitizedCorrectAnswer
+            }
+        };
+    });
+};
+
 const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     initialQuestions = [], // Not used anymore - kept for backward compatibility
     onChange,
@@ -366,8 +400,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                             }, 0);
                         }
 
-                        // Store the original data for cancel operation
-                        originalQuestionsRef.current = JSON.parse(JSON.stringify(updatedQuestions));
+                        // Store the original data for cancel operation (sanitized)
+                        const sanitizedQuestions = sanitizeQuestionDataFromBackend(updatedQuestions);
+                        originalQuestionsRef.current = JSON.parse(JSON.stringify(sanitizedQuestions));
                     }
 
                     // Mark that we've fetched the data - do this regardless of whether questions were found
@@ -1382,10 +1417,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 return true;
             }
 
+            // Sanitize current questions to remove position properties added by the editor
+            const sanitizedCurrentQuestions = sanitizeQuestionDataFromBackend(questions);
+
             // Convert both to JSON strings for deep comparison
-            const currentQuestionsStr = JSON.stringify(questions);
+            const currentQuestionsStr = JSON.stringify(sanitizedCurrentQuestions);
             const originalQuestionsStr = JSON.stringify(originalQuestionsRef.current);
-            
+
             console.log("currentQuestionsStr", currentQuestionsStr)
             console.log("originalQuestionsStr", originalQuestionsStr)
 
