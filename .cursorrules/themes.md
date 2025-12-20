@@ -213,6 +213,94 @@ Use them via Tailwind: `bg-background`, `text-foreground`, `border-border`, etc.
 - [ ] Test theme switching without page reload
 - [ ] Verify both themes match original visual appearance
 
+### Cases Where `isDarkMode` MUST Be Kept
+
+Not everything can be converted to `dark:` variants. Keep `isDarkMode` for:
+
+1. **Iframe HTML content generation** - When generating HTML strings for iframes (e.g., SQL preview tables, loading indicators), CSS must be injected into the template:
+
+   ```tsx
+   // ✅ Must use isDarkMode - generating HTML for iframe
+   const htmlContent = `
+     <style>
+       body { background-color: ${isDarkMode ? "#1a1a1a" : "#ffffff"}; }
+     </style>
+   `;
+   ```
+
+2. **Third-party library theme props** - Libraries that require theme strings:
+
+   ```tsx
+   // ✅ Must use isDarkMode - library requires string prop
+   <Editor theme={isDarkMode ? "vs-dark" : "vs"} />
+   <RenderConfig theme={isDarkMode ? "dark" : "light"}>
+   ```
+
+3. **CSS variables set via inline styles**:
+
+   ```tsx
+   // ✅ Must use isDarkMode - setting CSS variable dynamically
+   style={{ ['--preview-bg' as any]: isDarkMode ? '#111' : '#fff' }}
+   ```
+
+### CSS Selector Migration Pattern
+
+When removing class-based theme toggles (like `quiz-dark`/`quiz-light`), update CSS selectors:
+
+```css
+/* Before: Class-based toggle */
+.container.theme-light {
+  --bn-colors-editor-background: #ffffff;
+}
+
+/* After: Use html:not(.dark) selector */
+html:not(.dark) .container {
+  --bn-colors-editor-background: #ffffff;
+}
+```
+
+This works because Tailwind's dark mode adds `.dark` to `<html>`.
+
+### String Props Can Use `dark:` Variants
+
+Props passed to child components as className strings can include `dark:` variants:
+
+```tsx
+// ✅ Works! dark: variants in string props
+<Button
+  bgColor="bg-gray-200 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-700"
+  textColor="text-gray-700 dark:text-white"
+/>
+```
+
+### Complete Cleanup Workflow
+
+After converting styling, check if `isDarkMode` is still used:
+
+```bash
+# Search for remaining usages
+grep -n "isDarkMode" src/components/MyComponent.tsx
+```
+
+If `isDarkMode` is no longer used:
+
+1. Remove the hook call: `const { isDarkMode } = useThemePreference();`
+2. Remove the import: `import { useThemePreference } from "@/lib/hooks/useThemePreference";`
+
+If `isDarkMode` is still needed (iframe content, library props), keep both.
+
+### Border Transparency Pattern
+
+When a border should only appear in light mode:
+
+```tsx
+// ❌ Verbose approach
+className={isDarkMode ? 'border-transparent' : 'border-gray-200'}
+
+// ✅ Use dark:border-transparent
+className="border border-gray-200 dark:border-transparent"
+```
+
 ---
 
 ## Common Pitfalls & Solutions
@@ -467,18 +555,41 @@ Some libraries require a theme prop:
 ```
 Need to style based on theme?
 │
-├─ Is it static CSS styling?
+├─ Is it static CSS styling (className)?
 │  └─ YES → Use `dark:` variants ✅
 │
-├─ Is it for a third-party library (BlockNote, Monaco)?
+├─ Is it for a third-party library (BlockNote, Monaco, RenderConfig)?
 │  └─ YES → Pass `isDarkMode` from useThemePreference() ✅
 │
-├─ Is it a JavaScript color calculation?
+├─ Is it generating HTML for an iframe (SQL preview, loading indicators)?
+│  └─ YES → Use `isDarkMode` to inject CSS values into template strings ✅
+│
+├─ Is it a CSS variable set via inline style?
+│  └─ YES → Use `isDarkMode` for the style object value ✅
+│
+├─ Is it a JavaScript color calculation (canvas, charts)?
 │  └─ YES → Use MutationObserver pattern to watch .dark class ✅
 │
 ├─ Is it an image that changes per theme?
 │  └─ YES → Use `dark:hidden` / `hidden dark:block` pattern ✅
 │
+├─ Is it a className string passed as prop to child component?
+│  └─ YES → Include `dark:` variants in the string ✅
+│
+├─ Is it a CSS selector in <style jsx global>?
+│  └─ YES → Use `html:not(.dark)` or `.dark` selectors ✅
+│
 └─ None of the above?
    └─ Default to `dark:` variants ✅
 ```
+
+### Quick Conversion Examples
+
+| Before                                                    | After                                            |
+| --------------------------------------------------------- | ------------------------------------------------ |
+| `${isDarkMode ? 'bg-black' : 'bg-white'}`                 | `bg-white dark:bg-black`                         |
+| `${isDarkMode ? 'text-white' : 'text-gray-900'}`          | `text-gray-900 dark:text-white`                  |
+| `${isDarkMode ? 'border-[#222]' : 'border-gray-200'}`     | `border-gray-200 dark:border-[#222]`             |
+| `${isDarkMode ? 'hover:bg-[#333]' : 'hover:bg-gray-100'}` | `hover:bg-gray-100 dark:hover:bg-[#333]`         |
+| `${isDarkMode ? '' : 'border border-gray-200'}`           | `border border-gray-200 dark:border-transparent` |
+| `.container.theme-light { ... }`                          | `html:not(.dark) .container { ... }`             |
