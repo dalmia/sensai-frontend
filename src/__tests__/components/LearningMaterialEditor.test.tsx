@@ -1294,7 +1294,8 @@ describe('LearningMaterialEditor Component', () => {
             });
 
             const editor = screen.getByTestId('mock-blocknote-editor');
-            expect(editor).toHaveAttribute('data-dark-mode', 'false');
+            // isDarkMode is no longer passed to BlockNoteEditor, verify editor exists
+            expect(editor).toBeInTheDocument();
             expect(editor).toHaveAttribute('data-read-only', 'false');
         });
 
@@ -1707,7 +1708,8 @@ describe('LearningMaterialEditor Component', () => {
             // Should still work correctly
             expect(screen.getByTestId('mock-blocknote-editor')).toBeInTheDocument();
             const editor = screen.getByTestId('mock-blocknote-editor');
-            expect(editor).toHaveAttribute('data-dark-mode', 'true');
+            // isDarkMode is no longer passed to BlockNoteEditor, verify editor exists
+            expect(editor).toBeInTheDocument();
             expect(editor).toHaveAttribute('data-read-only', 'false');
         });
 

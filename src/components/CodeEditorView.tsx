@@ -3,6 +3,7 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import type { editor as MonacoEditor, IDisposable, IKeyboardEvent } from 'monaco-editor';
 import { Play, Send, Terminal, ArrowLeft, X } from 'lucide-react';
 import Toast from './Toast';
+import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 interface CodeEditorViewProps {
     initialCode?: Record<string, string>;
@@ -11,7 +12,6 @@ interface CodeEditorViewProps {
     onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
     disableCopyPaste?: boolean;
     onCodeChange?: (code: Record<string, string>) => void;
-    isDarkMode?: boolean;
 }
 
 // Add interface for the ref methods
@@ -29,7 +29,6 @@ export interface CodePreviewProps {
     onClear?: () => void;
     onBack?: () => void;
     isMobileView?: boolean;
-    isDarkMode?: boolean;
 }
 
 export const CodePreview: React.FC<CodePreviewProps> = ({
@@ -41,8 +40,8 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
     onClear,
     onBack,
     isMobileView = false,
-    isDarkMode = true,
 }) => {
+    const { isDarkMode } = useThemePreference();
     const [isIframeLoading, setIsIframeLoading] = useState(true);
 
     // Reset loading state when new content is provided
@@ -121,9 +120,9 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
 
     return (
         <div
-            className={`flex-1 flex flex-col overflow-hidden h-full ${isMobileView ? 'mobile-preview-container' : ''} ${isDarkMode ? 'bg-[#111111] text-white' : 'bg-white text-slate-900'}`}
+            className={`flex-1 flex flex-col overflow-hidden h-full ${isMobileView ? 'mobile-preview-container' : ''} bg-white dark:bg-[#111111] text-slate-900 dark:text-white`}
         >
-            <div className={`px-4 font-medium flex justify-between items-center ${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-900 border-b border-gray-200'}`}>
+            <div className="px-4 font-medium flex justify-between items-center bg-gray-100 dark:bg-[#222222] text-gray-900 dark:text-white border-b border-gray-200 dark:border-transparent">
                 <div className="flex items-center">
                     <span className="text-sm py-2">{isWebPreview ? 'Preview' : 'Output'}</span>
                 </div>
@@ -131,7 +130,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                     {(!isWebPreview && output && onClear) && (
                         <button
                             onClick={onClear}
-                            className={`hidden md:block text-sm px-2 py-1 rounded transition-colors cursor-pointer ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-[#333333]' : 'text-gray-600 hover:text-black hover:bg-gray-200'}`}
+                            className="hidden md:block text-sm px-2 py-1 rounded transition-colors cursor-pointer text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#333333]"
                             aria-label="Clear output"
                         >
                             Clear
@@ -140,7 +139,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                     {isMobileView && onBack && (
                         <button
                             onClick={onBack}
-                            className={`text-sm p-1 rounded transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-[#333333]' : 'text-gray-600 hover:text-black hover:bg-gray-200'}`}
+                            className="text-sm p-1 rounded transition-colors text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#333333]"
                             aria-label="Close preview"
                         >
                             <X size={16} />
@@ -151,33 +150,33 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
             <div className="flex-1 overflow-auto">
                 {isRunning ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className={`animate-spin rounded-full h-6 w-6 border-t-2 border-t-transparent ${isDarkMode ? 'border-white' : 'border-slate-900'}`}></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-t-transparent border-slate-900 dark:border-white"></div>
                     </div>
                 ) : !previewContent && !output ? (
-                    <div className={`flex flex-col items-center justify-center h-full preview-placeholder ${isDarkMode ? 'bg-[#1A1A1A] text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                    <div className="flex flex-col items-center justify-center h-full preview-placeholder bg-gray-50 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-300">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-50 mb-4">
                             <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <p>Run your code to see the preview here</p>
-                        <p className={`text-xs mt-2 text-center px-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>For HTML/CSS/React, you will see a live preview. For other languages, you will see the console output.</p>
+                        <p className="text-xs mt-2 text-center px-4 text-gray-500 dark:text-gray-400">For HTML/CSS/React, you will see a live preview. For other languages, you will see the console output.</p>
                     </div>
                 ) : isWebPreview ? (
                     <div className="relative w-full h-full">
                         {isIframeLoading && (
-                            <div className={`absolute inset-0 flex items-center justify-center z-10 ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}>
-                                <div className={`animate-spin rounded-full h-10 w-10 border-4 ${isDarkMode ? 'border-[#2a2a2a] border-t-[#a0a0a0]' : 'border-[#f3f3f3] border-t-[#3498db]'}`}></div>
+                            <div className="absolute inset-0 flex items-center justify-center z-10 bg-white dark:bg-[#111111]">
+                                <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#f3f3f3] dark:border-[#2a2a2a] border-t-[#3498db] dark:border-t-[#a0a0a0]"></div>
                             </div>
                         )}
                         <iframe
                             srcDoc={enhancedPreviewContent}
                             title="Code Preview"
-                            className={`w-full h-full ${isDarkMode ? 'bg-white' : 'bg-white'}`}
+                            className="w-full h-full bg-white"
                             sandbox="allow-scripts"
                             onLoad={() => setIsIframeLoading(false)}
                         />
                     </div>
                 ) : (
-                    <div className={`p-4 font-mono text-sm terminal-output ${isDarkMode ? 'text-white bg-[#1A1A1A]' : 'text-slate-900 bg-white border-t border-gray-200'}`}>
+                    <div className="p-4 font-mono text-sm terminal-output text-slate-900 dark:text-white bg-white dark:bg-[#1A1A1A] border-t border-gray-200 dark:border-transparent">
                         <div
                             className="whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{ __html: formatConsoleOutput(output) }}
@@ -419,8 +418,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     onCodeRun,
     disableCopyPaste = false,
     onCodeChange,
-    isDarkMode = true,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
     // Check if React is in the original languages array
     const hasReact = languages.some(lang =>
         lang.toLowerCase() === 'react'
@@ -1324,7 +1323,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
             {/* Mobile preview overlay when active */}
             {isMobileView && showMobilePreview && (previewContent || output) ? (
-                <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-[#111111]' : 'bg-white'}`}>
+                <div className="fixed inset-0 z-50 bg-white dark:bg-[#111111]">
                     <CodePreview
                         isRunning={isRunning}
                         previewContent={previewContent}
@@ -1333,14 +1332,13 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                         executionTime={executionTime}
                         onBack={handleMobileBackClick}
                         isMobileView={true}
-                        isDarkMode={isDarkMode}
                     />
                 </div>
             ) : null}
 
             {/* Language tabs */}
             {normalizedLanguages.length > 0 && !isMobileView && (
-                <div className={`flex items-center overflow-x-auto hide-scrollbar ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-gray-100 border-b border-gray-200'}`}>
+                <div className="flex items-center overflow-x-auto hide-scrollbar bg-gray-100 dark:bg-[#1D1D1D] border-b border-gray-200 dark:border-transparent">
                     {/* Show all language tabs */}
                     {normalizedLanguages.map((lang) => (
                         <button
@@ -1349,8 +1347,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 setActiveLanguage(lang);
                             }}
                             className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${activeLanguage === lang
-                                ? (isDarkMode ? 'bg-[#2D2D2D] text-white border-b-2 border-white' : 'bg-white text-black border-b-2 border-black')
-                                : (isDarkMode ? 'text-gray-400 hover:text-white hover:bg-[#222222]' : 'text-gray-600 hover:text-black hover:bg-gray-200')
+                                ? 'bg-white dark:bg-[#2D2D2D] text-black dark:text-white border-b-2 border-black dark:border-white'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#222222]'
                                 }`}
                         >
                             {LANGUAGE_DISPLAY_NAMES[lang] || lang}
@@ -1361,7 +1359,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
             {/* Mobile language tabs - more compact */}
             {normalizedLanguages.length > 0 && isMobileView && (
-                <div className={`flex items-center overflow-x-auto hide-scrollbar ${isDarkMode ? 'bg-[#1D1D1D]' : 'bg-gray-100 border-b border-gray-200'}`}>
+                <div className="flex items-center overflow-x-auto hide-scrollbar bg-gray-100 dark:bg-[#1D1D1D] border-b border-gray-200 dark:border-transparent">
                     {/* Show all language tabs */}
                     {normalizedLanguages.map((lang) => (
                         <button
@@ -1370,8 +1368,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 setActiveLanguage(lang);
                             }}
                             className={`px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${activeLanguage === lang
-                                ? (isDarkMode ? 'bg-[#2D2D2D] text-white border-b-2 border-white' : 'bg-white text-black border-b-2 border-black')
-                                : (isDarkMode ? 'text-gray-400 hover:text-white hover:bg-[#222222]' : 'text-gray-600 hover:text-black hover:bg-gray-200')
+                                ? 'bg-white dark:bg-[#2D2D2D] text-black dark:text-white border-b-2 border-black dark:border-white'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#222222]'
                                 }`}
                         >
                             {LANGUAGE_DISPLAY_NAMES[lang] || lang}
@@ -1406,13 +1404,13 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
                 {/* Input panel (conditionally shown) */}
                 {showInputPanel && (
-                    <div className={`flex-none h-1/3 border-t flex flex-col ${isDarkMode ? 'border-[#444444]' : 'border-gray-200'}`}>
-                        <div className={`px-4 py-2 text-sm font-medium flex justify-between items-center ${inputError ? (isDarkMode ? 'bg-red-800 text-white' : 'bg-rose-100 text-rose-900') : (isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-900')}`}>
+                    <div className="flex-none h-1/3 border-t flex flex-col border-gray-200 dark:border-[#444444]">
+                        <div className={`px-4 py-2 text-sm font-medium flex justify-between items-center ${inputError ? 'bg-rose-100 dark:bg-red-800 text-rose-900 dark:text-white' : 'bg-gray-100 dark:bg-[#222222] text-gray-900 dark:text-white'}`}>
                             <span>{inputError ? 'Input Required' : 'Add inputs for testing'}</span>
                         </div>
                         <textarea
                             ref={inputRef}
-                            className={`flex-1 p-4 resize-none font-mono text-sm ${isDarkMode ? 'bg-[#1E1E1E] text-white' : 'bg-white text-slate-900'} ${inputError ? 'border border-red-500' : (isDarkMode ? '' : 'border border-gray-200')} `}
+                            className={`flex-1 p-4 resize-none font-mono text-sm bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-white ${inputError ? 'border border-red-500' : 'border border-gray-200 dark:border-transparent'}`}
                             value={stdInput}
                             onChange={(e) => {
                                 setStdInput(e.target.value);
@@ -1425,7 +1423,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
             </div>
 
             {/* Action buttons */}
-            <div className={`flex items-center justify-between p-4 border-t ${isDarkMode ? 'border-[#222222]' : 'border-gray-200 bg-white'}`}>
+            <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-[#222222] bg-white dark:bg-transparent">
                 <div>
                     <button
                         onClick={handleCodeRun}
@@ -1460,10 +1458,10 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                                 }, 100);
                             }}
                             className={`flex items-center space-x-2 rounded-full px-4 py-2 cursor-pointer ${inputError
-                                ? (isDarkMode ? 'bg-red-700 text-white' : 'bg-rose-500 text-white')
+                                ? 'bg-rose-500 dark:bg-red-700 text-white'
                                 : showInputPanel
-                                    ? (isDarkMode ? 'bg-[#444444] text-white' : 'bg-gray-200 text-gray-900')
-                                    : (isDarkMode ? 'bg-[#333333] hover:bg-[#444444] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200')
+                                    ? 'bg-gray-200 dark:bg-[#444444] text-gray-900 dark:text-white'
+                                    : 'bg-gray-100 dark:bg-[#333333] hover:bg-gray-200 dark:hover:bg-[#444444] text-gray-900 dark:text-white border border-gray-200 dark:border-transparent'
                                 }`}
                         >
                             <Terminal size={16} />
@@ -1475,7 +1473,7 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
                 <div>
                     <button
                         onClick={handleSubmit}
-                        className={`flex items-center space-x-2 rounded-full px-4 py-2 cursor-pointer ${isDarkMode ? 'bg-[#222222] hover:bg-[#2e2e2e] text-white' : 'bg-white hover:bg-gray-50 text-black border border-gray-200 shadow-sm'}`}
+                        className="flex items-center space-x-2 rounded-full px-4 py-2 cursor-pointer bg-white dark:bg-[#222222] hover:bg-gray-50 dark:hover:bg-[#2e2e2e] text-black dark:text-white border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none"
                     >
                         <Send size={16} />
                         <span>Submit</span>

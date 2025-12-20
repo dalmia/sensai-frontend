@@ -27,17 +27,17 @@ export default function EvaluationCriteriaEditor({
     ) => {
 
         return (
-            <div className="flex items-center justify-between py-2 px-4 rounded-md bg-[#2A2A2A]">
+            <div className="flex items-center justify-between py-2 px-4 rounded-md bg-gray-200 dark:bg-[#2A2A2A]">
                 <div className="flex items-center">
-                    <span className="text-white text-sm font-light">{label}</span>
+                    <span className="text-gray-900 dark:text-white text-sm font-light">{label}</span>
                 </div>
                 <div className="flex items-center">
                     <input
                         type="number"
                         min={min}
                         max={max}
-                        className={`w-20 text-white text-xs rounded p-1 outline-none text-center ${readOnly ? 'bg-transparent' : 'bg-[#333]'}`}
-                        style={{ caretColor: 'white' }}
+                        className={`w-20 text-gray-900 dark:text-white text-xs rounded p-1 outline-none text-center ${readOnly ? 'bg-transparent' : 'bg-gray-100 dark:bg-[#333]'}`}
+                        style={{ caretColor: 'currentColor' }}
                         value={value}
                         onChange={(e) => onScoreChange(field, Number(e.target.value))}
                         disabled={readOnly || isLoading}
@@ -49,10 +49,10 @@ export default function EvaluationCriteriaEditor({
 
     return (
         <div className="px-16 space-y-6">
-            <div className="bg-[#2F2F2F] rounded-lg shadow-xl p-2">
-                <div className="bg-[#1F1F1F] shadow-xl p-6 mb-2">
+            <div className="bg-gray-100 dark:bg-[#2F2F2F] rounded-lg shadow-xl p-2">
+                <div className="bg-white dark:bg-[#1F1F1F] shadow-xl p-6 mb-2 rounded-t-lg">
                     <div className="mb-6">
-                        <h3 className="text-white text-lg font-normal">Evaluation criteria</h3>
+                        <h3 className="text-gray-900 dark:text-white text-lg font-normal">Evaluation criteria</h3>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
@@ -81,8 +81,8 @@ export default function EvaluationCriteriaEditor({
                         </div>
 
                         <div className="flex flex-col justify-center">
-                            <div className="bg-[#2F2F2F] rounded-lg p-5">
-                                <div className="space-y-3 text-gray-300 text-sm font-light leading-relaxed">
+                            <div className="bg-gray-200 dark:bg-[#2F2F2F] rounded-lg p-5">
+                                <div className="space-y-3 text-gray-600 dark:text-gray-300 text-sm font-light leading-relaxed">
                                     <p>
                                         Set the scoring range and pass mark. The AI evaluates submissions and assigns a score. If the score doesn&apos;t meet the pass mark, students resubmit until it does.
                                     </p>

@@ -357,19 +357,19 @@ describe('ScorecardPickerDialog Component', () => {
                 />
             );
 
-            // Should start on "Your Scorecards" tab
-            expect(screen.getByText('Your Scorecards')).toHaveClass('text-white border-b-2 border-white');
-            expect(screen.getByText('Templates')).toHaveClass('text-gray-400');
+            // Should start on "Your Scorecards" tab (uses dark mode variant classes)
+            expect(screen.getByText('Your Scorecards')).toHaveClass('border-b-2');
+            expect(screen.getByText('Templates')).not.toHaveClass('border-b-2');
 
             // Click Templates tab
             fireEvent.click(screen.getByText('Templates'));
-            expect(screen.getByText('Templates')).toHaveClass('text-white border-b-2 border-white');
-            expect(screen.getByText('Your Scorecards')).toHaveClass('text-gray-400');
+            expect(screen.getByText('Templates')).toHaveClass('border-b-2');
+            expect(screen.getByText('Your Scorecards')).not.toHaveClass('border-b-2');
 
             // Click back to Your Scorecards
             fireEvent.click(screen.getByText('Your Scorecards'));
-            expect(screen.getByText('Your Scorecards')).toHaveClass('text-white border-b-2 border-white');
-            expect(screen.getByText('Templates')).toHaveClass('text-gray-400');
+            expect(screen.getByText('Your Scorecards')).toHaveClass('border-b-2');
+            expect(screen.getByText('Templates')).not.toHaveClass('border-b-2');
         });
 
         it('should start with templates tab when no school scorecards provided', () => {

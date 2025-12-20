@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useCallback } from "react";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 import { BookOpen } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import LearningMaterialLinker from "./LearningMaterialLinker";
 import { extractTextFromBlocks } from "@/lib/utils/blockUtils";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface KnowledgeBaseEditorProps {
     knowledgeBaseBlocks: any[];
@@ -26,7 +26,6 @@ const KnowledgeBaseEditor = ({
     onLinkedMaterialsChange,
     className = ""
 }: KnowledgeBaseEditorProps) => {
-    const { isDarkMode } = useThemePreference();
     // Reference to the knowledge base editor
     const knowledgeBaseEditorRef = useRef<any>(null);
 
@@ -45,26 +44,24 @@ const KnowledgeBaseEditor = ({
     };
 
     return (
-        <div className={`w-full h-full flex flex-row overflow-y-auto px-16 space-y-6 ${className}`}>
+        <div className={`w-full h-full bg-white dark:bg-transparent flex flex-row overflow-y-auto px-16 space-y-6 ${className}`}>
             {/* Left column with callout (20-30% width) */}
             <div className="w-[20%]">
-                <div className="bg-[#222222] p-3 rounded-md">
-                    <BookOpen size={16} className="text-amber-400 mb-2" />
-                    <div>
-                        <p className="text-gray-400 text-xs leading-tight mb-2">
-                            These resources are <span className="font-bold text-white">optional</span> and will <span className="font-bold text-white">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
+                <div className="p-3 rounded-md bg-gray-50 text-gray-700 dark:bg-[#1F1F1F] dark:text-gray-200">
+                    <BookOpen size={16} className="mb-2 text-amber-500 dark:text-amber-300" />
+                    <p className="text-xs leading-tight mb-2">
+                        These resources are <span className="font-semibold">optional</span> and will <span className="font-semibold">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
                         </p>
-                    </div>
                 </div>
             </div>
 
             {/* Right column with linker and editor (70-80% width) */}
             <div className="w-[80%] flex flex-col">
                 {readOnly && !hasKnowledgeBaseContent() ? (
-                    <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-[#1A1A1A] h-full">
+                    <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-gray-50 text-gray-800 dark:bg-[#1A1A1A] dark:text-white h-full">
                         <div className="max-w-md">
-                            <h3 className="text-xl font-light text-white mb-3">No knowledge base found</h3>
-                            <p className="text-gray-400 mb-6">
+                            <h3 className="text-xl font-light mb-3">No knowledge base found</h3>
+                            <p className="text-gray-600 dark:text-gray-400 mb-6">
                                 This {className.includes('assignment') ? 'assignment' : 'question'} does not have any knowledge base attached to it
                             </p>
                         </div>
@@ -81,7 +78,7 @@ const KnowledgeBaseEditor = ({
                             />
                         </div>
 
-                        <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden relative z-0"
+                        <div className="w-full flex-1 bg-white dark:bg-[#1A1A1A] rounded-md overflow-hidden relative z-0"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 // Ensure the knowledge base editor keeps focus
@@ -101,7 +98,6 @@ const KnowledgeBaseEditor = ({
                             <BlockNoteEditor
                                 initialContent={knowledgeBaseBlocks}
                                 onChange={onKnowledgeBaseChange}
-                                isDarkMode={isDarkMode}
                                 readOnly={readOnly}
                                 onEditorReady={setKnowledgeBaseEditorInstance}
                                 className="knowledge-base-editor"

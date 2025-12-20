@@ -74,7 +74,7 @@ const PublishConfirmationDialog = ({
                         }}
                         className="mr-2 h-4 w-4 cursor-pointer"
                     />
-                    <label htmlFor="schedule-for-later" className="text-white cursor-pointer flex items-center">
+                    <label htmlFor="schedule-for-later" className="text-gray-700 dark:text-white cursor-pointer flex items-center">
                         Schedule time to publish
                     </label>
                 </div>
@@ -89,9 +89,9 @@ const PublishConfirmationDialog = ({
                         dateFormat="MMMM d, yyyy h:mm aa"
                         timeCaption="Time"
                         minDate={new Date()} // Can't schedule in the past
-                        className="bg-[#333333] rounded-md p-2 px-4 w-full text-white cursor-pointer"
+                        className="bg-gray-100 dark:bg-[#333333] rounded-md p-2 px-4 w-full text-gray-900 dark:text-white cursor-pointer border border-gray-200 dark:border-transparent"
                         wrapperClassName="w-full"
-                        calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
+                        calendarClassName="publish-datepicker-calendar"
                     />
                 )}
             </div>

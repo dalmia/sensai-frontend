@@ -88,7 +88,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     onFileDownload,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const { isDarkMode } = useThemePreference();
 
     // Add ref for CodeEditorView
     const codeEditorRef = useRef<CodeEditorViewHandle>(null);
@@ -550,7 +549,6 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
                     disableCopyPaste={disableCopyPaste}
-                    isDarkMode={isDarkMode}
                     onCodeChange={(updatedCode) => {
                         setTimeout(() => {
                             setCodeContent(updatedCode);

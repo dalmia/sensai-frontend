@@ -91,7 +91,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     const renderDropdownSelectable = () => {
         const content = (
             <div
-                className={`relative w-5/6 py-1.5 px-1.5 ${disabled ? 'opacity-70 cursor-default' : 'cursor-pointer'} ${showDropdown ? 'bg-[#2A2A2A] rounded-t-md' : `${!disabled ? 'hover:bg-[#2A2A2A]' : ''} rounded-md`}`}
+                className={`relative w-5/6 py-1.5 px-1.5 ${disabled ? 'opacity-70 cursor-default' : 'cursor-pointer'} ${showDropdown ? 'bg-gray-200 dark:bg-[#2A2A2A] rounded-t-md' : `${!disabled ? 'hover:bg-gray-200 dark:hover:bg-[#2A2A2A]' : ''} rounded-md`}`}
                 ref={dropdownRef}
                 onClick={toggleDropdown}
             >
@@ -123,24 +123,24 @@ const Dropdown: React.FC<DropdownProps> = ({
                             ))}
                         </div>
                     ) : (
-                        <div className="text-gray-400">{placeholder}</div>
+                        <div className="text-gray-500 dark:text-gray-400">{placeholder}</div>
                     )}
                 </div>
 
                 {showDropdown && !disabled && (
-                    <div className="w-full absolute top-full left-0 z-50 w-64 bg-[#1A1A1A] border-t border-[#3A3A3A] rounded-b-lg shadow-lg overflow-visible">
+                    <div className="w-full absolute top-full left-0 z-50 w-64 bg-gray-100 border-t border-gray-300 dark:bg-[#1A1A1A] dark:border-[#3A3A3A] rounded-b-lg shadow-lg overflow-visible">
                         <div className="p-3">
                             <div className="space-y-0">
                                 {options.map((option) => (
                                     <div key={option.value} className="mb-2 relative">
                                         {/* Option content */}
                                         <div
-                                            className={`flex items-center px-2 py-1.5 rounded-md hover:bg-[#2A2A2A] cursor-pointer transition-colors ${isSelected(option) && multiselect ? 'bg-[#2A2A2A]' : ''}`}
+                                            className={`flex items-center px-2 py-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-[#2A2A2A] cursor-pointer transition-colors ${isSelected(option) && multiselect ? 'bg-gray-200 dark:bg-[#2A2A2A]' : ''}`}
                                             onClick={(e) => handleOptionSelect(option, e)}
                                         >
                                             {multiselect && (
                                                 <div className="mr-2">
-                                                    <div className={`w-4 h-4 border rounded flex items-center justify-center ${isSelected(option) ? 'bg-blue-500 border-blue-500' : 'border-gray-500'}`}>
+                                                    <div className={`w-4 h-4 border rounded flex items-center justify-center ${isSelected(option) ? 'bg-blue-500 border-blue-500' : 'border-gray-400 dark:border-gray-500'}`}>
                                                         {isSelected(option) && (
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -156,7 +156,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
                                         {/* Tooltip content displayed directly under the option */}
                                         {option.tooltip && (
-                                            <div className="px-3 text-xs text-gray-400">
+                                            <div className="px-3 text-xs text-gray-600 dark:text-gray-400">
                                                 {option.tooltip}
                                             </div>
                                         )}
@@ -183,7 +183,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
     return (
         <div className="flex items-center text-gray-500 text-sm w-full">
-            <span className="w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
+            <span className="w-1/6 mr-2 flex items-center hover:bg-gray-200 dark:hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
                 {icon && <span className="mr-2">{icon}</span>}
                 {title}
             </span>

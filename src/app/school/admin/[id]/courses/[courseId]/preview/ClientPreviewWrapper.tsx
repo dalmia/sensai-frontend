@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import LearnerCourseView from "@/components/LearnerCourseView";
 import { Module } from "@/types/course";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface ClientPreviewWrapperProps {
     modules: Module[];

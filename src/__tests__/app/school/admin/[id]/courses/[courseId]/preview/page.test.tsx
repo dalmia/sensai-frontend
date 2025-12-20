@@ -214,12 +214,12 @@ describe('PreviewPage', () => {
             const params = { id: 'school123', courseId: 'course456' };
             const { container } = render(await PreviewPage({ params }));
 
-            // Check main container styling
-            const mainDiv = container.querySelector('.min-h-screen.bg-black');
+            // Check main container styling (uses dark mode variant: bg-white dark:bg-black)
+            const mainDiv = container.querySelector('.min-h-screen');
             expect(mainDiv).toBeInTheDocument();
 
-            // Check banner styling
-            const banner = container.querySelector('.bg-\\[\\#111111\\].border-b.border-gray-800');
+            // Check banner styling (uses dark mode variant: bg-gray-100 dark:bg-[#111111])
+            const banner = container.querySelector('.border-b');
             expect(banner).toBeInTheDocument();
 
             // Check content container styling
@@ -321,13 +321,13 @@ describe('PreviewPage', () => {
             const innerContainer = container.querySelector('.flex.flex-col.items-center.justify-center.text-center.max-w-md');
             expect(innerContainer).toBeInTheDocument();
 
-            // Check title styling
-            const title = container.querySelector('h1.text-4xl.font-light.text-white.mb-6');
+            // Check title styling (uses dark mode variant classes)
+            const title = container.querySelector('h1.text-4xl.font-light');
             expect(title).toBeInTheDocument();
             expect(title).toHaveTextContent('Your learning adventure awaits!');
 
             // Check description styling
-            const description = container.querySelector('p.text-gray-400.text-lg');
+            const description = container.querySelector('p.text-lg');
             expect(description).toBeInTheDocument();
             expect(description).toHaveTextContent('This course is still being crafted with care. Check back soon to begin your journey.');
         });

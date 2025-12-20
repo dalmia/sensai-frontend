@@ -25,7 +25,7 @@ export function Header({
 }: HeaderProps) {
     const router = useRouter();
     const { data: session } = useSession();
-    const { themePreference, setThemePreference, isDarkMode } = useThemePreference();
+    const { themePreference, setThemePreference } = useThemePreference();
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
     const [isSchoolPickerOpen, setIsSchoolPickerOpen] = useState(false);

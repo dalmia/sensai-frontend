@@ -433,11 +433,11 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 onClose={closeToast}
             />
 
-            <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2"
+            <div className="w-full bg-gray-100 dark:bg-[#2F2F2F] rounded-lg shadow-xl p-2"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header with name */}
-                <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
+                <div className="p-5 pb-3 bg-white dark:bg-[#1F1F1F] mb-2 rounded-t-lg">
                     {/* NEW pill */}
                     {/* {isNew && (
                         <div className="mb-3">
@@ -454,8 +454,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             value={nameValue}
                             onChange={(e) => setNameValue(e.target.value)}
                             placeholder="Scorecard Name"
-                            className={`text-white text-lg font-normal bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-b focus:border-white/50 w-full max-w-full ${readOnly ? 'cursor-default' : ''}`}
-                            style={{ caretColor: 'white' }}
+                            className={`text-gray-900 dark:text-white text-lg font-normal bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-b focus:border-gray-400 dark:focus:border-white/50 w-full max-w-full ${readOnly ? 'cursor-default' : ''}`}
+                            style={{ caretColor: 'currentColor' }}
                             onBlur={(e) => onNameChange && onNameChange(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && onNameChange) {
@@ -498,7 +498,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                 <Tooltip content="Duplicate" position="bottom">
                                     <button
                                         onClick={onDuplicate}
-                                        className="flex items-center justify-center p-2 rounded-full hover:bg-[#333] text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+                                        className="flex items-center justify-center p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#333] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                         aria-label="Duplicate scorecard"
                                     >
                                         <Copy size={16} />
@@ -510,7 +510,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             {!readOnly && <Tooltip content="Delete" position="bottom">
                                 <button
                                     onClick={onDelete}
-                                    className="flex items-center justify-center p-2 rounded-full hover:bg-[#4F2828] text-gray-400 hover:text-red-300 transition-colors cursor-pointer"
+                                    className="flex items-center justify-center p-2 rounded-full hover:bg-red-100 dark:hover:bg-[#4F2828] text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer"
                                     aria-label="Delete scorecard"
                                 >
                                     <Trash2 size={16} />
@@ -520,10 +520,10 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     </div>
 
                     {/* Table header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr 80px 80px 100px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
+                    <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr 80px 80px 100px 40px' }} className="gap-2 mb-2 text-xs text-gray-600 dark:text-gray-300">
                         <div className="px-2 flex items-center">
                             Parameter
-                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                            <div className="relative ml-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                     The specific aspect of the response or skill of the learner to be evaluated
@@ -533,7 +533,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                         </div>
                         <div className="px-2 flex items-center">
                             Description
-                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                            <div className="relative ml-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                     A detailed explanation of what is being measured by this parameter
@@ -543,7 +543,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                         </div>
                         <div className="px-2 text-center flex items-center justify-center">
                             Minimum
-                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                            <div className="relative ml-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                     The lowest possible score for this parameter
@@ -553,7 +553,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                         </div>
                         <div className="px-2 text-center flex items-center justify-center">
                             Maximum
-                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                            <div className="relative ml-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                     The highest possible score for this parameter
@@ -563,7 +563,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                         </div>
                         <div className="px-2 text-center flex items-center justify-center">
                             Pass Mark
-                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                            <div className="relative ml-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                     The minimum score that a learner needs to get for this parameter to be marked as complete
@@ -588,7 +588,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                 <div
                                     key={index}
                                     style={{ display: 'grid', gridTemplateColumns: '350px 1fr 80px 80px 100px 40px' }}
-                                    className={`gap-2 rounded-md p-1 text-white ${isRowHighlighted ? 'bg-[#4D2424] outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse' : 'bg-[#2A2A2A]'}`}
+                                    className={`gap-2 rounded-md p-1 text-gray-900 dark:text-white ${isRowHighlighted ? 'bg-red-100 dark:bg-[#4D2424] outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse' : 'bg-gray-200 dark:bg-[#2A2A2A]'}`}
                                 >
                                     {/* Criterion Name Cell */}
                                     <div className="px-2 py-1 text-sm h-full flex items-center">
@@ -601,8 +601,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     onBlur={saveChanges}
                                                     onKeyDown={handleKeyDown}
                                                     autoFocus
-                                                    className="bg-[#333] rounded w-full text-xs p-1 pr-10 outline-none"
-                                                    style={{ caretColor: 'white' }}
+                                                    className="bg-gray-100 dark:bg-[#333] rounded w-full text-xs p-1 pr-10 outline-none text-gray-900 dark:text-white"
+                                                    style={{ caretColor: 'currentColor' }}
                                                 />
                                                 <button
                                                     onClick={saveChanges}
@@ -629,7 +629,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                     <div className="px-2 py-1 text-sm flex items-start h-full">
                                         <Tooltip content="Click to edit" position="bottom" disabled={readOnly} className="w-full">
                                             <span
-                                                className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? '' : 'text-gray-500'}`}
+                                                className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? 'text-gray-800 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}
                                                 onClick={() => openDescriptionModal(index)}
                                             >
                                                 {criterion.description || 'Click to add description'}
@@ -649,13 +649,13 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 autoFocus
                                                 min="0"
                                                 max="100"
-                                                className="bg-[#333] rounded w-full text-xs p-1 outline-none text-center"
-                                                style={{ caretColor: 'white' }}
+                                                className="bg-gray-100 dark:bg-[#333] rounded w-full text-xs p-1 outline-none text-center text-gray-900 dark:text-white"
+                                                style={{ caretColor: 'currentColor' }}
                                             />
                                         ) : (
                                             <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
                                                 <span
-                                                    className="block cursor-pointer hover:opacity-80"
+                                                    className="block cursor-pointer hover:opacity-80 text-gray-800 dark:text-white"
                                                     onClick={() => startEditing(index, 'minScore')}
                                                 >
                                                     {criterion.minScore}
@@ -676,13 +676,13 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 autoFocus
                                                 min="0"
                                                 max="100"
-                                                className="bg-[#333] rounded w-full text-xs p-1 outline-none text-center"
-                                                style={{ caretColor: 'white' }}
+                                                className="bg-gray-100 dark:bg-[#333] rounded w-full text-xs p-1 outline-none text-center text-gray-900 dark:text-white"
+                                                style={{ caretColor: 'currentColor' }}
                                             />
                                         ) : (
                                             <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
                                                 <span
-                                                    className="block cursor-pointer hover:opacity-80"
+                                                    className="block cursor-pointer hover:opacity-80 text-gray-800 dark:text-white"
                                                     onClick={() => startEditing(index, 'maxScore')}
                                                 >
                                                     {criterion.maxScore}
@@ -703,13 +703,13 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 autoFocus
                                                 min="0"
                                                 max="100"
-                                                className="bg-[#333] rounded w-full text-xs p-1 outline-none text-center"
-                                                style={{ caretColor: 'white' }}
+                                                className="bg-gray-100 dark:bg-[#333] rounded w-full text-xs p-1 outline-none text-center text-gray-900 dark:text-white"
+                                                style={{ caretColor: 'currentColor' }}
                                             />
                                         ) : (
                                             <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
                                                 <span
-                                                    className="block cursor-pointer hover:opacity-80"
+                                                    className="block cursor-pointer hover:opacity-80 text-gray-800 dark:text-white"
                                                     onClick={() => startEditing(index, 'passScore')}
                                                 >
                                                     {criterion.passScore}
@@ -723,7 +723,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                         {criteria.length > 1 && !readOnly && (
                                             <button
                                                 onClick={() => handleDeleteCriterion(index)}
-                                                className="p-1 rounded-full hover:bg-[#4F2828] text-gray-500 hover:text-red-300 transition-colors cursor-pointer"
+                                                className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-[#4F2828] text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer"
                                                 aria-label={`Delete parameter ${criterion.name}`}
                                             >
                                                 <X size={14} />
@@ -736,14 +736,14 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
                         {/* If no criteria, show empty state */}
                         {(!criteria || criteria.length === 0) && !readOnly && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
+                            <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 bg-gray-200 dark:bg-[#2A2A2A] rounded-md p-1 text-gray-900 dark:text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span className="inline-block px-2 py-0.5 rounded-full text-xs text-white bg-[#5E3B5D]">
                                         Add parameter
                                     </span>
                                 </div>
                                 <div className="px-2 py-1 flex items-center">
-                                    <div className="h-3 bg-[#333] rounded w-full"></div>
+                                    <div className="h-3 bg-gray-300 dark:bg-[#333] rounded w-full"></div>
                                 </div>
                                 <div className="px-2 py-1 text-sm text-center"></div>
                                 <div></div>
@@ -755,7 +755,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     {!readOnly && <div className="flex justify-center mt-3">
                         <button
                             onClick={handleAddCriterion}
-                            className="flex items-center px-4 py-2 rounded-full bg-[#2A2A2A] hover:bg-[#2A4A3A] text-gray-300 hover:text-green-300 transition-colors cursor-pointer"
+                            className="flex items-center px-4 py-2 rounded-full bg-gray-200 hover:bg-green-100 text-gray-600 hover:text-green-700 dark:bg-[#2A2A2A] dark:hover:bg-[#2A4A3A] dark:text-gray-300 dark:hover:text-green-300 transition-colors cursor-pointer"
                             aria-label="Add parameter"
                         >
                             <Plus size={14} className="mr-1" />

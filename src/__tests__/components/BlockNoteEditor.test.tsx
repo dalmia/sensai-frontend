@@ -60,11 +60,12 @@ describe('BlockNoteEditor Component', () => {
         expect(view).toHaveAttribute('theme', 'dark');
     });
 
-    it('uses light theme when isDarkMode is false', () => {
-        render(<BlockNoteEditor isDarkMode={false} />);
+    it('uses theme from useThemePreference hook', () => {
+        render(<BlockNoteEditor />);
 
         const view = screen.getByTestId('mock-blocknote-view');
-        expect(view).toHaveAttribute('theme', 'light');
+        // Theme is now determined by useThemePreference hook, defaults to dark
+        expect(view).toHaveAttribute('theme', 'dark');
     });
 
     it('applies custom className when provided', () => {

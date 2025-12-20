@@ -41,6 +41,9 @@ import {
     handleIntegrationPageRemoval,
 } from "@/lib/utils/integrationUtils";
 
+// Add import for theme preference
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -51,7 +54,6 @@ export interface LearningMaterialEditorHandle {
 
 interface LearningMaterialEditorProps {
     onChange?: (content: any[]) => void;
-    isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
     viewOnly?: boolean;
@@ -67,7 +69,6 @@ interface LearningMaterialEditorProps {
 // Use forwardRef to pass the ref from parent to this component
 const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, LearningMaterialEditorProps>(({
     onChange,
-    isDarkMode = true, // Default to dark mode
     className = "",
     readOnly = false,
     viewOnly = false,
@@ -79,6 +80,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onSaveSuccess,
     scheduledPublishAt = null,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishError, setPublishError] = useState<string | null>(null);
@@ -505,7 +507,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             <div className="h-full flex items-center justify-center">
                 <div
                     data-testid="editor-loading-spinner"
-                    className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"
+                    className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"
                     aria-label="Loading..."
                 >
                 </div>
@@ -517,7 +519,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         <div className={`w-full h-full flex flex-col ${className}`}>
             {/* Integration */}
             {!readOnly && (
-                <div className="my-4">
+                <div className="py-4 bg-white dark:bg-transparent">
                     <NotionIntegration
                         onPageSelect={handleIntegrationPageSelect}
                         onPageRemove={handleIntegrationPageRemove}
@@ -541,34 +543,33 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0`}>
                 {isLoadingIntegration ? (
                     <div className="flex items-center justify-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
                     </div>
                 ) : integrationError ? (
-                    <div className="flex flex-col items-center justify-center h-32 text-center">
-                        <div className="text-red-400 text-sm mb-4">
-                            {integrationError}
-                        </div>
-                        <div className="text-gray-400 text-xs">
-                            The Notion integration may have been disconnected. Please reconnect it.
-                        </div>
+                <div className="flex flex-col items-center justify-center h-32 text-center">
+                    <div className="text-red-400 text-sm mb-4">
+                        {integrationError}
                     </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                        The Notion integration may have been disconnected. Please reconnect it.
+                    </div>
+                </div>
                 ) : integrationBlocks.length > 0 ? (
-                    <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg h-full overflow-y-auto">
-                        <h1 className={`text-white text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''}`}>{integrationBlock?.props?.resource_name}</h1>
-                        <RenderConfig theme="dark">
-                            <BlockList blocks={integrationBlocks} />
-                        </RenderConfig>
-                    </div>
+                <div className="px-16 pb-6 rounded-lg h-full overflow-y-auto bg-white text-black dark:bg-[#191919] dark:text-white">
+                    <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''} text-black dark:text-white`}>{integrationBlock?.props?.resource_name}</h1>
+                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
+                        <BlockList blocks={integrationBlocks} />
+                    </RenderConfig>
+                </div>
                 ) : integrationBlock ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center">
-                        <div className="text-white text-lg mb-2">Notion page is empty</div>
-                        <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                        <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
+                        <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
                     </div>
                 ) : (
                     <BlockNoteEditor
                         initialContent={initialContent}
                         onChange={handleEditorChange}
-                        isDarkMode={isDarkMode}
                         readOnly={readOnly}
                         className="learning-material-editor"
                         onEditorReady={setEditorInstance}

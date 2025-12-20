@@ -432,7 +432,8 @@ describe('Scorecard Component', () => {
         const criterionRow = Array.from(allRows).find(row =>
             row.textContent?.includes(mockCriteria[0].name)
         );
-        expect(criterionRow).toHaveClass('bg-[#4D2424]');
+        // Row uses dark mode variant: bg-red-100 dark:bg-[#4D2424]
+        expect(criterionRow).toHaveClass('bg-red-100');
 
         // Fast-forward 4 seconds to clear highlight
         act(() => {

@@ -51,6 +51,7 @@ import {
 
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 import { useRouter } from "next/navigation";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -99,7 +100,6 @@ export const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
 const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     initialQuestions = [], // Not used anymore - kept for backward compatibility
     onChange,
-    isDarkMode = true,
     className = "",
     isPreviewMode = false,
     readOnly = false,
@@ -120,6 +120,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     scheduledPublishAt = null,
     onQuestionChangeWithUnsavedScorecardChanges,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
     // Get authenticated user ID
     const { user } = useAuth();
     const router = useRouter();
@@ -1082,19 +1083,19 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Placeholder component for empty quiz
     const EmptyQuizPlaceholder = () => (
-        <div className="flex flex-col items-center justify-center h-full w-full text-center p-8">
-            <h3 className="text-xl font-light text-white mb-3">Questions are the gateway to learning</h3>
-            <p className="text-gray-400 max-w-md mb-8">
+        <div className="flex flex-col items-center justify-center h-full w-full text-center p-8 dark:p-8 rounded-lg border border-gray-200 bg-gray-50 dark:border-transparent dark:bg-transparent">
+            <h3 className="text-xl font-light mb-3 text-gray-900 dark:text-white">Questions are the gateway to learning</h3>
+            <p className="max-w-md mb-8 text-gray-700 dark:text-gray-400">
                 Add questions to create an interactive quiz for your learners
             </p>
             {status === 'draft' && (
                 <button
                     onClick={addQuestion}
-                    className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                    className="flex items-center px-5 py-2.5 text-sm rounded-md transition-colors cursor-pointer text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100 border border-transparent"
                     disabled={readOnly}
                 >
-                    <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
-                        <Plus size={10} className="text-black" />
+                    <div className="w-4 h-4 rounded-full border border-transparent flex items-center justify-center mr-2">
+                        <Plus size={10} className="text-white dark:text-black" />
                     </div>
                     Add question
                 </button>
@@ -1442,7 +1443,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return (
             <LearnerQuizView
                 questions={questionsWithCorrectAnswers}
-                isDarkMode={isDarkMode}
                 className="w-full h-full"
                 onSubmitAnswer={onSubmitAnswer}
                 currentQuestionId={activeQuestionId}
@@ -1459,7 +1459,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 isTestMode={true}
             />
         );
-    }, [questions, isDarkMode, readOnly, onSubmitAnswer, taskType, activeQuestionId, currentQuestionIndex, user?.id]);
+    }, [questions, onSubmitAnswer, taskType, activeQuestionId, currentQuestionIndex, user?.id]);
 
     // Define dropdown options
     // Now removed and imported from dropdownOptions.ts
@@ -1689,7 +1689,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const allowCopyPaste = currentConfig.settings?.allowCopyPaste;
             if (allowCopyPaste !== undefined) {
                 const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
+                if (copyPasteOption) {
                 setSelectedCopyPasteControl(copyPasteOption);
+                } else {
+                    setSelectedCopyPasteControl(copyPasteControlOptions[1]);
+                }
             } else {
                 setSelectedCopyPasteControl(copyPasteControlOptions[1]);
             }
@@ -1769,8 +1773,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             {/* Loading indicator */}
             {isLoadingQuestions && (
-                <div className="absolute inset-0 bg-[#1A1A1A] bg-opacity-80 z-10 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-80 dark:bg-[#1A1A1A] dark:bg-opacity-80">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-transparent"></div>
                 </div>
             )}
 
@@ -1795,28 +1799,28 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         ) : (
                             <>
                                 {/* Left Sidebar - Questions List */}
-                                <div className="w-64 h-full bg-[#121212] border-r flex flex-col overflow-hidden">
+                                <div className="w-64 h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-[#121212]">
                                     {/* Sidebar Header */}
-                                    <div className="p-4 border-b bg-[#0A0A0A] flex items-center justify-between">
-                                        <h3 className="text-lg font-light text-white">Questions</h3>
+                                    <div className="p-4 flex items-center justify-between bg-gray-100 dark:bg-[#0A0A0A]">
+                                        <h3 className="text-lg font-light text-black dark:text-white">Questions</h3>
                                         <div className={`px-3 py-1 rounded-full text-xs transition-all duration-300 ${questionCountHighlighted
-                                            ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight'
-                                            : 'bg-[#2A2A2A] border-[#3A3A3A]'
-                                            } text-gray-300`}>
+                                            ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight text-white'
+                                            : 'bg-gray-200 border-gray-300 text-gray-700 dark:bg-[#2A2A2A] dark:border-[#3A3A3A] dark:text-gray-300'
+                                            }`}>
                                             {questions.length}
                                         </div>
                                     </div>
 
                                     {/* Add Question Button */}
                                     {!readOnly && status === 'draft' && (
-                                        <div className="p-3 border-b">
+                                        <div className="p-3">
                                             <button
                                                 onClick={addQuestion}
-                                                className="w-full flex items-center justify-center px-4 py-2 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                                className="w-full flex items-center justify-center px-4 py-2 text-sm rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100"
                                                 disabled={readOnly || isLoadingIntegration}
                                             >
-                                                <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
-                                                    <Plus size={10} className="text-black" />
+                                                <div className="w-4 h-4 rounded-full border flex items-center justify-center mr-2 border-white dark:border-black">
+                                                    <Plus size={10} className="text-white dark:text-black" />
                                                 </div>
                                                 Add question
                                             </button>
@@ -1829,8 +1833,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             <div
                                                 key={question.id}
                                                 className={`px-4 py-3 cursor-pointer flex items-center justify-between group border-l-2 ${index === currentQuestionIndex
-                                                    ? "bg-[#222222] border-green-500"
-                                                    : "hover:bg-[#1A1A1A] border-transparent"
+                                                    ? "bg-gray-200 border-green-500 dark:bg-[#222222]"
+                                                    : "hover:bg-gray-100 border-transparent dark:hover:bg-[#1A1A1A]"
                                                     }`}
                                                 onClick={() => {
                                                     if (checkUnsavedScorecardChanges()) {
@@ -1857,12 +1861,16 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 <div className="flex items-center flex-1 min-w-0">
                                                     <div className="flex-1 min-w-0">
                                                         <div
-                                                            className={`text-sm ${index === currentQuestionIndex ? "text-white" : "text-gray-300"} break-words whitespace-normal`}
+                                                            className={`text-sm break-words whitespace-normal ${index === currentQuestionIndex 
+                                                                ? "text-black dark:text-white" 
+                                                                : "text-gray-700 dark:text-gray-300"}`}
                                                             data-testid="sidebar-question-label"
                                                         >
                                                             {question.config.title || `Question ${index + 1}`}
                                                         </div>
-                                                        <div className={`text-xs truncate ${index === currentQuestionIndex ? "text-gray-300" : "text-gray-500"
+                                                        <div className={`text-xs truncate ${index === currentQuestionIndex 
+                                                            ? "text-gray-600 dark:text-gray-300"
+                                                            : "text-gray-500"
                                                             }`}>
                                                             {question.config.responseType === 'chat' ? 'Practice' : 'Exam'} • {question.config.questionType === 'objective' ? 'Objective' : 'Subjective'} • {question.config.inputType}
                                                         </div>
@@ -1890,14 +1898,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 {/* Main Content Area */}
                                 <div className="flex-1 flex flex-col">
                                     {/* Question Configuration Header */}
-                                    <div className="flex flex-col space-y-2 p-4 border-b bg-[#111111]">
-                                        <div className={`flex items-center w-full rounded-md ${highlightedField === 'title' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                            <span className="text-gray-500 text-sm flex-shrink-0 w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
+                                    <div className="flex flex-col space-y-2 p-4 bg-gray-100 dark:bg-[#111111]">
+                                        <div className={`flex items-center w-full rounded-md ${highlightedField === 'title' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
+                                            <span className="text-sm flex-shrink-0 w-1/6 mr-2 flex items-center px-3 py-2 rounded-md text-gray-600 hover:bg-gray-200 dark:text-gray-500 dark:hover:bg-[#2A2A2A]">
                                                 <span className="mr-2"><Tag size={16} /></span>
                                                 Title
                                             </span>
                                             <span
-                                                className="text-base text-white w-full outline-none p-1 rounded-md"
+                                                className="text-base w-full outline-none p-1 rounded-md text-black dark:text-white"
                                                 contentEditable={!readOnly}
                                                 suppressContentEditableWarning={true}
                                                 onBlur={handleQuestionTitleBlur}
@@ -1949,7 +1957,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         />
                                         {selectedAnswerType.value == 'code' && (
                                             <div className="flex items-center">
-                                                <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-md' : ''}`}>
+                                                <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse rounded-md bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
                                                     <Dropdown
                                                         icon={<Code size={16} />}
                                                         title="Languages"
@@ -1966,12 +1974,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     </div>
 
                                     {/* Segmented control for editor tabs */}
-                                    <div className="flex justify-center py-4">
-                                        <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                                    <div className="flex justify-center py-4 bg-white dark:bg-transparent">
+                                        <div className="inline-flex rounded-lg p-1 bg-gray-200 dark:bg-[#222222]">
                                             <button
                                                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'question'
-                                                    ? 'bg-[#333333] text-white'
-                                                    : 'text-gray-400 hover:text-white'
+                                                    ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                    : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                     }`}
                                                 onClick={() => setActiveEditorTab('question')}
                                             >
@@ -1981,8 +1989,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             {selectedQuestionType.value !== 'subjective' ? (
                                                 <button
                                                     className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'answer'
-                                                        ? 'bg-[#333333] text-white'
-                                                        : 'text-gray-400 hover:text-white'
+                                                        ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                        : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                         }`}
                                                     onClick={() => setActiveEditorTab('answer')}
                                                 >
@@ -1992,8 +2000,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             ) : (
                                                 <button
                                                     className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'scorecard'
-                                                        ? 'bg-[#333333] text-white'
-                                                        : 'text-gray-400 hover:text-white'
+                                                        ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                        : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                         }`}
                                                     onClick={() => setActiveEditorTab('scorecard')}
                                                 >
@@ -2003,8 +2011,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             )}
                                             <button
                                                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'knowledge'
-                                                    ? 'bg-[#333333] text-white'
-                                                    : 'text-gray-400 hover:text-white'
+                                                    ? 'bg-white text-black dark:bg-[#333333] dark:text-white'
+                                                    : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white'
                                                     }`}
                                                 onClick={() => setActiveEditorTab('knowledge')}
                                             >
@@ -2020,55 +2028,56 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         {activeEditorTab === 'question' ? (
                                             <div className="w-full h-full flex flex-col">
                                                 {/* Integration */}
-                                                        {!readOnly && (
-                                                            <NotionIntegration
-                                                                key={`notion-integration-${currentQuestionIndex}`}
-                                                                onPageSelect={handleIntegrationPageSelect}
-                                                                onPageRemove={handleIntegrationPageRemove}
-                                                                isEditMode={!readOnly}
-                                                                editorContent={currentQuestionContent}
-                                                                loading={isLoadingIntegration}
-                                                                status={status}
-                                                                storedBlocks={integrationBlocks}
-                                                                onContentUpdate={(updatedContent) => {
-                                                                    handleQuestionContentChange(updatedContent);
-                                                                    setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                                                }}
-                                                                onLoadingChange={setIsLoadingIntegration}
-                                                            />
+                                                {!readOnly && (
+                                                    <div className="py-2 bg-white dark:bg-transparent">
+                                                        <NotionIntegration
+                                                            key={`notion-integration-${currentQuestionIndex}`}
+                                                            onPageSelect={handleIntegrationPageSelect}
+                                                            onPageRemove={handleIntegrationPageRemove}
+                                                            isEditMode={!readOnly}
+                                                            editorContent={currentQuestionContent}
+                                                            loading={isLoadingIntegration}
+                                                            status={status}
+                                                            storedBlocks={integrationBlocks}
+                                                            onContentUpdate={(updatedContent) => {
+                                                                handleQuestionContentChange(updatedContent);
+                                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
+                                                            }}
+                                                            onLoadingChange={setIsLoadingIntegration}
+                                                        />
+                                                    </div>
                                                 )}
-                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
                                                     {isLoadingIntegration ? (
                                                         <div className="flex items-center justify-center h-32">
-                                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
                                                         </div>
                                                     ) : integrationError ? (
                                                         <div className="flex flex-col items-center justify-center h-32 text-center">
                                                             <div className="text-red-400 text-sm mb-4">
                                                                 {integrationError}
                                                             </div>
-                                                            <div className="text-gray-400 text-xs">
+                                                            <div className="text-xs text-gray-600 dark:text-gray-400">
                                                                 The Notion integration may have been disconnected. Please reconnect it.
                                                             </div>
                                                         </div>
                                                     ) : integrationBlocks.length > 0 ? (
-                                                        <div className="bg-[#191919] text-white px-16 pb-6 rounded-lg">
-                                                            <h1 className="text-white text-4xl font-bold mb-4 pl-0.5">{integrationBlock?.props?.resource_name}</h1>
-                                                            <RenderConfig theme="dark">       
+                                                        <div className="px-16 pb-6 rounded-lg bg-white text-black dark:bg-[#191919] dark:text-white">
+                                                            <h1 className="text-4xl font-bold mb-4 pl-0.5 text-black dark:text-white">{integrationBlock?.props?.resource_name}</h1>
+                                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>       
                                                                 <BlockList blocks={integrationBlocks} />
                                                             </RenderConfig>
                                                         </div>
                                                     ) : integrationBlock ? (
                                                         <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                            <div className="text-white text-lg mb-2">Notion page is empty</div>
-                                                            <div className="text-white text-sm">Please add content to your Notion page and refresh to see changes</div>
+                                                            <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
+                                                            <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
                                                         </div>
                                                     ) : (
                                                         <BlockNoteEditor
                                                             key={`quiz-editor-question-${currentQuestionIndex}`}
                                                             initialContent={initialContent}
                                                             onChange={handleQuestionContentChange}
-                                                            isDarkMode={isDarkMode}
                                                             readOnly={readOnly}
                                                             onEditorReady={setEditorInstance}
                                                             className="quiz-editor"
@@ -2078,7 +2087,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (
                                             <div className="w-full h-full flex flex-col">
-                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
+                                                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         // Ensure the correct answer editor keeps focus
@@ -2099,7 +2108,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         key={`correct-answer-editor-${currentQuestionIndex}`}
                                                         initialContent={currentQuestionConfig.correctAnswer}
                                                         onChange={handleCorrectAnswerChange}
-                                                        isDarkMode={isDarkMode}
                                                         readOnly={readOnly}
                                                         onEditorReady={setCorrectAnswerEditorInstance}
                                                         className="correct-answer-editor"
@@ -2114,7 +2122,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                                 linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
                                                                 courseId={courseId}
                                                                 readOnly={readOnly}
-                                                                isDarkMode={isDarkMode}
                                                                 onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
                                                                     // Update the question config with the new knowledge base blocks
                                                                     const updatedQuestions = [...questions];
@@ -2149,7 +2156,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             />
                                         ) : (
                                             // Scorecard tab - use ScorecardManager component
-                                            <div className="h-full w-full">
+                                            <div className="h-full w-full bg-white dark:bg-transparent">
                                                 <ScorecardManager
                                                     key={`scorecard-manager-${questions[currentQuestionIndex]?.id || currentQuestionIndex}`}
                                                     ref={scorecardManagerRef}

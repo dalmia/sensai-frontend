@@ -1163,7 +1163,6 @@ export default function LearnerAssignmentView({
                                     key={`assignment-problem-view`}
                                     initialContent={initialContent as any}
                                     onChange={() => { }}
-                                    isDarkMode={isDarkMode}
                                     readOnly={true}
                                     className={`!bg-transparent quiz-viewer`}
                                     placeholder="Problem statement will appear here"
@@ -1181,7 +1180,6 @@ export default function LearnerAssignmentView({
                             activeScorecard={activeScorecard}
                             handleBackToChat={handleBackToChat}
                             lastUserMessage={null}
-                            isDarkMode={isDarkMode}
                         />
                     ) : (
                         /* Use the ChatView component */
@@ -1207,7 +1205,6 @@ export default function LearnerAssignmentView({
                                 showUploadSection={needsResubmission}
                                 onFileUploaded={handleFileSubmit}
                                     onFileDownload={handleFileDownload}
-                                isDarkMode={isDarkMode}
                             />
                         </div>
                     )}

@@ -1712,23 +1712,23 @@ export default function LearnerQuizView({
                     --quiz-mobile-code-preview-bg: #111111;
                 }
 
-                /* Light mode: make BlockNote question content background truly white (no gray tint on focus) */
-                .quiz-view-container.quiz-light {
-                    --bn-colors-editor-background: #ffffff;
-                    --bn-colors-border: #e5e7eb;
-                    --bn-colors-shadow: transparent;
-                }
+                                /* Light mode: make BlockNote question content background truly white (no gray tint on focus) */
+                                html:not(.dark) .quiz-view-container {
+                                    --bn-colors-editor-background: #ffffff;
+                                    --bn-colors-border: #e5e7eb;
+                                    --bn-colors-shadow: transparent;
+                                }
 
-                .quiz-view-container.quiz-light :where(.bn-container, .bn-editor, .bn-content, .ProseMirror) {
-                    background-color: #ffffff !important;
-                    box-shadow: none !important;
-                }
+                                html:not(.dark) .quiz-view-container :where(.bn-container, .bn-editor, .bn-content, .ProseMirror) {
+                                    background-color: #ffffff !important;
+                                    box-shadow: none !important;
+                                }
 
-                .quiz-view-container.quiz-light :where(.ProseMirror, [contenteditable="true"]):focus,
-                .quiz-view-container.quiz-light :where(.ProseMirror, [contenteditable="true"]):focus-visible {
-                    outline: none !important;
-                    box-shadow: none !important;
-                }
+                                html:not(.dark) .quiz-view-container :where(.ProseMirror, [contenteditable="true"]):focus,
+                                html:not(.dark) .quiz-view-container :where(.ProseMirror, [contenteditable="true"]):focus-visible {
+                                    outline: none !important;
+                                    box-shadow: none !important;
+                                }
             `}</style>
             <style jsx>{`
                 .three-column-grid {
@@ -2001,7 +2001,7 @@ export default function LearnerQuizView({
             `}</style>
 
             <div
-                className={`overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-white border border-gray-200 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none quiz-view-container ${isDarkMode ? 'quiz-dark' : 'quiz-light'}`}
+                className={`overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-white border border-gray-200 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none quiz-view-container`}
             >
                 {/* Left side - Question (33% or 50% depending on layout) */}
                 <div className="p-6 flex flex-col lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container bg-white border-gray-200 dark:bg-[#1A1A1A] dark:border-[#222222]"
@@ -2011,7 +2011,7 @@ export default function LearnerQuizView({
                         <div className="flex items-center justify-between w-full mb-6">
                             <div className="w-10 h-10">
                                 <button
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-600'} ${currentQuestionIndex > 0 ? (isDarkMode ? 'hover:bg-[#333333] cursor-pointer' : 'hover:bg-gray-200 cursor-pointer') : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 dark:bg-[#222222] dark:text-white ${currentQuestionIndex > 0 ? 'hover:bg-gray-200 cursor-pointer dark:hover:bg-[#333333] cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
                                     onClick={goToPreviousQuestion}
                                     disabled={currentQuestionIndex <= 0}
                                 >
@@ -2030,7 +2030,7 @@ export default function LearnerQuizView({
 
                             <div className="w-10 h-10">
                                 <button
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#222222] text-white' : 'bg-gray-100 text-gray-600'} ${currentQuestionIndex < validQuestions.length - 1 ? (isDarkMode ? 'hover:bg-[#333333] cursor-pointer' : 'hover:bg-gray-200 cursor-pointer') : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-[#222222] text-gray-600 dark:text-white ${currentQuestionIndex < validQuestions.length - 1 ? 'hover:bg-gray-200 dark:hover:bg-[#333333] cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
                                     onClick={goToNextQuestion}
                                     disabled={currentQuestionIndex >= validQuestions.length - 1}
                                 >
@@ -2077,7 +2077,6 @@ export default function LearnerQuizView({
                                     key={`question-view-${currentQuestionIndex}`}
                                     initialContent={integrationBlock ? [] : initialContent}
                                     onChange={() => { }} // Read-only in view mode
-                                    isDarkMode={isDarkMode}
                                     readOnly={true}
                                     className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
                                     placeholder="Question content will appear here"
@@ -2095,7 +2094,6 @@ export default function LearnerQuizView({
                             activeScorecard={activeScorecard}
                             handleBackToChat={handleBackToChat}
                             lastUserMessage={getLastUserMessage as ChatMessage | null}
-                            isDarkMode={isDarkMode}
                         />
                     ) : (
                         /* Use the ChatView component */
@@ -2123,7 +2121,6 @@ export default function LearnerQuizView({
                             onShowLearnerViewChange={setShowLearnerView}
                             isAdminView={isAdminView}
                             userId={userId}
-                            isDarkMode={isDarkMode}
                             ref={chatViewRef}
                         />
                     )}
@@ -2138,7 +2135,6 @@ export default function LearnerQuizView({
                             output={codeViewState.output}
                             isWebPreview={codeViewState.hasWebLanguages}
                             executionTime={codeViewState.executionTime}
-                            isDarkMode={isDarkMode}
                             onClear={() => {
                                 // Clear the code output in the codeViewState
                                 setCodeViewState(prev => ({
