@@ -12,8 +12,6 @@ interface ClientPreviewWrapperProps {
 export default function ClientPreviewWrapper({
     modules,
 }: ClientPreviewWrapperProps) {
-    const { isDarkMode } = useThemePreference();
-
     // For preview mode, we use LearnerCourseView directly to ensure full-width display
     // without the sidebar that LearnerCohortView would add
     return (
@@ -22,7 +20,6 @@ export default function ClientPreviewWrapper({
             completedTaskIds={{}}
             completedQuestionIds={{}}
             isTestMode={true}
-            isDarkMode={isDarkMode}
         />
     );
 } 

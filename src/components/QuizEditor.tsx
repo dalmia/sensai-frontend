@@ -51,6 +51,7 @@ import {
 
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 import { useRouter } from "next/navigation";
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -99,7 +100,6 @@ export const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
 const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     initialQuestions = [], // Not used anymore - kept for backward compatibility
     onChange,
-    isDarkMode = true,
     className = "",
     isPreviewMode = false,
     readOnly = false,
@@ -120,6 +120,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     scheduledPublishAt = null,
     onQuestionChangeWithUnsavedScorecardChanges,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
     // Get authenticated user ID
     const { user } = useAuth();
     const router = useRouter();
@@ -2036,7 +2037,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             isEditMode={!readOnly}
                                                             editorContent={currentQuestionContent}
                                                             loading={isLoadingIntegration}
-                                                            isDarkMode={isDarkMode}
                                                             status={status}
                                                             storedBlocks={integrationBlocks}
                                                             onContentUpdate={(updatedContent) => {
@@ -2078,7 +2078,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             key={`quiz-editor-question-${currentQuestionIndex}`}
                                                             initialContent={initialContent}
                                                             onChange={handleQuestionContentChange}
-                                                            isDarkMode={isDarkMode}
                                                             readOnly={readOnly}
                                                             onEditorReady={setEditorInstance}
                                                             className="quiz-editor"
@@ -2109,7 +2108,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         key={`correct-answer-editor-${currentQuestionIndex}`}
                                                         initialContent={currentQuestionConfig.correctAnswer}
                                                         onChange={handleCorrectAnswerChange}
-                                                        isDarkMode={isDarkMode}
                                                         readOnly={readOnly}
                                                         onEditorReady={setCorrectAnswerEditorInstance}
                                                         className="correct-answer-editor"

@@ -49,7 +49,6 @@ export interface QuizQuestion {
 export interface QuizEditorProps {
     initialQuestions?: QuizQuestion[]; // Kept for backward compatibility but not used anymore
     onChange?: (questions: QuizQuestion[]) => void;
-    isDarkMode?: boolean;
     className?: string;
     isPreviewMode?: boolean;
     readOnly?: boolean;

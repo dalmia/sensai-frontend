@@ -94,8 +94,6 @@ export default function CourseModuleList({
     onQuestionChange = () => { },
     onDuplicateItem,
 }: CourseModuleListProps) {
-    // Get theme preference for child components that need it
-    const { isDarkMode } = useThemePreference();
     
     // Track dark mode from DOM to ensure proper color calculations and re-renders
     const [isDarkModeDOM, setIsDarkModeDOM] = useState(true);
@@ -1222,7 +1220,6 @@ export default function CourseModuleList({
                 focusEditor={focusEditor}
                 schoolId={schoolId}
                 courseId={courseId}
-                isDarkMode={isDarkMode}
             />
 
             {/* Module deletion confirmation dialog */}

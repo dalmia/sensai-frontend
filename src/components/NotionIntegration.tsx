@@ -21,7 +21,6 @@ interface IntegrationProps {
   className?: string;
   isEditMode?: boolean;
   loading?: boolean;
-  isDarkMode?: boolean;
   editorContent?: Array<{
     type: string;
     props: {
@@ -46,7 +45,6 @@ export default function NotionIntegration({
   isEditMode = false,
   editorContent = [],
   loading = false,
-  isDarkMode = true,
   status = "draft",
   storedBlocks = [],
   onContentUpdate,
@@ -547,15 +545,15 @@ export default function NotionIntegration({
         )}
 
         {selectedPageId && (
-          <div className={`rounded-lg px-4 py-3 border ${isDarkMode ? 'bg-gray-900/30 border-gray-700/50' : 'bg-gray-100 border-gray-200'}`}>
+          <div className="rounded-lg px-4 py-3 border bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700/50">
             {/* Connection status */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <NotionIcon className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <NotionIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <div className={`flex items-center gap-2 ${status === 'published' ? 'mr-3' : ''}`}>
-                    <span className={`text-sm font-light ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Connected to</span>
-                    <span className={`text-sm font-medium px-2 py-1 rounded-md ${isDarkMode ? 'text-white bg-gray-800' : 'text-gray-900 bg-gray-200'}`}>
+                    <span className="text-sm font-light text-gray-500 dark:text-gray-400">Connected to</span>
+                    <span className="text-sm font-medium px-2 py-1 rounded-md text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800">
                       {selectedPageTitle}
                     </span>
                   </div>
@@ -568,8 +566,8 @@ export default function NotionIntegration({
                   isLoading={isUnlinking}
                   loadingText="Unlinking..."
                   normalText="Unlink"
-                  bgColor={isDarkMode ? "bg-gray-700 hover:bg-red-700" : "bg-gray-200 hover:bg-red-100 hover:text-red-700"}
-                  textColor={isDarkMode ? "text-white" : "text-gray-700"}
+                  bgColor="bg-gray-200 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-700 hover:text-red-700 dark:hover:text-white"
+                  textColor="text-gray-700 dark:text-white"
                   icon={<Unlink className="w-3 h-3" />}
                   className="text-xs px-2 py-1"
                 />
@@ -580,8 +578,8 @@ export default function NotionIntegration({
                     isLoading={isSyncing}
                     loadingText="Syncing..."
                     normalText="Sync"
-                    bgColor={isDarkMode ? "bg-yellow-800 hover:bg-yellow-900" : "bg-yellow-100 hover:bg-yellow-200"}
-                    textColor={isDarkMode ? "text-white" : "text-yellow-800"}
+                    bgColor="bg-yellow-100 dark:bg-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900"
+                    textColor="text-yellow-800 dark:text-white"
                     icon={<RefreshCcw className="w-3 h-3" />}
                     className="text-xs px-3 py-1"
                   />
@@ -592,11 +590,11 @@ export default function NotionIntegration({
             {/* Conditional notice message based on status */}
             {status === "draft" && (
               <div className="flex items-start gap-2 mt-3">
-                <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div className="flex-1">
-                  <div className={`text-sm font-light leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <div className="text-sm font-light leading-relaxed text-gray-600 dark:text-gray-300">
                     Changes must be made in the original Notion document for them to be reflected here
                   </div>
                 </div>

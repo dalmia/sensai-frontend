@@ -41,6 +41,9 @@ import {
     handleIntegrationPageRemoval,
 } from "@/lib/utils/integrationUtils";
 
+// Add import for theme preference
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -51,7 +54,6 @@ export interface LearningMaterialEditorHandle {
 
 interface LearningMaterialEditorProps {
     onChange?: (content: any[]) => void;
-    isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
     viewOnly?: boolean;
@@ -67,7 +69,6 @@ interface LearningMaterialEditorProps {
 // Use forwardRef to pass the ref from parent to this component
 const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, LearningMaterialEditorProps>(({
     onChange,
-    isDarkMode = true, // Default to dark mode
     className = "",
     readOnly = false,
     viewOnly = false,
@@ -79,6 +80,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onSaveSuccess,
     scheduledPublishAt = null,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishError, setPublishError] = useState<string | null>(null);
@@ -524,7 +526,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         isEditMode={!readOnly}
                         editorContent={editorContent}
                         loading={isLoadingIntegration}
-                        isDarkMode={isDarkMode}
                         status={taskData?.status}
                         storedBlocks={integrationBlocks}
                         onContentUpdate={(updatedContent) => {
@@ -569,7 +570,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     <BlockNoteEditor
                         initialContent={initialContent}
                         onChange={handleEditorChange}
-                        isDarkMode={isDarkMode}
                         readOnly={readOnly}
                         className="learning-material-editor"
                         onEditorReady={setEditorInstance}

@@ -2114,7 +2114,7 @@ describe('QuizEditor Component', () => {
         });
 
         it('should handle dark mode toggle', () => {
-            render(<QuizEditor {...defaultProps} ref={quizEditorRef} isDarkMode={false} />);
+            render(<QuizEditor {...defaultProps} ref={quizEditorRef} />);
             expect(screen.getByText('Questions are the gateway to learning')).toBeInTheDocument();
         });
 

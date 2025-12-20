@@ -76,7 +76,6 @@ interface CourseItemDialogProps {
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
     courseId?: string; // Add courseId prop for learning materials
-    isDarkMode?: boolean;
 }
 
 const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
@@ -101,7 +100,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     focusEditor,
     schoolId,
     courseId,
-    isDarkMode = true,
 }) => {
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
@@ -1038,7 +1036,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishConfirm={onPublishConfirm}
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
-                                isDarkMode={isDarkMode}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
@@ -1127,7 +1124,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     onQuizContentChange(questions);
                                 }}
                                 isPreviewMode={previewMode}
-                                isDarkMode={isDarkMode}
                                 readOnly={activeItem.status === 'published' && !isEditMode}
                                 taskId={activeItem.id}
                                 status={activeItem.status}
@@ -1224,7 +1220,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                     courseId={courseId}
                                     schoolId={schoolId}
-                                    isDarkMode={isDarkMode}
                                     onValidationError={(title, message, emoji) => displayToast(title, message, emoji || '🚫')}
                                     onPublishSuccess={(updatedData?: any) => {
                                         if (updatedData) {

@@ -717,7 +717,6 @@ export default function LearningMaterialViewer({
                             <BlockNoteEditor
                                 initialContent={initialContent}
                                 onChange={() => { }} // Read-only, no changes
-                                isDarkMode={isDarkMode}
                                 readOnly={true}
                             />
                         )}

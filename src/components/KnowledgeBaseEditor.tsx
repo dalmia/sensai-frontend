@@ -26,7 +26,6 @@ const KnowledgeBaseEditor = ({
     onLinkedMaterialsChange,
     className = ""
 }: KnowledgeBaseEditorProps) => {
-    const { isDarkMode } = useThemePreference();
     // Reference to the knowledge base editor
     const knowledgeBaseEditorRef = useRef<any>(null);
 
@@ -99,7 +98,6 @@ const KnowledgeBaseEditor = ({
                             <BlockNoteEditor
                                 initialContent={knowledgeBaseBlocks}
                                 onChange={onKnowledgeBaseChange}
-                                isDarkMode={isDarkMode}
                                 readOnly={readOnly}
                                 onEditorReady={setKnowledgeBaseEditorInstance}
                                 className="knowledge-base-editor"

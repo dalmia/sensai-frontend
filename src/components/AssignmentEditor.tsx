@@ -18,6 +18,7 @@ import { validateScorecardCriteria } from "@/lib/utils/scorecardValidation";
 import { ScorecardTemplate } from "./ScorecardPickerDialog";
 import "@udus/notion-renderer/styles/globals.css";
 import PublishConfirmationDialog from './PublishConfirmationDialog';
+import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Submission type options filtered from answerTypeOptions
 const submissionTypeOptions = answerTypeOptions.filter(opt => opt.value === 'text' || opt.value === 'audio');
@@ -47,7 +48,6 @@ interface AssignmentEditorProps {
     schoolId?: string;
     onValidationError?: (title: string, message: string, emoji?: string) => void;
     isPreviewMode?: boolean;
-    isDarkMode?: boolean;
 }
 
 const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProps>(({
@@ -63,8 +63,8 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     onPublishCancel,
     onValidationError,
     isPreviewMode = false,
-    isDarkMode = true,
 }, ref) => {
+    const { isDarkMode } = useThemePreference();
 
     // Problem statement
     const [problemBlocks, setProblemBlocks] = useState<any[]>([]);
@@ -647,7 +647,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                             isEditMode={!readOnly}
                                             editorContent={problemContent}
                                             loading={isLoadingIntegration}
-                                            isDarkMode={isDarkMode}
                                             status={status}
                                             storedBlocks={integrationBlocks}
                                             onContentUpdate={(updatedContent) => {
@@ -688,7 +687,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                                         <BlockNoteEditor
                                             initialContent={initialContent}
                                             onChange={handleProblemContentChange}
-                                            isDarkMode={isDarkMode}
                                             readOnly={readOnly}
                                             onEditorReady={setEditorInstance}
                                             className="assignment-editor"
