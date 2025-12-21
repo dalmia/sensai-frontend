@@ -431,8 +431,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 ? quizEditorRef.current?.hasChanges() || false
                 : assignmentEditorRef.current?.hasChanges() || false;
 
-        console.log("hasChanges", hasChanges)
-
         // Case 1: Published learning material in edit mode 
         if (activeItem?.status === 'published' && isEditMode) {
             // Only show confirmation if there are changes
