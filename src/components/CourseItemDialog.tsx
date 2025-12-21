@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Sparkles, Check, X, Pencil, Eye, Edit2, Zap, ZapOff } from "lucide-react";
+import { Check, X, Pencil, Eye, Edit2, Zap, ZapOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { QuizQuestion } from "../types";
 import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
