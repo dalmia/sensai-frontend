@@ -1424,9 +1424,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const currentQuestionsStr = JSON.stringify(sanitizedCurrentQuestions);
             const originalQuestionsStr = JSON.stringify(originalQuestionsRef.current);
 
-            console.log("currentQuestionsStr", currentQuestionsStr)
-            console.log("originalQuestionsStr", originalQuestionsStr)
-
             // Return true if there are changes
             return currentQuestionsStr !== originalQuestionsStr;
         },
@@ -1828,7 +1825,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to publish quiz: ${response.status}`);
+                const responseBody = await response.json()
+                throw new Error(`Failed to unpublish quiz: \"${responseBody?.detail}\" (${response.status})`);
             }
 
             // Get the updated task data from the response
@@ -1838,9 +1836,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setIsUnpublishing(false);
             setShowUnpublishConfirmation(false);
         } catch (error) {
-            console.error("Error publishing quiz:", error);
-            setErrorMessage(error instanceof Error ? error.message : "Failed to publish quiz");
-            setIsPublishing(false);
+            console.error("Error unpublishing quiz:", error);
+            setErrorMessage(error instanceof Error ? error.message : "Failed to unpublish quiz");
+            setIsUnpublishing(false);
         }
     }
     
@@ -1881,7 +1879,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onConfirm={handleConfirmUnpublish}
                 onCancel={handleCancelUnpublish}
                 isLoading={isUnpublishing}
-                errorMessage={null}
+                errorMessage={errorMessage}
                 type="delete"
                 deleteIcon={null}
             />
