@@ -456,7 +456,8 @@ const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
 
         // Add entries for all valid languages
         normalizedLanguages.forEach(lang => {
-            state[lang] = initial[lang] || DEFAULT_LANGUAGE_CONTENTS[lang] || '';
+            // Check if key exists to preserve empty strings when user clears code
+            state[lang] = initial[lang] !== undefined ? initial[lang] : (DEFAULT_LANGUAGE_CONTENTS[lang] || '');
         });
 
         return state;
