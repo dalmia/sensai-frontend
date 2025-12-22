@@ -8,7 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useSchools } from "@/lib/api";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
 import SchoolPickerDialog from "@/components/SchoolPickerDialog";
-import { ChevronDown, Plus, X, Book, School } from "lucide-react";
+import { ChevronDown, Plus, X, Book, School, User } from "lucide-react";
 import { Cohort } from "@/types";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
@@ -215,7 +215,7 @@ export function Header({
                         {/* Profile dropdown menu */}
                         {profileMenuOpen && (
                             <div className="absolute right-0 mt-2 w-64 rounded-md shadow-lg py-1 z-10 bg-white dark:bg-[#111111] border border-gray-200 dark:border-transparent">
-                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                                <div className="px-4 py-3  border-gray-200 dark:border-gray-800">
                                     <div className="flex items-center">
                                         <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center mr-3">
                                             <span className="text-white font-medium">{getInitials()}</span>
@@ -228,7 +228,7 @@ export function Header({
                                 </div>
 
                                 {/* Theme Toggle */}
-                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                                <div className="px-4 py-3 dark:border-gray-800">
                                     <div className="flex flex-col gap-2">
                                         <span className="text-sm text-[#374151] dark:text-gray-300">Theme</span>
                                         <div className="inline-flex w-full rounded-full p-1 bg-[#e5e7eb] dark:bg-[#1F1F1F]">
@@ -269,7 +269,17 @@ export function Header({
                                     </div>
                                 </div>
 
-                                <div className="border-t py-1 border-gray-200 dark:border-gray-800">
+                                <div className="py-1 dark:border-gray-800">
+                                    <button
+                                        onClick={() => {
+                                            router.push("/profile");
+                                            setProfileMenuOpen(false);
+                                        }}
+                                        className="flex w-full items-center text-left px-4 py-2 text-sm cursor-pointer text-[#374151] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <User className="w-5 h-5 mr-3" />
+                                        Your profile
+                                    </button>
                                     <button
                                         onClick={handleLogout}
                                         className="flex w-full items-center text-left px-4 py-2 text-sm cursor-pointer text-[#374151] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
