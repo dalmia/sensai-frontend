@@ -68,7 +68,7 @@ describe('SettingsDialog Component', () => {
         const mockOnClose = jest.fn();
         render(<SettingsDialog {...defaultProps} isOpen={true} onClose={mockOnClose} />);
 
-        const dialogContent = screen.getByText('Settings').closest('.bg-\\[\\#1A1A1A\\]');
+        const dialogContent = screen.getByText('Settings').closest('.max-w-md');
         fireEvent.click(dialogContent!);
 
         expect(mockOnClose).not.toHaveBeenCalled();
