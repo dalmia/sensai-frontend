@@ -26,6 +26,7 @@ interface ConfirmationDialogProps {
 
     // Type props for styling
     type?: 'publish' | 'delete' | 'custom' | 'save';
+    deleteIcon?: any;
 
     // Custom content to be rendered between message and buttons
     children?: React.ReactNode;
@@ -58,6 +59,7 @@ export default function ConfirmationDialog({
 
     // Type with default
     type = 'delete',
+    deleteIcon = <Trash2 size={16} className="mr-2" />,
 
     // Custom content
     children,
@@ -168,7 +170,7 @@ export default function ConfirmationDialog({
                             </div>
                         ) : (
                             <div className="flex items-center">
-                                {type === 'delete' && <Trash2 size={16} className="mr-2" />}
+                                {type === 'delete' && deleteIcon != null ? deleteIcon : <></>}
                                 {buttonText}
                             </div>
                         )}

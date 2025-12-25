@@ -50,6 +50,7 @@ interface CourseModuleListProps {
     setShowPublishConfirmation?: (show: boolean) => void;
     onQuestionChange?: (questionId: string) => void;
     onDuplicateItem?: (moduleId: string, taskData: any, ordering: number) => Promise<void>;
+    updateModuleItem?: (moduleId: string, itemId: string, updates: Partial<ModuleItem>) => void;
 }
 
 export default function CourseModuleList({
@@ -93,6 +94,7 @@ export default function CourseModuleList({
     setShowPublishConfirmation = () => { },
     onQuestionChange = () => { },
     onDuplicateItem,
+    updateModuleItem,
 }: CourseModuleListProps) {
     
     // Track dark mode from DOM to ensure proper color calculations and re-renders
@@ -1220,6 +1222,7 @@ export default function CourseModuleList({
                 focusEditor={focusEditor}
                 schoolId={schoolId}
                 courseId={courseId}
+                updateModuleItem={updateModuleItem}
             />
 
             {/* Module deletion confirmation dialog */}
