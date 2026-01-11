@@ -785,6 +785,26 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         }
     }
 
+    // Reusable function to handle unpublish success for any task type
+    const handleUnpublishSuccess = (taskData: TaskData, itemType: 'learning material' | 'quiz' | 'assignment') => {
+        if (taskData && activeModuleId && updateModuleItem) {
+            // Update activeItem reference
+            activeItem.status = taskData.status
+            activeItem.scheduled_publish_at = taskData.scheduled_publish_at
+
+            // Update the parent module list directly with the new status
+            updateModuleItem(activeModuleId, activeItem.id, {
+                status: taskData.status,
+                scheduled_publish_at: taskData.scheduled_publish_at
+            });
+        }
+
+        navigateBackWindowHistoryIfDialogWasOpen()
+
+        // Display appropriate toast message based on item type
+        displayToast("Task Unpublished", `Your ${itemType} has been unpublished`, "⛔");
+    }
+
     const isClosingDraft = confirmationType === 'exit_draft';
 
     const getButtonClasses = (tone: 'blue' | 'green' | 'yellow' | 'yellowStrong' | 'gray' | 'violet') => {
@@ -1066,22 +1086,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
-                                onUnpublishSuccess = {(updatedData: TaskData) => {
-                                    if (updatedData && activeModuleId && updateModuleItem) {
-                                        // Update activeItem reference
-                                        activeItem.status = updatedData.status
-                                        activeItem.scheduled_publish_at = updatedData.scheduled_publish_at
-
-                                        // Update the parent module list directly with the new status
-                                        updateModuleItem(activeModuleId, activeItem.id, {
-                                            status: updatedData.status,
-                                            scheduled_publish_at: updatedData.scheduled_publish_at
-                                        });
-                                    }
-
-                                    navigateBackWindowHistoryIfDialogWasOpen()
-                                    displayToast("Task Unpublished", "Your learning material has been unpublished", "⛔");
-                                }}
+                                onUnpublishSuccess = {(updatedData: TaskData) => handleUnpublishSuccess(updatedData, 'learning material')}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
                                     if (updatedData) {
@@ -1248,22 +1253,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Hide the publish confirmation dialog
                                     onSetShowPublishConfirmation(false);
                                 }}
-                                onUnpublishSuccess={(taskData: TaskData) => {
-                                    if (taskData && activeModuleId && updateModuleItem) {
-                                        // Update activeItem reference
-                                        activeItem.status = taskData.status
-                                        activeItem.scheduled_publish_at = taskData.scheduled_publish_at
-
-                                        // Update the parent module list directly with the new status
-                                        updateModuleItem(activeModuleId, activeItem.id, {
-                                            status: taskData.status,
-                                            scheduled_publish_at: taskData.scheduled_publish_at
-                                        });
-                                    }
-
-                                    navigateBackWindowHistoryIfDialogWasOpen()
-                                    displayToast("Task Unpublished", "Your learning material has been unpublished", "⛔");
-                                }}
+                                onUnpublishSuccess={(taskData: TaskData) => handleUnpublishSuccess(taskData, 'quiz')}
                                 schoolId={schoolId}
                                 onQuestionChangeWithUnsavedScorecardChanges={() => {
                                     setShowUnsavedScorecardChangesInfo(true);
