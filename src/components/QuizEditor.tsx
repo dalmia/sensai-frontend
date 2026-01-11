@@ -213,14 +213,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [showToast]);
     
-    // THe following piece of code is commented out because, on unpublishing a task, the status of the quiz changes to DRAFT, and we don't want to set the questions to [] when this happens 
-    // // Make sure we reset questions when component mounts for draft quizzes
-    // // useEffect(() => {
-    // //     if (status === 'draft') {
-    // //         setQuestions([]);
-    // //     }
-    // // }, [status]);
-
     // Fetch school scorecards when component mounts for draft quizzes
     useEffect(() => {
         const fetchSchoolScorecards = async () => {
