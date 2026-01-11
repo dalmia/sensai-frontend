@@ -1248,7 +1248,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Hide the publish confirmation dialog
                                     onSetShowPublishConfirmation(false);
                                 }}
-                                onUnPublishSuccess={(taskData: TaskData) => {
+                                onUnpublishSuccess={(taskData: TaskData) => {
                                     if (taskData && activeModuleId && updateModuleItem) {
                                         // Update activeItem reference
                                         activeItem.status = taskData.status

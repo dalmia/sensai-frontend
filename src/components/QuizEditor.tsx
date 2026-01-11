@@ -144,7 +144,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     onPublishCancel,
     showUnpublishConfirmation = false,
     setShowUnpublishConfirmation,
-    onUnPublishSuccess,
+    onUnpublishSuccess,
     isEditMode = false,
     onSaveSuccess,
     taskType = 'quiz',
@@ -1833,7 +1833,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Get the updated task data from the response
             const updatedTaskData = await response.json();
 
-            onUnPublishSuccess(updatedTaskData)
+            onUnpublishSuccess(updatedTaskData)
             setIsUnpublishing(false);
             setShowUnpublishConfirmation(false);
         } catch (error) {

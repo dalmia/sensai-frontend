@@ -61,7 +61,7 @@ export interface QuizEditorProps {
     onPublishCancel?: () => void;
     showUnpublishConfirmation: boolean
     setShowUnpublishConfirmation: (showUnpublishConfirmation: boolean) => void
-    onUnPublishSuccess: (taskData: TaskData) => void
+    onUnpublishSuccess: (taskData: TaskData) => void
     isEditMode?: boolean;
     onSaveSuccess?: (updatedData?: any) => void;
     taskType?: 'quiz';
