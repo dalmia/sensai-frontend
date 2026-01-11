@@ -1048,7 +1048,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </button>
                                     {(activeItem?.type === 'material' || activeItem?.type === 'quiz') && (
                                         <button
-                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-red-600 hover:bg-[#222222] focus:border-red-600 active:border-red-600 rounded-full transition-colors cursor-pointer"
+                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border border-red-600 hover:bg-[#222222] focus:border-red-600 active:border-red-600 rounded-full transition-colors cursor-pointer"
                                             aria-label="Unpublish item"
                                             onClick={handleUnpublish}
                                         >
