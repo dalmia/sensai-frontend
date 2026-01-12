@@ -22,7 +22,7 @@ import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
 // Import dropdown options
 import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
-import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
+import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion, InputType, ResponseType, QuestionType, EditorTab, QuizQuestionSettings } from "../types";
 import { extractTextFromBlocks, hasBlocksContent } from "@/lib/utils/blockUtils";
 // Add import for KnowledgeBaseEditor
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
@@ -55,13 +55,13 @@ import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
-    inputType: 'text',
-    responseType: 'chat',
-    questionType: 'objective',
+    inputType: 'text' as InputType,
+    responseType: 'chat' as ResponseType,
+    questionType: 'objective' as QuestionType,
     knowledgeBaseBlocks: [],
     linkedMaterialIds: [],
     title: '',
-    settings: {},
+    settings: { allowCopyPaste: true } as QuizQuestionSettings,
 };
 
 // Helper function to extract text from all blocks in a BlockNote document
@@ -315,17 +315,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                             const settings = { allowCopyPaste: true };
                             if (question.settings) {
-                                settings.allowCopyPaste = question.settings.allowCopyPaste;
+                                settings.allowCopyPaste = question.settings.allowCopyPaste ?? true;
                             }
 
                             return {
                                 id: String(question.id),
                                 content: question.blocks || [],
                                 config: {
-                                    inputType: question.input_type || 'text' as 'text' | 'code' | 'audio',
-                                    responseType: question.response_type,
+                                    inputType: (question.input_type || 'text') as InputType,
+                                    responseType: question.response_type as ResponseType,
                                     correctAnswer: correctAnswer,
-                                    questionType: questionType as 'objective' | 'subjective',
+                                    questionType: questionType as QuestionType,
                                     scorecardData: scorecardData,
                                     knowledgeBaseBlocks: knowledgeBaseBlocks,
                                     linkedMaterialIds: linkedMaterialIds,
@@ -462,7 +462,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const scorecardManagerRef = useRef<ScorecardManagerHandle>(null);
 
     // State for tracking active tab (question or answer)
-    const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard' | 'knowledge'>('question');
+    const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('question');
 
     // State to track which field is being highlighted for validation errors
     const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | 'codingLanguage' | 'title' | null>(null);
@@ -598,6 +598,23 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 } else {
                     console.log("question.config.codingLanguages is not empty");
                 }
+            }
+
+            // Check if objective question has file input type
+            if (question.config.questionType === 'objective' && question.config.inputType === 'file') {
+                // Navigate to the question with invalid combination
+                setCurrentQuestionIndex(i);
+                setActiveEditorTab('question');
+                updateCurrentQuestionId(question.id);
+
+                // Notify parent about validation error
+                if (onValidationError) {
+                    onValidationError(
+                        "Invalid configuration",
+                        `Question ${i + 1} uses file uploads. Please change the question type to 'Subjective'`
+                    );
+                }
+                return false;
             }
 
             // For objective questions, check if correct answer is set
@@ -816,7 +833,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [questions, currentQuestionIndex, onChange, highlightedField]);
 
     // Handle configuration change for the current question
-    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: 'objective' | 'subjective', newInputType?: 'text' | 'code' | 'audio' }) => {
+    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: QuestionType, newInputType?: InputType }) => {
         if (questions.length === 0) return;
 
         const updatedQuestions = [...questions];
@@ -877,11 +894,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const executeAddQuestion = useCallback(() => {
         // Get the previous question's configuration if available
         // Otherwise, use default values
-        let questionType = 'objective';
-        let inputType: 'text' | 'code' | 'audio' = 'text';
+        let questionType: QuestionType = 'objective';
+        let inputType: InputType = 'text';
         let codingLanguages: string[] = [];
-        let responseType: 'chat' | 'exam' = 'chat';
-        let settings: { allowCopyPaste?: boolean } = { allowCopyPaste: true };
+        let responseType: ResponseType = 'chat';
+        let settings: QuizQuestionSettings = { allowCopyPaste: true };
         // If there's at least one question (to be used as a reference)
         if (questions.length > 0) {
             const previousQuestion = questions[questions.length - 1];
@@ -897,7 +914,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     codingLanguages = [...previousQuestion.config.codingLanguages];
                 }
                 responseType = previousQuestion.config.responseType;
-                settings = previousQuestion.config.settings
+                settings = previousQuestion.config.settings || { allowCopyPaste: true };
             }
         }
 
@@ -906,7 +923,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             content: [],
             config: {
                 ...defaultQuestionConfig,
-                questionType: questionType as 'objective' | 'subjective',
+                questionType: questionType,
                 inputType: inputType,
                 codingLanguages: codingLanguages,
                 responseType: responseType,
@@ -1527,7 +1544,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setSelectedQuestionType(option);
 
             // Get the new question type
-            const newQuestionType = option.value as 'objective' | 'subjective';
+            const newQuestionType = option.value as QuestionType;
 
             // Update the question config with the new question type and also update template if needed
             handleConfigChange({
@@ -1582,16 +1599,35 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         if (!Array.isArray(option)) {
             setSelectedAnswerType(option);
 
-            // Update the question config with the new input type
+            const newInputType = option.value as InputType;
+            const currentQuestionType = currentQuestionConfig.questionType;
+            let shouldUpdateQuestionType = false;
+
+            // If file is selected, automatically change question type to subjective
+            if (newInputType === 'file' && currentQuestionType === 'objective') {
+                shouldUpdateQuestionType = true;
+                setSelectedQuestionType(getQuestionTypeOption('subjective'));
+
+                // Show toast notification
+                setTimeout(() => {
+                    setToastTitle("Question Type Updated");
+                    setToastMessage("Question type changed to 'Subjective'");
+                    setToastEmoji("ℹ️");
+                    setShowToast(true);
+                }, 100);
+            }
+
+            // Update the question config with the new input type and question type if needed
             handleConfigChange({
-                inputType: option.value as 'text' | 'code' | 'audio'
+                inputType: newInputType,
+                ...(shouldUpdateQuestionType ? { questionType: 'subjective' as QuestionType } : {})
             }, {
                 updateTemplate: true,
-                newQuestionType: currentQuestionConfig.questionType,
-                newInputType: option.value as 'text' | 'code' | 'audio'
+                newQuestionType: shouldUpdateQuestionType ? 'subjective' : currentQuestionType,
+                newInputType: newInputType
             });
         }
-    }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.questionType]);
+    }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.questionType, getQuestionTypeOption]);
 
     // Handle coding language change
     const handleCodingLanguageChange = useCallback((option: DropdownOption | DropdownOption[]) => {

@@ -53,6 +53,10 @@ interface ChatViewProps {
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
     onFileDownload?: (fileUuid: string, fileName: string) => void;
+    // File upload configuration
+    fileType?: string[];
+    maxSizeBytes?: number;
+    placeholderText?: string;
 }
 
 export interface ChatViewHandle {
@@ -86,6 +90,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     showUploadSection = false,
     onFileUploaded,
     onFileDownload,
+    fileType = ['.zip'],
+    maxSizeBytes = 50 * 1024 * 1024,
+    placeholderText = "Upload your file",
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -646,16 +653,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             {!(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
-                                    {showUploadSection && !isAiResponding ? (
+                                    {(showUploadSection || currentQuestionConfig?.inputType === 'file') && !isAiResponding ? (
                                         <UploadFile
                                             disabled={false}
                                             onComplete={(file) => {
                                                 if (onFileUploaded) onFileUploaded(file);
                                             }}
                                             className="mt-auto"
-                                            fileType={['.zip']}
-                                            maxSizeBytes={50 * 1024 * 1024}
-                                            placeholderText="Upload your project as a .zip file"
+                                            fileType={fileType}
+                                            maxSizeBytes={maxSizeBytes}
+                                            placeholderText={placeholderText}
                                         />
                                     ) : currentQuestionConfig?.inputType === 'audio' ? (
                                         <div className="w-full sm:w-auto">

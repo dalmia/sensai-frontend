@@ -1,7 +1,8 @@
 import { ScorecardTemplate } from "../../components/ScorecardPickerDialog";
+import { EditorTab } from "../../types/quiz";
 
 export interface ValidationCallbacks {
-    setActiveTab?: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
+    setActiveTab?: (tab: EditorTab) => void;
     showErrorMessage?: (title: string, message: string, emoji?: string) => void;
     questionIndex?: number; // Optional for showing question number in error message
 }

@@ -2,7 +2,7 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, MessageCircle, X, SplitSquareVertical, CheckCircle } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState, ChatViewHandle } from './ChatView';
@@ -10,7 +10,6 @@ import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
-import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
@@ -22,6 +21,7 @@ import "katex/dist/katex.min.css";
 import Toast from "./Toast";
 import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
 import { blobToBase64, convertAudioBufferToWav } from '@/lib/utils/audioUtils';
+import { convertFileToBase64, downloadFile, uploadFile } from '@/lib/utils/fileUtils';
 
 // Add interface for mobile view mode
 export interface MobileViewMode {
@@ -397,10 +397,49 @@ export default function LearnerQuizView({
                         }
                     }
 
+                    let displayContent = message.content;
+                    let rawContent = message.content;
+                    if (message.role === 'assistant' && message.content) {
+                        try {
+                            const parsedContent = JSON.parse(message.content);
+                            if (parsedContent.feedback) {
+                                displayContent = parsedContent.feedback;
+                                rawContent = message.content;
+                            }
+                        } catch (error) {
+                            // If parsing fails, use the original content
+                            console.log('Failed to parse AI message content, using original:', error);
+                        }
+                    } else if (message.role === 'user' && message.response_type === 'file' && message.content) {
+                        try {
+                            const parsedContent = JSON.parse(message.content);
+                            if (parsedContent.filename) {
+                                displayContent = parsedContent.filename;
+                                rawContent = message.content;
+                            }
+                        } catch (error) {
+                            // If parsing fails, use the original content
+                            console.log('Failed to parse user file message content, using original:', error);
+                        }
+                    }
+
+                    // Extract file info for file messages
+                    let fileUuid: string | undefined;
+                    let fileName: string | undefined;
+                    if (message.role === 'user' && message.response_type === 'file' && rawContent) {
+                        try {
+                            const parsedContent = JSON.parse(rawContent);
+                            fileUuid = parsedContent.file_uuid;
+                            fileName = parsedContent.filename;
+                        } catch {
+                            // Ignore parse errors
+                        }
+                    }
+
                     // Convert API message to ChatMessage format
                     const chatMessage: ChatMessage = {
                         id: `${message.role}-${message.id}`,
-                        content: message.content,
+                        content: displayContent,
                         sender: message.role === 'user' ? 'user' : 'ai',
                         timestamp: new Date(message.created_at),
                         messageType: message.response_type,
@@ -408,16 +447,16 @@ export default function LearnerQuizView({
                         scorecard: []
                     };
 
-                    // If this is an AI message, try to parse the content as JSON
-                    if (message.role === 'assistant') {
+                    if (fileUuid && fileName) {
+                        (chatMessage as any).fileUuid = fileUuid;
+                        (chatMessage as any).fileName = fileName;
+                    }
+
+                    // If this is an AI message, try to parse the content as JSON for additional fields
+                    if (message.role === 'assistant' && rawContent) {
                         try {
                             // Try to parse the content as JSON
-                            const contentObj = JSON.parse(message.content);
-
-                            // Extract the feedback field to display as the message content
-                            if (contentObj && contentObj.feedback) {
-                                chatMessage.content = contentObj.feedback;
-                            }
+                            const contentObj = JSON.parse(rawContent);
 
                             // Extract scorecard if available
                             if (contentObj && contentObj.scorecard) {
@@ -678,7 +717,7 @@ export default function LearnerQuizView({
         const messages = [
             {
                 role: "user",
-                content: userMessage.content,
+                content: userMessage.content, // This will be JSON for file messages, plain text for others
                 response_type: userMessage.messageType,
                 audio_data: userMessage.messageType === 'audio' ? userMessage.audioData : undefined,
                 created_at: userMessage.timestamp
@@ -721,8 +760,10 @@ export default function LearnerQuizView({
     const processUserResponse = useCallback(
         async (
             responseContent: string,
-            responseType: 'text' | 'audio' | 'code' = 'text',
-            audioData?: string
+            responseType: 'text' | 'audio' | 'code' | 'file' = 'text',
+            audioData?: string,
+            fileUuid?: string,
+            fileData?: string
         ) => {
             if (!validQuestions || validQuestions.length === 0 || currentQuestionIndex >= validQuestions.length) {
                 return;
@@ -733,10 +774,10 @@ export default function LearnerQuizView({
             // Set submitting state to true
             setIsSubmitting(true);
 
-            // Create the user message object
-            const userMessage: ChatMessage = {
+            // Create the user message object for display
+            const displayMessage: ChatMessage = {
                 id: `user-${Date.now()}`,
-                content: responseContent,
+                content: responseType === 'file' ? responseContent : responseContent,
                 sender: 'user',
                 timestamp: new Date(),
                 messageType: responseType,
@@ -744,19 +785,37 @@ export default function LearnerQuizView({
                 scorecard: []
             };
 
+            // Create storage message (with JSON for file messages)
+            const storageMessage: ChatMessage = {
+                ...displayMessage,
+                content: responseType === 'file' && fileUuid ? JSON.stringify({
+                    file_uuid: fileUuid,
+                    filename: responseContent,
+                }) : responseContent,
+            };
+
+            // For file messages, store file info
+            if (responseType === 'file' && fileUuid) {
+                (displayMessage as any).fileUuid = fileUuid;
+                (displayMessage as any).fileName = responseContent;
+            }
+
             // Handle code type message differently for UI display
             // Only set messageType to 'code' when it actually comes from the code editor
             // or when the responseType is explicitly set to 'code'
             if (responseType === 'code') {
-                userMessage.messageType = 'code';
+                displayMessage.messageType = 'code';
+                storageMessage.messageType = 'code';
             }
             // Don't automatically convert text messages to code messages for coding questions
 
-            // Immediately add the user's message to chat history
-            setChatHistories(prev => ({
-                ...prev,
-                [currentQuestionId]: [...(prev[currentQuestionId] || []), userMessage]
-            }));
+            // Immediately add the display message to chat history (for non-file messages)
+            if (responseType !== 'file') {
+                setChatHistories(prev => ({
+                    ...prev,
+                    [currentQuestionId]: [...(prev[currentQuestionId] || []), displayMessage]
+                }));
+            }
 
             // Clear the input field after submission (only for text input)
             if (responseType === 'text' || responseType === 'code') {
@@ -767,6 +826,44 @@ export default function LearnerQuizView({
                 if (inputRef.current) {
                     inputRef.current.focus();
                 }
+            }
+
+            // For file responses, handle file upload similar to audio
+            let uploadedFileUuid = fileUuid;
+            if (responseType === 'file' && fileData && !fileUuid) {
+                try {
+                    // Get file extension from filename to determine content type
+                    const fileExtension = responseContent.split('.').pop()?.toLowerCase() || 'pdf';
+                    const contentType = `application/${fileExtension === 'pdf' ? 'pdf' : 'octet-stream'}`;
+
+                    const file_uuid = await uploadFile(fileData, responseContent, contentType);
+                    uploadedFileUuid = file_uuid;
+                    storageMessage.content = JSON.stringify({ file_uuid, filename: responseContent });
+                    (displayMessage as any).fileUuid = file_uuid;
+                    (displayMessage as any).fileName = responseContent;
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    throw error;
+                }
+            } else if (responseType === 'file' && fileUuid) {
+                // If fileUuid is already provided, use it
+                uploadedFileUuid = fileUuid;
+                storageMessage.content = JSON.stringify({ file_uuid: fileUuid, filename: responseContent });
+                (displayMessage as any).fileUuid = fileUuid;
+                (displayMessage as any).fileName = responseContent;
+            }
+
+            // Handle file response for chat history
+            if (responseType === 'file') {
+                const fileUuidValue = fileUuid || uploadedFileUuid || '';
+                if (fileUuidValue) {
+                    (displayMessage as any).fileUuid = fileUuidValue;
+                    (displayMessage as any).fileName = responseContent;
+                }
+                setChatHistories(prev => ({
+                    ...prev,
+                    [currentQuestionId]: [...(prev[currentQuestionId] || []), displayMessage]
+                }));
             }
 
             // Special case: For exam questions in test mode, don't make the API call
@@ -821,13 +918,22 @@ export default function LearnerQuizView({
             if (isTestMode) {
                 // In teacher testing mode, send chat_history and question data
                 // Format the chat history for the current question
-                const formattedChatHistory = (chatHistories[currentQuestionId] || []).map(msg => ({
-                    role: msg.sender === 'user' ? 'user' : 'assistant',
-                    content: msg.sender === 'user' ? msg.content :
-                        validQuestions[currentQuestionIndex].config.questionType === 'objective' ? JSON.stringify({ feedback: msg.content }) : JSON.stringify({ feedback: msg.content, scorecard: msg.scorecard }),
-                    response_type: msg.messageType,
-                    audio_data: msg.audioData
-                }));
+                // For file messages, we need to get the JSON content from storageMessage
+                const formattedChatHistory = (chatHistories[currentQuestionId] || []).map(msg => {
+                    // For user file messages, check if we have fileUuid to reconstruct JSON
+                    let content = msg.content;
+                    if (msg.sender === 'user' && msg.messageType === 'file' && (msg as any).fileUuid && (msg as any).fileName) {
+                        // Reconstruct JSON for file messages in test mode
+                        content = JSON.stringify({ file_uuid: (msg as any).fileUuid, filename: (msg as any).fileName });
+                    }
+                    return {
+                        role: msg.sender === 'user' ? 'user' : 'assistant',
+                        content: msg.sender === 'user' ? content :
+                            validQuestions[currentQuestionIndex].config.questionType === 'objective' ? JSON.stringify({ feedback: msg.content }) : JSON.stringify({ feedback: msg.content, scorecard: msg.scorecard }),
+                        response_type: msg.messageType,
+                        audio_data: msg.audioData
+                    };
+                });
 
                 let scorecardId = undefined;
                 if (validQuestions[currentQuestionIndex].config.questionType === 'subjective') {
@@ -836,9 +942,10 @@ export default function LearnerQuizView({
 
                 // Create the request body for teacher testing mode
                 requestBody = {
-                    user_response: responseType === 'audio' ? audioData : responseContent,
+                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? (uploadedFileUuid || '') : responseContent,
                     ...(responseType === 'audio' && { response_type: "audio" }),
                     ...(responseType === 'code' && { response_type: "code" }),
+                    ...(responseType === 'file' && { response_type: "file" }),
                     chat_history: formattedChatHistory,
                     question: {
                         "blocks": validQuestions[currentQuestionIndex].content,
@@ -859,7 +966,7 @@ export default function LearnerQuizView({
             } else {
                 // In normal mode, send question_id and user_id
                 requestBody = {
-                    user_response: responseType === 'audio' ? audioData : responseContent,
+                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? (uploadedFileUuid || '') : responseContent,
                     response_type: responseType,
                     question_id: currentQuestionId,
                     user_id: userId,
@@ -954,7 +1061,9 @@ export default function LearnerQuizView({
                         console.log('Audio file uploaded successfully to backend');
                         // Update the request body with the file information
                         requestBody.user_response = file_uuid || '';
-                        userMessage.content = file_uuid || '';
+                        // For audio, both messages use the file_uuid
+                        storageMessage.content = file_uuid || '';
+                        displayMessage.content = file_uuid || '';
                     } catch (error) {
                         console.error('Error with direct upload to backend:', error);
                         throw error;
@@ -978,7 +1087,9 @@ export default function LearnerQuizView({
                         console.log('Audio file uploaded successfully to S3');
                         // Update the request body with the file information
                         requestBody.user_response = file_uuid;
-                        userMessage.content = file_uuid || '';
+                        // For audio, both messages use the file_uuid
+                        storageMessage.content = file_uuid || '';
+                        displayMessage.content = file_uuid || '';
                     } catch (error) {
                         console.error('Error uploading audio to S3:', error);
                         throw error;
@@ -1218,7 +1329,9 @@ export default function LearnerQuizView({
                                     is_correct: isCorrect,
                                     scorecard: completeScorecard
                                 };
-                                storeChatHistory(currentQuestionId, userMessage, aiResponse);
+                                // Use storageMessage for file messages (has JSON), displayMessage for others
+                                const messageToStore = responseType === 'file' ? storageMessage : displayMessage;
+                                storeChatHistory(currentQuestionId, messageToStore, aiResponse);
                             }
                         } catch (error) {
                             console.error('Error processing stream:', error);
@@ -1240,7 +1353,9 @@ export default function LearnerQuizView({
                     // Show error message to the user
                     const errorMessage = responseType === 'audio'
                         ? "There was an error while processing your audio. Please try again."
-                        : "There was an error while processing your answer. Please try again.";
+                        : responseType === 'file'
+                            ? "There was an error while processing your file. Please try again."
+                            : "There was an error while processing your answer. Please try again.";
 
                     const errorResponse: ChatMessage = {
                         id: `ai-error-${Date.now()}`,
@@ -1359,6 +1474,45 @@ export default function LearnerQuizView({
     const handleExamSubmissionCancel = useCallback(() => {
         setShowExamSubmissionConfirmation(false);
         setPendingExamSubmission(null);
+    }, []);
+
+    // Function to handle file submission
+    const handleFileSubmit = useCallback(async (file: File) => {
+        if (viewOnly) return;
+
+        try {
+            // Convert the file to base64 for presigned URL upload (similar to audio flow)
+            const base64Data = await convertFileToBase64(file);
+
+            // Pass fileData to processUserResponse so it uses the presigned URL flow
+            processUserResponse(file.name, 'file', undefined, undefined, base64Data);
+        } catch (error) {
+            console.error('Error processing file upload:', error);
+            // Show error message to the user
+            const errorResponse: ChatMessage = {
+                id: `ai-error-${Date.now()}`,
+                content: "There was an error while processing your file. Please try again.",
+                sender: 'ai',
+                timestamp: new Date(),
+                messageType: 'text',
+                audioData: undefined,
+                scorecard: [],
+                isError: true
+            };
+            setChatHistories(prev => ({
+                ...prev,
+                [validQuestions[currentQuestionIndex]?.id || '']: [...(prev[validQuestions[currentQuestionIndex]?.id || ''] || []), errorResponse]
+            }));
+        }
+    }, [processUserResponse, viewOnly, validQuestions, currentQuestionIndex]);
+
+    // Function to handle file download
+    const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
+        try {
+            await downloadFile(fileUuid, fileName, 'zip');
+        } catch (error) {
+            console.error('Error downloading file:', error);
+        }
     }, []);
 
     // New function to handle audio submission using shared logic
@@ -2121,6 +2275,11 @@ export default function LearnerQuizView({
                             onShowLearnerViewChange={setShowLearnerView}
                             isAdminView={isAdminView}
                             userId={userId}
+                            onFileUploaded={handleFileSubmit}
+                            onFileDownload={handleFileDownload}
+                            fileType={['.pdf']}
+                            maxSizeBytes={50 * 1024 * 1024}
+                            placeholderText="Upload your file as a PDF"
                             ref={chatViewRef}
                         />
                     )}
