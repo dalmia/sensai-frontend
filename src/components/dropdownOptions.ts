@@ -68,8 +68,14 @@ export const answerTypeOptions: DropdownOption[] = [
         "value": "code",
         "color": "#614A82",
         "tooltip": "Learner writes code in a code editor"
+    },
+    {
+        "label": "File",
+        "value": "file",
+        "color": "#7C3AED",
+        "tooltip": "Learner uploads a PDF file as their answer"
     }
-]; 
+];
 
 
 // Options for coding languages in the quiz editor

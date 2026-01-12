@@ -1,4 +1,13 @@
-import { CriterionData, ScorecardTemplate } from "../components/ScorecardPickerDialog";
+import { ScorecardTemplate } from "../components/ScorecardPickerDialog";
+
+export type InputType = 'text' | 'code' | 'audio' | 'file';
+export type ResponseType = 'chat' | 'exam';
+export type QuestionType = 'objective' | 'subjective';
+export type EditorTab = 'question' | 'answer' | 'scorecard' | 'knowledge';
+
+export interface QuizQuestionSettings {
+    allowCopyPaste?: boolean;
+}
 
 export interface QuizEditorHandle {
     saveDraft: () => Promise<void>;
@@ -7,18 +16,18 @@ export interface QuizEditorHandle {
     hasContent: () => boolean;
     hasChanges: () => boolean;
     hasQuestionContent: () => boolean;
-    getCurrentQuestionType: () => 'objective' | 'subjective' | null;
-    getCurrentQuestionInputType: () => 'text' | 'code' | 'audio' | null;
+    getCurrentQuestionType: () => QuestionType | null;
+    getCurrentQuestionInputType: () => InputType | null;
     hasCorrectAnswer: () => boolean;
     hasCodingLanguages: () => boolean;
     hasScorecard: () => boolean;
-    setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
+    setActiveTab: (tab: EditorTab) => void;
     validateBeforePublish: () => boolean;
     getCurrentQuestionConfig: () => QuizQuestionConfig | undefined;
     validateScorecardCriteria: (
-        scorecard: ScorecardTemplate | undefined, 
+        scorecard: ScorecardTemplate | undefined,
         callbacks: {
-            setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
+            setActiveTab: (tab: EditorTab) => void;
             showErrorMessage?: (title: string, message: string, emoji?: string) => void;
             questionIndex?: number;
         }
@@ -28,16 +37,16 @@ export interface QuizEditorHandle {
 }
 
 export interface QuizQuestionConfig {
-    inputType: 'text' | 'code' | 'audio';
-    responseType: 'chat' | 'exam';
+    inputType: InputType;
+    responseType: ResponseType;
     correctAnswer?: any[];
     codingLanguages?: string[]; // For multiple coding languages
-    questionType: 'objective' | 'subjective';
+    questionType: QuestionType;
     scorecardData?: ScorecardTemplate;
     knowledgeBaseBlocks: any[]; // Add knowledge base content blocks
     linkedMaterialIds: string[]; // Add IDs of linked learning materials
     title: string;
-    settings?: any;
+    settings?: QuizQuestionSettings;
 }
 
 export interface QuizQuestion {
@@ -106,7 +115,7 @@ export interface APIQuestionResponse {
         linkedMaterialIds?: string[];
     };
     coding_languages?: string[];
-    settings?: any;
+    settings?: QuizQuestionSettings;
 }
 
 
@@ -116,14 +125,14 @@ export interface ChatMessage {
     content: string;
     sender: 'user' | 'ai';
     timestamp: Date;
-    messageType?: 'text' | 'audio' | 'code' | 'file';
+    messageType?: InputType;
     audioData?: string; // base64 encoded audio data
     scorecard?: ScorecardItem[]; // Add scorecard field for detailed feedback
     isError?: boolean;
     is_correct?: boolean; // Add is_correct attribute for exam responses
     fileUuid?: string; // UUID for file messages
     fileName?: string; // Filename for file messages
-}   
+}
 
 
 // Define scorecard item structure

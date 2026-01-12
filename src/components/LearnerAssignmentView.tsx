@@ -7,6 +7,7 @@ import ScorecardView from "./ScorecardView";
 import { ChatMessage, ScorecardItem } from "../types/quiz";
 import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
 import { blobToBase64, convertAudioBufferToWav } from '@/lib/utils/audioUtils';
+import { convertFileToBase64, downloadFile, uploadFile } from '@/lib/utils/fileUtils';
 import Toast from "./Toast";
 
 import { CheckCircle } from "lucide-react";
@@ -490,99 +491,25 @@ export default function LearnerAssignmentView({
             let receivedAnyFeedback = false;
 
             // Shared upload flow for 'audio' (with audioData) and 'file' (with fileData)
-            let presigned_url = '';
             let file_uuid = '';
             if ((responseType === 'audio' && audioData) || (responseType === 'file' && fileData)) {
                 const isAudio = responseType === 'audio';
                 const contentType = isAudio ? 'audio/wav' : 'application/zip';
-                const filename = isAudio ? 'audio.wav' : 'file.zip';
+                const filename = isAudio ? 'audio.wav' : responseContent || 'file.zip';
+                const base64Data = isAudio ? (audioData as string) : (fileData as string);
 
                 try {
-                    // First, get a presigned URL for the file
-                    const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            content_type: contentType
-                        })
-                    });
+                    file_uuid = await uploadFile(base64Data, filename, contentType);
 
-                    if (!presignedUrlResponse.ok) {
-                        throw new Error('Failed to get presigned URL');
+                    // Update the storage message content with the file information
+                    if (isAudio) {
+                        storageMessage.content = file_uuid;
+                    } else {
+                        storageMessage.content = JSON.stringify({ file_uuid, filename: responseContent });
                     }
-
-                    const presignedData = await presignedUrlResponse.json();
-                    presigned_url = presignedData.presigned_url;
-                    file_uuid = presignedData.file_uuid;
-                } catch {
-                    console.error("Error getting presigned URL");
-                }
-
-                // Convert base64 data to a Blob
-                const binaryData = atob(isAudio ? (audioData as string) : (fileData as string));
-                const arrayBuffer = new ArrayBuffer(binaryData.length);
-                const uint8Array = new Uint8Array(arrayBuffer);
-                for (let i = 0; i < binaryData.length; i++) {
-                    uint8Array[i] = binaryData.charCodeAt(i);
-                }
-                const dataBlob = new Blob([uint8Array], { type: contentType });
-
-                if (!presigned_url) {
-                    // If we couldn't get a presigned URL, try direct upload to the backend
-                    try {
-                        // Create FormData for the file upload
-                        const formData = new FormData();
-                        formData.append('file', dataBlob, filename);
-                        formData.append('content_type', contentType);
-
-                        // Upload directly to the backend
-                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload file to backend`);
-                        }
-
-                        const uploadData = await uploadResponse.json();
-                        file_uuid = uploadData.file_uuid;
-
-                        // Update the storage message content with the file information
-                        if (isAudio) {
-                            storageMessage.content = file_uuid || '';
-                        } else {
-                            storageMessage.content = JSON.stringify({ file_uuid: file_uuid || '', filename: responseContent });
-                        }
-                    } catch {
-                        throw new Error('Error with direct upload to backend');
-                    }
-                } else {
-                    // Upload the file to S3 using the presigned URL
-                    try {
-                        const uploadResponse = await fetch(presigned_url, {
-                            method: 'PUT',
-                            body: dataBlob,
-                            headers: {
-                                'Content-Type': contentType
-                            }
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload file to S3`);
-                        }
-
-                        // Update the storage message content with the file information
-                        if (isAudio) {
-                            storageMessage.content = file_uuid;
-                        } else {
-                            storageMessage.content = JSON.stringify({ file_uuid, filename: responseContent });
-                        }
-                    } catch {
-                        throw new Error('Error uploading file to S3');
-                    }
+                } catch (error) {
+                    console.error("Error uploading file:", error);
+                    throw error;
                 }
             }
 
@@ -871,20 +798,10 @@ export default function LearnerAssignmentView({
 
         try {
             // Convert the file to base64 for presigned URL upload (similar to audio flow)
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
+            const base64Data = await convertFileToBase64(file);
 
-            reader.onloadend = async () => {
-                const base64File = reader.result as string;
-                const base64Data = base64File.split(',')[1];
-
-                // Pass fileData to processUserResponse so it uses the presigned URL flow
-                processUserResponse(file.name, 'file', undefined, undefined, base64Data);
-            };
-
-            reader.onerror = () => {
-                throw new Error('Failed to read file');
-            };
+            // Pass fileData to processUserResponse so it uses the presigned URL flow
+            processUserResponse(file.name, 'file', undefined, undefined, base64Data);
         } catch (error) {
             console.error('Error processing file upload:', error);
             // Show error message to the user
@@ -914,40 +831,7 @@ export default function LearnerAssignmentView({
 
     const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
         try {
-            // Try to get presigned URL first
-            const presignedResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
-                { method: 'GET' }
-            );
-
-            let downloadUrl: string;
-            if (presignedResponse.ok) {
-                const { url } = await presignedResponse.json();
-                downloadUrl = url;
-            } else {
-                // Fallback to direct download
-                downloadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
-            }
-
-            // Fetch the file as a blob to have control over the filename
-            const fileResponse = await fetch(downloadUrl);
-            if (!fileResponse.ok) {
-                throw new Error('Failed to download file');
-            }
-
-            const blob = await fileResponse.blob();
-            const blobUrl = URL.createObjectURL(blob);
-
-            // Create a temporary link and trigger download with the correct filename
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // Clean up the object URL
-            URL.revokeObjectURL(blobUrl);
+            await downloadFile(fileUuid, fileName, 'zip');
         } catch (error) {
             console.error('Error downloading file:', error);
         }
@@ -1204,7 +1088,10 @@ export default function LearnerAssignmentView({
                                 userId={userId}
                                 showUploadSection={needsResubmission}
                                 onFileUploaded={handleFileSubmit}
-                                    onFileDownload={handleFileDownload}
+                                onFileDownload={handleFileDownload}
+                                fileType={['.zip']}
+                                maxSizeBytes={50 * 1024 * 1024}
+                                placeholderText="Upload your assignment as a .zip file"
                             />
                         </div>
                     )}
