@@ -804,6 +804,29 @@ export default function CreateCourse() {
         setShowPublishConfirmation(false);
     };
 
+    // Generic function to update a module item with any properties
+    const updateModuleItem = (moduleId: string, itemId: string, updates: Partial<ModuleItem>) => {
+        setModules(prevModules =>
+            prevModules.map(module => {
+                if (module.id === moduleId) {
+                    return {
+                        ...module,
+                        items: module.items.map(item => {
+                            if (item.id === itemId) {
+                                return {
+                                    ...item,
+                                    ...updates
+                                } as ModuleItem;
+                            }
+                            return item;
+                        })
+                    };
+                }
+                return module;
+            })
+        );
+    };
+
     // Add a function to update a module item's status and title
     const updateModuleItemAfterPublish = (moduleId: string, itemId: string, status: string, title: string, scheduled_publish_at: string | null) => {
         setModules(prevModules =>
@@ -2078,6 +2101,7 @@ export default function CreateCourse() {
                             schoolId={schoolId}
                             courseId={courseId}
                             onDuplicateItem={handleDuplicateItem}
+                            updateModuleItem={updateModuleItem}
                         />
                     </div>
 

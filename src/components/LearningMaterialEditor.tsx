@@ -58,11 +58,14 @@ interface LearningMaterialEditorProps {
     readOnly?: boolean;
     viewOnly?: boolean;
     showPublishConfirmation?: boolean;
+    showUnpublishConfirmation?: boolean;
+    setShowUnpublishConfirmation: (state: boolean) => void;
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
     taskId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
+    onUnpublishSuccess: (updatedData?: TaskData) => void;
     scheduledPublishAt?: string | null;
 }
 
@@ -73,17 +76,21 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     readOnly = false,
     viewOnly = false,
     showPublishConfirmation = false,
+    showUnpublishConfirmation = false,
+    setShowUnpublishConfirmation,
     onPublishConfirm,
     onPublishCancel,
     taskId,
     onPublishSuccess,
     onSaveSuccess,
+    onUnpublishSuccess,
     scheduledPublishAt = null,
 }, ref) => {
     const { isDarkMode } = useThemePreference();
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
-    const [publishError, setPublishError] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isUnpublishing, setIsUnpublishing] = useState(false);
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
@@ -170,11 +177,14 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     setTaskData(data);
 
                     // Store the original data for reverting on cancel
-                    originalDataRef.current = { ...data };
+                    let sanitizedData = sanitizeTaskDataFromBackend(data) 
+                    // The data has to be sanitized here because originalDataRef gets compared with editorContent in other places. 
+                    // Also editorContent is set from other places in the frontend which will not contain properties set from the backend. So it is necessary for both of them to use the sanitized data
+                    originalDataRef.current = { ...sanitizedData };
 
                     // Initialize editorContent with the blocks from taskData
                     if (data.blocks && data.blocks.length > 0) {
-                        setEditorContent(data.blocks);
+                        setEditorContent(sanitizedData.blocks);
                     }
 
                     setIsLoading(false);
@@ -199,6 +209,18 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     }, [taskId]);
 
+    const sanitizeTaskDataFromBackend = (data: TaskData): TaskData => {
+        const sanitizedDataBlocks = data.blocks.map((block: any) => {
+            const { position, ...dataWithoutPositionProperty } = block
+            return dataWithoutPositionProperty
+        })
+
+        const sanitizedTaskData = { ...data, blocks: sanitizedDataBlocks }
+
+        return sanitizedTaskData
+    }
+
+
     // Handle cancel in edit mode - revert to original data
     const handleCancel = () => {
         if (!originalDataRef.current) return;
@@ -216,12 +238,12 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const handleConfirmPublish = async (scheduledPublishAt: string | null) => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
-            setPublishError("Cannot publish: Task ID is missing");
+            setErrorMessage("Cannot publish: Task ID is missing");
             return;
         }
 
         setIsPublishing(true);
-        setPublishError(null);
+        setErrorMessage(null);
 
         try {
             // Get the current title from the dialog - it may have been edited
@@ -282,17 +304,68 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
         } catch (error) {
             console.error("Error publishing learning material:", error);
-            setPublishError(error instanceof Error ? error.message : "Failed to publish learning material");
+            setErrorMessage(error instanceof Error ? error.message : "Failed to publish learning material");
             setIsPublishing(false);
         }
     };
 
     const handleCancelPublish = () => {
-        setPublishError(null);
+        setErrorMessage(null);
         if (onPublishCancel) {
             onPublishCancel();
         }
     };
+
+    const handleConfirmUnpublish = async () => {
+        if (!taskId) {
+            console.error("Cannot unpublish: taskId is not provided");
+            setErrorMessage("Cannot unpublish: Task ID is missing");
+            return;
+        }
+
+        setIsUnpublishing(true);
+
+        try {
+            // Using the taskData's content here and not the current editor content because, during unpublish, we're only going to use the data of the existing task, not going to update it from the editor. 
+            // Additionally, "Unpublish" is not going to be visible when Editing, so ideally data of the editorContent and taskData should be the same
+            const currentTitle = taskData?.title || "";
+            const currentContent = taskData?.blocks || []
+            const currentScheduledPublishAt = null; // This has to be null because, the we also "unschedule" a scheduled to publish task. 
+
+            // Make POST request to update the learning material content, keeping the same status
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: currentTitle,
+                    blocks: currentContent,
+                    scheduled_publish_at: currentScheduledPublishAt,
+                    status: 'draft'
+                }),
+            });
+
+            if (!response.ok) {
+                const responseBody = await response.json()
+                throw new Error(`Failed to unpublish learning material: \"${responseBody?.detail}\" (${response.status})`)
+            }
+
+            const taskDataFromResponse = await response.json();
+            onUnpublishSuccess(taskDataFromResponse);
+            setTaskData(taskDataFromResponse);      // Update our local state with the data from the API
+            setIsUnpublishing(false);
+            setShowUnpublishConfirmation(false);
+
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to unpublish learning material")
+            setIsUnpublishing(false);
+        }
+    };
+
+    const handleCancelUnpublish = () => {
+        setShowUnpublishConfirmation(false)
+        setErrorMessage(null)
+    };
+
 
     // Handle Integration page selection
     const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
@@ -585,7 +658,21 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 onConfirm={handleConfirmPublish}
                 onCancel={handleCancelPublish}
                 isLoading={isPublishing}
-                errorMessage={publishError}
+                errorMessage={errorMessage}
+            />
+
+            <ConfirmationDialog
+                open={showUnpublishConfirmation}
+                title="Are you sure to unpublish these changes?"
+                message="This material will be unpublished to learners immediately after this action. Are you sure you want to proceed?"
+                confirmButtonText="Unpublish"
+                cancelButtonText="Cancel"
+                onConfirm={handleConfirmUnpublish}
+                onCancel={handleCancelUnpublish}
+                isLoading={isUnpublishing}
+                errorMessage={errorMessage}
+                type="delete"
+                deleteIcon={null}
             />
         </div>
     );

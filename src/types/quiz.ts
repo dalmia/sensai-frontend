@@ -1,3 +1,4 @@
+import { TaskData } from ".";
 import { CriterionData, ScorecardTemplate } from "../components/ScorecardPickerDialog";
 
 export interface QuizEditorHandle {
@@ -58,6 +59,9 @@ export interface QuizEditorProps {
     onPublishSuccess?: (updatedData?: any) => void;
     showPublishConfirmation?: boolean;
     onPublishCancel?: () => void;
+    showUnpublishConfirmation: boolean
+    setShowUnpublishConfirmation: (showUnpublishConfirmation: boolean) => void
+    onUnpublishSuccess: (taskData: TaskData) => void
     isEditMode?: boolean;
     onSaveSuccess?: (updatedData?: any) => void;
     taskType?: 'quiz';

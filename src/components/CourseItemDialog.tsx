@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Check, X, Pencil, Eye, Edit2, Zap } from "lucide-react";
+import { Check, X, Pencil, Eye, Edit2, Zap, ZapOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { QuizQuestion } from "../types";
 import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
@@ -76,6 +76,7 @@ interface CourseItemDialogProps {
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
     courseId?: string; // Add courseId prop for learning materials
+    updateModuleItem?: (moduleId: string, itemId: string, updates: Partial<ModuleItem>) => void;
 }
 
 const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
@@ -100,6 +101,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     focusEditor,
     schoolId,
     courseId,
+    updateModuleItem,
 }) => {
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
@@ -133,6 +135,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Add state for save confirmation dialog
     const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+
+    // Add state for save confirmation dialog
+    const [showUnpublishConfirmation, setShowUnpublishConfirmation] = useState(false);
 
     // State to track if quiz has questions (for publish/preview button visibility)
     const [hasQuizQuestions, setHasQuizQuestions] = useState(false);
@@ -767,6 +772,39 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowSaveConfirmation(false);
     };
 
+    const handleUnpublish = () => {
+        setShowUnpublishConfirmation(true)
+    }
+
+    const navigateBackWindowHistoryIfDialogWasOpen = () => {
+        // This prevents needing to click back twice after publishing
+        // because we set '"window.history.pushState({ dialogOpen: true }, '', window.location.href);"
+        // If this is not done, the users would have to click the back button on the browser twice to go to the previous page
+        if (window.history.state && window.history.state.dialogOpen) {
+            window.history.back();
+        }
+    }
+
+    // Reusable function to handle unpublish success for any task type
+    const handleUnpublishSuccess = (taskData: TaskData, itemType: 'learning material' | 'quiz' | 'assignment') => {
+        if (taskData && activeModuleId && updateModuleItem) {
+            // Update activeItem reference
+            activeItem.status = taskData.status
+            activeItem.scheduled_publish_at = taskData.scheduled_publish_at
+
+            // Update the parent module list directly with the new status
+            updateModuleItem(activeModuleId, activeItem.id, {
+                status: taskData.status,
+                scheduled_publish_at: taskData.scheduled_publish_at
+            });
+        }
+
+        navigateBackWindowHistoryIfDialogWasOpen()
+
+        // Display appropriate toast message based on item type
+        displayToast("Task Unpublished", `Your ${itemType} has been unpublished`, "⛔");
+    }
+
     const isClosingDraft = confirmationType === 'exit_draft';
 
     const getButtonClasses = (tone: 'blue' | 'green' | 'yellow' | 'yellowStrong' | 'gray' | 'violet') => {
@@ -1008,6 +1046,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         <Pencil size={16} className="mr-2" />
                                         Edit
                                     </button>
+                                    {(activeItem?.type === 'material' || activeItem?.type === 'quiz') && (
+                                        <button
+                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border border-red-600 hover:bg-[#222222] focus:border-red-600 active:border-red-600 rounded-full transition-colors cursor-pointer"
+                                            aria-label="Unpublish item"
+                                            onClick={handleUnpublish}
+                                        >
+                                            <ZapOff size={16} className="mr-2" />
+                                            {activeItem.scheduled_publish_at ? `Unschedule` : `Unpublish`}
+                                        </button> )}
                                 </>
                             )}
                         </div>
@@ -1033,10 +1080,13 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 key={`material-${activeItem.id}-${isEditMode}`}
                                 readOnly={activeItem.status === 'published' && !isEditMode}
                                 showPublishConfirmation={showPublishConfirmation}
+                                showUnpublishConfirmation={showUnpublishConfirmation}
+                                setShowUnpublishConfirmation={setShowUnpublishConfirmation}
                                 onPublishConfirm={onPublishConfirm}
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
+                                onUnpublishSuccess = {(updatedData: TaskData) => handleUnpublishSuccess(updatedData, 'learning material')}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
                                     if (updatedData) {
@@ -1065,9 +1115,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                                         // Clear the history state since the item is now published
                                         // This prevents needing to click back twice after publishing
-                                        if (window.history.state && window.history.state.dialogOpen) {
-                                            window.history.back();
-                                        }
+                                        navigateBackWindowHistoryIfDialogWasOpen()
 
                                         // Show toast notification
                                         const publishMessage = updatedData.scheduled_publish_at ? "Your learning material has been scheduled for publishing" : "Your learning material has been published";
@@ -1130,6 +1178,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 taskType={activeItem.type}
                                 showPublishConfirmation={showPublishConfirmation}
                                 onPublishCancel={onPublishCancel}
+                                showUnpublishConfirmation={showUnpublishConfirmation}
+                                setShowUnpublishConfirmation={setShowUnpublishConfirmation}
                                 onValidationError={(message, description) => {
                                     // Display toast notification for validation errors during publishing
                                     displayToast(message, description, "🚫");
@@ -1203,6 +1253,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Hide the publish confirmation dialog
                                     onSetShowPublishConfirmation(false);
                                 }}
+                                onUnpublishSuccess={(taskData: TaskData) => handleUnpublishSuccess(taskData, 'quiz')}
                                 schoolId={schoolId}
                                 onQuestionChangeWithUnsavedScorecardChanges={() => {
                                     setShowUnsavedScorecardChangesInfo(true);
