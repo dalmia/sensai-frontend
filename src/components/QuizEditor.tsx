@@ -1145,7 +1145,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const updateDraftQuiz = async (scheduledPublishAt?: string | null, status: 'draft' | 'published' = 'published') => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
-            setErrorMessage("Cannot unpublish: Task ID is missing");
+            setErrorMessage("Cannot publish: Task ID is missing");
             return;
         }
 
