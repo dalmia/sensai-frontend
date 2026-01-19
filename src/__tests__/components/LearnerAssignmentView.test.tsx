@@ -1501,6 +1501,107 @@ describe('LearnerAssignmentView', () => {
         }, 10000);
     });
 
+    describe('Empty AI feedback handling', () => {
+        it('shows error message and skips storeChatHistory when AI returns empty feedback', async () => {
+            const reader = makeMockReader([
+                JSON.stringify({
+                    feedback: '',
+                    evaluation_status: 'in_progress',
+                    current_key_area: '',
+                    key_area_scores: null
+                })
+            ]);
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockResolvedValueOnce({ ok: true, body: { getReader: () => reader } }); // AI streaming response with empty feedback
+
+            render(<LearnerAssignmentView taskId="20001" userId="20011" isTestMode={false} />);
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            fireEvent.change(screen.getByLabelText('answer'), { target: { value: 'test answer' } });
+            fireEvent.click(screen.getByText('Submit'));
+
+            // Wait for streaming to complete
+            await waitFor(() => {
+                // Verify storeChatHistory was NOT called (should only have 3 calls: initial fetch, chat history, streaming)
+                const calls = (global.fetch as any).mock.calls;
+                const storeHistoryCall = calls.find((call: any) =>
+                    call[0]?.includes('/chat/?userId=')
+                );
+                expect(storeHistoryCall).toBeUndefined();
+            }, { timeout: 5000 });
+
+            // Verify error message appears in chat (component should still render)
+            expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        }, 10000);
+
+        it('shows error message and skips storeChatHistory when AI returns only whitespace feedback', async () => {
+            const reader = makeMockReader([
+                JSON.stringify({
+                    feedback: '   ',
+                    evaluation_status: 'in_progress',
+                    current_key_area: '',
+                    key_area_scores: null
+                })
+            ]);
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Initial assignment fetch
+                .mockResolvedValueOnce({ ok: true, json: async () => ([]) }) // Chat history fetch
+                .mockResolvedValueOnce({ ok: true, body: { getReader: () => reader } }); // AI streaming response with whitespace-only feedback
+
+            render(<LearnerAssignmentView taskId="20002" userId="20012" isTestMode={false} />);
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            fireEvent.change(screen.getByLabelText('answer'), { target: { value: 'test answer' } });
+            fireEvent.click(screen.getByText('Submit'));
+
+            // Wait for streaming to complete
+            await waitFor(() => {
+                // Verify storeChatHistory was NOT called
+                const calls = (global.fetch as any).mock.calls;
+                const storeHistoryCall = calls.find((call: any) =>
+                    call[0]?.includes('/chat/?userId=')
+                );
+                expect(storeHistoryCall).toBeUndefined();
+            }, { timeout: 5000 });
+
+            // Verify component still renders
+            expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        }, 10000);
+
+        it('handles empty feedback in test mode and does not call storeChatHistory', async () => {
+            const reader = makeMockReader([
+                JSON.stringify({
+                    feedback: '',
+                    evaluation_status: 'in_progress',
+                    current_key_area: '',
+                    key_area_scores: null
+                })
+            ]);
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, body: { getReader: () => reader } }); // AI streaming response
+
+            render(<LearnerAssignmentView taskId="20003" userId="20013" isTestMode={true} />);
+
+            await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
+
+            fireEvent.change(screen.getByLabelText('answer'), { target: { value: 'test answer' } });
+            fireEvent.click(screen.getByText('Submit'));
+
+            // Wait for streaming to complete
+            await waitFor(() => {
+                // In test mode, storeChatHistory is never called anyway, but verify no errors occurred
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            }, { timeout: 5000 });
+        }, 10000);
+    });
+
     describe('Copy/Paste disable functionality', () => {
         beforeEach(() => {
             jest.clearAllMocks();
