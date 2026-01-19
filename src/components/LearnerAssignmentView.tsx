@@ -745,6 +745,26 @@ export default function LearnerAssignmentView({
                             }
 
                             // After processing all chunks (stream is complete)
+                            // If we never received any usable feedback from the AI, treat this as an error case.
+                            const hasValidFeedback =
+                                !!assignmentResponse.feedback &&
+                                assignmentResponse.feedback.trim() !== "";
+
+                            if (!hasValidFeedback) {
+                                const errorResponse: ChatMessageLocal = {
+                                    id: `ai-error-${Date.now()}`,
+                                    content: "There was an error while processing your answer. Please try again.",
+                                    sender: 'ai',
+                                    timestamp: new Date(),
+                                    messageType: 'text',
+                                    audioData: undefined,
+                                    isError: true
+                                };
+                                setChatHistory(prev => [...prev, errorResponse]);
+                                // Do not update evaluation state or store chat history for invalid responses
+                                return;
+                            }
+
                             // Store the raw JSON on the last AI message so downstream logic can parse status/scorecard
                             try {
                                 const finalRaw = JSON.stringify(assignmentResponse);
