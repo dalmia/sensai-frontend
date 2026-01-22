@@ -56,7 +56,7 @@ interface AssignmentResponse {
     evaluation_status: "in_progress" | "needs_resubmission" | "completed";
     key_area_scores: Record<string, number>;
     current_key_area: string;
-    project_score?: number;
+    assignment_score?: number;
 }
 
 export default function LearnerAssignmentView({
@@ -213,7 +213,7 @@ export default function LearnerAssignmentView({
             evaluation_status: aiResponse.evaluation_status,
             current_key_area: aiResponse.current_key_area,
             key_area_scores: aiResponse.key_area_scores,
-            ...(aiResponse.project_score !== undefined && { project_score: aiResponse.project_score }),
+            ...(aiResponse.assignment_score !== undefined && { assignment_score: aiResponse.assignment_score }),
         };
         const aiContent = JSON.stringify(contentObj);
 
@@ -570,7 +570,7 @@ export default function LearnerAssignmentView({
                                 evaluation_status: "in_progress",
                                 key_area_scores: {},
                                 current_key_area: "",
-                                project_score: undefined,
+                                assignment_score: undefined,
                             };
 
                             // Buffer to accumulate partial lines across chunks

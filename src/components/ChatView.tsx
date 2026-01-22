@@ -8,7 +8,6 @@ import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
 import UploadFile from './UploadFile';
 import isEqual from 'lodash/isEqual';
-import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 // Export interface for code view state to be used by parent components
 export interface CodeViewState {

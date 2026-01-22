@@ -448,8 +448,8 @@ export default function LearnerQuizView({
                     };
 
                     if (fileUuid && fileName) {
-                        (chatMessage as any).fileUuid = fileUuid;
-                        (chatMessage as any).fileName = fileName;
+                        chatMessage.fileUuid = fileUuid;
+                        chatMessage.fileName = fileName;
                     }
 
                     // If this is an AI message, try to parse the content as JSON for additional fields
@@ -777,7 +777,7 @@ export default function LearnerQuizView({
             // Create the user message object for display
             const displayMessage: ChatMessage = {
                 id: `user-${Date.now()}`,
-                content: responseType === 'file' ? responseContent : responseContent,
+                content: responseContent,
                 sender: 'user',
                 timestamp: new Date(),
                 messageType: responseType,
@@ -796,8 +796,8 @@ export default function LearnerQuizView({
 
             // For file messages, store file info
             if (responseType === 'file' && fileUuid) {
-                (displayMessage as any).fileUuid = fileUuid;
-                (displayMessage as any).fileName = responseContent;
+                displayMessage.fileUuid = fileUuid;
+                displayMessage.fileName = responseContent;
             }
 
             // Handle code type message differently for UI display
@@ -839,8 +839,8 @@ export default function LearnerQuizView({
                     const file_uuid = await uploadFile(fileData, responseContent, contentType);
                     uploadedFileUuid = file_uuid;
                     storageMessage.content = JSON.stringify({ file_uuid, filename: responseContent });
-                    (displayMessage as any).fileUuid = file_uuid;
-                    (displayMessage as any).fileName = responseContent;
+                    displayMessage.fileUuid = file_uuid;
+                    displayMessage.fileName = responseContent;
                 } catch (error) {
                     console.error('Error uploading file:', error);
                     throw error;
@@ -849,16 +849,16 @@ export default function LearnerQuizView({
                 // If fileUuid is already provided, use it
                 uploadedFileUuid = fileUuid;
                 storageMessage.content = JSON.stringify({ file_uuid: fileUuid, filename: responseContent });
-                (displayMessage as any).fileUuid = fileUuid;
-                (displayMessage as any).fileName = responseContent;
+                displayMessage.fileUuid = fileUuid;
+                displayMessage.fileName = responseContent;
             }
 
             // Handle file response for chat history
             if (responseType === 'file') {
                 const fileUuidValue = fileUuid || uploadedFileUuid || '';
                 if (fileUuidValue) {
-                    (displayMessage as any).fileUuid = fileUuidValue;
-                    (displayMessage as any).fileName = responseContent;
+                    displayMessage.fileUuid = fileUuidValue;
+                    displayMessage.fileName = responseContent;
                 }
                 setChatHistories(prev => ({
                     ...prev,
@@ -922,9 +922,9 @@ export default function LearnerQuizView({
                 const formattedChatHistory = (chatHistories[currentQuestionId] || []).map(msg => {
                     // For user file messages, check if we have fileUuid to reconstruct JSON
                     let content = msg.content;
-                    if (msg.sender === 'user' && msg.messageType === 'file' && (msg as any).fileUuid && (msg as any).fileName) {
+                    if (msg.sender === 'user' && msg.messageType === 'file' && msg.fileUuid && msg.fileName) {
                         // Reconstruct JSON for file messages in test mode
-                        content = JSON.stringify({ file_uuid: (msg as any).fileUuid, filename: (msg as any).fileName });
+                        content = JSON.stringify({ file_uuid: msg.fileUuid, filename: msg.fileName });
                     }
                     return {
                         role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -942,7 +942,7 @@ export default function LearnerQuizView({
 
                 // Create the request body for teacher testing mode
                 requestBody = {
-                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? (uploadedFileUuid || '') : responseContent,
+                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? { file_uuid: uploadedFileUuid || '', filename: responseContent } : responseContent,
                     ...(responseType === 'audio' && { response_type: "audio" }),
                     ...(responseType === 'code' && { response_type: "code" }),
                     ...(responseType === 'file' && { response_type: "file" }),
@@ -966,7 +966,7 @@ export default function LearnerQuizView({
             } else {
                 // In normal mode, send question_id and user_id
                 requestBody = {
-                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? (uploadedFileUuid || '') : responseContent,
+                    user_response: responseType === 'audio' ? audioData : responseType === 'file' ? { file_uuid: uploadedFileUuid || '', filename: responseContent } : responseContent,
                     response_type: responseType,
                     question_id: currentQuestionId,
                     user_id: userId,
@@ -1509,7 +1509,9 @@ export default function LearnerQuizView({
     // Function to handle file download
     const handleFileDownload = useCallback(async (fileUuid: string, fileName: string) => {
         try {
-            await downloadFile(fileUuid, fileName, 'zip');
+            // Extract extension from filename, default to 'pdf' for quiz file uploads
+            const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'pdf';
+            await downloadFile(fileUuid, fileName, fileExtension);
         } catch (error) {
             console.error('Error downloading file:', error);
         }

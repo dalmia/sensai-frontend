@@ -13,8 +13,8 @@ describe('UploadFile', () => {
 
     it('renders with default UI', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
-        expect(screen.getByText('Upload your project ZIP')).toBeInTheDocument();
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        expect(screen.getByText('Upload your assignment ZIP')).toBeInTheDocument();
         expect(screen.getByText('.ZIP up to 50MB')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Choose file/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Upload/i })).toBeDisabled();
@@ -22,7 +22,7 @@ describe('UploadFile', () => {
 
     it('opens file picker when Choose file is clicked (not disabled)', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
         const hiddenInput = screen.getByRole('button', { name: /Choose file/i });
         // Clicking the visible button should not throw; actual picker is hidden input triggered via ref
@@ -31,51 +31,51 @@ describe('UploadFile', () => {
 
     it('accepts a dragged .zip under 50MB and enables Upload', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const dropZone = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
+        const dropZone = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
 
         fireEvent.dragOver(dropZone);
-        const smallZip = createFile('project.zip', 1024 * 1024 * 10); // 10MB
+        const smallZip = createFile('assignment.zip', 1024 * 1024 * 10); // 10MB
         fireEvent.drop(dropZone, { dataTransfer: { files: [smallZip] } });
 
-        expect(screen.getByText('project.zip')).toBeInTheDocument();
+        expect(screen.getByText('assignment.zip')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Upload/i })).toBeEnabled();
     });
 
     it('ignores non-zip files on drop and on file change', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const dropZone = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
+        const dropZone = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
         fireEvent.dragOver(dropZone);
         const notZip = createFile('image.png', 1024, 'image/png');
         fireEvent.drop(dropZone, { dataTransfer: { files: [notZip] } });
 
         // Still shows default title and upload remains disabled
-        expect(screen.getByText('Upload your project ZIP')).toBeInTheDocument();
+        expect(screen.getByText('Upload your assignment ZIP')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Upload/i })).toBeDisabled();
     });
 
     it('ignores .zip over 50MB', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const dropZone = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
+        const dropZone = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
         fireEvent.dragOver(dropZone);
         const bigZip = createFile('big.zip', 51 * 1024 * 1024);
         fireEvent.drop(dropZone, { dataTransfer: { files: [bigZip] } });
 
-        expect(screen.getByText('Upload your project ZIP')).toBeInTheDocument();
+        expect(screen.getByText('Upload your assignment ZIP')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Upload/i })).toBeDisabled();
     });
 
     it('toggles dragActive class on dragOver and dragLeave', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
         // Clickable container with border classes (the rounded-xl bordered div)
-        const textEl = screen.getByText(/Upload your project ZIP/i);
+        const textEl = screen.getByText(/Upload your assignment ZIP/i);
         const container = textEl.closest('div')!.closest('div')!.closest('div')!.closest('div.rounded-xl') as HTMLDivElement;
 
         // Default should be dashed
@@ -90,7 +90,7 @@ describe('UploadFile', () => {
 
     it('onFileChange selects a valid zip and enables upload', () => {
         const onComplete = jest.fn();
-        const { container } = render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        const { container } = render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
         const input = container.querySelector('input[type="file"]') as HTMLInputElement;
         const file = createFile('picked.zip', 1024 * 1024);
@@ -104,11 +104,11 @@ describe('UploadFile', () => {
 
     it('simulates upload progress and calls onComplete', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const dropZone = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
+        const dropZone = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
         fireEvent.dragOver(dropZone);
-        const smallZip = createFile('project.zip', 10 * 1024 * 1024);
+        const smallZip = createFile('assignment.zip', 10 * 1024 * 1024);
         fireEvent.drop(dropZone, { dataTransfer: { files: [smallZip] } });
 
         const uploadBtn = screen.getByRole('button', { name: /Upload/i });
@@ -123,16 +123,16 @@ describe('UploadFile', () => {
         });
 
         expect(onComplete).toHaveBeenCalledTimes(1);
-        expect(onComplete.mock.calls[0][0].name).toBe('project.zip');
+        expect(onComplete.mock.calls[0][0].name).toBe('assignment.zip');
         expect(screen.getByText('Uploaded')).toBeInTheDocument();
     });
 
     it('supports Enter key to start upload when focused and file selected', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const dropZone = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
-        const smallZip = createFile('project.zip', 10 * 1024 * 1024);
+        const dropZone = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
+        const smallZip = createFile('assignment.zip', 10 * 1024 * 1024);
         fireEvent.drop(dropZone, { dataTransfer: { files: [smallZip] } });
 
         // Focus container with tabIndex and press Enter
@@ -148,15 +148,15 @@ describe('UploadFile', () => {
 
     it('respects disabled state for interactions', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} disabled placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} disabled placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
-        const container = screen.getByText(/Upload your project ZIP/i).closest('div')!.parentElement!;
+        const container = screen.getByText(/Upload your assignment ZIP/i).closest('div')!.parentElement!;
         fireEvent.dragOver(container);
         const zip = createFile('a.zip', 1024);
         fireEvent.drop(container, { dataTransfer: { files: [zip] } });
 
         // Should not select
-        expect(screen.getByText('Upload your project ZIP')).toBeInTheDocument();
+        expect(screen.getByText('Upload your assignment ZIP')).toBeInTheDocument();
 
         // Buttons should be disabled or non-interactive
         const chooseBtn = screen.getByRole('button', { name: /Choose file/i });
@@ -167,7 +167,7 @@ describe('UploadFile', () => {
 
     it('always shows controls (spinner removed)', () => {
         const onComplete = jest.fn();
-        render(<UploadFile onComplete={onComplete} placeholderText="Upload your project ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
+        render(<UploadFile onComplete={onComplete} placeholderText="Upload your assignment ZIP" fileType={['.zip']} maxSizeBytes={50 * 1024 * 1024} />);
 
         // Choose/Upload buttons should always be visible
         expect(screen.getByRole('button', { name: /Choose file/i })).toBeInTheDocument();
