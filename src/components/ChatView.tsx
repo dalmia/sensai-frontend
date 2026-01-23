@@ -48,11 +48,9 @@ interface ChatViewProps {
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
     userId?: string;
-    // Assignment mode: show upload instead of textarea until upload completes
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
     onFileDownload?: (fileUuid: string, fileName: string) => void;
-    // File upload configuration
     fileType?: string[];
     maxSizeBytes?: number;
     placeholderText?: string;

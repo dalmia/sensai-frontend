@@ -1125,6 +1125,8 @@ export default function LearnerQuizView({
                             let completeScorecard: ScorecardItem[] = [];
                             // Add a flag to track if streaming is done
                             let streamingComplete = false;
+                            // Timer to show "preparing report" after feedback stops arriving
+                            let preparingReportTimer: ReturnType<typeof setTimeout> | null = null;
 
                             while (true) {
                                 const { done, value } = await reader.read();
@@ -1195,21 +1197,35 @@ export default function LearnerQuizView({
                                             else if (!receivedAnyFeedback) {
                                                 receivedAnyFeedback = true;
                                             }
+
+                                            // For subjective chat questions, set a timer to show "preparing report"
+                                            // This timer fires if no scorecard arrives shortly after feedback
+                                            if (validQuestions[currentQuestionIndex]?.config?.responseType === 'chat' &&
+                                                validQuestions[currentQuestionIndex]?.config?.questionType === 'subjective') {
+                                                // Clear existing timer to reset the delay
+                                                if (preparingReportTimer) {
+                                                    clearTimeout(preparingReportTimer);
+                                                }
+                                                // Set new timer - show "preparing report" 300ms after last feedback chunk
+                                                preparingReportTimer = setTimeout(() => {
+                                                    setShowPreparingReport(true);
+                                                }, 300);
+                                            }
                                         }
 
                                         // Handle scorecard data when available
                                         if (data.scorecard) {
+                                            // Clear the preparing report timer since scorecard arrived
+                                            if (preparingReportTimer) {
+                                                clearTimeout(preparingReportTimer);
+                                                preparingReportTimer = null;
+                                            }
+
                                             // Convert scorecard dict to list format
                                             const scorecardList = convertScorecardToList(data.scorecard);
-                                            
-                                            if (scorecardList.length > 0) {
-                                                // Show preparing report message if not already shown
-                                                if (!showPreparingReport && validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
-                                                    setShowPreparingReport(true);
-                                                }
 
-                                                // Instead of immediately updating the chat message,
-                                                // collect the scorecard data
+                                            if (scorecardList.length > 0) {
+                                                // Collect the scorecard data for later processing
                                                 completeScorecard = scorecardList;
                                             }
                                         }
@@ -1225,6 +1241,12 @@ export default function LearnerQuizView({
                             }
 
                             // After processing all chunks (stream is complete)
+
+                            // Clear the preparing report timer if still pending
+                            if (preparingReportTimer) {
+                                clearTimeout(preparingReportTimer);
+                                preparingReportTimer = null;
+                            }
 
                             // Only now update the chat message with the complete scorecard
                             if (completeScorecard.length > 0) {
@@ -1270,6 +1292,9 @@ export default function LearnerQuizView({
                                     validQuestions[currentQuestionIndex]?.config?.responseType !== 'exam') {
                                     handleViewScorecard(completeScorecard);
                                 }
+                            } else {
+                                // No scorecard data received - hide "preparing report" if it was shown
+                                setTimeout(() => setShowPreparingReport(false), 0);
                             }
 
                             if (isCorrect) {

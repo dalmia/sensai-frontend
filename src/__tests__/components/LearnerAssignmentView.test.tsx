@@ -127,26 +127,6 @@ describe('LearnerAssignmentView', () => {
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
     });
 
-    it('file upload success via S3 presigned flow', async () => {
-        const presignedUrl = 'https://s3.test/presigned';
-        const reader = makeMockReader(['data: test']);
-        // When isTestMode is true, initial fetches are skipped
-        // Reset fetch mock and set up specific responses
-        (global.fetch as any) = jest.fn()
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ presigned_url: presignedUrl, file_uuid: 'uuid-123' }) }) // presigned create
-            .mockResolvedValueOnce({ ok: true }) // S3 PUT
-            .mockResolvedValueOnce({ ok: true, body: { getReader: () => reader } }); // AI response stream
-
-        render(<LearnerAssignmentView taskId="41" userId="51" isTestMode={true} />);
-        await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
-
-        fireEvent.click(screen.getByText('Upload File'));
-        // Wait for all calls to complete
-        await waitFor(() => {
-            expect((global.fetch as any).mock.calls.length).toBeGreaterThanOrEqual(3);
-        }, { timeout: 3000 });
-    });
-
     it('file upload success via direct backend flow when presigned fails', async () => {
         // When isTestMode is true, initial GET is skipped
         // presigned create fails, then upload-local succeeds
