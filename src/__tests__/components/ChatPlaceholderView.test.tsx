@@ -170,6 +170,30 @@ describe('ChatPlaceholderView Component', () => {
         expect(screen.getByText(/Think through your answer carefully, then write your code in the code editor/)).toBeInTheDocument();
     });
 
+    it('should show file upload message for file input type in exam mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                inputType="file"
+                responseType="exam"
+            />
+        );
+
+        expect(screen.getByText(/Upload your file as a PDF. Make sure to include all the relevant content. You can attempt the question only once./)).toBeInTheDocument();
+    });
+
+    it('should show file upload message for file input type in chat mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                inputType="file"
+                responseType="chat"
+            />
+        );
+
+        expect(screen.getByText(/Upload your file as a PDF. Make sure to include all the relevant content. You will receive instant feedback and support throughout your journey/)).toBeInTheDocument();
+    });
+
     it('should render assignment placeholder text when taskType is assignment', () => {
         render(
             <ChatPlaceholderView

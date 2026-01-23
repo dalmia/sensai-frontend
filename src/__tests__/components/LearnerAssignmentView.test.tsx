@@ -128,11 +128,15 @@ describe('LearnerAssignmentView', () => {
     });
 
     it('file upload success via direct backend flow when presigned fails', async () => {
+        // Reset fetch mock completely
+        (global.fetch as any).mockReset();
+
         // When isTestMode is true, initial GET is skipped
         // presigned create fails, then upload-local succeeds
         (global.fetch as any)
             .mockResolvedValueOnce({ ok: false }) // presigned create fails
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ file_uuid: 'uuid-local-1' }) }); // upload-local succeeds
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ file_uuid: 'uuid-local-1' }) }) // upload-local succeeds
+            .mockResolvedValue({ ok: true, json: async () => ({}) }); // Default fallback for any other calls
 
         render(<LearnerAssignmentView taskId="51" userId="61" isTestMode={true} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
@@ -150,9 +154,13 @@ describe('LearnerAssignmentView', () => {
     });
 
     it('returns early when viewOnly is true', async () => {
+        // Reset fetch mock completely
+        (global.fetch as any).mockReset();
         (global.fetch as any)
             .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
-            .mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+            .mockResolvedValueOnce({ ok: true, json: async () => ([]) })
+            // Add fallback mocks for file upload in case viewOnly check fails
+            .mockResolvedValue({ ok: true, json: async () => ({ file_uuid: 'test-uuid', presigned_url: 'https://test.com' }) });
 
         render(<LearnerAssignmentView taskId="61" userId="71" viewOnly={true} isTestMode={false} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
