@@ -131,12 +131,19 @@ describe('LearnerAssignmentView', () => {
         // Reset fetch mock completely
         (global.fetch as any).mockReset();
 
-        // When isTestMode is true, initial GET is skipped
-        // presigned create fails, then upload-local succeeds
-        (global.fetch as any)
-            .mockResolvedValueOnce({ ok: false }) // presigned create fails
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ file_uuid: 'uuid-local-1' }) }) // upload-local succeeds
-            .mockResolvedValue({ ok: true, json: async () => ({}) }); // Default fallback for any other calls
+        // Use mockImplementation to handle URL-based responses
+        (global.fetch as any).mockImplementation((url: string) => {
+            if (url.includes('presigned-url/create')) {
+                // presigned create fails
+                return Promise.resolve({ ok: false });
+            }
+            if (url.includes('upload-local')) {
+                // direct upload succeeds
+                return Promise.resolve({ ok: true, json: async () => ({ file_uuid: 'uuid-local-1' }) });
+            }
+            // Default fallback
+            return Promise.resolve({ ok: true, json: async () => ({}) });
+        });
 
         render(<LearnerAssignmentView taskId="51" userId="61" isTestMode={true} />);
         await waitFor(() => expect(screen.getByTestId('chat-view')).toBeInTheDocument());
