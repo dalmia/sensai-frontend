@@ -825,9 +825,10 @@ export default function LearnerAssignmentView({
             const base64Data = await convertFileToBase64(file);
 
             // Pass fileData to processUserResponse so it uses the presigned URL flow
-            processUserResponse(file.name, 'file', undefined, undefined, base64Data);
+            await processUserResponse(file.name, 'file', undefined, undefined, base64Data);
         } catch (error) {
             console.error('Error processing file upload:', error);
+            setIsSubmitting(false);
             // Show error message to the user
             const errorResponse: ChatMessageLocal = {
                 id: `ai-error-${Date.now()}`,
