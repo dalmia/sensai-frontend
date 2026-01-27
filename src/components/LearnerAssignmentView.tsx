@@ -751,6 +751,10 @@ export default function LearnerAssignmentView({
                                 assignmentResponse.feedback.trim() !== "";
 
                             if (!hasValidFeedback) {
+                                // Reset preparing report indicator before returning
+                                if (showPreparingReport) {
+                                    setTimeout(() => setShowPreparingReport(false), 0);
+                                }
                                 const errorResponse: ChatMessageLocal = {
                                     id: `ai-error-${Date.now()}`,
                                     content: "There was an error while processing your answer. Please try again.",
