@@ -4205,7 +4205,139 @@ Looking at the error message in the screenshot: `dial tcp ***:***: i/o timeout`
 This is an **SSH connection timeout error**. The GitHub Actions runner could not establish an SSH connection to the staging server. This is NOT a code issue - it's a network/infrastructure issue.
 
 Possible causes:
-1. **Server is</details></think>
+1. **Server is down or unreachable** - The staging server might be offline or not responding
+2. **Firewall blocking** - The server's firewall might be blocking incoming SSH connections from GitHub's IP ranges
+3. **Wrong SSH port** - The `SSH_PORT` secret might be incorrect
+4. **Wrong SSH host** - The `SSH_HOST` secret might be incorrect or the DNS is not resolving
+5. **Network issues** - Temporary network issues between GitHub Actions and the server
+6. **Security group / cloud provider settings** - If on AWS/GCP/Azure, the security group might not allow the GitHub Actions IP range
+
+The code itself looks fine - the deployment script should work once SSH connectivity is restored.</details></think>
+
+---
+
+The error `dial tcp ***:***: i/o timeout` is an **SSH connection timeout** - it's not a code issue. The GitHub Actions runner couldn't establish an SSH connection to your staging server.
+
+**Possible causes:**
+
+1. **Server is down or unreachable** - Check if the staging server is running
+2. **Firewall blocking GitHub Actions IPs** - GitHub Actions runs from dynamic IP ranges that may be blocked
+3. **Wrong SSH credentials** - Verify these secrets are correct:
+   - `SSH_HOST` - server hostname/IP
+   - `SSH_PORT` - SSH port (usually 22)
+   - `SSH_PRIVATE_KEY` - the private key
+   - `SSH_USERNAME` - the username
+4. **Network/cloud security groups** - If on AWS/GCP/Azure, ensure the security group allows inbound SSH from GitHub's IP ranges
+
+**To debug:**
+
+1. Try SSHing to the server manually to verify it's accessible
+2. Check if the server is responding: `ping <your-server-ip>`
+3. If using a cloud provider, check security group rules allow SSH from `0.0.0.0/0` or GitHub's IP ranges
+
+This is an infrastructure/network issue, not related to the docker-compose changes.
+
+---
+
+_**User**_
+
+add 2 other github flows only for deploying to staging and prod without the build step
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants me to create 2 new GitHub workflow files:
+1. One for deploying to staging without the build step
+2. One for deploying to production without the build step
+
+Let me first look at the existing staging and production workflows to understand the structure, then create deploy-only versions.</details></think>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **3** results in **1** directory</summary>
+
+Directory: **undefined** (3 files)
+
+| File |
+|------|
+| `./.github/workflows/deploy-staging.yml` |
+| `./.github/workflows/deploy-prod.yml` |
+| `./.github/workflows/codecov.yml` |
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me read both deploy workflows to understand the structure, then create deploy-only versions.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/aman/Documents/repos/sensai/sensai-frontend/.github/workflows/deploy-staging.yml</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/aman/Documents/repos/sensai/sensai-frontend/.github/workflows/deploy-prod.yml</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I understand the structure. I'll create two new workflow files:
+1. `deploy-only-staging.yml` - Deploy to staging without building (uses existing image)
+2. `deploy-only-prod.yml` - Deploy to production without building (uses existing image)
+
+These will be manually triggered workflows that skip the Docker build step and just do the SSH deployment.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/aman/Documents/repos/sensai/sensai-frontend/.github/workflows/deploy-only-staging.yml</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/aman/Documents/repos/sensai/sensai-frontend/.github/workflows/deploy-only-prod.yml</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Done. I've created two new workflow files that only deploy without building.</details></think>
+
+---
+
+Done. Created two new workflow files:
+
+1. **`.github/workflows/deploy-only-staging.yml`** - Deploys to staging without building
+2. **`.github/workflows/deploy-only-prod.yml`** - Deploys to production without building
+
+Both are triggered manually via `workflow_dispatch` (you can run them from the GitHub Actions tab). They:
+- Skip Docker build/push steps
+- Pull the existing image from Docker Hub
+- Deploy using docker-compose
+- Send Slack notifications on success/failure
 
 ---
 
