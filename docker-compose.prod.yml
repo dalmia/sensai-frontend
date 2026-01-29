@@ -12,8 +12,6 @@ services:
 
   backend-prod:
     image: adalmia/sensai-ai:latest
-    working_dir: /src
-    command: bash -c "python /src/startup.py && uvicorn api.main:app --host 0.0.0.0 --port 8001"
     volumes:
       - /appdata_prod:/appdata
     ports:
@@ -50,8 +48,6 @@ services:
 
   public-api-prod:
     image: adalmia/sensai-ai:latest
-    working_dir: /src
-    command: bash -c "python /src/startup.py && uvicorn api.public:app --host 0.0.0.0 --port 8001"
     volumes:
       - /appdata_prod:/appdata
     restart: unless-stopped

@@ -4154,7 +4154,58 @@ All files updated with SENTRY_DSN and SENTRY_ENVIRONMENT. Both dev and prod file
 
 Done. Added `SENTRY_DSN` and `SENTRY_ENVIRONMENT` to all backend services in both files:
 
-- **docker-compose.dev.yml**: `backend-dev`,
+- **docker-compose.dev.yml**: `backend-dev`, `public-api-dev`
+- **docker-compose.prod.yml**: `backend-prod`, `public-api-prod`, `cron-prod`
+
+---
+
+_**User**_
+
+why did this fail?
+@.github/workflows/deploy-staging.yml 
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user is asking why their deployment failed. Looking at the screenshot, I can see:
+
+1. It's running `appleboy/ssh-action@v1.0.3`
+2. The command being run is:
+```
+cd sensai-frontend && git checkout main && git pull && \
+if [ "sentry" != "main" ]; then \
+  git branch -D sentry 2>/dev/null || true && \
+  git fetch origin sentry && \
+  git checkout sentry; \
+fi && \
+cp docker-compose.dev.yml ../ && git checkout main && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
+```
+
+3. The error at the end is: `dial tcp ***:***: i/o timeout`
+
+This is an SSH connection timeout error - the GitHub Actions runner couldn't establish an SSH connection to the target server. This is a network/connectivity issue, not a code issue.
+
+Let me also look at the deploy-staging.yml file to understand the full context.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/aman/Documents/repos/sensai/sensai-frontend/.github/workflows/deploy-staging.yml</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Looking at the error message in the screenshot: `dial tcp ***:***: i/o timeout`
+
+This is an **SSH connection timeout error**. The GitHub Actions runner could not establish an SSH connection to the staging server. This is NOT a code issue - it's a network/infrastructure issue.
+
+Possible causes:
+1. **Server is</details></think>
 
 ---
 

@@ -48,8 +48,6 @@ services:
 
   public-api-dev:
     image: adalmia/sensai-ai:v2-dev
-    working_dir: /src
-    command: bash -c "python /src/startup.py && uvicorn api.public:app --host 0.0.0.0 --port 8001"
     volumes:
       - /appdata_dev:/appdata
     restart: unless-stopped
