@@ -1,0 +1,7 @@
+services:
+  frontend:
+    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    container_name: ${CONTAINER_NAME}
+    ports:
+      - "${PORT}:3000"
+    restart: unless-stopped

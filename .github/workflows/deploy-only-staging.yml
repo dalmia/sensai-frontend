@@ -7,10 +7,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: Preview
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+      IMAGE_TAG: ${{ secrets.DOCKER_IMAGE_TAG }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Copy docker-compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "docker-compose.yml"
+          target: "~/"
 
       - name: Deploy to staging server
         uses: appleboy/ssh-action@v1.0.3
@@ -20,13 +35,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd sensai-frontend && git checkout main && git pull && \
-            if [ "${{ github.ref_name }}" != "main" ]; then \
-              git branch -D ${{ github.ref_name }} 2>/dev/null || true && \
-              git fetch origin ${{ github.ref_name }} && \
-              git checkout ${{ github.ref_name }}; \
-            fi && \
-            cp docker-compose.dev.yml ../ && git checkout main && cd .. && sudo docker compose -f docker-compose.dev.yml pull && sudo docker compose -f docker-compose.dev.yml up -d
+            cd ~/
+            export IMAGE_NAME=${{ env.IMAGE_NAME }}
+            export IMAGE_TAG=${{ env.IMAGE_TAG }}
+            export CONTAINER_NAME=${{ env.CONTAINER_NAME }}
+            export PORT=${{ env.DEPLOY_PORT }}
+            sudo -E docker compose -f docker-compose.yml pull
+            sudo -E docker compose -f docker-compose.yml up -d
 
       - name: Notify Slack on Success
         uses: slackapi/slack-github-action@v2.1.1
