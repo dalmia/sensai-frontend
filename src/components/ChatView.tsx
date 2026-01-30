@@ -8,7 +8,6 @@ import Toast from './Toast';
 import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
 import UploadFile from './UploadFile';
 import isEqual from 'lodash/isEqual';
-import { useThemePreference } from '@/lib/hooks/useThemePreference';
 
 // Export interface for code view state to be used by parent components
 export interface CodeViewState {
@@ -49,10 +48,12 @@ interface ChatViewProps {
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
     userId?: string;
-    // Assignment mode: show upload instead of textarea until upload completes
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
     onFileDownload?: (fileUuid: string, fileName: string) => void;
+    fileType?: string[];
+    maxSizeBytes?: number;
+    placeholderText?: string;
 }
 
 export interface ChatViewHandle {
@@ -86,6 +87,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     showUploadSection = false,
     onFileUploaded,
     onFileDownload,
+    fileType = ['.zip'],
+    maxSizeBytes = 50 * 1024 * 1024,
+    placeholderText = "Upload your file",
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -646,16 +650,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             {!(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
-                                    {showUploadSection && !isAiResponding ? (
+                                    {(showUploadSection || currentQuestionConfig?.inputType === 'file') && !isAiResponding ? (
                                         <UploadFile
                                             disabled={false}
                                             onComplete={(file) => {
                                                 if (onFileUploaded) onFileUploaded(file);
                                             }}
                                             className="mt-auto"
-                                            fileType={['.zip']}
-                                            maxSizeBytes={50 * 1024 * 1024}
-                                            placeholderText="Upload your project as a .zip file"
+                                            fileType={fileType}
+                                            maxSizeBytes={maxSizeBytes}
+                                            placeholderText={placeholderText}
                                         />
                                     ) : currentQuestionConfig?.inputType === 'audio' ? (
                                         <div className="w-full sm:w-auto">

@@ -170,6 +170,30 @@ describe('ChatPlaceholderView Component', () => {
         expect(screen.getByText(/Think through your answer carefully, then write your code in the code editor/)).toBeInTheDocument();
     });
 
+    it('should show file upload message for file input type in exam mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                inputType="file"
+                responseType="exam"
+            />
+        );
+
+        expect(screen.getByText(/Upload your file as a PDF. Make sure to include all the relevant content. You can attempt the question only once./)).toBeInTheDocument();
+    });
+
+    it('should show file upload message for file input type in chat mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                inputType="file"
+                responseType="chat"
+            />
+        );
+
+        expect(screen.getByText(/Upload your file as a PDF. Make sure to include all the relevant content. You will receive instant feedback and support throughout your journey/)).toBeInTheDocument();
+    });
+
     it('should render assignment placeholder text when taskType is assignment', () => {
         render(
             <ChatPlaceholderView
@@ -178,8 +202,8 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
+        expect(screen.getByText('Ready to submit your assignment?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your assignment as a .zip file/)).toBeInTheDocument();
     });
 
     it('should render view-only message for assignment when viewOnly is true', () => {
@@ -205,8 +229,8 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
+        expect(screen.getByText('Ready to submit your assignment?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your assignment as a .zip file/)).toBeInTheDocument();
         unmountText();
 
         // Test with audio input type
@@ -218,8 +242,8 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
+        expect(screen.getByText('Ready to submit your assignment?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your assignment as a .zip file/)).toBeInTheDocument();
         unmountAudio();
 
         // Test with code input type
@@ -231,8 +255,8 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
+        expect(screen.getByText('Ready to submit your assignment?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your assignment as a .zip file/)).toBeInTheDocument();
     });
 
     it('should render assignment placeholder in test mode', () => {
@@ -250,8 +274,8 @@ describe('ChatPlaceholderView Component', () => {
         expect(spinner).not.toBeInTheDocument();
 
         // Should show the assignment placeholder content instead
-        expect(screen.getByText('Ready to submit your project?')).toBeInTheDocument();
-        expect(screen.getByText(/Upload your project as a .zip file/)).toBeInTheDocument();
+        expect(screen.getByText('Ready to submit your assignment?')).toBeInTheDocument();
+        expect(screen.getByText(/Upload your assignment as a .zip file/)).toBeInTheDocument();
     });
 
 });

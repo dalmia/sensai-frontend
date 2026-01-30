@@ -105,6 +105,38 @@ describe('integrationUtils', () => {
   });
 
   describe('hasNestedPagesOrDatabases', () => {
+    it('should return false for null blocks', () => {
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(null)
+      ).toBe(false);
+    });
+
+    it('should return false for undefined blocks', () => {
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(undefined)
+      ).toBe(false);
+    });
+
+    it('should return false for empty array', () => {
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases([])
+      ).toBe(false);
+    });
+
+    it('should return false for blocks containing null values', () => {
+      const blocks = [null, { type: 'paragraph' }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(false);
+    });
+
+    it('should return false for blocks containing non-object values', () => {
+      const blocks = ['string', 123, true, { type: 'paragraph' }];
+      expect(
+        require('../../../lib/utils/integrationUtils').hasNestedPagesOrDatabases(blocks)
+      ).toBe(false);
+    });
+
     it('should return true for direct child_page', () => {
       const blocks = [{ child_page: { title: 'Subpage' } }];
       expect(

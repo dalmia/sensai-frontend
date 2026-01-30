@@ -1162,7 +1162,7 @@ export default function CourseModuleList({
                                                         Quiz
                                                     </button>
                                                 </Tooltip>
-                                                <Tooltip content="Add a new project/assignment" position="top">
+                                                <Tooltip content="Add a new assignment" position="top">
                                                     <button
                                                         onClick={async () => {
                                                             if (onAddAssignment) {

@@ -35,7 +35,7 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                             : taskType === 'learning_material'
                                 ? 'Have a question?'
                                 : taskType === 'assignment'
-                                    ? 'Ready to submit your project?'
+                                    ? 'Ready to submit your assignment?'
                                     : responseType === 'exam'
                                         ? 'Ready to test your knowledge?'
                                         : 'Ready for a challenge?'
@@ -51,7 +51,7 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                 : taskType === 'assignment'
                                     ? (
                                         <p className="text-gray-600 dark:text-gray-300 font-light text-center mt-1">
-                                            Upload your project as a .zip file. Make sure to include all the relevant files. Be careful as you can upload your submission just once.
+                                            Upload your assignment as a .zip file. Make sure to include all the relevant files. Be careful as you can upload your submission just once.
                                         </p>
                                     )
                                     : responseType === 'exam'
@@ -64,6 +64,8 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                                 <span className="text-gray-600 dark:text-gray-300 font-light text-center mt-1">
                                                     {inputType === 'code'
                                                         ? `Think through your answer carefully, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
+                                                        : inputType === 'file'
+                                                        ? `Upload your file as a PDF. Make sure to include all the relevant content. You can attempt the question only once.`
                                                         : `Think through your answer carefully, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`}
                                                 </span>
                                             </div>
@@ -72,6 +74,8 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                             <p>
                                                 {inputType === 'code'
                                                     ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
+                                                    : inputType === 'file'
+                                                    ? `Upload your file as a PDF. Make sure to include all the relevant content. You will receive instant feedback and support throughout your journey`
                                                     : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`}
                                             </p>
                                         )

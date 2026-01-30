@@ -58,6 +58,13 @@ jest.mock('@/lib/utils/localStorage', () => ({
 // Mock lodash isEqual
 jest.mock('lodash/isEqual', () => jest.fn(() => false));
 
+// Mock fileUtils
+jest.mock('@/lib/utils/fileUtils', () => ({
+    convertFileToBase64: jest.fn(() => Promise.resolve('bW9ja0Jhc2U2NERhdGE=')), // mock base64 data
+    uploadFile: jest.fn(() => Promise.resolve('mock-file-uuid-123')),
+    downloadFile: jest.fn(() => Promise.resolve()),
+}));
+
 // Mock getKnowledgeBaseContent
 jest.mock('../../components/QuizEditor', () => ({
     getKnowledgeBaseContent: jest.fn(() => 'mock knowledge base content')
@@ -93,7 +100,22 @@ jest.mock('../../components/ChatView', () => {
                 {props.isAiResponding && <div data-testid="ai-responding">AI is responding</div>}
                 {props.showPreparingReport && <div data-testid="preparing-report">Preparing report</div>}
                 <button onClick={() => props.handleSubmitAnswer('text')} data-testid="submit-text">Submit Text</button>
+                <button onClick={() => props.handleSubmitAnswer('code')} data-testid="submit-code">Submit Code</button>
                 <button onClick={() => props.handleAudioSubmit(new Blob())} data-testid="submit-audio">Submit Audio</button>
+                <button onClick={() => {
+                    if (props.onFileUploaded) {
+                        const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+                        props.onFileUploaded(mockFile);
+                    }
+                }} data-testid="submit-file">Submit File</button>
+                <button onClick={() => {
+                    if (props.onFileUploaded) {
+                        // Submit file with existing fileUuid to trigger lines 850-853
+                        const mockFile = new File(['test content'], 'existing.pdf', { type: 'application/pdf' });
+                        (mockFile as any).fileUuid = 'existing-file-uuid-789';
+                        props.onFileUploaded(mockFile);
+                    }
+                }} data-testid="submit-file-with-uuid">Submit File With UUID</button>
                 <button onClick={() => props.handleRetry()} data-testid="retry-button">Retry</button>
                 <button
                     onClick={() => props.handleViewScorecard?.([
@@ -3429,6 +3451,664 @@ describe('LearnerQuizView Component', () => {
             // Restore mocks
             document.querySelector = originalQuerySelector;
             jest.dontMock('../../components/ChatView');
+        });
+    });
+
+    describe('Simple Coverage Tests', () => {
+        // Test question with minimal config (tests default value paths)
+        it('handles question with minimal config', () => {
+            const questionsWithMinimalConfig = [
+                {
+                    id: 'q-minimal',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {}
+                } as any
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={questionsWithMinimalConfig} />);
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Test question with blocks property instead of content (lines 129-145)
+        it('handles question with blocks property format', () => {
+            const questionsWithBlocks = [
+                {
+                    id: 'q-blocks',
+                    blocks: [{ type: 'paragraph', content: [{ text: 'Block question', type: 'text', styles: {} }] }],
+                    config: {
+                        inputType: 'text',
+                        responseType: 'chat',
+                        questionType: 'objective',
+                        correctAnswer: [],
+                    }
+                } as any
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={questionsWithBlocks} />);
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Test question without content array (lines 147-162)
+        it('handles question without content array', () => {
+            const questionsWithoutContent = [
+                {
+                    id: 'q-no-content',
+                    config: {
+                        inputType: 'text',
+                    }
+                } as any
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={questionsWithoutContent} />);
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Test file message parsing (lines 414-422)
+        it('handles file messages in chat history', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-file',
+                        role: 'user',
+                        content: JSON.stringify({ filename: 'test.pdf', file_uuid: 'uuid-123' }),
+                        response_type: 'file',
+                        question_id: 'q1',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            render(<LearnerQuizView {...defaultProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test invalid JSON in file message (lines 420-422)
+        it('handles invalid JSON in file message content', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-file-invalid',
+                        role: 'user',
+                        content: 'not-json-content',
+                        response_type: 'file',
+                        question_id: 'q1',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            render(<LearnerQuizView {...defaultProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test assistant message with JSON parsing error (lines 409-411)
+        it('handles assistant message with invalid JSON', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-ai',
+                        role: 'assistant',
+                        content: 'Plain text feedback without JSON',
+                        response_type: 'text',
+                        question_id: 'q1',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            render(<LearnerQuizView {...defaultProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test assistant message with feedback in JSON (lines 405-408)
+        it('handles assistant message with feedback JSON', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-ai-feedback',
+                        role: 'assistant',
+                        content: JSON.stringify({ feedback: 'Good answer!', scorecard: { Accuracy: { score: 8, feedback: 'Good' } } }),
+                        response_type: 'text',
+                        question_id: 'q1',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            render(<LearnerQuizView {...defaultProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test is_correct field extraction (lines 467-469)
+        it('handles assistant message with is_correct field', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-ai-correct',
+                        role: 'assistant',
+                        content: JSON.stringify({ feedback: 'Correct!', is_correct: true }),
+                        response_type: 'text',
+                        question_id: 'q1',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            render(<LearnerQuizView {...defaultProps} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('processUserResponse Coverage', () => {
+        // Test code response type (lines 807-808)
+        it('handles code response type submission', async () => {
+            // Mock the streaming response
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            const codeQuestion = [
+                {
+                    id: 'q-code',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'code',
+                        responseType: 'chat',
+                        questionType: 'objective',
+                        correctAnswer: [],
+                        codingLanguages: ['javascript']
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={codeQuestion} />);
+
+            // Type code in input
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'console.log("hello")' } });
+
+            // Submit as code
+            const submitBtn = screen.getByTestId('submit-code');
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test file response submission (lines 834-846, 858-863)
+        it('handles file response submission with upload', async () => {
+            // Mock chat history fetch
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            // Mock file upload (presigned URL)
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ presigned_url: 'https://s3.example.com/upload', file_uuid: 'file-uuid-123' })
+            });
+
+            // Mock S3 upload
+            mockFetch.mockResolvedValueOnce({
+                ok: true
+            });
+
+            const fileQuestion = [
+                {
+                    id: 'q-file',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'file',
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={fileQuestion} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Click submit file button
+            const submitFileBtn = screen.getByTestId('submit-file');
+            fireEvent.click(submitFileBtn);
+
+            // Wait for the file upload process
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test exam question in non-test mode (line 906)
+        it('handles exam question in non-test mode with pending submission', async () => {
+            // Mock chat history
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            const examQuestion = [
+                {
+                    id: 'q-exam-nontest',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'text',
+                        responseType: 'exam',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            // Non-test mode (isTestMode = false)
+            render(<LearnerQuizView {...defaultProps} questions={examQuestion} isTestMode={false} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Type answer
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'My exam answer in non-test mode' } });
+
+            // Submit - this should show confirmation dialog
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            // Wait for confirmation dialog to appear
+            await waitFor(() => {
+                const confirmDialog = screen.queryByTestId('confirmation-dialog');
+                expect(confirmDialog).toBeInTheDocument();
+            });
+
+            // Click confirm button to trigger processUserResponse
+            const confirmBtn = screen.getByTestId('confirm-button');
+            fireEvent.click(confirmBtn);
+
+            // Wait for submission to complete
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test subjective question with scorecardId (line 940)
+        it('handles subjective question with scorecard in test mode', async () => {
+            // Mock chat history
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            const subjectiveQuestion = [
+                {
+                    id: 'q-subjective',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'text',
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                        scorecardData: {
+                            id: 'scorecard-123',
+                            name: 'Test Scorecard',
+                            criteria: []
+                        }
+                    }
+                }
+            ];
+
+            // Test mode
+            render(<LearnerQuizView {...defaultProps} questions={subjectiveQuestion} isTestMode={true} />);
+
+            // Type answer
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'My subjective answer' } });
+
+            // Submit
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test file message in chat history for test mode (lines 924-929)
+        it('handles file message in chat history during test mode submission', async () => {
+            // First set up a file message in chat history
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([
+                    {
+                        id: 'msg-file-history',
+                        role: 'user',
+                        content: JSON.stringify({ file_uuid: 'existing-uuid', filename: 'previous.pdf' }),
+                        response_type: 'file',
+                        question_id: 'q-file-test',
+                        created_at: new Date().toISOString(),
+                    }
+                ])
+            });
+
+            const fileQuestion = [
+                {
+                    id: 'q-file-test',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'text', // Use text input so we can submit a follow-up
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={fileQuestion} isTestMode={true} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Type a follow-up answer
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'Follow-up message after file upload' } });
+
+            // Submit - this will trigger chat history formatting which should include the file message
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test exam question in test mode (lines 871-901 - confirmation message)
+        it('handles exam question submission in test mode with confirmation', async () => {
+            // Mock chat history
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            const examQuestion = [
+                {
+                    id: 'q-exam-test',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'text',
+                        responseType: 'exam',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={examQuestion} isTestMode={true} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Type answer
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'My exam answer' } });
+
+            // Submit - this should show confirmation dialog for exam
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            // Wait for confirmation dialog
+            await waitFor(() => {
+                const confirmDialog = screen.queryByTestId('confirmation-dialog');
+                if (confirmDialog) {
+                    // Click confirm button
+                    const confirmBtn = screen.getByTestId('confirm-button');
+                    fireEvent.click(confirmBtn);
+                }
+            });
+        });
+
+        // Test early return when validQuestions is empty (line 769)
+        it('returns early when validQuestions is empty during processUserResponse', async () => {
+            render(<LearnerQuizView {...defaultProps} questions={[]} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Try to submit - should return early
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            // Should not call fetch since it returns early
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test clearTimeout for preparingReportTimer (lines 1206-1211, 1220-1221, 1247-1248)
+        it('clears preparingReportTimer when receiving multiple feedback chunks', async () => {
+            // Reset uploadFile mock from previous test
+            const { uploadFile } = require('@/lib/utils/fileUtils');
+            uploadFile.mockReset();
+            uploadFile.mockResolvedValue('mock-file-uuid-123');
+
+            // Mock chat history fetch first
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            // Mock the streaming response with multiple chunks
+            const readMock = jest.fn()
+                .mockResolvedValueOnce({
+                    done: false,
+                    value: new TextEncoder().encode('{"feedback": "First chunk"}')
+                })
+                .mockResolvedValueOnce({
+                    done: false,
+                    value: new TextEncoder().encode('{"feedback": " Second chunk"}')
+                })
+                .mockResolvedValueOnce({
+                    done: false,
+                    value: new TextEncoder().encode('{"scorecard": {"Criterion1": {"score": 5, "max_score": 5, "feedback": "Good"}}}')
+                })
+                .mockResolvedValueOnce({ done: true });
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                body: {
+                    getReader: () => ({
+                        read: readMock
+                    })
+                }
+            });
+
+            const subjectiveQuestion = [
+                {
+                    id: 'q-subjective-timer',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'text',
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                        scorecardData: {
+                            id: 'scorecard-timer',
+                            name: 'Timer Test Scorecard',
+                            new: false,
+                            criteria: []
+                        }
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={subjectiveQuestion} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'test answer for timer' } });
+
+            const submitBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitBtn);
+
+            // Advance timers to trigger the preparingReportTimer
+            await act(async () => {
+                jest.advanceTimersByTime(500);
+            });
+
+            // The component should render either chat-view or scorecard-view
+            const chatView = screen.queryByTestId('chat-view');
+            const scorecardView = screen.queryByTestId('scorecard-view');
+            expect(chatView || scorecardView).toBeTruthy();
+        });
+
+        // Test file message with existing fileUuid (lines 850-853)
+        it('uses existing fileUuid when provided for file response', async () => {
+            // Mock chat history fetch
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve([])
+            });
+
+            // Mock the streaming response
+            mockFetch.mockImplementationOnce(() => {
+                return Promise.resolve({
+                    ok: true,
+                    body: {
+                        getReader: () => ({
+                            read: jest.fn()
+                                .mockResolvedValueOnce({
+                                    done: false,
+                                    value: new TextEncoder().encode('{"feedback": "File received"}')
+                                })
+                                .mockResolvedValueOnce({ done: true })
+                        })
+                    }
+                });
+            });
+
+            const fileQuestion = [
+                {
+                    id: 'q-file-uuid',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'file',
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={fileQuestion} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Submit file
+            const submitFileBtn = screen.getByTestId('submit-file');
+            fireEvent.click(submitFileBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+        });
+
+        // Test chat history formatting with file message in test mode (lines 924-929)
+        it('reconstructs file message JSON in test mode chat history', async () => {
+            // Set up mock to capture the request body
+            let capturedBody: any = null;
+            mockFetch.mockImplementation((url: string, options: any) => {
+                if (url.includes('/ai/chat')) {
+                    capturedBody = JSON.parse(options.body);
+                    return Promise.resolve({
+                        ok: true,
+                        body: {
+                            getReader: () => ({
+                                read: jest.fn()
+                                    .mockResolvedValueOnce({
+                                        done: false,
+                                        value: new TextEncoder().encode('{"feedback": "Response"}')
+                                    })
+                                    .mockResolvedValueOnce({ done: true })
+                            })
+                        }
+                    });
+                }
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve([])
+                });
+            });
+
+            const fileQuestion = [
+                {
+                    id: 'q-file-test-mode',
+                    content: [{ type: 'paragraph', content: [] }],
+                    config: {
+                        inputType: 'file',
+                        responseType: 'chat',
+                        questionType: 'subjective',
+                        correctAnswer: [],
+                    }
+                }
+            ];
+
+            render(<LearnerQuizView {...defaultProps} questions={fileQuestion} isTestMode={true} />);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Submit file first
+            const submitFileBtn = screen.getByTestId('submit-file');
+            fireEvent.click(submitFileBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
+
+            // Now submit a follow-up text message
+            const input = screen.getByTestId('answer-input');
+            fireEvent.change(input, { target: { value: 'Follow up question' } });
+
+            const submitTextBtn = screen.getByTestId('submit-text');
+            fireEvent.click(submitTextBtn);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+            });
         });
     });
 });

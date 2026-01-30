@@ -82,8 +82,8 @@ describe('Dropdown Options', () => {
 
     describe('answerTypeOptions', () => {
         it('should have correct structure for all options', () => {
-            expect(answerTypeOptions).toHaveLength(3);
-            
+            expect(answerTypeOptions).toHaveLength(4);
+
             // Test Text option
             const textOption = answerTypeOptions[0];
             expect(textOption).toEqual({
@@ -109,6 +109,15 @@ describe('Dropdown Options', () => {
                 value: "code",
                 color: "#614A82",
                 tooltip: "Learner writes code in a code editor"
+            });
+
+            // Test File option
+            const fileOption = answerTypeOptions[3];
+            expect(fileOption).toEqual({
+                label: "File",
+                value: "file",
+                color: "#7C3AED",
+                tooltip: "Learner uploads a PDF file as their answer"
             });
         });
 
