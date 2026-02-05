@@ -9,7 +9,7 @@ import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
-import { YouTubeBlock, transformContentForYouTube } from "./blocks/CustomVideoBlock";
+import { VideoEmbedBlock, transformContentForVideoEmbed } from "./blocks/VideoEmbedBlock";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -175,20 +175,20 @@ export default function BlockNoteEditor({
     // Add a timeout ref to store the timeout ID
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Transform initial content to convert video blocks with YouTube URLs to youtube blocks
+    // Transform initial content to convert video blocks with embed URLs to videoEmbed blocks
     const transformedInitialContent = initialContent.length > 0
-        ? transformContentForYouTube(initialContent)
+        ? transformContentForVideoEmbed(initialContent)
         : undefined;
 
     // Extract blocks we don't want based on configuration
     let enabledBlocks;
     if (allowMedia) {
         // If media is allowed, exclude only these blocks
-        // Add YouTube block alongside the default video block
+        // Add video embed block alongside the default video block
         const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
         enabledBlocks = {
             ...allowedBlockSpecs,
-            youtube: YouTubeBlock(), // Add YouTube embed block
+            videoEmbed: VideoEmbedBlock(), // Add video embed block for iframe-based players
         };
     } else {
         // If media is not allowed, also exclude all media blocks
@@ -233,6 +233,24 @@ export default function BlockNoteEditor({
         }
     };
 
+    // Listen for invalid video URL events
+    useEffect(() => {
+        const handleInvalidUrl = () => {
+            setToast({
+                show: true,
+                title: "Invalid video URL",
+                description: "Please enter a valid video URL",
+                emoji: "⚠️"
+            });
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+        };
+
+        window.addEventListener('invalidVideoUrl', handleInvalidUrl);
+        return () => window.removeEventListener('invalidVideoUrl', handleInvalidUrl);
+    }, []);
 
     // Provide the editor instance to the parent component if onEditorReady is provided
     useEffect(() => {
@@ -244,8 +262,8 @@ export default function BlockNoteEditor({
     // Update editor content when initialContent changes
     useEffect(() => {
         if (editor && initialContent && initialContent.length > 0) {
-            // Transform content to convert video blocks with YouTube URLs to youtube blocks
-            const transformedContent = transformContentForYouTube(initialContent);
+            // Transform content to convert video blocks with embed URLs to videoEmbed blocks
+            const transformedContent = transformContentForVideoEmbed(initialContent);
 
             // Only replace blocks if the content has actually changed
             const currentContentStr = JSON.stringify(editor.document);
