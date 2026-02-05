@@ -9,7 +9,7 @@ import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
-import { VideoEmbedBlock, transformContentForVideoEmbed } from "./blocks/VideoEmbedBlock";
+import { VideoEmbedBlock, transformContentForVideoEmbed } from "./VideoEmbedBlock";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";

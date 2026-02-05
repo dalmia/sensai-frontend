@@ -3,35 +3,43 @@
 import { createReactBlockSpec } from "@blocknote/react";
 import { defaultProps } from "@blocknote/core";
 
+// Supported platforms that require iframe embedding
+// NOTE: When adding a new platform here, also add corresponding embed URL logic in getEmbedUrl()
+const IFRAME_PLATFORMS = [
+    'youtube.com',
+    'youtu.be'
+] as const;
+
 // Check if URL requires iframe embedding
 export function requiresIframeEmbed(url: string): boolean {
     if (!url) return false;
-
-    // Check for known video platforms that require iframe
-    const iframePlatforms = [
-        'youtube.com',
-        'youtu.be'
-    ];
-
-    return iframePlatforms.some(platform => url.includes(platform));
+    return IFRAME_PLATFORMS.some(platform => url.includes(platform));
 }
 
 // Convert video URL to embed URL format
-export function toEmbedUrl(url: string): string | null {
+export function getEmbedUrl(url: string): string | null {
     if (!url) return null;
 
-    if (url.includes('youtube.com/watch')) {
-        const videoId = new URL(url).searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    }
+    try {
+        // YouTube: youtube.com/watch?v=VIDEO_ID
+        if (url.includes('youtube.com/watch')) {
+            const videoId = new URL(url).searchParams.get('v');
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+        }
 
-    if (url.includes('youtu.be/')) {
-        const videoId = url.split('youtu.be/')[1]?.split(/[?&]/)[0];
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    }
+        // YouTube: youtu.be/VIDEO_ID
+        if (url.includes('youtu.be/')) {
+            const videoId = url.split('youtu.be/')[1]?.split(/[?&]/)[0];
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+        }
 
-    if (url.includes('youtube.com/embed/')) {
-        return url;
+        // YouTube: already an embed URL
+        if (url.includes('youtube.com/embed/')) {
+            return url;
+        }
+    } catch {
+        // Invalid URL format
+        return null;
     }
 
     return null;
@@ -55,10 +63,9 @@ export const VideoEmbedBlock = createReactBlockSpec(
     {
         render: (props) => {
             const { url, previewWidth } = props.block.props;
-            const embedUrl = toEmbedUrl(url);
+            const embedUrl = getEmbedUrl(url);
 
             if (!embedUrl) {
-                // Notify parent about invalid URL
                 if (url) {
                     queueMicrotask(() => {
                         window.dispatchEvent(new CustomEvent('invalidVideoUrl'));
@@ -87,7 +94,7 @@ export const VideoEmbedBlock = createReactBlockSpec(
                             src={embedUrl}
                             title="Video player"
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             style={{
                                 position: "absolute",
