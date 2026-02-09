@@ -97,6 +97,40 @@ export const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
     return null;
 };
 
+/**
+ * Sanitizes question data from the backend by removing position properties.
+ * The backend includes position properties in blocks, but the frontend editor doesn't use them.
+ * This ensures clean comparison between original and edited data.
+ */
+const sanitizeQuestionDataFromBackend = (questions: QuizQuestion[]): QuizQuestion[] => {
+    return questions.map(question => {
+        // Sanitize content blocks
+        const sanitizedContent = question.content.map((block: any) => {
+            const { position, ...blockWithoutPosition } = block;
+            return blockWithoutPosition;
+        });
+
+        // Sanitize correctAnswer blocks if they exist
+        let sanitizedCorrectAnswer = question.config.correctAnswer;
+        if (sanitizedCorrectAnswer && Array.isArray(sanitizedCorrectAnswer)) {
+            sanitizedCorrectAnswer = sanitizedCorrectAnswer.map((block: any) => {
+                const { position, ...blockWithoutPosition } = block;
+                return blockWithoutPosition;
+            });
+        }
+
+        // Return sanitized question
+        return {
+            ...question,
+            content: sanitizedContent,
+            config: {
+                ...question.config,
+                correctAnswer: sanitizedCorrectAnswer
+            }
+        };
+    });
+};
+
 const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     initialQuestions = [], // Not used anymore - kept for backward compatibility
     onChange,
@@ -108,6 +142,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     onPublishSuccess,
     showPublishConfirmation = false,
     onPublishCancel,
+    showUnpublishConfirmation = false,
+    setShowUnpublishConfirmation,
+    onUnpublishSuccess,
     isEditMode = false,
     onSaveSuccess,
     taskType = 'quiz',
@@ -175,14 +212,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return () => clearTimeout(timer);
         }
     }, [showToast]);
-
-    // Make sure we reset questions when component mounts for draft quizzes
-    useEffect(() => {
-        if (status === 'draft') {
-            setQuestions([]);
-        }
-    }, [status]);
-
+    
     // Fetch school scorecards when component mounts for draft quizzes
     useEffect(() => {
         const fetchSchoolScorecards = async () => {
@@ -363,8 +393,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                             }, 0);
                         }
 
-                        // Store the original data for cancel operation
-                        originalQuestionsRef.current = JSON.parse(JSON.stringify(updatedQuestions));
+                        // Store the original data for cancel operation (sanitized)
+                        const sanitizedQuestions = sanitizeQuestionDataFromBackend(updatedQuestions);
+                        originalQuestionsRef.current = JSON.parse(JSON.stringify(sanitizedQuestions));
                     }
 
                     // Mark that we've fetched the data - do this regardless of whether questions were found
@@ -445,9 +476,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // State for tracking publishing status
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isUnpublishing, setIsUnpublishing] = useState(false);
 
     // State for tracking publishing errors
-    const [publishError, setPublishError] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null); // Using the same state for both publish and unpublish error messages since only one of the actions can be performed at once
 
     // Reference to the current BlockNote editor instance
     const editorRef = useRef<any>(null);
@@ -1113,12 +1145,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const updateDraftQuiz = async (scheduledPublishAt?: string | null, status: 'draft' | 'published' = 'published') => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
-            setPublishError("Cannot publish: Task ID is missing");
+            setErrorMessage("Cannot publish: Task ID is missing");
             return;
         }
 
         setIsPublishing(true);
-        setPublishError(null);
+        setErrorMessage(null);
 
         try {
             // Get the current title from the dialog - it may have been edited
@@ -1126,43 +1158,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const currentTitle = dialogTitleElement?.textContent || '';
 
             // Format questions for the API
-            const formattedQuestions = questions.map((question) => {
-                // Map questionType to API type
-                const questionType = question.config.questionType;
-                // Map inputType
-                const inputType = question.config.inputType
-
-                let scorecardId = null
-
-                if (question.config.scorecardData) {
-                    // Use our helper function to determine if this is an API scorecard
-                    scorecardId = question.config.scorecardData.id
-                }
-
-                // Return the formatted question object for all questions, not just those with scorecards
-                const questionData: any = {
-                    blocks: question.content,
-                    answer: question.config.correctAnswer || [],
-                    input_type: inputType,
-                    response_type: question.config.responseType,
-                    coding_languages: question.config.codingLanguages || [],
-                    generation_model: null,
-                    type: questionType,
-                    max_attempts: question.config.responseType === 'exam' ? 1 : null,
-                    is_feedback_shown: question.config.responseType === 'exam' ? false : true,
-                    scorecard_id: scorecardId,
-                    context: getKnowledgeBaseContent(question.config),
-                    title: question.config.title,
-                    settings: question.config.settings,
-                };
-
-                // Include ID only for existing questions being updated
-                if (question.id && !question.id.includes('question-')) {
-                    questionData.id = question.id;
-                }
-
-                return questionData;
-            });
+            const formattedQuestions = prepareQuestionsFormattedForBackend()
 
             // Make POST request to update the quiz
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
@@ -1208,7 +1204,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
         } catch (error) {
             console.error("Error publishing quiz:", error);
-            setPublishError(error instanceof Error ? error.message : "Failed to publish quiz");
+            setErrorMessage(error instanceof Error ? error.message : "Failed to publish quiz");
             setIsPublishing(false);
         }
     };
@@ -1414,8 +1410,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 return true;
             }
 
+            // Sanitize current questions to remove position properties added by the editor
+            const sanitizedCurrentQuestions = sanitizeQuestionDataFromBackend(questions);
+
             // Convert both to JSON strings for deep comparison
-            const currentQuestionsStr = JSON.stringify(questions);
+            const currentQuestionsStr = JSON.stringify(sanitizedCurrentQuestions);
             const originalQuestionsStr = JSON.stringify(originalQuestionsRef.current);
 
             // Return true if there are changes
@@ -1748,6 +1747,99 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [onChange]);
 
 
+    const prepareQuestionsFormattedForBackend = () : QuizQuestion[] => {
+        // Format questions for the API
+        return questions.map((question) => {
+            // Map questionType to API type
+            const questionType = question.config.questionType;
+            // Map inputType
+            const inputType = question.config.inputType
+
+            let scorecardId = null
+
+            if (question.config.scorecardData) {
+                // Use our helper function to determine if this is an API scorecard
+                scorecardId = question.config.scorecardData.id
+            }
+
+            // Return the formatted question object for all questions, not just those with scorecards
+            const questionData: any = {
+                blocks: question.content,
+                answer: question.config.correctAnswer || [],
+                input_type: inputType,
+                response_type: question.config.responseType,
+                coding_languages: question.config.codingLanguages || [],
+                generation_model: null,
+                type: questionType,
+                max_attempts: question.config.responseType === 'exam' ? 1 : null,
+                is_feedback_shown: question.config.responseType === 'exam' ? false : true,
+                scorecard_id: scorecardId,
+                context: getKnowledgeBaseContent(question.config),
+                title: question.config.title,
+                settings: question.config.settings,
+            };
+
+            // Include ID only for existing questions being updated
+            if (question.id && !question.id.includes('question-')) {
+                questionData.id = question.id;
+            }
+
+            return questionData;
+        });
+    }
+
+    const handleConfirmUnpublish = async () => {
+        if (!taskId) {
+            setErrorMessage("Cannot unpublish: Task ID is missing");
+            return;
+        }
+
+        setIsUnpublishing(true);
+
+        try {
+            // Get the current title from the dialog - it may have been edited
+            const dialogTitleElement = document.querySelector('.dialog-content-editor')?.parentElement?.querySelector('h2');
+            const currentTitle = dialogTitleElement?.textContent || '';
+
+            const formattedQuestions = prepareQuestionsFormattedForBackend()
+
+            // Make POST request to update the quiz
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: currentTitle,
+                    questions: formattedQuestions,
+                    scheduled_publish_at: null, // Set to null, since the desired behaviour is to unpublish a quiz and also to unschedule a scheduled quiz which would mean 'null' makes sense in both cases  
+                    status: 'draft'
+                }),
+            });
+
+            if (!response.ok) {
+                const responseBody = await response.json()
+                throw new Error(`Failed to unpublish quiz: \"${responseBody?.detail}\" (${response.status})`);
+            }
+
+            // Get the updated task data from the response
+            const updatedTaskData = await response.json();
+
+            onUnpublishSuccess(updatedTaskData)
+            setIsUnpublishing(false);
+            setShowUnpublishConfirmation(false);
+        } catch (error) {
+            console.error("Error unpublishing quiz:", error);
+            setErrorMessage(error instanceof Error ? error.message : "Failed to unpublish quiz");
+            setIsUnpublishing(false);
+        }
+    }
+    
+    const handleCancelUnpublish = () => {
+        setErrorMessage(null)
+        setShowUnpublishConfirmation(false)
+    };
+
     return (
         <div className={`flex flex-col h-full relative ${className}`} key={`quiz-${taskId}-${isEditMode ? 'edit' : 'view'}`}>
             {/* Question delete confirmation modal */}
@@ -1768,7 +1860,21 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onConfirm={updateDraftQuiz}
                 onCancel={handleCancelPublish}
                 isLoading={isPublishing}
-                errorMessage={publishError}
+                errorMessage={errorMessage}
+            />
+
+            <ConfirmationDialog
+                open={showUnpublishConfirmation}
+                title="Are you sure to unpublish these changes?"
+                message="This quiz will be unpublished to learners immediately after this action. Are you sure you want to proceed?"
+                confirmButtonText="Unpublish"
+                cancelButtonText="Cancel"
+                onConfirm={handleConfirmUnpublish}
+                onCancel={handleCancelUnpublish}
+                isLoading={isUnpublishing}
+                errorMessage={errorMessage}
+                type="delete"
+                deleteIcon={null}
             />
 
             {/* Loading indicator */}
