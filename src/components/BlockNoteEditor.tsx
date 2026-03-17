@@ -9,6 +9,7 @@ import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
+import { VideoEmbedBlock, transformContentForVideoEmbed } from "./VideoEmbedBlock";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -146,10 +147,6 @@ async function resolveFileUrl(url: string) {
     }
 }
 
-// Function to check if a URL is a YouTube link
-function isYouTubeLink(url: string): boolean {
-    return url.includes('youtube.com') || url.includes('youtu.be');
-}
 
 export default function BlockNoteEditor({
     initialContent = [],
@@ -178,12 +175,21 @@ export default function BlockNoteEditor({
     // Add a timeout ref to store the timeout ID
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Transform initial content to convert video blocks with embed URLs to videoEmbed blocks
+    const transformedInitialContent = initialContent.length > 0
+        ? transformContentForVideoEmbed(initialContent)
+        : undefined;
+
     // Extract blocks we don't want based on configuration
     let enabledBlocks;
     if (allowMedia) {
         // If media is allowed, exclude only these blocks
+        // Add video embed block alongside the default video block
         const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = allowedBlockSpecs;
+        enabledBlocks = {
+            ...allowedBlockSpecs,
+            videoEmbed: VideoEmbedBlock(), // Add video embed block for iframe-based players
+        };
     } else {
         // If media is not allowed, also exclude all media blocks
         const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
@@ -197,7 +203,7 @@ export default function BlockNoteEditor({
 
     // Creates a new editor instance with the custom schema
     const editor = useCreateBlockNote({
-        initialContent: initialContent.length > 0 ? initialContent : undefined,
+        initialContent: transformedInitialContent,
         uploadFile,
         resolveFileUrl,
         schema, // Use our custom schema with limited blocks
@@ -227,57 +233,24 @@ export default function BlockNoteEditor({
         }
     };
 
-    // Update the effect that checks for YouTube links
+    // Listen for invalid video URL events
     useEffect(() => {
-        if (editor && allowMedia) {
-            const handleVideoBlockChange = () => {
-                // Skip checking during programmatic updates
-                if (isUpdatingContent.current) return;
+        const handleInvalidUrl = () => {
+            setToast({
+                show: true,
+                title: "Invalid video URL",
+                description: "Please enter a valid video URL",
+                emoji: "⚠️"
+            });
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+        };
 
-                // Get all video blocks
-                const blocks = editor.document;
-
-                blocks.forEach(block => {
-                    // Check if this is a video block
-                    // @ts-ignore - TypeScript doesn't recognize custom block types
-                    if (block.type === "video") {
-                        // Check if the URL is a YouTube link
-                        // @ts-ignore - TypeScript doesn't recognize props on custom block types
-                        const videoUrl = block.props?.url || "";
-                        if (videoUrl && isYouTubeLink(videoUrl)) {
-                            // Show toast with customized properties
-                            setToast({
-                                show: true,
-                                title: "Cannot embed YouTube videos yet",
-                                description: "Please use video file URLs (e.g. link to a mp4 file) instead",
-                                emoji: "🚫"
-                            });
-
-                            // Clear any existing timeout
-                            if (toastTimeoutRef.current) {
-                                clearTimeout(toastTimeoutRef.current);
-                            }
-
-                            // Set a new timeout to auto-hide the toast after 5 seconds
-                            toastTimeoutRef.current = setTimeout(() => {
-                                setToast(prev => ({ ...prev, show: false }));
-                            }, 5000);
-                        }
-                    }
-                });
-            };
-
-            // Listen for content changes to detect YouTube links
-            editor.onEditorContentChange(handleVideoBlockChange);
-
-            // Cleanup function to clear timeout when component unmounts
-            return () => {
-                if (toastTimeoutRef.current) {
-                    clearTimeout(toastTimeoutRef.current);
-                }
-            };
-        }
-    }, [editor, allowMedia]);
+        window.addEventListener('invalidVideoUrl', handleInvalidUrl);
+        return () => window.removeEventListener('invalidVideoUrl', handleInvalidUrl);
+    }, []);
 
     // Provide the editor instance to the parent component if onEditorReady is provided
     useEffect(() => {
@@ -289,23 +262,26 @@ export default function BlockNoteEditor({
     // Update editor content when initialContent changes
     useEffect(() => {
         if (editor && initialContent && initialContent.length > 0) {
-            // Set flag to prevent triggering onChange during programmatic update
-            isUpdatingContent.current = true;
+            // Transform content to convert video blocks with embed URLs to videoEmbed blocks
+            const transformedContent = transformContentForVideoEmbed(initialContent);
 
-            try {
-                // Only replace blocks if the content has actually changed
-                const currentContentStr = JSON.stringify(editor.document);
-                const newContentStr = JSON.stringify(initialContent);
+            // Only replace blocks if the content has actually changed
+            const currentContentStr = JSON.stringify(editor.document);
+            const newContentStr = JSON.stringify(transformedContent);
 
-                if (currentContentStr !== newContentStr) {
-                    editor.replaceBlocks(editor.document, initialContent);
-                    lastContent.current = initialContent;
-                }
-            } catch (error) {
-                console.error("Error updating editor content:", error);
-            } finally {
-                // Reset flag after update
-                isUpdatingContent.current = false;
+            if (currentContentStr !== newContentStr) {
+                // Use queueMicrotask to defer the update and avoid flushSync conflicts
+                queueMicrotask(() => {
+                    isUpdatingContent.current = true;
+                    try {
+                        editor.replaceBlocks(editor.document, transformedContent);
+                        lastContent.current = transformedContent;
+                    } catch (error) {
+                        console.error("Error updating editor content:", error);
+                    } finally {
+                        isUpdatingContent.current = false;
+                    }
+                });
             }
         }
     }, [editor, initialContent]);
