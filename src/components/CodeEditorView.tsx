@@ -171,7 +171,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                             srcDoc={enhancedPreviewContent}
                             title="Code Preview"
                             className="w-full h-full bg-white"
-                            sandbox="allow-scripts"
+                            sandbox="allow-scripts allow-forms"
                             onLoad={() => setIsIframeLoading(false)}
                         />
                     </div>
