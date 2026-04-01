@@ -1,12 +1,23 @@
 "use client";
 
+import React, { createContext, useContext } from "react";
 import { createReactBlockSpec } from "@blocknote/react";
 import { defaultProps } from "@blocknote/core";
 import { Plus, X, Check, CircleDot, CheckSquare } from "lucide-react";
 import { useRef } from "react";
 import { parseJSON } from "@/lib/utils/blockUtils";
 
-export const MCQBlock = createReactBlockSpec(
+// Context for passing MCQ selection state into the block from outside
+export interface MCQInteractionContext {
+    selectedTexts: string[];
+    onSelect: (optionText: string) => void;
+    disabled?: boolean;
+}
+
+export const MCQContext = createContext<MCQInteractionContext | null>(null);
+
+// createReactBlockSpec returns a factory function — call it to get the block spec
+export const createMCQBlockSpec = createReactBlockSpec(
     {
         type: "mcq",
         propSchema: {
@@ -45,13 +56,16 @@ export const MCQBlock = createReactBlockSpec(
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const optionInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const mcqContext = useContext(MCQContext);
+
             const handleOptionEnterKey = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
                     if (index < options.length - 1) {
                         optionInputRefs.current[index + 1]?.focus();
                     } else {
-                        const newId = String(Date.now());
+                        const newId = crypto.randomUUID();
                         const newOptions = [...options, { id: newId, text: "" }];
                         updateProps({ options: JSON.stringify(newOptions) });
                         setTimeout(() => {
@@ -168,7 +182,7 @@ export const MCQBlock = createReactBlockSpec(
                                 <div
                                     className="flex items-center px-4 py-2 rounded-full bg-gray-200 hover:bg-green-100 text-gray-600 hover:text-green-700 dark:bg-[#2A2A2A] dark:hover:bg-[#2A4A3A] dark:text-gray-300 dark:hover:text-green-300 transition-colors cursor-pointer"
                                     onClick={() => {
-                                        const newId = String(Date.now());
+                                        const newId = crypto.randomUUID();
                                         const newOptions = [...options, { id: newId, text: "" }];
                                         updateProps({ options: JSON.stringify(newOptions) });
                                         setTimeout(() => {
@@ -185,24 +199,56 @@ export const MCQBlock = createReactBlockSpec(
                 );
             }
 
-            // Learner (read-only) view — matches admin row style without controls
+            // Learner (read-only) view — interactive if MCQContext is provided
+            const filteredOptions = options.filter(o => o.text.trim());
+
             return (
                 <div className="w-full" contentEditable={false}>
                     <div className="w-full bg-white dark:bg-[#1F1F1F] rounded-lg p-2">
                         <div className="space-y-2">
-                            {options.filter(o => o.text.trim()).map((option) => (
-                                <div
-                                    key={option.id}
-                                    className="flex items-center gap-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-md px-3 py-2.5"
-                                >
+                            {filteredOptions.map((option) => {
+                                const isSelected = mcqContext?.selectedTexts.includes(option.text) ?? false;
+                                const isInteractive = !!mcqContext && !mcqContext.disabled;
+
+                                return (
                                     <div
-                                        className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 bg-transparent ${isSingle ? "rounded-full" : "rounded"}`}
-                                    />
-                                    <span className="text-sm text-gray-900 dark:text-white">
-                                        {option.text}
-                                    </span>
-                                </div>
-                            ))}
+                                        key={option.id}
+                                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 transition-all ${
+                                            isInteractive ? 'cursor-pointer' : ''
+                                        } ${
+                                            isSelected
+                                                ? 'bg-green-50 dark:bg-green-900/20 border border-green-500 dark:border-green-500'
+                                                : `bg-gray-100 dark:bg-[#2A2A2A] border border-transparent ${isInteractive ? 'hover:border-gray-300 dark:hover:border-[#444444]' : ''}`
+                                        }`}
+                                        onClick={() => {
+                                            if (isInteractive) {
+                                                mcqContext.onSelect(option.text);
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
+                                                e.preventDefault();
+                                                mcqContext.onSelect(option.text);
+                                            }
+                                        }}
+                                        role={isInteractive ? "button" : undefined}
+                                        tabIndex={isInteractive ? 0 : undefined}
+                                    >
+                                        <div
+                                            className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center border-2 transition-colors ${
+                                                isSelected
+                                                    ? 'bg-green-500 border-green-500'
+                                                    : 'border-gray-300 dark:border-gray-600 bg-transparent'
+                                            } ${isSingle ? "rounded-full" : "rounded"}`}
+                                        >
+                                            {isSelected && <Check size={11} strokeWidth={3} color="white" />}
+                                        </div>
+                                        <span className="text-sm text-gray-900 dark:text-white">
+                                            {option.text}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

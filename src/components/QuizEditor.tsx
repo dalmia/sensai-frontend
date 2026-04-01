@@ -22,7 +22,7 @@ import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
 // Import dropdown options
 import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
-import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
+import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion, MCQSettings } from "../types";
 import { extractTextFromBlocks, hasBlocksContent, extractMCQFromBlocks } from "@/lib/utils/blockUtils";
 // Add import for KnowledgeBaseEditor
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
@@ -313,7 +313,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
-                            const settings: any = { allowCopyPaste: true };
+                            const settings: { allowCopyPaste: boolean; mcq?: MCQSettings } = { allowCopyPaste: true };
                             if (question.settings) {
                                 settings.allowCopyPaste = question.settings.allowCopyPaste;
                                 if (question.settings.mcq) {

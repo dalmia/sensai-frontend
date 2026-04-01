@@ -11,12 +11,13 @@ import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blockno
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
-import { MCQBlock } from "./MCQBlock";
+import { createMCQBlockSpec, MCQContext, MCQInteractionContext } from "./MCQBlock";
+import { extractMCQFromBlocks } from "@/lib/utils/blockUtils";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
 
-const mcqBlockSpec = MCQBlock();
+const mcqBlockSpec = createMCQBlockSpec();
 
 interface BlockNoteEditorProps {
     initialContent?: any[];
@@ -27,6 +28,7 @@ interface BlockNoteEditorProps {
     onEditorReady?: (editor: any) => void;
     allowMedia?: boolean;
     allowMCQ?: boolean;
+    mcqInteraction?: MCQInteractionContext;
 }
 
 // Uploads a file and returns the URL to the uploaded file
@@ -166,6 +168,7 @@ export default function BlockNoteEditor({
     onEditorReady,
     allowMedia = true,
     allowMCQ = false,
+    mcqInteraction,
 }: BlockNoteEditorProps) {
     const { isDarkMode } = useThemePreference();
     const locale = en;
@@ -188,19 +191,11 @@ export default function BlockNoteEditor({
     // Extract blocks we don't want based on configuration
     let enabledBlocks;
     if (allowMedia) {
-        // If media is allowed, exclude only these blocks
         const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = {
-            ...allowedBlockSpecs,
-            ...(allowMCQ ? { mcq: mcqBlockSpec } : {}),
-        };
+        enabledBlocks = { ...allowedBlockSpecs, mcq: mcqBlockSpec };
     } else {
-        // If media is not allowed, also exclude all media blocks
         const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = {
-            ...allowedBlockSpecs,
-            ...(allowMCQ ? { mcq: mcqBlockSpec } : {}),
-        };
+        enabledBlocks = { ...allowedBlockSpecs, mcq: mcqBlockSpec };
     }
 
     // Create a schema with only the allowed blocks
@@ -443,40 +438,42 @@ export default function BlockNoteEditor({
                 e.stopPropagation();
             }}
         >
-            <BlockNoteView
-                editor={editor}
-                theme={isDarkMode ? "dark" : "light"}
-                className={isDarkMode ? "dark-editor" : ""}
-                editable={!readOnly}
-                slashMenu={allowMCQ && !readOnly ? false : undefined}
-            >
-                {allowMCQ && !readOnly && (
-                    <SuggestionMenuController
-                        triggerCharacter="/"
-                        getItems={async (query) => {
-                            const hasMCQBlock = editor.document.some((b: any) => b.type === 'mcq');
-                            const mcqItem = hasMCQBlock ? [] : [{
-                                title: "MCQ / Multiple Choice",
-                                subtext: "Add multiple choice options",
-                                onItemClick: () => {
-                                    queueMicrotask(() => {
-                                        insertOrUpdateBlockForSlashMenu(editor, {
-                                            type: "mcq" as any,
+            <MCQContext.Provider value={mcqInteraction ?? null}>
+                <BlockNoteView
+                    editor={editor}
+                    theme={isDarkMode ? "dark" : "light"}
+                    className={isDarkMode ? "dark-editor" : ""}
+                    editable={!readOnly}
+                    slashMenu={allowMCQ && !readOnly ? false : undefined}
+                >
+                    {allowMCQ && !readOnly && (
+                        <SuggestionMenuController
+                            triggerCharacter="/"
+                            getItems={async (query) => {
+                                const hasMCQBlock = !!extractMCQFromBlocks(editor.document as any[]);
+                                const mcqItem = hasMCQBlock ? [] : [{
+                                    title: "MCQ / Multiple Choice",
+                                    subtext: "Add multiple choice options",
+                                    onItemClick: () => {
+                                        queueMicrotask(() => {
+                                            insertOrUpdateBlockForSlashMenu(editor, {
+                                                type: "mcq" as any,
+                                            });
                                         });
-                                    });
-                                },
-                                aliases: ["mcq", "multiple choice", "quiz", "options"],
-                                group: "Others",
-                                icon: <ListChecks size={18} />,
-                            }];
-                            return filterSuggestionItems([
-                                ...getDefaultReactSlashMenuItems(editor),
-                                ...mcqItem,
-                            ], query);
-                        }}
-                    />
-                )}
-            </BlockNoteView>
+                                    },
+                                    aliases: ["mcq", "multiple choice", "quiz", "options"],
+                                    group: "Others",
+                                    icon: <ListChecks size={18} />,
+                                }];
+                                return filterSuggestionItems([
+                                    ...getDefaultReactSlashMenuItems(editor),
+                                    ...mcqItem,
+                                ], query);
+                            }}
+                        />
+                    )}
+                </BlockNoteView>
+            </MCQContext.Provider>
 
             {/* Update Toast component to use the toast object */}
             <Toast

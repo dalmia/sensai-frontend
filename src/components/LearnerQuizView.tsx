@@ -9,7 +9,6 @@ import ChatView, { CodeViewState, ChatViewHandle } from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
-import { extractMCQFromBlocks } from '@/lib/utils/blockUtils';
 import { CodePreview } from './CodeEditorView';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
@@ -1410,13 +1409,53 @@ export default function LearnerQuizView({
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config;
 
-    // Extract MCQ options from question content blocks (single source of truth)
-    const mcqOptions = useMemo(() => {
-        const currentQuestion = validQuestions[currentQuestionIndex];
-        if (!currentQuestion?.content || !currentQuestionConfig?.settings?.mcq?.enabled) return undefined;
-        const mcqData = extractMCQFromBlocks(currentQuestion.content);
-        return mcqData?.options?.filter((o: { text: string }) => o.text.trim()) || undefined;
-    }, [validQuestions, currentQuestionIndex, currentQuestionConfig?.settings?.mcq?.enabled]);
+    // MCQ interaction context for the question panel BlockNoteEditor
+    const mcqEnabled = currentQuestionConfig?.settings?.mcq?.enabled;
+    const mcqSelectionMode = currentQuestionConfig?.settings?.mcq?.selectionMode || 'single';
+    const mcqInteraction = useMemo(() => {
+        if (!mcqEnabled) return undefined;
+        const isSingle = mcqSelectionMode === 'single';
+
+        // For single-select: answer is the option text directly
+        // For multi-select: answer is a JSON array of selected texts
+        let selectedTexts: string[];
+        if (isSingle) {
+            selectedTexts = currentAnswer ? [currentAnswer] : [];
+        } else {
+            try {
+                const parsed = JSON.parse(currentAnswer);
+                selectedTexts = Array.isArray(parsed) ? parsed : [];
+            } catch {
+                selectedTexts = [];
+            }
+        }
+
+        return {
+            selectedTexts,
+            onSelect: (optionText: string) => {
+                let newValue: string;
+                const isSelected = selectedTexts.includes(optionText);
+                if (isSingle) {
+                    newValue = isSelected ? '' : optionText;
+                } else {
+                    const updated = isSelected
+                        ? selectedTexts.filter((t: string) => t !== optionText)
+                        : [...selectedTexts, optionText];
+                    newValue = updated.length > 0 ? JSON.stringify(updated) : '';
+                }
+                setCurrentAnswer(newValue);
+                currentAnswerRef.current = newValue;
+                try {
+                    const currentQuestion = validQuestions[currentQuestionIndex];
+                    if (currentQuestion?.config?.inputType === 'text') {
+                        const key = String(currentQuestion.id);
+                        setDraft(key, newValue || '');
+                    }
+                } catch { }
+            },
+            disabled: isSubmitting || isAiResponding,
+        };
+    }, [mcqEnabled, mcqSelectionMode, currentAnswer, isSubmitting, isAiResponding, validQuestions, currentQuestionIndex]);
 
     // Focus the input field directly
     useEffect(() => {
@@ -2089,6 +2128,7 @@ export default function LearnerQuizView({
                                     className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
                                     placeholder="Question content will appear here"
                                     allowMCQ={true}
+                                    mcqInteraction={mcqInteraction}
                                 />
                             )}
                         </div>
@@ -2114,7 +2154,6 @@ export default function LearnerQuizView({
                             isTestMode={isTestMode}
                             taskType='quiz'
                             currentQuestionConfig={validQuestions[currentQuestionIndex]?.config}
-                            mcqOptions={mcqOptions}
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}
                             handleInputChange={handleInputChange}
