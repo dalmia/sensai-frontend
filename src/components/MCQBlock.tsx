@@ -1,0 +1,212 @@
+"use client";
+
+import { createReactBlockSpec } from "@blocknote/react";
+import { defaultProps } from "@blocknote/core";
+import { Plus, X, Check, CircleDot, CheckSquare } from "lucide-react";
+import { useRef } from "react";
+import { parseJSON } from "@/lib/utils/blockUtils";
+
+export const MCQBlock = createReactBlockSpec(
+    {
+        type: "mcq",
+        propSchema: {
+            textAlignment: defaultProps.textAlignment,
+            backgroundColor: defaultProps.backgroundColor,
+            options: {
+                default: JSON.stringify([
+                    { id: "1", text: "" },
+                    { id: "2", text: "" },
+                ]),
+            },
+            selectionMode: {
+                default: "single" as const,
+                values: ["single", "multi"] as const,
+            },
+            correctOptionIds: {
+                default: "[]",
+            },
+        },
+        content: "none",
+    },
+    {
+        render: (props) => {
+            const isEditable = props.editor.isEditable;
+            const blockProps = props.block.props;
+            const options: { id: string; text: string }[] = parseJSON(blockProps.options, []);
+            const correctOptionIds: string[] = parseJSON(blockProps.correctOptionIds, []);
+            const selectionMode = blockProps.selectionMode as "single" | "multi";
+            const isSingle = selectionMode === "single";
+
+            const updateProps = (updates: Record<string, string>) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (props.editor as any).updateBlock(props.block, { props: updates });
+            };
+
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const optionInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+            const handleOptionEnterKey = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (index < options.length - 1) {
+                        optionInputRefs.current[index + 1]?.focus();
+                    } else {
+                        const newId = String(Date.now());
+                        const newOptions = [...options, { id: newId, text: "" }];
+                        updateProps({ options: JSON.stringify(newOptions) });
+                        setTimeout(() => {
+                            optionInputRefs.current[options.length]?.focus();
+                        }, 50);
+                    }
+                }
+            };
+
+            // Admin (editable) view
+            if (isEditable) {
+                return (
+                    <div className="w-full outline-none" contentEditable={false}>
+                        <div className="w-full bg-white dark:bg-[#1F1F1F] rounded-lg py-2 px-4">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">
+                                    Answer choices
+                                </span>
+                                {/* Selection mode toggle */}
+                                <div className="inline-flex rounded-lg p-1 bg-gray-200 dark:bg-[#222222]">
+                                    <div
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-medium cursor-pointer transition-all ${isSingle ? "bg-white text-black dark:bg-[#333333] dark:text-white" : "text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"}`}
+                                        onClick={() => {
+                                            updateProps({
+                                                selectionMode: "single",
+                                                correctOptionIds: JSON.stringify(correctOptionIds.slice(0, 1)),
+                                            });
+                                        }}
+                                    >
+                                        <CircleDot size={11} />
+                                        Single
+                                    </div>
+                                    <div
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-medium cursor-pointer transition-all ${!isSingle ? "bg-white text-black dark:bg-[#333333] dark:text-white" : "text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"}`}
+                                        onClick={() => {
+                                            updateProps({ selectionMode: "multi" });
+                                        }}
+                                    >
+                                        <CheckSquare size={11} />
+                                        Multiple
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Options rows */}
+                            <div className="space-y-2 mb-2">
+                                {options.map((option, index) => {
+                                    const isCorrect = correctOptionIds.includes(option.id);
+                                    return (
+                                        <div
+                                            key={option.id}
+                                            className="flex items-center gap-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-md px-3 py-2.5"
+                                        >
+                                            {/* Correct answer toggle */}
+                                            <div
+                                                className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center cursor-pointer transition-all border-2 ${isCorrect ? "border-green-500 bg-green-500" : "border-gray-300 dark:border-gray-600 bg-transparent hover:border-green-400"} ${isSingle ? "rounded-full" : "rounded"}`}
+                                                title={isCorrect ? "Unmark correct answer" : "Mark as correct answer"}
+                                                onClick={() => {
+                                                    let newCorrectIds: string[];
+                                                    if (isSingle) {
+                                                        newCorrectIds = isCorrect ? [] : [option.id];
+                                                    } else {
+                                                        newCorrectIds = isCorrect
+                                                            ? correctOptionIds.filter(id => id !== option.id)
+                                                            : [...correctOptionIds, option.id];
+                                                    }
+                                                    updateProps({ correctOptionIds: JSON.stringify(newCorrectIds) });
+                                                }}
+                                            >
+                                                {isCorrect && <Check size={11} strokeWidth={3} color="white" />}
+                                            </div>
+
+                                            {/* Option text input */}
+                                            <input
+                                                ref={(el) => { optionInputRefs.current[index] = el; }}
+                                                type="text"
+                                                value={option.text}
+                                                onChange={(e) => {
+                                                    const newOptions = options.map(o =>
+                                                        o.id === option.id ? { ...o, text: e.target.value } : o
+                                                    );
+                                                    updateProps({ options: JSON.stringify(newOptions) });
+                                                }}
+                                                onKeyDown={(e) => handleOptionEnterKey(e, index)}
+                                                placeholder={`Option ${index + 1}`}
+                                                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                            />
+
+                                            {/* Delete button — X icon like Scorecard */}
+                                            {options.length > 2 && (
+                                                <div
+                                                    className="shrink-0 p-1 rounded-full hover:bg-red-100 dark:hover:bg-[#4F2828] text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer"
+                                                    title="Delete option"
+                                                    onClick={() => {
+                                                        const newOptions = options.filter(o => o.id !== option.id);
+                                                        const newCorrectIds = correctOptionIds.filter(id => id !== option.id);
+                                                        updateProps({
+                                                            options: JSON.stringify(newOptions),
+                                                            correctOptionIds: JSON.stringify(newCorrectIds),
+                                                        });
+                                                    }}
+                                                >
+                                                    <X size={14} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Add option button — centered pill like Scorecard */}
+                            <div className="flex justify-center">
+                                <div
+                                    className="flex items-center px-4 py-2 rounded-full bg-gray-200 hover:bg-green-100 text-gray-600 hover:text-green-700 dark:bg-[#2A2A2A] dark:hover:bg-[#2A4A3A] dark:text-gray-300 dark:hover:text-green-300 transition-colors cursor-pointer"
+                                    onClick={() => {
+                                        const newId = String(Date.now());
+                                        const newOptions = [...options, { id: newId, text: "" }];
+                                        updateProps({ options: JSON.stringify(newOptions) });
+                                        setTimeout(() => {
+                                            optionInputRefs.current[options.length]?.focus();
+                                        }, 50);
+                                    }}
+                                >
+                                    <Plus size={14} className="mr-1" />
+                                    <span className="text-sm">Add</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Learner (read-only) view — matches admin row style without controls
+            return (
+                <div className="w-full" contentEditable={false}>
+                    <div className="w-full bg-white dark:bg-[#1F1F1F] rounded-lg p-2">
+                        <div className="space-y-2">
+                            {options.filter(o => o.text.trim()).map((option) => (
+                                <div
+                                    key={option.id}
+                                    className="flex items-center gap-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-md px-3 py-2.5"
+                                >
+                                    <div
+                                        className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 bg-transparent ${isSingle ? "rounded-full" : "rounded"}`}
+                                    />
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                        {option.text}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        },
+    }
+);

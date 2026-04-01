@@ -1,17 +1,22 @@
 "use client";
 
 import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
+import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
+import { ListChecks } from "lucide-react";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState } from "react";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
+import { MCQBlock } from "./MCQBlock";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
+
+const mcqBlockSpec = MCQBlock();
 
 interface BlockNoteEditorProps {
     initialContent?: any[];
@@ -21,6 +26,7 @@ interface BlockNoteEditorProps {
     placeholder?: string;
     onEditorReady?: (editor: any) => void;
     allowMedia?: boolean;
+    allowMCQ?: boolean;
 }
 
 // Uploads a file and returns the URL to the uploaded file
@@ -159,6 +165,7 @@ export default function BlockNoteEditor({
     placeholder = "Enter text or type '/' for commands",
     onEditorReady,
     allowMedia = true,
+    allowMCQ = false,
 }: BlockNoteEditorProps) {
     const { isDarkMode } = useThemePreference();
     const locale = en;
@@ -183,11 +190,17 @@ export default function BlockNoteEditor({
     if (allowMedia) {
         // If media is allowed, exclude only these blocks
         const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = allowedBlockSpecs;
+        enabledBlocks = {
+            ...allowedBlockSpecs,
+            ...(allowMCQ ? { mcq: mcqBlockSpec } : {}),
+        };
     } else {
         // If media is not allowed, also exclude all media blocks
         const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = allowedBlockSpecs;
+        enabledBlocks = {
+            ...allowedBlockSpecs,
+            ...(allowMCQ ? { mcq: mcqBlockSpec } : {}),
+        };
     }
 
     // Create a schema with only the allowed blocks
@@ -435,7 +448,35 @@ export default function BlockNoteEditor({
                 theme={isDarkMode ? "dark" : "light"}
                 className={isDarkMode ? "dark-editor" : ""}
                 editable={!readOnly}
-            />
+                slashMenu={allowMCQ && !readOnly ? false : undefined}
+            >
+                {allowMCQ && !readOnly && (
+                    <SuggestionMenuController
+                        triggerCharacter="/"
+                        getItems={async (query) => {
+                            const hasMCQBlock = editor.document.some((b: any) => b.type === 'mcq');
+                            const mcqItem = hasMCQBlock ? [] : [{
+                                title: "MCQ / Multiple Choice",
+                                subtext: "Add multiple choice options",
+                                onItemClick: () => {
+                                    queueMicrotask(() => {
+                                        insertOrUpdateBlockForSlashMenu(editor, {
+                                            type: "mcq" as any,
+                                        });
+                                    });
+                                },
+                                aliases: ["mcq", "multiple choice", "quiz", "options"],
+                                group: "Others",
+                                icon: <ListChecks size={18} />,
+                            }];
+                            return filterSuggestionItems([
+                                ...getDefaultReactSlashMenuItems(editor),
+                                ...mcqItem,
+                            ], query);
+                        }}
+                    />
+                )}
+            </BlockNoteView>
 
             {/* Update Toast component to use the toast object */}
             <Toast
@@ -447,4 +488,4 @@ export default function BlockNoteEditor({
             />
         </div>
     );
-} 
+}

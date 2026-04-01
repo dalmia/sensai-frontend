@@ -2,15 +2,15 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, MessageCircle, X, SplitSquareVertical, CheckCircle } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState, ChatViewHandle } from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
+import { extractMCQFromBlocks } from '@/lib/utils/blockUtils';
 import { CodePreview } from './CodeEditorView';
-import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
@@ -1410,6 +1410,14 @@ export default function LearnerQuizView({
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config;
 
+    // Extract MCQ options from question content blocks (single source of truth)
+    const mcqOptions = useMemo(() => {
+        const currentQuestion = validQuestions[currentQuestionIndex];
+        if (!currentQuestion?.content || !currentQuestionConfig?.settings?.mcq?.enabled) return undefined;
+        const mcqData = extractMCQFromBlocks(currentQuestion.content);
+        return mcqData?.options?.filter((o: { text: string }) => o.text.trim()) || undefined;
+    }, [validQuestions, currentQuestionIndex, currentQuestionConfig?.settings?.mcq?.enabled]);
+
     // Focus the input field directly
     useEffect(() => {
         // Use requestAnimationFrame to ensure the DOM is fully rendered
@@ -2080,6 +2088,7 @@ export default function LearnerQuizView({
                                     readOnly={true}
                                     className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
                                     placeholder="Question content will appear here"
+                                    allowMCQ={true}
                                 />
                             )}
                         </div>
@@ -2105,6 +2114,7 @@ export default function LearnerQuizView({
                             isTestMode={isTestMode}
                             taskType='quiz'
                             currentQuestionConfig={validQuestions[currentQuestionIndex]?.config}
+                            mcqOptions={mcqOptions}
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}
                             handleInputChange={handleInputChange}

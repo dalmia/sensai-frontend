@@ -23,7 +23,7 @@ import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
 import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions, copyPasteControlOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
-import { extractTextFromBlocks, hasBlocksContent } from "@/lib/utils/blockUtils";
+import { extractTextFromBlocks, hasBlocksContent, extractMCQFromBlocks } from "@/lib/utils/blockUtils";
 // Add import for KnowledgeBaseEditor
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 // Import Toast component
@@ -313,9 +313,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
-                            const settings = { allowCopyPaste: true };
+                            const settings: any = { allowCopyPaste: true };
                             if (question.settings) {
                                 settings.allowCopyPaste = question.settings.allowCopyPaste;
+                                if (question.settings.mcq) {
+                                    settings.mcq = {
+                                        enabled: question.settings.mcq.enabled,
+                                        selectionMode: question.settings.mcq.selectionMode || 'single',
+                                    };
+                                }
                             }
 
                             return {
@@ -578,6 +584,42 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
 
 
+            // Validate MCQ: check if MCQ block exists in content
+            const hasMCQBlock = question.content?.some((b: any) => b.type === 'mcq');
+            if (hasMCQBlock) {
+                // MCQ only works with text input type
+                if (question.config.inputType !== 'text') {
+                    setCurrentQuestionIndex(i);
+                    setActiveEditorTab('question');
+                    highlightField('question');
+                    updateCurrentQuestionId(question.id);
+                    if (onValidationError) {
+                        onValidationError(
+                            "MCQ not supported",
+                            `Question ${i + 1}: MCQ requires answer type to be text`
+                        );
+                    }
+                    return false;
+                }
+
+                // MCQ block needs at least 2 options with text
+                const mcqData = extractMCQFromBlocks(question.content);
+                const filledOptions = mcqData?.options?.filter((o: { text: string }) => o.text.trim()) || [];
+                if (filledOptions.length < 2) {
+                    setCurrentQuestionIndex(i);
+                    setActiveEditorTab('question');
+                    highlightField('question');
+                    updateCurrentQuestionId(question.id);
+                    if (onValidationError) {
+                        onValidationError(
+                            "Not enough options",
+                            `Question ${i + 1} needs at least 2 options for multiple choice`
+                        );
+                    }
+                    return false;
+                }
+            }
+
             // For coding questions, check if coding languages are set
             if (question.config.inputType === 'code') {
                 if (!question.config.codingLanguages || !Array.isArray(question.config.codingLanguages) || question.config.codingLanguages.length === 0) {
@@ -700,11 +742,24 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setHighlightedField(null);
         }
 
+        // Extract MCQ settings from blocks if present
+        const mcqFromBlocks = extractMCQFromBlocks(content);
+
         // Simply update the content without all the complexity
         const updatedQuestions = [...questions];
+        const currentQuestion = updatedQuestions[currentQuestionIndex];
         updatedQuestions[currentQuestionIndex] = {
-            ...updatedQuestions[currentQuestionIndex],
-            content
+            ...currentQuestion,
+            content,
+            config: {
+                ...currentQuestion.config,
+                settings: {
+                    ...currentQuestion.config.settings,
+                    mcq: mcqFromBlocks
+                        ? { enabled: true, selectionMode: mcqFromBlocks.selectionMode }
+                        : { enabled: false, selectionMode: 'single' as const },
+                },
+            },
         };
 
         // Update state
@@ -897,7 +952,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     codingLanguages = [...previousQuestion.config.codingLanguages];
                 }
                 responseType = previousQuestion.config.responseType;
-                settings = previousQuestion.config.settings
+                settings = { allowCopyPaste: previousQuestion.config.settings?.allowCopyPaste ?? true }
             }
         }
 
@@ -2081,6 +2136,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                             readOnly={readOnly}
                                                             onEditorReady={setEditorInstance}
                                                             className="quiz-editor"
+                                                            allowMCQ={currentQuestionConfig.inputType === 'text'}
                                                         />
                                                     )}
                                                 </div>

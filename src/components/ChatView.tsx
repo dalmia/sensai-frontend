@@ -49,6 +49,7 @@ interface ChatViewProps {
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
     userId?: string;
+    mcqOptions?: { id: string; text: string }[];
     // Assignment mode: show upload instead of textarea until upload completes
     showUploadSection?: boolean;
     onFileUploaded?: (file: File) => void;
@@ -83,6 +84,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     onShowLearnerViewChange,
     isAdminView = false,
     userId,
+    mcqOptions,
     showUploadSection = false,
     onFileUploaded,
     onFileDownload,
@@ -667,6 +669,63 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                     ) : (
                                         /* Hide the text input for coding questions in exam mode */
                                         !(currentQuestionConfig?.responseType === 'exam' && isCodingQuestion) && (
+                                            <>
+                                            {/* MCQ Options */}
+                                            {currentQuestionConfig?.settings?.mcq?.enabled && mcqOptions && mcqOptions.length > 0 && (
+                                                <div className={`flex flex-col gap-2 mb-3 ${mcqOptions.length > 4 ? "max-h-[232px] overflow-y-auto pr-1" : ""}`}>
+                                                    {mcqOptions.map((option: { id: string; text: string }, index: number) => {
+                                                        const isSingle = currentQuestionConfig?.settings?.mcq?.selectionMode === 'single';
+                                                        // For single: check if currentAnswer matches this option
+                                                        // For multi: check if this option is in the comma-separated list
+                                                        const selectedTexts = isSingle
+                                                            ? [currentAnswer]
+                                                            : currentAnswer.split('\n').filter((s: string) => s.trim());
+                                                        const isSelected = selectedTexts.includes(option.text);
+                                                        return (
+                                                            <button
+                                                                key={option.id}
+                                                                type="button"
+                                                                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border transition-all cursor-pointer ${
+                                                                    isSelected
+                                                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                                                        : 'border-gray-300 dark:border-[#222222] bg-white dark:bg-[#111111] hover:border-gray-400 dark:hover:border-[#333333]'
+                                                                }`}
+                                                                onClick={() => {
+                                                                    let newValue: string;
+                                                                    if (isSingle) {
+                                                                        newValue = isSelected ? '' : option.text;
+                                                                    } else {
+                                                                        // Multi-select: toggle this option in/out
+                                                                        if (isSelected) {
+                                                                            newValue = selectedTexts.filter((t: string) => t !== option.text).join('\n');
+                                                                        } else {
+                                                                            newValue = [...selectedTexts.filter((t: string) => t.trim()), option.text].join('\n');
+                                                                        }
+                                                                    }
+                                                                    const syntheticEvent = {
+                                                                        target: { value: newValue }
+                                                                    } as React.ChangeEvent<HTMLTextAreaElement>;
+                                                                    handleInputChange(syntheticEvent);
+                                                                }}
+                                                                disabled={isSubmitting || isAiResponding}
+                                                            >
+                                                                <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center ${isSingle ? 'rounded-full' : 'rounded'} border-2 transition-colors ${
+                                                                    isSelected
+                                                                        ? 'bg-blue-500 border-blue-500 text-white'
+                                                                        : 'border-gray-300 dark:border-gray-600'
+                                                                }`}>
+                                                                    {isSelected && (
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                            <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                                                        </svg>
+                                                                    )}
+                                                                </span>
+                                                                <span className="text-sm text-gray-900 dark:text-white">{option.text}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                             <div className="relative flex items-center rounded-3xl py-1 overflow-hidden border bg-gray-50 border-gray-300 shadow-sm dark:bg-[#111111] dark:border-[#222222] dark:shadow-none">
                                                 <div className="flex-1 flex items-center">
                                                     <textarea
@@ -736,6 +795,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                     )}
                                                 </button>
                                             </div>
+                                            </>
                                         )
                                     )}
                                 </>
