@@ -189,6 +189,9 @@ export default function BlockNoteEditor({
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Extract blocks we don't want based on configuration
+    // Note: MCQ block is always registered in the schema (regardless of allowMCQ) so that
+    // saved content with MCQ blocks can be deserialized without errors. The allowMCQ prop
+    // only controls whether the slash menu item is shown for inserting new MCQ blocks.
     let enabledBlocks;
     if (allowMedia) {
         const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;

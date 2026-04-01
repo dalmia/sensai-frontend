@@ -11,6 +11,7 @@ import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
+import { extractMCQFromBlocks } from "@/lib/utils/blockUtils";
 import { useAuth } from "@/lib/auth";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
@@ -1412,36 +1413,46 @@ export default function LearnerQuizView({
     // MCQ interaction context for the question panel BlockNoteEditor
     const mcqEnabled = currentQuestionConfig?.settings?.mcq?.enabled;
     const mcqSelectionMode = currentQuestionConfig?.settings?.mcq?.selectionMode || 'single';
+
+    // Build ID↔text mapping from the MCQ block in the current question
+    const mcqOptions = useMemo(() => {
+        if (!mcqEnabled || !currentQuestionContent) return [];
+        const mcqData = extractMCQFromBlocks(currentQuestionContent);
+        return mcqData?.options || [];
+    }, [mcqEnabled, currentQuestionContent]);
+
     const mcqInteraction = useMemo(() => {
         if (!mcqEnabled) return undefined;
         const isSingle = mcqSelectionMode === 'single';
 
-        // For single-select: answer is the option text directly
-        // For multi-select: answer is a JSON array of selected texts
-        let selectedTexts: string[];
+        const textToId = new Map(mcqOptions.map((o: { id: string; text: string }) => [o.text, o.id]));
+        let selectedIds: string[];
         if (isSingle) {
-            selectedTexts = currentAnswer ? [currentAnswer] : [];
+            const id = textToId.get(currentAnswer);
+            selectedIds = id ? [id] : [];
         } else {
-            try {
-                const parsed = JSON.parse(currentAnswer);
-                selectedTexts = Array.isArray(parsed) ? parsed : [];
-            } catch {
-                selectedTexts = [];
-            }
+            const texts = currentAnswer ? currentAnswer.split('\n').filter(t => t.trim()) : [];
+            selectedIds = texts.map(t => textToId.get(t)).filter((id): id is string => !!id);
         }
 
+        const idToText = new Map(mcqOptions.map((o: { id: string; text: string }) => [o.id, o.text]));
+
         return {
-            selectedTexts,
-            onSelect: (optionText: string) => {
+            selectedIds,
+            onSelect: (optionId: string) => {
+                const optionText = idToText.get(optionId);
+                if (!optionText) return;
+
                 let newValue: string;
-                const isSelected = selectedTexts.includes(optionText);
+                const isSelected = selectedIds.includes(optionId);
                 if (isSingle) {
                     newValue = isSelected ? '' : optionText;
                 } else {
+                    const currentTexts = selectedIds.map(id => idToText.get(id)).filter((t): t is string => !!t);
                     const updated = isSelected
-                        ? selectedTexts.filter((t: string) => t !== optionText)
-                        : [...selectedTexts, optionText];
-                    newValue = updated.length > 0 ? JSON.stringify(updated) : '';
+                        ? currentTexts.filter(t => t !== optionText)
+                        : [...currentTexts, optionText];
+                    newValue = updated.length > 0 ? updated.join('\n') : '';
                 }
                 setCurrentAnswer(newValue);
                 currentAnswerRef.current = newValue;
@@ -1451,11 +1462,13 @@ export default function LearnerQuizView({
                         const key = String(currentQuestion.id);
                         setDraft(key, newValue || '');
                     }
-                } catch { }
+                } catch (e) {
+                    console.warn('Failed to save MCQ draft', e);
+                }
             },
             disabled: isSubmitting || isAiResponding,
         };
-    }, [mcqEnabled, mcqSelectionMode, currentAnswer, isSubmitting, isAiResponding, validQuestions, currentQuestionIndex]);
+    }, [mcqEnabled, mcqSelectionMode, currentAnswer, mcqOptions, isSubmitting, isAiResponding, validQuestions, currentQuestionIndex]);
 
     // Focus the input field directly
     useEffect(() => {
