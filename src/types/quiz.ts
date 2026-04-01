@@ -1,4 +1,9 @@
-import { CriterionData, ScorecardTemplate } from "../components/ScorecardPickerDialog";
+import { ScorecardTemplate } from "../components/ScorecardPickerDialog";
+
+export interface MCQSettings {
+    enabled: boolean;
+    selectionMode: 'single' | 'multi';
+}
 
 export interface QuizEditorHandle {
     saveDraft: () => Promise<void>;

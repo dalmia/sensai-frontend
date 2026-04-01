@@ -2,7 +2,7 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, MessageCircle, X, SplitSquareVertical, CheckCircle } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState, ChatViewHandle } from './ChatView';
@@ -10,8 +10,8 @@ import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
-import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
+import { extractMCQFromBlocks } from "@/lib/utils/blockUtils";
 import { useAuth } from "@/lib/auth";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
@@ -1410,6 +1410,66 @@ export default function LearnerQuizView({
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config;
 
+    // MCQ interaction context for the question panel BlockNoteEditor
+    const mcqEnabled = currentQuestionConfig?.settings?.mcq?.enabled;
+    const mcqSelectionMode = currentQuestionConfig?.settings?.mcq?.selectionMode || 'single';
+
+    // Build ID↔text mapping from the MCQ block in the current question
+    const mcqOptions = useMemo(() => {
+        if (!mcqEnabled || !currentQuestionContent) return [];
+        const mcqData = extractMCQFromBlocks(currentQuestionContent);
+        return mcqData?.options || [];
+    }, [mcqEnabled, currentQuestionContent]);
+
+    const mcqInteraction = useMemo(() => {
+        if (!mcqEnabled) return undefined;
+        const isSingle = mcqSelectionMode === 'single';
+
+        const textToId = new Map(mcqOptions.map((o: { id: string; text: string }) => [o.text, o.id]));
+        let selectedIds: string[];
+        if (isSingle) {
+            const id = textToId.get(currentAnswer);
+            selectedIds = id ? [id] : [];
+        } else {
+            const texts = currentAnswer ? currentAnswer.split('\n').filter(t => t.trim()) : [];
+            selectedIds = texts.map(t => textToId.get(t)).filter((id): id is string => !!id);
+        }
+
+        const idToText = new Map(mcqOptions.map((o: { id: string; text: string }) => [o.id, o.text]));
+
+        return {
+            selectedIds,
+            onSelect: (optionId: string) => {
+                const optionText = idToText.get(optionId);
+                if (!optionText) return;
+
+                let newValue: string;
+                const isSelected = selectedIds.includes(optionId);
+                if (isSingle) {
+                    newValue = isSelected ? '' : optionText;
+                } else {
+                    const currentTexts = selectedIds.map(id => idToText.get(id)).filter((t): t is string => !!t);
+                    const updated = isSelected
+                        ? currentTexts.filter(t => t !== optionText)
+                        : [...currentTexts, optionText];
+                    newValue = updated.length > 0 ? updated.join('\n') : '';
+                }
+                setCurrentAnswer(newValue);
+                currentAnswerRef.current = newValue;
+                try {
+                    const currentQuestion = validQuestions[currentQuestionIndex];
+                    if (currentQuestion?.config?.inputType === 'text') {
+                        const key = String(currentQuestion.id);
+                        setDraft(key, newValue || '');
+                    }
+                } catch (e) {
+                    console.warn('Failed to save MCQ draft', e);
+                }
+            },
+            disabled: isSubmitting || isAiResponding,
+        };
+    }, [mcqEnabled, mcqSelectionMode, currentAnswer, mcqOptions, isSubmitting, isAiResponding, validQuestions, currentQuestionIndex]);
+
     // Focus the input field directly
     useEffect(() => {
         // Use requestAnimationFrame to ensure the DOM is fully rendered
@@ -2080,6 +2140,8 @@ export default function LearnerQuizView({
                                     readOnly={true}
                                     className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
                                     placeholder="Question content will appear here"
+                                    allowMCQ={true}
+                                    mcqInteraction={mcqInteraction}
                                 />
                             )}
                         </div>

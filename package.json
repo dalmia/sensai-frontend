@@ -13,10 +13,12 @@
     "test:ci": "jest --ci --coverage --json --outputFile=jest-results.json"
   },
   "dependencies": {
-    "@blocknote/core": "^0.39.1",
-    "@blocknote/mantine": "^0.39.1",
-    "@blocknote/react": "^0.39.1",
+    "@blocknote/core": "^0.47.3",
+    "@blocknote/mantine": "^0.47.3",
+    "@blocknote/react": "^0.47.3",
     "@headlessui/react": "^2.2.1",
+    "@mantine/core": "^8.3.18",
+    "@mantine/hooks": "^8.3.18",
     "@monaco-editor/react": "^4.7.0",
     "@notionhq/client": "^4.0.1",
     "@radix-ui/react-avatar": "^1.1.3",

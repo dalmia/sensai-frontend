@@ -84,6 +84,10 @@ module.exports = {
     table: { type: 'table' },
     file: { type: 'file' }
   },
+  defaultProps: {
+    textAlignment: { default: 'left', values: ['left', 'center', 'right', 'justify'] },
+    backgroundColor: { default: 'default' },
+  },
   defaultInlineContentSpecs: {},
   defaultStyleSpecs: {},
   locales: {
@@ -92,5 +96,12 @@ module.exports = {
         emptyDocument: 'Start typing...'
       }
     }
-  }
-}; 
+  },
+  createReactBlockSpec: jest.fn(() => jest.fn(() => ({}))),
+  filterSuggestionItems: jest.fn((items) => items),
+  insertOrUpdateBlockForSlashMenu: jest.fn(),
+  getDefaultReactSlashMenuItems: jest.fn(() => []),
+  SuggestionMenuController: React.forwardRef((props, ref) =>
+    React.createElement('div', { 'data-testid': 'mock-suggestion-menu', ref })
+  ),
+};

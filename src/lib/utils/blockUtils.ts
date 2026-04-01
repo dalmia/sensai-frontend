@@ -1,3 +1,39 @@
+// Parse JSON safely with a fallback
+export function parseJSON<T>(str: string, fallback: T): T {
+    try {
+        return JSON.parse(str);
+    } catch {
+        return fallback;
+    }
+}
+
+// Extract MCQ settings from BlockNote document blocks
+export function extractMCQFromBlocks(blocks: any[]): { enabled: boolean; selectionMode: 'single' | 'multi'; options: { id: string; text: string }[]; correctOptionIds: string[] } | null {
+    if (!blocks || !Array.isArray(blocks)) return null;
+
+    for (const block of blocks) {
+        if (block.type === "mcq" && block.props) {
+            const options = typeof block.props.options === "string"
+                ? parseJSON(block.props.options, [])
+                : block.props.options || [];
+            const correctOptionIds = typeof block.props.correctOptionIds === "string"
+                ? parseJSON(block.props.correctOptionIds, [])
+                : block.props.correctOptionIds || [];
+            return {
+                enabled: true,
+                selectionMode: block.props.selectionMode || "single",
+                options,
+                correctOptionIds,
+            };
+        }
+        if (block.children && Array.isArray(block.children)) {
+            const found = extractMCQFromBlocks(block.children);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
 // Extracts plain text from blocks across common block types
 export const extractTextFromBlocks = (blocks: any[]): string => {
     if (!blocks || blocks.length === 0) return "";
@@ -57,8 +93,15 @@ export const hasBlocksContent = (blocks: any[]): boolean => {
         block.type === 'audio' ||
         block.type === 'video'
     );
+    if (hasMediaBlocks) return true;
 
-    return hasMediaBlocks;
+    // MCQ block with at least one non-empty option counts as content
+    const mcqData = extractMCQFromBlocks(blocks);
+    if (mcqData && mcqData.options.some(o => o.text?.trim())) {
+        return true;
+    }
+
+    return false;
 };
 
 
