@@ -35,19 +35,10 @@ import { useAuth } from "@/lib/auth";
 // Import scorecard validation utility
 import { validateScorecardCriteria as validateScorecardCriteriaUtil, ValidationCallbacks } from "@/lib/utils/scorecardValidation";
 
-// Add import for NotionIntegration
-import NotionIntegration from "./NotionIntegration";
 
-// Add imports for Notion rendering
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
-import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
 // Add import for shared Integration utilities
-import {
-    handleIntegrationPageSelection,
-    handleIntegrationPageRemoval,
-} from "@/lib/utils/integrationUtils";
 
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 import { useRouter } from "next/navigation";
@@ -160,9 +151,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [toastEmoji, setToastEmoji] = useState("🚀");
 
     // Add integration state variables
-    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Add useEffect to automatically hide toast after 5 seconds
     useEffect(() => {
@@ -716,23 +704,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [questions, currentQuestionIndex, onChange, highlightedField]);
 
-    // Integration logic for questions
-    const currentIntegrationType = 'notion';
-    const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
-    
-    const initialContent = integrationBlock ? undefined : currentQuestionContent;
+    const initialContent = currentQuestionContent;
 
-    // Handle integration blocks and editor instance clearing
+    // Ensure the editor instance is updated when content is cleared
     useEffect(() => {
-        if (currentQuestionContent.length > 0) {
-            if (integrationBlock && integrationBlock.content && integrationBlock.content.length > 0) {
-                setIntegrationBlocks(integrationBlock.content);
-            } else {
-                setIntegrationBlocks([]);
-            }
-        }
-
-        // Ensure editor instance is updated when content is cleared
         if (editorRef.current && currentQuestionContent.length === 0) {
             try {
                 if (editorRef.current.replaceBlocks) {
@@ -745,50 +720,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
         }
     }, [currentQuestionContent]);
-
-    // Handle Integration page selection
-    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
-        if (!user?.id) {
-            console.error('User ID not provided');
-            return;
-        }
-
-        setIsLoadingIntegration(true);
-        setIntegrationError(null);
-
-        try {
-            return await handleIntegrationPageSelection(
-                pageId,
-                pageTitle,
-                user.id,
-                'notion',
-                (content) => {
-                    handleQuestionContentChange(content);
-                },
-                setIntegrationBlocks,
-                (error) => {
-                    setIntegrationError(error);
-                }
-            );
-        } catch (error) {
-            console.error('Error handling Integration page selection:', error);
-        } finally {
-            setIsLoadingIntegration(false);
-        }
-    };
-
-    // Handle Integration page removal
-    const handleIntegrationPageRemove = () => {
-        setIntegrationError(null);
-
-        handleIntegrationPageRemoval(
-            (content) => {
-                handleQuestionContentChange(content);
-                setIntegrationBlocks([]);
-            },
-            setIntegrationBlocks
-        );
-    };
 
     // Handle correct answer content change
     const handleCorrectAnswerChange = useCallback((content: any[]) => {
@@ -921,11 +852,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         // Reset last content update ref
         lastContentUpdateRef.current = "";
-
-        // Reset integration blocks for the new question
-        setIntegrationBlocks([]);
-        setIntegrationError(null);
-        setIsLoadingIntegration(false);
 
         // Trigger animation
         setNewQuestionAdded(true);
@@ -1817,7 +1743,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             <button
                                                 onClick={addQuestion}
                                                 className="w-full flex items-center justify-center px-4 py-2 text-sm rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed text-white bg-blue-600 hover:bg-blue-700 dark:text-black dark:bg-white dark:hover:bg-gray-100"
-                                                disabled={readOnly || isLoadingIntegration}
+                                                disabled={readOnly}
                                             >
                                                 <div className="w-4 h-4 rounded-full border flex items-center justify-center mr-2 border-white dark:border-black">
                                                     <Plus size={10} className="text-white dark:text-black" />
@@ -2027,62 +1953,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         {/* Show content based on active tab */}
                                         {activeEditorTab === 'question' ? (
                                             <div className="w-full h-full flex flex-col">
-                                                {/* Integration */}
-                                                {!readOnly && (
-                                                    <div className="py-2 bg-white dark:bg-transparent">
-                                                        <NotionIntegration
-                                                            key={`notion-integration-${currentQuestionIndex}`}
-                                                            onPageSelect={handleIntegrationPageSelect}
-                                                            onPageRemove={handleIntegrationPageRemove}
-                                                            isEditMode={!readOnly}
-                                                            editorContent={currentQuestionContent}
-                                                            loading={isLoadingIntegration}
-                                                            status={status}
-                                                            storedBlocks={integrationBlocks}
-                                                            onContentUpdate={(updatedContent) => {
-                                                                handleQuestionContentChange(updatedContent);
-                                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                                            }}
-                                                            onLoadingChange={setIsLoadingIntegration}
-                                                        />
-                                                    </div>
-                                                )}
                                                 <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
-                                                    {isLoadingIntegration ? (
-                                                        <div className="flex items-center justify-center h-32">
-                                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
-                                                        </div>
-                                                    ) : integrationError ? (
-                                                        <div className="flex flex-col items-center justify-center h-32 text-center">
-                                                            <div className="text-red-400 text-sm mb-4">
-                                                                {integrationError}
-                                                            </div>
-                                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                                The Notion integration may have been disconnected. Please reconnect it.
-                                                            </div>
-                                                        </div>
-                                                    ) : integrationBlocks.length > 0 ? (
-                                                        <div className="px-16 pb-6 rounded-lg bg-white text-black dark:bg-[#191919] dark:text-white">
-                                                            <h1 className="text-4xl font-bold mb-4 pl-0.5 text-black dark:text-white">{integrationBlock?.props?.resource_name}</h1>
-                                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>       
-                                                                <BlockList blocks={integrationBlocks} />
-                                                            </RenderConfig>
-                                                        </div>
-                                                    ) : integrationBlock ? (
-                                                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                            <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
-                                                            <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
-                                                        </div>
-                                                    ) : (
-                                                        <BlockNoteEditor
-                                                            key={`quiz-editor-question-${currentQuestionIndex}`}
-                                                            initialContent={initialContent}
-                                                            onChange={handleQuestionContentChange}
-                                                            readOnly={readOnly}
-                                                            onEditorReady={setEditorInstance}
-                                                            className="quiz-editor"
-                                                        />
-                                                    )}
+                                                    <BlockNoteEditor
+                                                        key={`quiz-editor-question-${currentQuestionIndex}`}
+                                                        initialContent={initialContent}
+                                                        onChange={handleQuestionContentChange}
+                                                        readOnly={readOnly}
+                                                        onEditorReady={setEditorInstance}
+                                                        className="quiz-editor"
+                                                    />
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'answer' ? (

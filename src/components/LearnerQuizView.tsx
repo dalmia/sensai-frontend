@@ -15,9 +15,6 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
-// Add imports for Notion rendering
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
-import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import Toast from "./Toast";
 import { getDraft, setDraft, deleteDraft } from '@/lib/utils/indexedDB';
@@ -1401,11 +1398,8 @@ export default function LearnerQuizView({
     const currentQuestionContent = validQuestions[currentQuestionIndex]?.content || [];
 
     // Integration logic for questions
-    const currentIntegrationType = 'notion';
-    const integrationBlock = currentQuestionContent.find((block: { type?: string }) => block.type === currentIntegrationType);
-    const integrationBlocks = integrationBlock?.content || [];
 
-    const initialContent = integrationBlock ? undefined : currentQuestionContent;
+    const initialContent = currentQuestionContent;
 
     // Get current question config
     const currentQuestionConfig = validQuestions[currentQuestionIndex]?.config;
@@ -2065,23 +2059,14 @@ export default function LearnerQuizView({
                                 }
                             }}
                         > {/* Increased negative margin to align with navigation arrow */}
-                            {integrationBlocks.length > 0 ? (
-                                <div className="px-20 pr-0 pb-6 rounded-lg bg-white text-gray-900 dark:bg-[#191919] dark:text-white">
-                                    <h1 className="text-4xl font-bold mb-4 pl-0.5 text-gray-900 dark:text-white">{integrationBlock?.props?.resource_name}</h1>
-                                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                                        <BlockList blocks={integrationBlocks} />
-                                    </RenderConfig>
-                                </div>
-                            ) : (
-                                <BlockNoteEditor
-                                    key={`question-view-${currentQuestionIndex}`}
-                                    initialContent={integrationBlock ? [] : initialContent}
-                                    onChange={() => { }} // Read-only in view mode
-                                    readOnly={true}
-                                    className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
-                                    placeholder="Question content will appear here"
-                                />
-                            )}
+                            <BlockNoteEditor
+                                key={`question-view-${currentQuestionIndex}`}
+                                initialContent={initialContent}
+                                onChange={() => { }} // Read-only in view mode
+                                readOnly={true}
+                                className={`!bg-transparent ${isTestMode ? 'quiz-viewer-preview' : 'quiz-viewer'}`}
+                                placeholder="Question content will appear here"
+                            />
                         </div>
                     </div>
                 </div>

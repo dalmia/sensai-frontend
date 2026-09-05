@@ -4,19 +4,15 @@ import { forwardRef, useImperativeHandle, useMemo, useState, useRef, useCallback
 import BlockNoteEditor from "./BlockNoteEditor";
 import Dropdown, { DropdownOption } from "./Dropdown";
 import { answerTypeOptions, copyPasteControlOptions } from "./dropdownOptions";
-import NotionIntegration from "./NotionIntegration";
 import KnowledgeBaseEditor from "./KnowledgeBaseEditor";
 import LearnerAssignmentView from "./LearnerAssignmentView";
 import ScorecardManager, { ScorecardManagerHandle } from "./ScorecardManager";
 import EvaluationCriteriaEditor from "./EvaluationCriteriaEditor";
 import { BookOpen, ClipboardCheck, HelpCircle } from "lucide-react";
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
 import { hasBlocksContent } from "@/lib/utils/blockUtils";
-import { handleIntegrationPageSelection, handleIntegrationPageRemoval } from "@/lib/utils/integrationUtils";
 import { useAuth } from "@/lib/auth";
 import { validateScorecardCriteria } from "@/lib/utils/scorecardValidation";
 import { ScorecardTemplate } from "./ScorecardPickerDialog";
-import "@udus/notion-renderer/styles/globals.css";
 import PublishConfirmationDialog from './PublishConfirmationDialog';
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
@@ -96,10 +92,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     // Scorecard data state for validation from any tab
     const [scorecardData, setScorecardData] = useState<ScorecardTemplate | undefined>(undefined);
 
-    // Integration state (Notion)
-    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
 
     // Dirty tracking
     const [dirty, setDirty] = useState(false);
@@ -232,65 +224,10 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     }, [highlightedField]);
 
 
-    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
-        if (!userId) {
-            console.error('User ID not provided');
-            return;
-        }
+    const initialContent = problemContent;
 
-        setIsLoadingIntegration(true);
-        setIntegrationError(null);
-
-        try {
-            return await handleIntegrationPageSelection(
-                pageId,
-                pageTitle,
-                userId,
-                'notion',
-                (content) => {
-                    setProblemBlocks(content);
-                    setDirty(true);
-                },
-                setIntegrationBlocks,
-                (error) => {
-                    setIntegrationError(error);
-                }
-            );
-        } catch (error) {
-            console.error('Error handling Integration page selection:', error);
-        } finally {
-            setIsLoadingIntegration(false);
-        }
-    };
-
-    const handleIntegrationPageRemove = () => {
-        setIntegrationError(null);
-
-        handleIntegrationPageRemoval(
-            (content) => {
-                setProblemBlocks(content);
-                setDirty(true);
-            },
-            setIntegrationBlocks
-        );
-    };
-
-    // Notion block adapters
-    const currentIntegrationType = 'notion';
-    const integrationBlock = problemContent.find((block: any) => block.type === currentIntegrationType);
-    const initialContent = integrationBlock ? undefined : problemContent;
-
-    // Handle integration blocks and editor instance clearing
+    // Ensure the editor instance is updated when content is cleared
     useEffect(() => {
-        if (problemBlocks.length > 0) {
-            if (integrationBlock && integrationBlock.content && integrationBlock.content.length > 0) {
-                setIntegrationBlocks(integrationBlock.content);
-            } else {
-                setIntegrationBlocks([]);
-            }
-        }
-
-        // Ensure editor instance is updated when content is cleared
         if (editorRef.current && problemBlocks.length === 0) {
             try {
                 if (editorRef.current.replaceBlocks) {
@@ -302,7 +239,7 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                 console.error('Error clearing editor content:', error);
             }
         }
-    }, [problemBlocks, integrationBlock]);
+    }, [problemBlocks]);
 
     // Handle scorecard selection changes (store ID and data)
     const handleScorecardChange = useCallback((newScorecardData: any) => {
@@ -638,60 +575,14 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
                     <div className="flex-1">
                         {activeTab === 'problem' && (
                             <div className="h-full flex flex-col">
-                                {/* Integration */}
-                                {!readOnly && !isLoadingAssignment && (
-                                    <div className="py-2 bg-white dark:bg-transparent">
-                                        <NotionIntegration
-                                            onPageSelect={handleIntegrationPageSelect}
-                                            onPageRemove={handleIntegrationPageRemove}
-                                            isEditMode={!readOnly}
-                                            editorContent={problemContent}
-                                            loading={isLoadingIntegration}
-                                            status={status}
-                                            storedBlocks={integrationBlocks}
-                                            onContentUpdate={(updatedContent) => {
-                                                handleProblemContentChange(updatedContent);
-                                                setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                                            }}
-                                            onLoadingChange={setIsLoadingIntegration}
-                                        />
-                                    </div>
-                                )}
                                 <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'problem' ? 'm-2 outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-red-50 dark:bg-[#2D1E1E]' : ''}`}>
-                                    {isLoadingIntegration ? (
-                                        <div className="flex items-center justify-center h-32">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
-                                        </div>
-                                    ) : integrationError ? (
-                                        <div className="flex flex-col items-center justify-center h-32 text-center">
-                                            <div className="text-red-400 text-sm mb-4">
-                                                {integrationError}
-                                            </div>
-                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                The Notion integration may have been disconnected. Please reconnect it.
-                                            </div>
-                                        </div>
-                                    ) : integrationBlocks.length > 0 ? (
-                                        <div className="px-16 pb-6 rounded-lg bg-white text-black dark:bg-[#191919] dark:text-white">
-                                            <h1 className="text-4xl font-bold mb-4 pl-0.5 text-black dark:text-white">{integrationBlock?.props?.resource_name}</h1>
-                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                                                <BlockList blocks={integrationBlocks} />
-                                            </RenderConfig>
-                                        </div>
-                                    ) : integrationBlock ? (
-                                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                                            <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
-                                            <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
-                                        </div>
-                                    ) : (
-                                        <BlockNoteEditor
-                                            initialContent={initialContent}
-                                            onChange={handleProblemContentChange}
-                                            readOnly={readOnly}
-                                            onEditorReady={setEditorInstance}
-                                            className="assignment-editor"
-                                        />
-                                    )}
+                                    <BlockNoteEditor
+                                        initialContent={initialContent}
+                                        onChange={handleProblemContentChange}
+                                        readOnly={readOnly}
+                                        onEditorReady={setEditorInstance}
+                                        className="assignment-editor"
+                                    />
                                 </div>
                             </div>
                         )}

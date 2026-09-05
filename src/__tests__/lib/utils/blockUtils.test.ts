@@ -28,13 +28,6 @@ describe("blockUtils", () => {
             expect(hasBlocksContent([])).toBe(false);
         });
 
-        it("returns true when integration block has inner content (integration path)", () => {
-            const blocks = [
-                { type: "notion", content: [{ id: "1" }] }
-            ];
-            expect(hasBlocksContent(blocks)).toBe(true);
-        });
-
         it("returns true when text content exists (text path)", () => {
             const blocks = [
                 { type: "paragraph", content: [{ text: "Hello" }] }

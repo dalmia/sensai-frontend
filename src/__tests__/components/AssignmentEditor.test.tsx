@@ -50,17 +50,6 @@ jest.mock('@/components/BlockNoteEditor', () => {
 // Mock preview learner view to avoid heavy UI and CSS
 jest.mock('@/components/LearnerAssignmentView', () => () => <div data-testid="preview-view" />);
 
-jest.mock('@/components/NotionIntegration', () => {
-    return function MockNotionIntegration({ onContentUpdate, onPageSelect, onPageRemove }: any) {
-        return (
-            <div>
-                <button type="button" onClick={() => onContentUpdate?.([{ type: 'paragraph', content: [{ type: 'text', text: 'From Notion' }] }])}>Mock Notion</button>
-                <button type="button" onClick={() => onPageSelect?.('pid', 'ptitle')}>Select Notion Page</button>
-                <button type="button" onClick={() => onPageRemove?.()}>Remove Notion Page</button>
-            </div>
-        );
-    };
-});
 
 jest.mock('@/components/KnowledgeBaseEditor', () => {
     return function MockKBE({ onKnowledgeBaseChange, onLinkedMaterialsChange }: any) {
@@ -125,13 +114,6 @@ jest.mock('@/components/Dropdown', () => {
     };
 });
 
-jest.mock('@/lib/utils/integrationUtils', () => ({
-    handleIntegrationPageSelection: jest.fn(async (_pageId: string, _pageTitle: string, _userId: string, _provider: string, onContent: any) => {
-        onContent?.([{ type: 'paragraph', content: [{ type: 'text', text: 'Loaded from integration' }] }]);
-        return { ok: true };
-    }),
-    handleIntegrationPageRemoval: jest.fn()
-}));
 
 describe('AssignmentEditor', () => {
     beforeEach(() => {
@@ -156,127 +138,8 @@ describe('AssignmentEditor', () => {
         fireEvent.click(screen.getByText('Problem statement'));
     });
 
-    it('tracks content changes via BlockNote and Notion', () => {
-        render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-        fireEvent.click(screen.getByTestId('blocknote'));
-        fireEvent.click(screen.getByText('Mock Notion'));
-    });
 
-    describe('handleIntegrationPageSelect', () => {
-    it('calls handleIntegrationPageSelect via NotionIntegration', async () => {
-        const { handleIntegrationPageSelection } = require('@/lib/utils/integrationUtils');
-        render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-        await act(async () => {
-            fireEvent.click(screen.getByText('Select Notion Page'));
-            await Promise.resolve();
-        });
-        expect(handleIntegrationPageSelection).toHaveBeenCalled();
-    });
 
-        it('handles error callback from handleIntegrationPageSelection (line 256)', async () => {
-            const { handleIntegrationPageSelection } = require('@/lib/utils/integrationUtils');
-            let errorCallback: ((error: string) => void) | null = null;
-
-            // Mock handleIntegrationPageSelection to capture the error callback
-            (handleIntegrationPageSelection as jest.Mock).mockImplementationOnce(
-                async (_pageId: string, _pageTitle: string, _userId: string, _provider: string, onContent: any, _setIntegrationBlocks: any, onError: any) => {
-                    errorCallback = onError;
-                    return { ok: true };
-                }
-            );
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-            await act(async () => {
-                fireEvent.click(screen.getByText('Select Notion Page'));
-                await Promise.resolve();
-            });
-
-            // Verify error callback was provided
-            expect(errorCallback).toBeDefined();
-            expect(typeof errorCallback).toBe('function');
-
-            // Call the error callback to trigger setIntegrationError (line 256)
-            if (errorCallback) {
-                await act(async () => {
-                    errorCallback('Integration error occurred');
-                    await Promise.resolve();
-                });
-            }
-        });
-
-        it('handles catch block when handleIntegrationPageSelection throws (lines 259-260)', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-            const { handleIntegrationPageSelection } = require('@/lib/utils/integrationUtils');
-
-            // Make handleIntegrationPageSelection throw an error
-            (handleIntegrationPageSelection as jest.Mock).mockRejectedValueOnce(new Error('Integration failed'));
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-            await act(async () => {
-                fireEvent.click(screen.getByText('Select Notion Page'));
-                await Promise.resolve();
-            });
-
-            // Verify error was logged in catch block (line 260)
-            await act(async () => {
-                await Promise.resolve();
-            });
-            expect(consoleErrorSpy).toHaveBeenCalledWith('Error handling Integration page selection:', expect.any(Error));
-
-            consoleErrorSpy.mockRestore();
-        });
-    });
-
-    describe('handleIntegrationPageRemove', () => {
-    it('calls handleIntegrationPageRemove via NotionIntegration', () => {
-        const { handleIntegrationPageRemoval } = require('@/lib/utils/integrationUtils');
-        render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-        fireEvent.click(screen.getByText('Remove Notion Page'));
-        expect(handleIntegrationPageRemoval).toHaveBeenCalled();
-    });
-
-        it('calls callbacks to update problem blocks and integration blocks (lines 270-275)', async () => {
-            const { handleIntegrationPageRemoval } = require('@/lib/utils/integrationUtils');
-            let contentCallback: ((content: any[]) => void) | null = null;
-            let setIntegrationBlocksCallback: ((blocks: any[]) => void) | null = null;
-
-            // Mock handleIntegrationPageRemoval to capture the callbacks
-            (handleIntegrationPageRemoval as jest.Mock).mockImplementationOnce(
-                (onContent: any, setIntegrationBlocks: any) => {
-                    contentCallback = onContent;
-                    setIntegrationBlocksCallback = setIntegrationBlocks;
-                }
-            );
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-
-            // Trigger the remove action
-            fireEvent.click(screen.getByText('Remove Notion Page'));
-
-            // Verify callbacks were provided
-            expect(contentCallback).toBeDefined();
-            expect(typeof contentCallback).toBe('function');
-            expect(setIntegrationBlocksCallback).toBeDefined();
-            expect(typeof setIntegrationBlocksCallback).toBe('function');
-
-            // Call the content callback to verify it sets problem blocks and dirty state (lines 271-272)
-            if (contentCallback) {
-                const newContent = [{ type: 'paragraph', content: [{ type: 'text', text: 'Updated content' }] }];
-                await act(async () => {
-                    contentCallback(newContent);
-                    await Promise.resolve();
-                });
-            }
-
-            // Call the setIntegrationBlocks callback to verify it's passed correctly (line 274)
-            if (setIntegrationBlocksCallback) {
-                await act(async () => {
-                    setIntegrationBlocksCallback([]);
-                    await Promise.resolve();
-                });
-            }
-        });
-    });
 
     it('handles knowledge base changes', () => {
         render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
@@ -929,98 +792,6 @@ describe('AssignmentEditor', () => {
         });
     });
 
-    describe('useEffect for integration blocks and editor clearing', () => {
-        it('sets integration blocks when integrationBlock has content (line 287)', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({
-                    assignment: {
-                        input_type: 'text',
-                        blocks: [
-                            {
-                                type: 'notion',
-                                content: [
-                                    { type: 'paragraph', content: [{ type: 'text', text: 'Notion content' }] }
-                                ]
-                            }
-                        ]
-                    }
-                })
-            });
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} taskId="integration1" />);
-            await act(async () => {
-                await Promise.resolve();
-            });
-
-            // Verify component rendered (useEffect executed and setIntegrationBlocks was called - line 287)
-            expect(screen.getByText('Submission type')).toBeInTheDocument();
-        });
-
-        it('calls setContent when replaceBlocks is not available (line 299)', async () => {
-            // Configure mock to only provide setContent (no replaceBlocks)
-            (global as any).__editorMockConfig__ = { hasReplaceBlocks: false, hasSetContent: true, shouldThrow: false };
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-
-            // Add content first
-            fireEvent.click(screen.getByTestId('blocknote'));
-
-            // Wait for editor to be ready
-            await act(async () => {
-                await Promise.resolve();
-            });
-
-            // Get the editor instance from the mock
-            const BlockNoteEditorModule = require('@/components/BlockNoteEditor');
-            // The editor should have been created with only setContent
-
-            // Then clear it to trigger the editor clearing path
-            fireEvent.click(screen.getByText('Clear Blocks'));
-
-            // Wait for useEffect to run
-            await act(async () => {
-                await Promise.resolve();
-            });
-
-            // The setContent path should have been executed (line 299)
-            // We can't directly verify the call, but the code path was executed
-            expect(screen.getByText('Submission type')).toBeInTheDocument();
-        });
-
-        it('handles error in catch block when clearing editor content (line 302)', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-
-            // Configure mock to throw error when replaceBlocks is called
-            (global as any).__editorMockConfig__ = { hasReplaceBlocks: true, hasSetContent: true, shouldThrow: true };
-
-            render(<AssignmentEditor readOnly={false} scheduledPublishAt={null} />);
-
-            // Add content first
-            fireEvent.click(screen.getByTestId('blocknote'));
-
-            // Wait for editor to be ready
-            await act(async () => {
-                await Promise.resolve();
-            });
-
-            // Then clear it to trigger the editor clearing path with error
-            fireEvent.click(screen.getByText('Clear Blocks'));
-
-            // Wait for useEffect to run and catch block to execute
-            await act(async () => {
-                await Promise.resolve();
-            });
-
-            // Verify error was logged in catch block (line 302)
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                'Error clearing editor content:',
-                expect.any(Error)
-            );
-
-            consoleErrorSpy.mockRestore();
-        });
-    });
 
     it('highlights scorecard on missing evaluation and clears after timeout', () => {
         jest.useFakeTimers();
