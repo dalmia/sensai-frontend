@@ -24,25 +24,14 @@ import { ChatMessage } from "../types/quiz";
 // Add import for PublishConfirmationDialog
 import PublishConfirmationDialog from "./PublishConfirmationDialog";
 
-// Add import for Integration
-import NotionIntegration from "./NotionIntegration";
 
-// Add imports for Notion rendering
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
-import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
 // Add import for useAuth
 import { useAuth } from "@/lib/auth";
 
-// Add import for shared Integration utilities
-import {
-    handleIntegrationPageSelection,
-    handleIntegrationPageRemoval,
-} from "@/lib/utils/integrationUtils";
 
 // Add import for theme preference
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
@@ -80,16 +69,12 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onSaveSuccess,
     scheduledPublishAt = null,
 }, ref) => {
-    const { isDarkMode } = useThemePreference();
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishError, setPublishError] = useState<string | null>(null);
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-    const [integrationBlocks, setIntegrationBlocks] = useState<any[]>([]);
-    const [isLoadingIntegration, setIsLoadingIntegration] = useState(false);
-    const [integrationError, setIntegrationError] = useState<string | null>(null);
     const { user } = useAuth();
     const userId = user?.id;
     // Reference to the editor instance
@@ -114,22 +99,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const currentIntegrationType = 'notion';
-    const integrationBlock = editorContent.find(block => block.type === currentIntegrationType);
+    const initialContent = editorContent;
 
-    const initialContent = integrationBlock ? undefined : editorContent;
-
-    // handle integration blocks and editor instance clearing
+    // Ensure the editor instance is updated when content is cleared
     useEffect(() => {
-        if (editorContent.length > 0) {
-            if (integrationBlock && integrationBlock.content && integrationBlock.content.length > 0) {
-                setIntegrationBlocks(integrationBlock.content);
-            } else {
-                setIntegrationBlocks([]);
-            }
-        }
-
-        // Ensure editor instance is updated when content is cleared
         if (editorRef.current && editorContent.length === 0) {
             try {
                 if (editorRef.current.replaceBlocks) {
@@ -294,71 +267,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    // Handle Integration page selection
-    const handleIntegrationPageSelect = async (pageId: string, pageTitle: string) => {
-        if (!userId) {
-            console.error('User ID not provided');
-            return;
-        }
-
-        setIsLoadingIntegration(true);
-        setIntegrationError(null);
-
-        try {
-            return await handleIntegrationPageSelection(
-                pageId,
-                pageTitle,
-                userId,
-                'notion',
-                (content) => {
-                    setEditorContent(content);
-                    if (onChange) {
-                        onChange(content);
-                    }
-                },
-                setIntegrationBlocks,
-                (error) => {
-                    setIntegrationError(error);
-                }
-            );
-        } catch (error) {
-            console.error('Error handling Integration page selection:', error);
-        } finally {
-            setIsLoadingIntegration(false);
-        }
-    };
-
-    // Handle Integration page removal
-    const handleIntegrationPageRemove = () => {
-        setIntegrationError(null);
-
-        handleIntegrationPageRemoval(
-            (content) => {
-                setEditorContent(content);
-                setIntegrationBlocks([]);
-
-                // Update the editor instance if available
-                if (editorRef.current && editorRef.current.replaceBlocks) {
-                    try {
-                        editorRef.current.replaceBlocks(editorRef.current.document, content);
-                    } catch (error) {
-                        console.error('Error replacing blocks:', error);
-                        // Fallback: try to set content directly
-                        if (editorRef.current.setContent) {
-                            editorRef.current.setContent(content);
-                        }
-                    }
-                }
-
-                // Call onChange if provided
-                if (onChange) {
-                    onChange(content);
-                }
-            },
-            setIntegrationBlocks
-        );
-    };
-
     // Handle saving changes when in edit mode
     const handleSave = async () => {
         if (!taskId) {
@@ -435,16 +343,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const checkContent = (content: any[] | undefined) => {
                 if (!content || content.length === 0) return false;
 
-                if (integrationBlock && integrationBlocks.length === 0) {
-                    return false;
-                }
-
                 // Check each block for actual content
                 for (const block of content) {
-                    if (block.type === currentIntegrationType) {
-                        return true;
-                    }
-
                     // Use stringify to check if it has actual content
                     const blockContent = JSON.stringify(block.content);
                     // Check if it's not just an empty paragraph
@@ -466,11 +366,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 return true;
             }
 
-            // Check if we have integration blocks
-            if (integrationBlocks.length > 0) {
-                return true;
-            }
-
             return false;
         },
         hasChanges: () => {
@@ -483,10 +378,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const originalTitle = originalDataRef.current.title || "";
 
             if (currentTitle !== originalTitle) {
-                return true;
-            }
-
-            if (integrationBlocks.length > 0) {
                 return true;
             }
 
@@ -517,64 +408,14 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     return (
         <div className={`w-full h-full flex flex-col ${className}`}>
-            {/* Integration */}
-            {!readOnly && (
-                <div className="py-4 bg-white dark:bg-transparent">
-                    <NotionIntegration
-                        onPageSelect={handleIntegrationPageSelect}
-                        onPageRemove={handleIntegrationPageRemove}
-                        isEditMode={!readOnly}
-                        editorContent={editorContent}
-                        loading={isLoadingIntegration}
-                        status={taskData?.status}
-                        storedBlocks={integrationBlocks}
-                        onContentUpdate={(updatedContent) => {
-                            setEditorContent(updatedContent);
-                            setIntegrationBlocks(updatedContent.find(block => block.type === 'notion')?.content || []);
-                            if (onChange) {
-                                onChange(updatedContent);
-                            }
-                        }}
-                        onLoadingChange={setIsLoadingIntegration}
-                    />
-                </div>
-            )}
-
             <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0`}>
-                {isLoadingIntegration ? (
-                    <div className="flex items-center justify-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
-                    </div>
-                ) : integrationError ? (
-                <div className="flex flex-col items-center justify-center h-32 text-center">
-                    <div className="text-red-400 text-sm mb-4">
-                        {integrationError}
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                        The Notion integration may have been disconnected. Please reconnect it.
-                    </div>
-                </div>
-                ) : integrationBlocks.length > 0 ? (
-                <div className="px-16 pb-6 rounded-lg h-full overflow-y-auto bg-white text-black dark:bg-[#191919] dark:text-white">
-                    <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''} text-black dark:text-white`}>{integrationBlock?.props?.resource_name}</h1>
-                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                        <BlockList blocks={integrationBlocks} />
-                    </RenderConfig>
-                </div>
-                ) : integrationBlock ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-center">
-                        <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>
-                        <div className="text-sm text-gray-600 dark:text-white">Please add content to your Notion page and refresh to see changes</div>
-                    </div>
-                ) : (
-                    <BlockNoteEditor
-                        initialContent={initialContent}
-                        onChange={handleEditorChange}
-                        readOnly={readOnly}
-                        className="learning-material-editor"
-                        onEditorReady={setEditorInstance}
-                    />
-                )}
+                <BlockNoteEditor
+                    initialContent={initialContent}
+                    onChange={handleEditorChange}
+                    readOnly={readOnly}
+                    className="learning-material-editor"
+                    onEditorReady={setEditorInstance}
+                />
             </div>
 
             {/* Replace the ConfirmationDialog with PublishConfirmationDialog */}

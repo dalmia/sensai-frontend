@@ -17,11 +17,7 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
-// Add imports for Notion rendering
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
-import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 
 interface LearningMaterialViewerProps {
@@ -44,8 +40,6 @@ export default function LearningMaterialViewer({
     onChatOpenChange,
 }: LearningMaterialViewerProps) {
     const { user } = useAuth();
-    // Use global theme (html.dark) as the source of truth.
-    const { isDarkMode } = useThemePreference();
 
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [taskData, setTaskData] = useState<TaskData | null>(null);
@@ -85,11 +79,7 @@ export default function LearningMaterialViewer({
     }, [showChatView, onChatOpenChange]);
 
 
-    const currentIntegrationType = 'notion';
-    const integrationBlock = taskData?.blocks?.find(block => block.type === currentIntegrationType);
-    const integrationBlocks = integrationBlock?.content || [];
-    
-    const initialContent = integrationBlock ? undefined : taskData?.blocks;
+    const initialContent = taskData?.blocks;
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -706,20 +696,11 @@ export default function LearningMaterialViewer({
                     ref={editorContainerRef}
                 >
                     <div className="flex-1">
-                        {integrationBlocks.length > 0 ? (
-                            <div className="bg-white dark:bg-[#191919] text-gray-900 dark:text-white px-12 pb-6 rounded-lg">
-                                <div className="text-gray-900 dark:text-white text-4xl font-bold mb-4 pl-1">{integrationBlock?.props?.resource_name}</div>
-                                <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                                    <BlockList blocks={integrationBlocks} />
-                                </RenderConfig>
-                            </div>
-                        ) : (
-                            <BlockNoteEditor
-                                initialContent={initialContent}
-                                onChange={() => { }} // Read-only, no changes
-                                readOnly={true}
-                            />
-                        )}
+                        <BlockNoteEditor
+                            initialContent={initialContent}
+                            onChange={() => { }} // Read-only, no changes
+                            readOnly={true}
+                        />
                     </div>
                 </div>
 

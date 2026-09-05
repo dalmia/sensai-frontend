@@ -4,7 +4,7 @@ import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
@@ -151,6 +151,27 @@ function isYouTubeLink(url: string): boolean {
     return url.includes('youtube.com') || url.includes('youtu.be');
 }
 
+export function dropUnknownBlocks(blocks: any[], enabledBlocks: Record<string, unknown>): any[] {
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+        return [];
+    }
+
+    const knownTypes = new Set(Object.keys(enabledBlocks));
+    const kept = blocks.filter((block) => block?.type && knownTypes.has(block.type));
+
+    if (kept.length !== blocks.length) {
+        const dropped = blocks
+            .filter((block) => !block?.type || !knownTypes.has(block.type))
+            .map((block) => block?.type ?? "(no type)");
+        console.warn(
+            `BlockNoteEditor: dropped ${blocks.length - kept.length} block(s) not in the editor schema:`,
+            Array.from(new Set(dropped)),
+        );
+    }
+
+    return kept;
+}
+
 export default function BlockNoteEditor({
     initialContent = [],
     onChange,
@@ -195,9 +216,14 @@ export default function BlockNoteEditor({
         blockSpecs: enabledBlocks,
     });
 
+    const safeInitialContent = useMemo(
+        () => dropUnknownBlocks(initialContent, enabledBlocks),
+        [initialContent, allowMedia],
+    );
+
     // Creates a new editor instance with the custom schema
     const editor = useCreateBlockNote({
-        initialContent: initialContent.length > 0 ? initialContent : undefined,
+        initialContent: safeInitialContent.length > 0 ? safeInitialContent : undefined,
         uploadFile,
         resolveFileUrl,
         schema, // Use our custom schema with limited blocks
@@ -288,18 +314,18 @@ export default function BlockNoteEditor({
 
     // Update editor content when initialContent changes
     useEffect(() => {
-        if (editor && initialContent && initialContent.length > 0) {
+        if (editor && safeInitialContent && safeInitialContent.length > 0) {
             // Set flag to prevent triggering onChange during programmatic update
             isUpdatingContent.current = true;
 
             try {
                 // Only replace blocks if the content has actually changed
                 const currentContentStr = JSON.stringify(editor.document);
-                const newContentStr = JSON.stringify(initialContent);
+                const newContentStr = JSON.stringify(safeInitialContent);
 
                 if (currentContentStr !== newContentStr) {
-                    editor.replaceBlocks(editor.document, initialContent);
-                    lastContent.current = initialContent;
+                    editor.replaceBlocks(editor.document, safeInitialContent);
+                    lastContent.current = safeInitialContent;
                 }
             } catch (error) {
                 console.error("Error updating editor content:", error);
@@ -308,7 +334,7 @@ export default function BlockNoteEditor({
                 isUpdatingContent.current = false;
             }
         }
-    }, [editor, initialContent]);
+    }, [editor, safeInitialContent]);
 
     // Handle content changes with debouncing to avoid rapid state updates
     useEffect(() => {

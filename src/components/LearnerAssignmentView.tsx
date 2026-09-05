@@ -10,11 +10,8 @@ import { blobToBase64, convertAudioBufferToWav } from '@/lib/utils/audioUtils';
 import Toast from "./Toast";
 
 import { CheckCircle } from "lucide-react";
-import { BlockList, RenderConfig } from "@udus/notion-renderer/components";
-import "@udus/notion-renderer/styles/globals.css";
 import "katex/dist/katex.min.css";
 import { useAuth } from "@/lib/auth";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface Settings {
     allowCopyPaste?: boolean;
@@ -72,8 +69,6 @@ export default function LearnerAssignmentView({
     onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
     const { user } = useAuth();
-    // Use global theme (html.dark) as the source of truth.
-    const { isDarkMode } = useThemePreference();
 
     // Data fetching state
     const [isLoadingAssignment, setIsLoadingAssignment] = useState(true);
@@ -1120,12 +1115,7 @@ export default function LearnerAssignmentView({
         );
     }
 
-    // Integration logic for Notion blocks
-    const currentIntegrationType = 'notion';
-    type IntegrationBlock = { type?: string; content?: unknown[]; props?: { resource_name?: string } };
-    const integrationBlock = (problemBlocks as IntegrationBlock[]).find((block) => block?.type === currentIntegrationType);
-    const integrationBlocks = integrationBlock?.content || [];
-    const initialContent = integrationBlock ? undefined : problemBlocks;
+    const initialContent = problemBlocks;
 
     return (
         <div className={`w-full h-full ${className}`}>
@@ -1175,23 +1165,14 @@ export default function LearnerAssignmentView({
                                 }
                             }}
                         >
-                            {integrationBlocks.length > 0 ? (
-                                <div className="px-20 pr-0 pb-6 rounded-lg bg-white text-gray-900 dark:bg-[#191919] dark:text-white">
-                                    <h1 className="text-4xl font-bold mb-4 pl-0.5 text-gray-900 dark:text-white">{integrationBlock?.props?.resource_name}</h1>
-                                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                                        <BlockList blocks={integrationBlocks as any} />
-                                    </RenderConfig>
-                                </div>
-                            ) : (
-                                <BlockNoteEditor
-                                    key={`assignment-problem-view`}
-                                    initialContent={initialContent as any}
-                                    onChange={() => { }}
-                                    readOnly={true}
-                                    className={`!bg-transparent quiz-viewer`}
-                                    placeholder="Problem statement will appear here"
-                                />
-                            )}
+                            <BlockNoteEditor
+                                key={`assignment-problem-view`}
+                                initialContent={initialContent as any}
+                                onChange={() => { }}
+                                readOnly={true}
+                                className={`!bg-transparent quiz-viewer`}
+                                placeholder="Problem statement will appear here"
+                            />
                         </div>
                     </div>
                 </div>

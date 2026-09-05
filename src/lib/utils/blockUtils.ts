@@ -32,17 +32,10 @@ export const extractTextFromBlocks = (blocks: any[]): string => {
     }).join("\n").trim();
 };
 
-// Determines if blocks have meaningful content: Notion blocks with inner content, non-empty text, or media blocks
+// Determines if blocks have meaningful content: non-empty text or media blocks
 export const hasBlocksContent = (blocks: any[]): boolean => {
     if (!blocks || blocks.length === 0) {
         return false;
-    }
-
-    // Check for integration blocks (Notion)
-    const integrationBlock = blocks.find(block => block.type === 'notion');
-    // If there's an integration block, it's considered valid content
-    if (integrationBlock && integrationBlock.content.length > 0) {
-        return true;
     }
 
     // Check for text content
