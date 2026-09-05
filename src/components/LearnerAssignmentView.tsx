@@ -12,7 +12,6 @@ import Toast from "./Toast";
 import { CheckCircle } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { useAuth } from "@/lib/auth";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface Settings {
     allowCopyPaste?: boolean;
@@ -70,8 +69,6 @@ export default function LearnerAssignmentView({
     onAiRespondingChange,
 }: LearnerAssignmentViewProps) {
     const { user } = useAuth();
-    // Use global theme (html.dark) as the source of truth.
-    const { isDarkMode } = useThemePreference();
 
     // Data fetching state
     const [isLoadingAssignment, setIsLoadingAssignment] = useState(true);

@@ -4,7 +4,7 @@ import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { en } from "@blocknote/core/locales";
 import Toast from "./Toast";
@@ -216,7 +216,10 @@ export default function BlockNoteEditor({
         blockSpecs: enabledBlocks,
     });
 
-    const safeInitialContent = dropUnknownBlocks(initialContent, enabledBlocks);
+    const safeInitialContent = useMemo(
+        () => dropUnknownBlocks(initialContent, enabledBlocks),
+        [initialContent, allowMedia],
+    );
 
     // Creates a new editor instance with the custom schema
     const editor = useCreateBlockNote({
@@ -311,18 +314,18 @@ export default function BlockNoteEditor({
 
     // Update editor content when initialContent changes
     useEffect(() => {
-        if (editor && initialContent && initialContent.length > 0) {
+        if (editor && safeInitialContent && safeInitialContent.length > 0) {
             // Set flag to prevent triggering onChange during programmatic update
             isUpdatingContent.current = true;
 
             try {
                 // Only replace blocks if the content has actually changed
                 const currentContentStr = JSON.stringify(editor.document);
-                const newContentStr = JSON.stringify(initialContent);
+                const newContentStr = JSON.stringify(safeInitialContent);
 
                 if (currentContentStr !== newContentStr) {
-                    editor.replaceBlocks(editor.document, initialContent);
-                    lastContent.current = initialContent;
+                    editor.replaceBlocks(editor.document, safeInitialContent);
+                    lastContent.current = safeInitialContent;
                 }
             } catch (error) {
                 console.error("Error updating editor content:", error);
@@ -331,7 +334,7 @@ export default function BlockNoteEditor({
                 isUpdatingContent.current = false;
             }
         }
-    }, [editor, initialContent]);
+    }, [editor, safeInitialContent]);
 
     // Handle content changes with debouncing to avoid rapid state updates
     useEffect(() => {

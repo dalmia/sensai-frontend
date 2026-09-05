@@ -14,7 +14,6 @@ import { useAuth } from "@/lib/auth";
 import { validateScorecardCriteria } from "@/lib/utils/scorecardValidation";
 import { ScorecardTemplate } from "./ScorecardPickerDialog";
 import PublishConfirmationDialog from './PublishConfirmationDialog';
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Submission type options filtered from answerTypeOptions
 const submissionTypeOptions = answerTypeOptions.filter(opt => opt.value === 'text' || opt.value === 'audio');
@@ -60,7 +59,6 @@ const AssignmentEditor = forwardRef<AssignmentEditorHandle, AssignmentEditorProp
     onValidationError,
     isPreviewMode = false,
 }, ref) => {
-    const { isDarkMode } = useThemePreference();
 
     // Problem statement
     const [problemBlocks, setProblemBlocks] = useState<any[]>([]);

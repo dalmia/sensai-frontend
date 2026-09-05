@@ -17,7 +17,6 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 import { useAuth } from "@/lib/auth";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 import "katex/dist/katex.min.css";
 
@@ -41,8 +40,6 @@ export default function LearningMaterialViewer({
     onChatOpenChange,
 }: LearningMaterialViewerProps) {
     const { user } = useAuth();
-    // Use global theme (html.dark) as the source of truth.
-    const { isDarkMode } = useThemePreference();
 
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [taskData, setTaskData] = useState<TaskData | null>(null);

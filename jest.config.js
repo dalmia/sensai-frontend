@@ -37,7 +37,6 @@ module.exports = {
     '^react-markdown$': '<rootDir>/test/mocks/react-markdown.js',
     '^remark-gfm$': '<rootDir>/test/mocks/remark-gfm.js',
     '^@blocknote/(.*)$': '<rootDir>/test/mocks/blocknote.js',
-    '^@udus/notion-renderer/(.*)$': '<rootDir>/test/mocks/notion-renderer.js',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   watchPlugins: [

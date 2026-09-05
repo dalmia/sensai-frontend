@@ -13,7 +13,6 @@ import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 import { useAuth } from "@/lib/auth";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 import "katex/dist/katex.min.css";
 import Toast from "./Toast";
@@ -58,7 +57,6 @@ export default function LearnerQuizView({
 }: LearnerQuizViewProps) {
     const { user } = useAuth();
     // Use global theme (html.dark) as the source of truth to avoid reload-required mismatches.
-    const { isDarkMode } = useThemePreference();
 
     // Constant message for exam submission confirmation
     const EXAM_CONFIRMATION_MESSAGE = "Thank you for your submission. We will review it shortly";

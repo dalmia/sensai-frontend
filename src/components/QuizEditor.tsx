@@ -38,11 +38,8 @@ import { validateScorecardCriteria as validateScorecardCriteriaUtil, ValidationC
 
 import "katex/dist/katex.min.css";
 
-// Add import for shared Integration utilities
-
 import { updateTaskAndQuestionIdInUrl } from "@/lib/utils/urlUtils";
 import { useRouter } from "next/navigation";
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -111,7 +108,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     scheduledPublishAt = null,
     onQuestionChangeWithUnsavedScorecardChanges,
 }, ref) => {
-    const { isDarkMode } = useThemePreference();
     // Get authenticated user ID
     const { user } = useAuth();
     const router = useRouter();
@@ -149,8 +145,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [toastTitle, setToastTitle] = useState("");
     const [toastMessage, setToastMessage] = useState("");
     const [toastEmoji, setToastEmoji] = useState("🚀");
-
-    // Add integration state variables
 
     // Add useEffect to automatically hide toast after 5 seconds
     useEffect(() => {

@@ -32,7 +32,6 @@ import { useAuth } from "@/lib/auth";
 
 
 // Add import for theme preference
-import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
@@ -70,7 +69,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onSaveSuccess,
     scheduledPublishAt = null,
 }, ref) => {
-    const { isDarkMode } = useThemePreference();
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishError, setPublishError] = useState<string | null>(null);
