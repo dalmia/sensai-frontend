@@ -267,24 +267,7 @@ jest.mock('@blocknote/react', () => ({
     useEditorContentOrSelectionChange: jest.fn()
 }));
 
-// Mock @udus/notion-renderer
-jest.mock('@udus/notion-renderer/components', () => ({
-    BlockList: ({ blocks }: any) => (
-        <div data-testid="block-list">
-            {blocks?.map((block: any, index: number) => (
-                <div key={index} data-testid={`block-${index}`}>
-                    {block.content?.map((item: any, itemIndex: number) => (
-                        <span key={itemIndex}>{item.text || ''}</span>
-                    ))}
-                </div>
-            ))}
-        </div>
-    ),
-    RenderConfig: ({ children }: any) => children
-}));
 
-// Mock @udus/notion-renderer styles
-jest.mock('@udus/notion-renderer/styles/globals.css', () => ({}));
 
 // Mock katex
 jest.mock('katex/dist/katex.min.css', () => ({}));

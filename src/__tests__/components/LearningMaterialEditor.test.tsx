@@ -126,22 +126,7 @@ jest.mock('../../components/ChatView', () => {
 });
 
 
-// Mock Notion renderer components
-jest.mock('@udus/notion-renderer/components', () => ({
-    BlockList: ({ blocks }: any) => (
-        <div data-testid="mock-block-list">
-            {blocks.map((block: any, index: number) => (
-                <div key={index} data-testid={`block-${index}`}>
-                    {JSON.stringify(block)}
-                </div>
-            ))}
-        </div>
-    ),
-    RenderConfig: ({ children }: any) => children
-}));
 
-// Mock CSS imports for Notion renderer
-jest.mock('@udus/notion-renderer/styles/globals.css', () => ({}), { virtual: true });
 jest.mock('katex/dist/katex.min.css', () => ({}), { virtual: true });
 
 // Mock fetch

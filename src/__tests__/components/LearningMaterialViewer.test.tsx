@@ -8,12 +8,6 @@ jest.mock('@blocknote/core/fonts/inter.css', () => ({}), { virtual: true });
 jest.mock('@blocknote/mantine/style.css', () => ({}), { virtual: true });
 jest.mock('../../components/editor-styles.css', () => ({}), { virtual: true });
 
-// Mock @udus/notion-renderer
-jest.mock('@udus/notion-renderer/components', () => ({
-    BlockList: () => <div data-testid="notion-block-list">Notion Block List</div>,
-    RenderConfig: ({ children }) => children
-}));
-jest.mock('@udus/notion-renderer/styles/globals.css', () => ({}), { virtual: true });
 jest.mock('katex/dist/katex.min.css', () => ({}), { virtual: true });
 
 // Mock localStorage with safeLocalStorage implementation

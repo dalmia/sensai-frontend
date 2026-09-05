@@ -151,6 +151,27 @@ function isYouTubeLink(url: string): boolean {
     return url.includes('youtube.com') || url.includes('youtu.be');
 }
 
+export function dropUnknownBlocks(blocks: any[], enabledBlocks: Record<string, unknown>): any[] {
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+        return [];
+    }
+
+    const knownTypes = new Set(Object.keys(enabledBlocks));
+    const kept = blocks.filter((block) => block?.type && knownTypes.has(block.type));
+
+    if (kept.length !== blocks.length) {
+        const dropped = blocks
+            .filter((block) => !block?.type || !knownTypes.has(block.type))
+            .map((block) => block?.type ?? "(no type)");
+        console.warn(
+            `BlockNoteEditor: dropped ${blocks.length - kept.length} block(s) not in the editor schema:`,
+            Array.from(new Set(dropped)),
+        );
+    }
+
+    return kept;
+}
+
 export default function BlockNoteEditor({
     initialContent = [],
     onChange,
@@ -195,9 +216,11 @@ export default function BlockNoteEditor({
         blockSpecs: enabledBlocks,
     });
 
+    const safeInitialContent = dropUnknownBlocks(initialContent, enabledBlocks);
+
     // Creates a new editor instance with the custom schema
     const editor = useCreateBlockNote({
-        initialContent: initialContent.length > 0 ? initialContent : undefined,
+        initialContent: safeInitialContent.length > 0 ? safeInitialContent : undefined,
         uploadFile,
         resolveFileUrl,
         schema, // Use our custom schema with limited blocks

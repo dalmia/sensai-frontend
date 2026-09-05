@@ -3,14 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AssignmentEditor, { type AssignmentEditorHandle } from '@/components/AssignmentEditor';
 
-// Mock global CSS that jsdom can't parse
-jest.mock('@udus/notion-renderer/styles/globals.css', () => ({}));
 
-// Mock notion-renderer components
-jest.mock('@udus/notion-renderer/components', () => ({
-    BlockList: ({ blocks }: any) => <div data-testid="block-list">{blocks?.length || 0} blocks</div>,
-    RenderConfig: ({ children }: any) => <div data-testid="render-config">{children}</div>
-}));
 
 // Mocks for child components used inside AssignmentEditor
 // Global config for editor mock - accessible from hoisted jest.mock
