@@ -1,7 +1,5 @@
 import { dropUnknownBlocks } from '@/components/BlockNoteEditor';
 
-// Mirrors the shape of BlockNote's defaultBlockSpecs after SensAI removes
-// `table` and `file` (and media when allowMedia is false).
 const enabledBlocks = {
     paragraph: {},
     heading: {},
@@ -42,8 +40,6 @@ describe('dropUnknownBlocks', () => {
         expect(warn).not.toHaveBeenCalled();
     });
 
-    // The reason this function exists: a leftover notion block used to crash
-    // BlockNote at construction, taking the whole page down.
     it('drops a leftover notion block rather than passing it to the editor', () => {
         const blocks = [
             { type: 'paragraph', content: [] },
