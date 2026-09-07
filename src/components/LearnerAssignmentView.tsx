@@ -127,7 +127,7 @@ export default function LearnerAssignmentView({
             }
 
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`);
+                const response = await fetch(`/api/backend/tasks/${taskId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch assignment details');
                 }
@@ -233,7 +233,7 @@ export default function LearnerAssignmentView({
         };
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}`, {
+            const response = await fetch(`/api/backend/chat?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ export default function LearnerAssignmentView({
         const fetchChatHistory = async () => {
             try {
                 // Make API call to fetch chat history using the provided taskId
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/user/${userId}/task/${taskId}`);
+                const response = await fetch(`/api/backend/chat/user/${userId}/task/${taskId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch chat history: ${response.status}`);
@@ -282,7 +282,7 @@ export default function LearnerAssignmentView({
                         try {
                             // Get presigned URL
                             const file_uuid = message.content;
-                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
+                            const presignedResponse = await fetch(`/api/backend/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ export default function LearnerAssignmentView({
                             let audioResponse = null;
 
                             if (!presignedResponse.ok) {
-                                audioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${message.content}&file_extension=wav`);
+                                audioResponse = await fetch(`/api/backend/file/download-local/?uuid=${message.content}&file_extension=wav`);
                                 if (!audioResponse.ok) {
                                     throw new Error('Failed to fetch audio data from backend');
                                 }
@@ -494,7 +494,7 @@ export default function LearnerAssignmentView({
 
                 try {
                     // First, get a presigned URL for the file
-                    const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+                    const presignedUrlResponse = await fetch(`/api/backend/file/presigned-url/create`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -533,7 +533,7 @@ export default function LearnerAssignmentView({
                         formData.append('content_type', contentType);
 
                         // Upload directly to the backend
-                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                        const uploadResponse = await fetch(`/api/backend/file/upload-local`, {
                             method: 'POST',
                             body: formData
                         });
@@ -610,7 +610,7 @@ export default function LearnerAssignmentView({
             };
 
             // Call the API with the appropriate request body for streaming response
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/assignment`, {
+            fetch(`/api/backend/ai/assignment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -935,7 +935,7 @@ export default function LearnerAssignmentView({
         try {
             // Try to get presigned URL first
             const presignedResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
+                `/api/backend/file/presigned-url/get?uuid=${fileUuid}&file_extension=zip`,
                 { method: 'GET' }
             );
 
@@ -945,7 +945,7 @@ export default function LearnerAssignmentView({
                 downloadUrl = url;
             } else {
                 // Fallback to direct download
-                downloadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
+                downloadUrl = `/api/backend/file/download-local/?uuid=${fileUuid}&file_extension=zip`;
             }
 
             // Fetch the file as a blob to have control over the filename

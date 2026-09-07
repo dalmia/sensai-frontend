@@ -47,8 +47,8 @@ export default function ClientLeaderboardView({
 
             try {
                 const url = batchId != null
-                    ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard?batch_id=${batchId}`
-                    : `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`;
+                    ? `/api/backend/cohorts/${cohortId}/leaderboard?batch_id=${batchId}`
+                    : `/api/backend/cohorts/${cohortId}/leaderboard`;
 
                 const response = await fetch(url);
 

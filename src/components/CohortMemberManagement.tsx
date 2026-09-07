@@ -330,7 +330,7 @@ export default function CohortMemberManagement({
         if (!membersToDelete.length || !cohortId) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
+            const response = await fetch(`/api/backend/cohorts/${cohortId}/members`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ export default function CohortMemberManagement({
         if (!cohortId) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
+            const response = await fetch(`/api/backend/cohorts/${cohortId}/members`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -441,7 +441,7 @@ export default function CohortMemberManagement({
             }
 
             // Fetch updated cohort data to get the new members
-            const cohortResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`);
+            const cohortResponse = await fetch(`/api/backend/cohorts/${cohortId}`);
             const cohortData = await cohortResponse.json();
 
             // Update the parent component with the new members

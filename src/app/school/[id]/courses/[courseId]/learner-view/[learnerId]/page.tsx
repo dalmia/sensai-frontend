@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ClientLearnerViewWrapper from './ClientLearnerViewWrapper';
 import { getPublishedCourseModules } from '@/lib/server-api';
+import { backendFetch } from "@/lib/server/backendFetch";
 
 
 export async function generateMetadata(
@@ -11,10 +12,10 @@ export async function generateMetadata(
     try {
         // Fetch course and learner data
         const [courseResponse, learnerResponse] = await Promise.all([
-            fetch(`${process.env.BACKEND_URL}/courses/${params.courseId}`, {
+            backendFetch(`/courses/${params.courseId}`, {
                 cache: 'no-store'
             }),
-            fetch(`${process.env.BACKEND_URL}/users/${params.learnerId}`, {
+            backendFetch(`/users/${params.learnerId}`, {
                 cache: 'no-store'
             })
         ]);
@@ -56,7 +57,7 @@ export default async function AdminLearnerViewPage({
         const { courseData, modules } = await getPublishedCourseModules(courseId);
 
         // Fetch learner data
-        const learnerResponse = await fetch(`${process.env.BACKEND_URL}/users/${learnerId}`, {
+        const learnerResponse = await backendFetch(`/users/${learnerId}`, {
             cache: 'no-store'
         });
 

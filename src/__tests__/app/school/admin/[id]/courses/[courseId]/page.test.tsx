@@ -19,6 +19,14 @@ jest.mock('@/lib/auth', () => ({
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// The websocket ticket is fetched through its own module so it never consumes
+// one of the ordered fetch mocks below.
+jest.mock('@/lib/wsTicket', () => ({
+    getWsTicket: jest.fn().mockResolvedValue({ ticket: 'test-ticket', origin: 'ws://localhost:8001' }),
+    buildWsUrl: (t: { ticket: string; origin: string }, courseId: string | number) =>
+        `${t.origin}/ws/course/${courseId}/generation?ticket=${t.ticket}`,
+}));
+
 // Mock WebSocket
 global.WebSocket = jest.fn() as any;
 // Add WebSocket constants
@@ -28,7 +36,6 @@ global.WebSocket = jest.fn() as any;
 (global.WebSocket as any).CLOSED = 3;
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
 
 // Mock components
 jest.mock('@/components/layout/header', () => ({
@@ -391,7 +398,7 @@ describe('CreateCourse Page', () => {
         });
 
         expect(fetch).toHaveBeenCalledWith(
-            'http://localhost:3001/courses/1?only_published=false'
+            '/api/backend/courses/1?only_published=false'
         );
     });
 
@@ -525,7 +532,7 @@ describe('CreateCourse Page', () => {
 
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/courses/1',
+                '/api/backend/courses/1',
                 expect.objectContaining({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -689,7 +696,7 @@ describe('CreateCourse Page', () => {
 
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/milestones/1',
+                '/api/backend/milestones/1',
                 expect.objectContaining({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -759,7 +766,7 @@ describe('CreateCourse Page', () => {
 
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/tasks/',
+                '/api/backend/tasks/',
                 expect.objectContaining({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -808,7 +815,7 @@ describe('CreateCourse Page', () => {
 
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/tasks/',
+                '/api/backend/tasks/',
                 expect.objectContaining({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2642,7 +2649,7 @@ describe('CreateCourse Page', () => {
         // Should save on Enter key
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/courses/1',
+                '/api/backend/courses/1',
                 expect.objectContaining({
                     method: 'PUT'
                 })
@@ -3326,7 +3333,7 @@ describe('CreateCourse Page', () => {
         // Should save on Enter key
         await waitFor(() => {
             expect(fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/courses/1',
+                '/api/backend/courses/1',
                 expect.objectContaining({
                     method: 'PUT'
                 })

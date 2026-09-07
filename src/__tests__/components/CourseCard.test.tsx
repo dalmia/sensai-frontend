@@ -75,7 +75,6 @@ describe('CourseCard Component', () => {
         });
 
         // Store original environment variables
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
     });
 
     it('should render course title correctly', () => {
@@ -205,7 +204,7 @@ describe('CourseCard Component', () => {
 
         // Should call fetch with correct URL and method
         expect(mockFetch).toHaveBeenCalledWith(
-            'https://api.example.com/courses/123',
+            '/api/backend/courses/123',
             expect.objectContaining({
                 method: 'DELETE',
                 headers: expect.objectContaining({
@@ -305,7 +304,7 @@ describe('CourseCard Component', () => {
         fireEvent.click(duplicateButton);
         await waitFor(() => {
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://api.example.com/courses/123/duplicate',
+                '/api/backend/courses/123/duplicate',
                 expect.objectContaining({
                     method: 'POST',
                     headers: expect.objectContaining({ 'Content-Type': 'application/json' }),

@@ -49,7 +49,7 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
 
         try {
             // Make API call to create cohort
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/`, {
+            const response = await fetch(`/api/backend/cohorts/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

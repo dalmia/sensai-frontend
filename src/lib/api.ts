@@ -56,7 +56,7 @@ export function useCourses() {
     setIsLoading(true);
     
     // Simple fetch without caching
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/courses`)
+    fetch(`/api/backend/users/${user.id}/courses`)
       .then(response => {
         if (!response.ok) {
           throw new Error(`Request failed: ${response.status}`);
@@ -113,7 +113,7 @@ export function useSchools() {
     setIsLoading(true);
     
     // Simple fetch without caching
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/orgs`)
+    fetch(`/api/backend/users/${user.id}/orgs`)
       .then(response => {
         if (!response.ok) {
           throw new Error(`Request failed: ${response.status}`);
@@ -160,7 +160,7 @@ export const getCompletionData = async (cohortId: number, userId: string): Promi
   taskCompletions: Record<string, boolean>,
   questionCompletions: Record<string, Record<string, boolean>>
 }> => {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/completion?user_id=${userId}`);
+  const response = await fetch(`/api/backend/cohorts/${cohortId}/completion?user_id=${userId}`);
 
   if (!response.ok) {
       throw new Error(`Failed to fetch completion data: ${response.status}`);
@@ -198,7 +198,7 @@ export const getCompletionData = async (cohortId: number, userId: string): Promi
 /**
  * Fetches course data and transforms it into modules
  * @param courseId - The ID of the course
- * @param baseUrl - The base URL for the API request (defaults to NEXT_PUBLIC_BACKEND_URL)
+ * @param baseUrl - The base URL for the API request (defaults to the /api/backend proxy)
  * @returns Object containing the course data and transformed modules
  * 
  * NOTE: This is a client-side function. For server components, use the version in server-api.ts
@@ -208,7 +208,7 @@ export const getCourseModules = async (courseId: string, baseUrl?: string): Prom
   modules: any[]
 }> => {
   // Determine which URL to use (server-side vs client-side)
-  const apiUrl = baseUrl || process.env.NEXT_PUBLIC_BACKEND_URL;
+  const apiUrl = baseUrl || "/api/backend";
   
   const response = await fetch(`${apiUrl}/courses/${courseId}`, {
     cache: 'no-store'
@@ -269,7 +269,7 @@ export const addModule = async (courseId: string, schoolId: string, modules: Mod
 
   try {
       // Make POST request to create a new milestone (module)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/milestones`, {
+      const response = await fetch(`/api/backend/courses/${courseId}/milestones`, {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',

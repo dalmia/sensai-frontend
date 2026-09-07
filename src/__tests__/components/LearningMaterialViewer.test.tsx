@@ -93,7 +93,6 @@ jest.mock('../../components/ChatView', () => ({
 global.fetch = jest.fn();
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
 
 
 describe('LearningMaterialViewer Component', () => {
@@ -163,7 +162,7 @@ describe('LearningMaterialViewer Component', () => {
 
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                `http://test-api.example.com/tasks/${mockTaskId}`,
+                `/api/backend/tasks/${mockTaskId}`,
                 expect.anything()
             );
         });
@@ -367,7 +366,7 @@ describe('LearningMaterialViewer Component', () => {
         // Check that fetch was called with the right params
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`,
+                `/api/backend/ai/chat`,
                 expect.objectContaining({
                     method: 'POST',
                     headers: expect.objectContaining({

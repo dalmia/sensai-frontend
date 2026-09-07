@@ -74,7 +74,7 @@ const LearningMaterialLinker = ({
         try {
             // Use the courseId from props
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/course/${courseId}/learning_material`
+                `/api/backend/tasks/course/${courseId}/learning_material`
             );
             if (!response.ok) {
                 throw new Error(`Failed to fetch learning materials: ${response.status}`);
@@ -103,7 +103,7 @@ const LearningMaterialLinker = ({
         setIsLoadingLearningMaterials(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/course/${courseId}/learning_material`
+                `/api/backend/tasks/course/${courseId}/learning_material`
             );
             if (!response.ok) {
                 throw new Error(`Failed to fetch learning materials: ${response.status}`);

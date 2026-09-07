@@ -81,7 +81,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
             setIsDuplicating(true);
 
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${course.id}/duplicate`, {
+                const response = await fetch(`/api/backend/courses/${course.id}/duplicate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
         setDeleteError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${course.id}`, {
+            const response = await fetch(`/api/backend/courses/${course.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

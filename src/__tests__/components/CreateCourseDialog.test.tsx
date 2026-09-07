@@ -6,7 +6,6 @@ import CreateCourseDialog from '../../components/CreateCourseDialog';
 global.fetch = jest.fn();
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
 
 describe('CreateCourseDialog Component', () => {
     const mockOnClose = jest.fn();
@@ -120,7 +119,7 @@ describe('CreateCourseDialog Component', () => {
         // Verify API call
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://test-api.example.com/courses/',
+                '/api/backend/courses/',
                 {
                     method: 'POST',
                     headers: {

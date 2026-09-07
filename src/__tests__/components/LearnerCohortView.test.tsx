@@ -183,7 +183,6 @@ describe('LearnerCohortView Component', () => {
         ) as jest.Mock;
 
         // Mock environment variable
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3000';
 
         // Mock document event handlers using spies only if document exists
         if (typeof document !== 'undefined') {
@@ -266,7 +265,6 @@ describe('LearnerCohortView Component', () => {
         });
 
         it('handles missing environment variable', async () => {
-            delete process.env.NEXT_PUBLIC_BACKEND_URL;
 
             render(<LearnerCohortView {...defaultProps} />);
 
@@ -766,7 +764,7 @@ describe('LearnerCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3000/users/test-user-id/streak?cohort_id=test-cohort-id'
+                    '/api/backend/users/test-user-id/streak?cohort_id=test-cohort-id'
                 );
             }, { timeout: 1000 });
         });

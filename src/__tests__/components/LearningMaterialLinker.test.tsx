@@ -6,7 +6,6 @@ import LearningMaterialLinker, { LearningMaterial } from '../../components/Learn
 global.fetch = jest.fn();
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
 
 describe('LearningMaterialLinker Component', () => {
     const mockCourseId = '123';
@@ -46,7 +45,7 @@ describe('LearningMaterialLinker Component', () => {
         // Check if API was called to fetch materials
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                `http://test-api.example.com/tasks/course/${mockCourseId}/learning_material`
+                `/api/backend/tasks/course/${mockCourseId}/learning_material`
             );
         });
 

@@ -1,4 +1,5 @@
 import { transformMilestonesToModules } from "./course";
+import { backendFetch } from "@/lib/server/backendFetch";
 
 /**
  * Fetches course data and transforms it into modules (server-side version)
@@ -10,7 +11,7 @@ export const getPublishedCourseModules = async (courseId: string): Promise<{
   courseData: any,
   modules: any[]
 }> => {
-  const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}?only_published=true`, {
+  const response = await backendFetch(`/courses/${courseId}?only_published=true`, {
     cache: 'no-store'
   });
 

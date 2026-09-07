@@ -133,7 +133,6 @@ jest.mock('katex/dist/katex.min.css', () => ({}), { virtual: true });
 global.fetch = jest.fn();
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
 
 describe('LearningMaterialEditor Component', () => {
     const mockTaskId = '123';
@@ -211,7 +210,7 @@ describe('LearningMaterialEditor Component', () => {
 
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                `http://localhost:3001/tasks/${mockTaskId}`,
+                `/api/backend/tasks/${mockTaskId}`,
                 expect.objectContaining({ signal: expect.any(AbortSignal) })
             );
         });
@@ -320,7 +319,7 @@ describe('LearningMaterialEditor Component', () => {
         // Verify the API was called with correct data
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                `http://localhost:3001/tasks/${mockTaskId}/learning_material`,
+                `/api/backend/tasks/${mockTaskId}/learning_material`,
                 expect.objectContaining({
                     method: 'PUT',
                     headers: expect.objectContaining({
@@ -369,7 +368,7 @@ describe('LearningMaterialEditor Component', () => {
         await waitFor(() => {
             // Verify publish API was called
             expect(global.fetch).toHaveBeenCalledWith(
-                `http://localhost:3001/tasks/${mockTaskId}/learning_material`,
+                `/api/backend/tasks/${mockTaskId}/learning_material`,
                 expect.objectContaining({
                     method: 'POST',
                     headers: expect.objectContaining({
@@ -815,7 +814,7 @@ describe('LearningMaterialEditor Component', () => {
 
                 await waitFor(() => {
                     expect(global.fetch).toHaveBeenCalledWith(
-                        'http://localhost:3001/tasks/task-1/learning_material',
+                        '/api/backend/tasks/task-1/learning_material',
                         expect.objectContaining({
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' }
@@ -863,7 +862,7 @@ describe('LearningMaterialEditor Component', () => {
 
                 await waitFor(() => {
                     expect(global.fetch).toHaveBeenCalledWith(
-                        'http://localhost:3001/tasks/task-1/learning_material',
+                        '/api/backend/tasks/task-1/learning_material',
                         expect.objectContaining({
                             method: 'PUT',
                             body: expect.stringContaining('"scheduled_publish_at":"2024-12-31T10:00:00Z"')
@@ -903,7 +902,7 @@ describe('LearningMaterialEditor Component', () => {
 
                 await waitFor(() => {
                     expect(global.fetch).toHaveBeenCalledWith(
-                        'http://localhost:3001/tasks/task-1/learning_material',
+                        '/api/backend/tasks/task-1/learning_material',
                         expect.objectContaining({
                             method: 'PUT',
                             body: expect.stringContaining('"scheduled_publish_at":null')
@@ -1279,7 +1278,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
                         body: expect.stringContaining('"scheduled_publish_at":null')
@@ -1322,7 +1321,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
@@ -1370,7 +1369,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' }
@@ -1499,7 +1498,7 @@ describe('LearningMaterialEditor Component', () => {
                 // Check what's actually being sent - seems like it's sending null instead of the taskData value
                 // This indicates the component logic might not be working as expected
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
                         body: expect.stringContaining('"scheduled_publish_at":null')
@@ -1537,7 +1536,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'POST',
                         body: expect.stringContaining('"blocks":[{"type":"paragraph","content":[{"text":"Test content","type":"text","styles":{}}]}]')
@@ -1591,7 +1590,7 @@ describe('LearningMaterialEditor Component', () => {
                 // But since we haven't triggered any content changes, editorContent should actually be []
                 // because the component doesn't automatically set editorContent to taskData.blocks anymore
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
                         body: expect.stringContaining('')
@@ -1713,7 +1712,7 @@ describe('LearningMaterialEditor Component', () => {
             // Wait for publish to complete
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({ method: 'POST' })
                 );
             }, { timeout: 3000 });
@@ -1858,7 +1857,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'PUT',
                         body: expect.stringContaining('"title":"Special Title: \\"Quotes\\" & <Tags> • Bullets"')
@@ -1908,7 +1907,7 @@ describe('LearningMaterialEditor Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/tasks/task-1/learning_material',
+                    '/api/backend/tasks/task-1/learning_material',
                     expect.objectContaining({
                         method: 'POST',
                         body: expect.stringContaining('"title":"Complex Title: 日本語 & émojis 🚀"')

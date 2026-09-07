@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import ClientLeaderboardView from './ClientLeaderboardView';
 import { cookies } from 'next/headers';
+import { backendFetch } from "@/lib/server/backendFetch";
 
 export const metadata: Metadata = {
     title: 'Leaderboard',
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 async function getCohortName(cohortId: string) {
     try {
         // Replace with your actual API endpoint
-        const res = await fetch(`${process.env.BACKEND_URL}/cohorts/${cohortId}`, {
+        const res = await backendFetch(`/cohorts/${cohortId}`, {
             headers: {
                 Cookie: cookies().toString()
             }

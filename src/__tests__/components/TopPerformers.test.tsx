@@ -71,7 +71,6 @@ describe('TopPerformers Component', () => {
         });
 
         // Mock environment variable
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
     });
 
     it('should render the component with title', async () => {
@@ -99,7 +98,7 @@ describe('TopPerformers Component', () => {
         });
 
         expect(mockFetch).toHaveBeenCalledWith(
-            'https://api.example.com/cohorts/cohort-123/leaderboard'
+            '/api/backend/cohorts/cohort-123/leaderboard'
         );
     });
 

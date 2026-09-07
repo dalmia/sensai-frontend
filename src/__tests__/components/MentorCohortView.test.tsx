@@ -68,7 +68,6 @@ jest.mock('../../components/LearnerCohortView', () => {
 });
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
 
 describe('MentorCohortView Component', () => {
     const mockCohort: CohortWithDetails = {
@@ -188,7 +187,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/1?batch_id=456'
+                    '/api/backend/cohorts/1?batch_id=456'
                 );
             });
         });
@@ -200,7 +199,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/organizations/123'
+                    '/api/backend/organizations/123'
                 );
             });
         });
@@ -238,10 +237,10 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/1?batch_id=456'
+                    '/api/backend/cohorts/1?batch_id=456'
                 );
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/organizations/123'
+                    '/api/backend/organizations/123'
                 );
             });
         });
@@ -309,7 +308,7 @@ describe('MentorCohortView Component', () => {
             // Should still call fetchSchoolSlug but not fetchCohortMembers
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/organizations/123'
+                    '/api/backend/organizations/123'
                 );
             });
 
@@ -350,7 +349,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/1?batch_id=456'
+                    '/api/backend/cohorts/1?batch_id=456'
                 );
             });
 
@@ -363,7 +362,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/1?batch_id=789'
+                    '/api/backend/cohorts/1?batch_id=789'
                 );
             });
         });
@@ -375,7 +374,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/1?batch_id=456'
+                    '/api/backend/cohorts/1?batch_id=456'
                 );
             });
 
@@ -390,7 +389,7 @@ describe('MentorCohortView Component', () => {
 
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'http://test-api.example.com/cohorts/2?batch_id=456'
+                    '/api/backend/cohorts/2?batch_id=456'
                 );
             });
         });

@@ -39,7 +39,7 @@ export default function CreateCourseDialog({
             setIsLoading(true);
 
             // Make API request to create course
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/`, {
+            const response = await fetch(`/api/backend/courses/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -8,7 +8,6 @@ global.fetch = jest.fn();
 
 // Mock environment variables
 const mockEnv = {
-    NEXT_PUBLIC_BACKEND_URL: 'http://localhost:3001'
 };
 
 Object.defineProperty(process, 'env', {

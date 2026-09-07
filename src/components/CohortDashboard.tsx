@@ -94,8 +94,8 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, schoolSlug
 
         try {
             const url = batchId != null
-                ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics?batch_id=${batchId}`
-                : `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`;
+                ? `/api/backend/cohorts/${cohortId}/courses/${courseId}/metrics?batch_id=${batchId}`
+                : `/api/backend/cohorts/${cohortId}/courses/${courseId}/metrics`;
 
             const response = await fetch(url);
 

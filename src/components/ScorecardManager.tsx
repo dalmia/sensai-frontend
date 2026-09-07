@@ -96,7 +96,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
             if (schoolId) {
                 setIsLoadingScorecards(true);
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/?org_id=${schoolId}`);
+                    const response = await fetch(`/api/backend/scorecards?org_id=${schoolId}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch school scorecards');
                     }
@@ -191,7 +191,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
             throw new Error('School ID is required to create scorecard');
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/`, {
+        const response = await fetch(`/api/backend/scorecards/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -375,7 +375,7 @@ const ScorecardManager = forwardRef<ScorecardManagerHandle, ScorecardManagerProp
             };
 
             // Make the API call to update the scorecard
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/${scorecardData.id}`, {
+            const response = await fetch(`/api/backend/scorecards/${scorecardData.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

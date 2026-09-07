@@ -135,7 +135,7 @@ export default function CreateBatchDialog({
             const user_ids = allSelectedMembers.map(member => member.id);
             const roles = allSelectedMembers.map(member => member.role);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/`, {
+            const response = await fetch(`/api/backend/batches/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -349,7 +349,7 @@ export default function CreateBatchDialog({
         const members_removed = originalIds.filter(id => !newIds.includes(id));
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/${batch.id}`,
+            const response = await fetch(`/api/backend/batches/${batch.id}`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },

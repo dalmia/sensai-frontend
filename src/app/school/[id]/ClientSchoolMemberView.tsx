@@ -75,7 +75,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
             setLoading(true);
             try {
                 // Fetch basic school info using slug
-                const schoolResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/slug/${slug}`);
+                const schoolResponse = await fetch(`/api/backend/organizations/slug/${slug}`);
                 if (!schoolResponse.ok) {
                     throw new Error(`API error: ${schoolResponse.status}`);
                 }
@@ -102,14 +102,14 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
 
                 // If user is owner or admin, fetch all cohorts for the school
                 if (isOwnerOrAdmin) {
-                    const allCohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${transformedSchool.id}`);
+                    const allCohortsResponse = await fetch(`/api/backend/cohorts?org_id=${transformedSchool.id}`);
                     if (!allCohortsResponse.ok) {
                         throw new Error(`API error: ${allCohortsResponse.status}`);
                     }
                     cohortsData = await allCohortsResponse.json();
                 } else {
                     // Otherwise, fetch only the cohorts the user is a member of
-                    const userCohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/org/${transformedSchool.id}/cohorts`);
+                    const userCohortsResponse = await fetch(`/api/backend/users/${user.id}/org/${transformedSchool.id}/cohorts`);
                     if (!userCohortsResponse.ok) {
                         throw new Error(`API error: ${userCohortsResponse.status}`);
                     }
@@ -183,7 +183,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
         setCourseError(null);
 
         try {
-            const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses?include_tree=true`;
+            const url = `/api/backend/cohorts/${cohortId}/courses?include_tree=true`;
 
             // Check if 'joined_at' exists, as older learners may not have this timestamp.
             const cohortUrl = activeCohort?.joined_at ? `${url}&joined_at=${activeCohort.joined_at}` : url;

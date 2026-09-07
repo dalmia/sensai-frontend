@@ -16,12 +16,12 @@ const mockFetch = jest.fn().mockImplementation((url) => {
     } else if (typeof url === 'string' && url.includes('/file/presigned-url/get')) {
         return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ url: 'https://example.com/file.jpg' })
+            json: () => Promise.resolve({ url: '/api/backend/file.jpg' })
         } as unknown as Response);
     } else if (url === 'https://example.com/presigned-url') {
         return Promise.resolve({
             ok: true,
-            url: 'https://example.com/file.jpg'
+            url: '/api/backend/file.jpg'
         } as unknown as Response);
     }
     return Promise.resolve({
@@ -33,7 +33,6 @@ const mockFetch = jest.fn().mockImplementation((url) => {
 global.fetch = mockFetch;
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
 
 describe('BlockNoteEditor Component', () => {
     beforeEach(() => {

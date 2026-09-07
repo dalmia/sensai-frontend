@@ -3,12 +3,13 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ClientPreviewWrapper from './ClientPreviewWrapper';
 import { getPublishedCourseModules } from '@/lib/server-api';
+import { backendFetch } from "@/lib/server/backendFetch";
 
 export async function generateMetadata(
     { params }: { params: { id: string, courseId: string } }
 ): Promise<Metadata> {
     try {
-        const courseResponse = await fetch(`${process.env.BACKEND_URL}/courses/${params.courseId}`, {
+        const courseResponse = await backendFetch(`/courses/${params.courseId}`, {
             cache: 'no-store'
         });
 

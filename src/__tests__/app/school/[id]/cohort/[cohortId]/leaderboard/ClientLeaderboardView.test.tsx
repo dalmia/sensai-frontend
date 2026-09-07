@@ -56,7 +56,6 @@ describe('ClientLeaderboardView', () => {
         });
 
         // Mock environment variable
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
     });
 
     describe('Loading State', () => {
@@ -441,7 +440,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-123/leaderboard'
+                    '/api/backend/cohorts/cohort-123/leaderboard'
                 );
             });
         });
@@ -463,7 +462,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-123/leaderboard?batch_id=456'
+                    '/api/backend/cohorts/cohort-123/leaderboard?batch_id=456'
                 );
             });
         });
@@ -485,7 +484,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-123/leaderboard?batch_id=0'
+                    '/api/backend/cohorts/cohort-123/leaderboard?batch_id=0'
                 );
             });
         });
@@ -507,7 +506,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-123/leaderboard'
+                    '/api/backend/cohorts/cohort-123/leaderboard'
                 );
             });
         });
@@ -529,7 +528,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-123/leaderboard'
+                    '/api/backend/cohorts/cohort-123/leaderboard'
                 );
             });
         });
@@ -681,7 +680,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=123'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=123'
                 );
                 expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
                 expect(screen.getByText('Bob Wilson')).toBeInTheDocument();
@@ -704,7 +703,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=456'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=456'
                 );
                 expect(screen.getByText('Failed to load leaderboard data. Please try again.')).toBeInTheDocument();
             });
@@ -727,7 +726,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=789'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=789'
                 );
                 expect(screen.getByText('No learners in the cohort yet')).toBeInTheDocument();
             });
@@ -768,7 +767,7 @@ describe('ClientLeaderboardView', () => {
             // First call with batch 123
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=123'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=123'
                 );
             });
 
@@ -790,7 +789,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=456'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=456'
                 );
             });
         });
@@ -808,7 +807,7 @@ describe('ClientLeaderboardView', () => {
             // First call without batch
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard'
+                    '/api/backend/cohorts/cohort-1/leaderboard'
                 );
             });
 
@@ -830,7 +829,7 @@ describe('ClientLeaderboardView', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/cohorts/cohort-1/leaderboard?batch_id=789'
+                    '/api/backend/cohorts/cohort-1/leaderboard?batch_id=789'
                 );
             });
         });

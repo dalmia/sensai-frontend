@@ -89,7 +89,7 @@ export default function LearningMaterialViewer({
             // Use AbortController to cancel any in-flight requests
             const controller = new AbortController();
 
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`, {
+            fetch(`/api/backend/tasks/${taskId}`, {
                 signal: controller.signal
             })
                 .then(response => {
@@ -258,7 +258,7 @@ export default function LearningMaterialViewer({
             let receivedAnyResponse = false;
 
             // Make the API call
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`, {
+            const response = await fetch(`/api/backend/ai/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

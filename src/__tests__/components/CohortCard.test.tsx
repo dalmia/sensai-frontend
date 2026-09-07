@@ -48,7 +48,6 @@ describe('CohortCard Component', () => {
         jest.clearAllMocks();
         mockFetch.mockClear();
         // Set default environment variable
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3000';
     });
 
     afterEach(() => {
@@ -246,7 +245,7 @@ describe('CohortCard Component', () => {
             // Wait for API call to complete
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3000/cohorts/123',
+                    '/api/backend/cohorts/123',
                     {
                         method: 'DELETE',
                         headers: {
@@ -284,7 +283,7 @@ describe('CohortCard Component', () => {
             // Wait for API call to complete
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'http://localhost:3000/cohorts/123',
+                    '/api/backend/cohorts/123',
                     {
                         method: 'DELETE',
                         headers: {
@@ -456,9 +455,8 @@ describe('CohortCard Component', () => {
             expect(card).toHaveClass('border-b-2');
         });
 
-        it('should handle missing environment variable', async () => {
+        it('should use the proxy path regardless of environment', async () => {
             // Temporarily remove environment variable
-            delete process.env.NEXT_PUBLIC_BACKEND_URL;
 
             mockFetch.mockResolvedValueOnce({
                 ok: true,
@@ -473,16 +471,14 @@ describe('CohortCard Component', () => {
             const confirmButton = screen.getByTestId('confirm-button');
             fireEvent.click(confirmButton);
 
-            // Should still make API call with undefined URL
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    'undefined/cohorts/123',
+                    '/api/backend/cohorts/123',
                     expect.any(Object)
                 );
             });
 
             // Restore environment variable
-            process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3000';
         });
     });
 }); 

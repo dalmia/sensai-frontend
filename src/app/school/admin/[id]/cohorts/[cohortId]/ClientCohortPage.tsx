@@ -168,7 +168,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         setIsLoadingCourses(true);
         setCourseError(null);
         try {
-            const coursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/?org_id=${schoolId}`);
+            const coursesResponse = await fetch(`/api/backend/courses?org_id=${schoolId}`);
             if (!coursesResponse.ok) {
                 throw new Error(`Failed to fetch courses: ${coursesResponse.status}`);
             }
@@ -177,7 +177,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             // Store the total number of courses in the school
             setTotalSchoolCourses(coursesData.length);
 
-            const cohortCoursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`);
+            const cohortCoursesResponse = await fetch(`/api/backend/cohorts/${cohortId}/courses`);
             if (!cohortCoursesResponse.ok) {
                 setAvailableCourses(coursesData);
                 setIsLoadingCourses(false);
@@ -212,7 +212,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     // Function to handle removing a course from the cohort
     const removeCourseFromCohort = async (courseId: number) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`, {
+            const response = await fetch(`/api/backend/cohorts/${cohortId}/courses`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -293,7 +293,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         try {
             const courseIds = selectedCourses.map(course => course.id);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`, {
+            const response = await fetch(`/api/backend/cohorts/${cohortId}/courses`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         if (!cohort) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`, {
+            const response = await fetch(`/api/backend/cohorts/${cohortId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const fetchBatches = async () => {
         setIsLoadingBatches(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/?cohort_id=${cohortId}`);
+            const response = await fetch(`/api/backend/batches?cohort_id=${cohortId}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch batches: ${response.status}`);
             }
@@ -560,7 +560,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
             setLoading(true);
             try {
-                const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`;
+                const url = `/api/backend/cohorts/${cohortId}`;
 
                 const cohortResponse = await fetch(url);
                 if (!cohortResponse.ok) {
@@ -574,7 +574,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                 // Fetch school details to get the slug
                 try {
-                    const schoolResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${schoolId}`);
+                    const schoolResponse = await fetch(`/api/backend/organizations/${schoolId}`);
                     if (schoolResponse.ok) {
                         const schoolData = await schoolResponse.json();
                         setSchoolSlug(schoolData.slug);
@@ -585,7 +585,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                 // Fetch courses in cohort
                 try {
-                    const cohortCoursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`);
+                    const cohortCoursesResponse = await fetch(`/api/backend/cohorts/${cohortId}/courses`);
                     if (cohortCoursesResponse.ok) {
                         const cohortCoursesData = await cohortCoursesResponse.json();
                         const courses = Array.isArray(cohortCoursesData) ? cohortCoursesData : [];
@@ -658,7 +658,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         setIsDeleting(true);
         setDeleteError(null);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/batches/${batchToDelete.id}`, {
+            const response = await fetch(`/api/backend/batches/${batchToDelete.id}`, {
                 method: 'DELETE',
             });
             if (!response.ok) {

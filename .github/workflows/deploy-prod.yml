@@ -43,7 +43,7 @@ jobs:
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             BACKEND_URL=${{ secrets.BACKEND_URL }}
-            NEXT_PUBLIC_BACKEND_URL=${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
+            AUTH_SECRET_KEY=${{ secrets.AUTH_SECRET_KEY }}
             JUDGE0_API_URL=${{ secrets.JUDGE0_API_URL }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
