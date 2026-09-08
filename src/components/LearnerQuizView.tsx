@@ -1009,20 +1009,30 @@ export default function LearnerQuizView({
                             let completeScorecard: ScorecardItem[] = [];
                             // Add a flag to track if streaming is done
                             let streamingComplete = false;
+                            // Chunk boundaries fall anywhere, so a JSON line can arrive
+                            // split across two reads. Hold the incomplete tail here.
+                            const decoder = new TextDecoder();
+                            let buffer = "";
 
                             while (true) {
                                 const { done, value } = await reader.read();
 
+                                let jsonLines: string[];
+
                                 if (done) {
                                     streamingComplete = true;
-                                    break;
+                                    // Flush whatever is left: a final line need not end
+                                    // with a newline, and dropping it loses the last message.
+                                    buffer += decoder.decode();
+                                    jsonLines = buffer.trim() ? [buffer] : [];
+                                    buffer = "";
+                                } else {
+                                    buffer += decoder.decode(value, { stream: true });
+
+                                    const lines = buffer.split('\n');
+                                    buffer = lines.pop() ?? "";
+                                    jsonLines = lines.filter(line => line.trim());
                                 }
-
-                                // Convert the chunk to text
-                                const chunk = new TextDecoder().decode(value);
-
-                                // Split by newlines to handle multiple JSON objects in a single chunk
-                                const jsonLines = chunk.split('\n').filter(line => line.trim());
 
                                 for (const line of jsonLines) {
                                     try {
@@ -1105,6 +1115,10 @@ export default function LearnerQuizView({
                                     } catch (e) {
                                         console.error('Error parsing JSON chunk:', e);
                                     }
+                                }
+
+                                if (done) {
+                                    break;
                                 }
                             }
 
