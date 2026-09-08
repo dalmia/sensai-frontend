@@ -98,7 +98,7 @@ async function handler(
   const hasBody = !["GET", "HEAD"].includes(request.method);
   const body = hasBody ? await request.arrayBuffer() : undefined;
 
-  const backendOrigin = new URL(BACKEND_URL).origin;
+  const backendHost = new URL(BACKEND_URL).host;
   const basePath = path.join("/");
   const timeoutMs = path[0] === "ai" ? STREAMING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   let target = `${BACKEND_URL}/${redirectCache.get(basePath) ?? basePath}${request.nextUrl.search}`;
@@ -125,13 +125,18 @@ async function handler(
       if (!location || upstream.status < 300 || upstream.status >= 400) break;
 
       const resolved = new URL(location, target);
-      if (resolved.origin !== backendOrigin) break;
+
+      // Match on host, not origin: the backend sits behind TLS termination and
+      // uvicorn runs without --proxy-headers, so it emits http:// Locations even
+      // when we called it over https. Re-issuing against BACKEND_URL below means
+      // the token still only ever goes to our configured backend.
+      if (resolved.host !== backendHost) break;
 
       if (upstream.status === 303) method = "GET";
       if (method === request.method) {
         redirectCache.set(basePath, resolved.pathname.replace(/^\//, ""));
       }
-      target = resolved.toString();
+      target = `${BACKEND_URL}${resolved.pathname}${resolved.search}`;
       upstream = undefined;
     }
 

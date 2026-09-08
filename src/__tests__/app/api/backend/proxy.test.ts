@@ -172,6 +172,33 @@ describe("backend proxy", () => {
       expect(res.headers.get("location")).toBeNull();
     });
 
+    it("follows a redirect whose scheme differs from ours", async () => {
+      // uvicorn without --proxy-headers emits http:// Locations behind TLS
+      // termination, so comparing full origin turned every collection route
+      // into a 502 on staging. Match on host, re-issue against our own origin.
+      getServerSession.mockResolvedValue({ user: { id: "42" } });
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 307,
+            headers: { location: "https://backend.internal:8001/cohorts/?org_id=8" },
+          })
+        )
+        .mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }));
+
+      const res = await GET(
+        req("http://localhost/api/backend/cohorts?org_id=8"),
+        ctx(["cohorts"])
+      );
+
+      expect(res.status).toBe(200);
+      // re-issued against our configured origin, not the scheme it handed us
+      expect((global.fetch as jest.Mock).mock.calls[1][0]).toBe(
+        "http://backend.internal:8001/cohorts/?org_id=8"
+      );
+    });
+
     it("does not follow a redirect to another origin, and never re-sends the token", async () => {
       getServerSession.mockResolvedValue({ user: { id: "42" } });
       global.fetch = jest.fn().mockResolvedValue(
