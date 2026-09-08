@@ -9,7 +9,7 @@ jest.mock("@/app/api/auth/[...nextauth]/route", () => ({ authOptions: {} }));
 const { getServerSession } = require("next-auth");
 
 process.env.BACKEND_URL = "http://backend.internal:8001";
-process.env.AUTH_SECRET_KEY = "test-secret-key";
+process.env.AUTH_SECRET_KEY = "test-secret-key-at-least-32-chars-long";
 
 const { GET, POST, DELETE } = require("@/app/api/backend/[...path]/route");
 

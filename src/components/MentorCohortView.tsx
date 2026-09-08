@@ -117,12 +117,18 @@ export default function MentorCohortView({
             }
         };
         const fetchSchoolSlug = async () => {
-            const response = await fetch(`/api/backend/organizations/${schoolId}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch school details: ${response.status}`);
+            try {
+                const response = await fetch(`/api/backend/organizations/${schoolId}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch school details: ${response.status}`);
+                }
+                const data = await response.json();
+                setSchoolSlug(data.slug);
+            } catch (error) {
+                // The slug only builds the learner-view link, so degrade the
+                // header rather than failing silently as an unhandled rejection.
+                console.error('Could not load school details:', error);
             }
-            const data = await response.json();
-            setSchoolSlug(data.slug);
         };
         fetchCohortMembers();
         fetchSchoolSlug();

@@ -10,7 +10,7 @@ jest.mock("@/app/api/auth/[...nextauth]/route", () => ({ authOptions: {} }));
 import { GET } from "@/app/api/ws-ticket/route";
 import { NextRequest } from "next/server";
 
-const SECRET = "test-ws-secret";
+const SECRET = "test-ws-secret-at-least-32-chars-long";
 
 function call(url: string) {
   return GET(new NextRequest(url));
