@@ -50,7 +50,7 @@ describe("backend proxy", () => {
       expect(auth).toMatch(/^Bearer /);
 
       const payload = JSON.parse(
-        Buffer.from(auth.split(".")[1], "base64").toString()
+        Buffer.from(auth!.split(".")[1], "base64").toString()
       );
       expect(payload.sub).toBe("42");
       expect(payload.exp - payload.iat).toBe(120);
@@ -141,4 +141,88 @@ describe("backend proxy", () => {
       expect(await res.text()).toContain('{"chunk":1}');
     });
   });
+
+  describe("redirects", () => {
+    // The backend 307s between /scorecards and /scorecards/. Next strips the
+    // trailing slash before this handler runs, so the redirect has to be
+    // followed here - handing it to the browser leaks the backend URL and
+    // bounces off Next's normalisation for ever.
+    it("follows a same-origin redirect and returns the final response", async () => {
+      getServerSession.mockResolvedValue({ user: { id: "42" } });
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 307,
+            headers: { location: "http://backend.internal:8001/scorecards/" },
+          })
+        )
+        .mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }));
+
+      const res = await GET(
+        req("http://localhost/api/backend/scorecards?org_id=4"),
+        ctx(["scorecards"])
+      );
+
+      expect(res.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect((global.fetch as jest.Mock).mock.calls[1][0]).toBe(
+        "http://backend.internal:8001/scorecards/"
+      );
+      expect(res.headers.get("location")).toBeNull();
+    });
+
+    it("does not follow a redirect to another origin, and never re-sends the token", async () => {
+      getServerSession.mockResolvedValue({ user: { id: "42" } });
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(null, {
+          status: 302,
+          headers: { location: "https://evil.example.com/steal" },
+        })
+      );
+
+      const res = await GET(
+        req("http://localhost/api/backend/users/1"),
+        ctx(["users", "1"])
+      );
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(res.status).toBe(502);
+      expect(res.headers.get("location")).toBeNull();
+    });
+
+    it("gives up rather than looping for ever", async () => {
+      getServerSession.mockResolvedValue({ user: { id: "42" } });
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(null, {
+          status: 307,
+          headers: { location: "http://backend.internal:8001/users/1/" },
+        })
+      );
+
+      const res = await GET(
+        req("http://localhost/api/backend/users/1"),
+        ctx(["users", "1"])
+      );
+
+      expect(res.status).toBe(502);
+      expect((global.fetch as jest.Mock).mock.calls.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  describe("misconfiguration", () => {
+    it("returns 500 when the signing secret is missing", async () => {
+      getServerSession.mockResolvedValue({ user: { id: "42" } });
+      const original = process.env.AUTH_SECRET_KEY;
+      delete process.env.AUTH_SECRET_KEY;
+      try {
+        const res = await GET(req("http://localhost/api/backend/users/1"), ctx(["users", "1"]));
+        expect(res.status).toBe(500);
+        expect(global.fetch).not.toHaveBeenCalled();
+      } finally {
+        process.env.AUTH_SECRET_KEY = original;
+      }
+    });
+  });
+
 });

@@ -23,6 +23,7 @@ export function mintBackendToken(userId: string | number, email = ""): string {
     JSON.stringify({
       sub: String(userId),
       email,
+      aud: "api",
       iat: now,
       exp: now + TOKEN_TTL_SECONDS,
     })

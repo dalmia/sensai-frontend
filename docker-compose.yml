@@ -5,3 +5,6 @@ services:
     ports:
       - "${PORT}:3000"
     restart: unless-stopped
+    environment:
+      - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
+      - WS_PUBLIC_ORIGIN=${WS_PUBLIC_ORIGIN}

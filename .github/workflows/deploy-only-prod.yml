@@ -40,6 +40,8 @@ jobs:
             export IMAGE_TAG=${{ env.IMAGE_TAG }}
             export CONTAINER_NAME=${{ env.CONTAINER_NAME }}
             export PORT=${{ env.DEPLOY_PORT }}
+            export AUTH_SECRET_KEY="${{ secrets.AUTH_SECRET_KEY }}"
+            export WS_PUBLIC_ORIGIN="${{ vars.WS_PUBLIC_ORIGIN }}"
             sudo -E docker compose -f docker-compose.yml pull
             sudo -E docker compose -f docker-compose.yml up -d
 

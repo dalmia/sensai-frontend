@@ -30,6 +30,7 @@ const HOP_BY_HOP = new Set([
   "te",
   "trailers",
   "transfer-encoding",
+  "content-encoding",
   "upgrade",
   "host",
   "content-length",
@@ -40,6 +41,10 @@ const HOP_BY_HOP = new Set([
 // FastAPI registers collection routes at "/cohorts/", so "/cohorts" 307s once.
 // Remember where each path redirected to and go straight there next time.
 const redirectCache = new Map<string, string>();
+
+// /ai/* streams for tens of seconds; everything else should fail fast.
+const DEFAULT_TIMEOUT_MS = 30_000;
+const STREAMING_TIMEOUT_MS = 300_000;
 
 function isAllowed(segments: string[]): boolean {
   if (segments.length === 0) return false;
@@ -95,6 +100,7 @@ async function handler(
 
   const backendOrigin = new URL(BACKEND_URL).origin;
   const basePath = path.join("/");
+  const timeoutMs = path[0] === "ai" ? STREAMING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   let target = `${BACKEND_URL}/${redirectCache.get(basePath) ?? basePath}${request.nextUrl.search}`;
   let method = request.method;
 
@@ -112,6 +118,7 @@ async function handler(
         body: method === "GET" || method === "HEAD" ? undefined : body,
         redirect: "manual",
         cache: "no-store",
+        signal: AbortSignal.timeout(timeoutMs),
       } as RequestInit);
 
       const location = upstream.headers.get("location");
