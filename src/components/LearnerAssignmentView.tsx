@@ -643,17 +643,30 @@ export default function LearnerAssignmentView({
 
                             // Buffer to accumulate partial lines across chunks
                             let bufferedLine = "";
+                            // One decoder for the whole stream: a fresh decoder per read
+                            // cannot carry a partial UTF-8 sequence across a chunk
+                            // boundary, so a split emoji becomes U+FFFD on both sides
+                            // and the line stops being valid JSON.
+                            const decoder = new TextDecoder();
 
                             while (true) {
                                 const { done, value } = await reader.read();
 
                                 if (done) {
+                                    // A final line need not carry a trailing newline.
+                                    const tail = bufferedLine.trim();
+                                    bufferedLine = "";
+                                    if (tail) {
+                                        try {
+                                            assignmentResponse = { ...assignmentResponse, ...JSON.parse(tail) };
+                                        } catch (e) {
+                                            console.error('Error parsing final JSON chunk:', e);
+                                        }
+                                    }
                                     break;
                                 }
 
-                                // Convert the chunk to text
-                                const chunk = new TextDecoder().decode(value);
-                                console.debug('assignment stream: chunk received', { length: chunk.length, preview: chunk.slice(0, 200) });
+                                const chunk = decoder.decode(value, { stream: true });
 
                                 // Prepend any buffered partial line from the previous chunk
                                 const text = bufferedLine ? bufferedLine + chunk : chunk;
