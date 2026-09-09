@@ -326,7 +326,7 @@ export default function CourseModuleList({
         }
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/milestones/swap`, {
+            const response = await fetch(`/api/backend/courses/${courseId}/milestones/swap`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ export default function CourseModuleList({
         }
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/tasks/swap`, {
+            const response = await fetch(`/api/backend/courses/${courseId}/tasks/swap`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -561,7 +561,7 @@ export default function CourseModuleList({
             setDeletingTaskId(itemId);
 
             // Make the API call to delete the task
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${itemId}`, {
+            const response = await fetch(`/api/backend/tasks/${itemId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -605,7 +605,7 @@ export default function CourseModuleList({
                 setDeletingModuleId(moduleToDelete);
 
                 // Make the API call to delete the module (milestone)
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/milestones/${moduleToDelete}`, {
+                const response = await fetch(`/api/backend/milestones/${moduleToDelete}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -654,7 +654,7 @@ export default function CourseModuleList({
             setDuplicatingTaskId(itemId);
 
             // Make the API call to duplicate the task
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/duplicate`, {
+            const response = await fetch(`/api/backend/tasks/duplicate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

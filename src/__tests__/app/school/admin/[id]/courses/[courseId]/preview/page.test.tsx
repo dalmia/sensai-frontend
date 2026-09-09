@@ -3,6 +3,10 @@ import { render, waitFor } from '@testing-library/react';
 import PreviewPage, { generateMetadata } from '@/app/school/admin/[id]/courses/[courseId]/preview/page';
 
 // Mock Next.js navigation
+jest.mock('@/lib/server/backendFetch', () => ({
+    backendFetch: (path: string, init?: RequestInit) => (global.fetch as jest.Mock)(path, init),
+}));
+
 jest.mock('next/navigation', () => ({
     notFound: jest.fn(() => {
         throw new Error('NEXT_NOT_FOUND');
@@ -72,7 +76,7 @@ describe('PreviewPage', () => {
             const metadata = await generateMetadata({ params });
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/courses/course456',
+                '/courses/course456',
                 { cache: 'no-store' }
             );
             expect(metadata).toEqual({
@@ -91,7 +95,7 @@ describe('PreviewPage', () => {
             const metadata = await generateMetadata({ params });
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/courses/invalid',
+                '/courses/invalid',
                 { cache: 'no-store' }
             );
             expect(metadata).toEqual({

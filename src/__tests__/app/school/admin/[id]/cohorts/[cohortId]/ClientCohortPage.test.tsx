@@ -258,7 +258,6 @@ describe('ClientCohortPage', () => {
         (navigator.clipboard.writeText as jest.Mock).mockReset();
 
         // Mock environment variables
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
 
         // Mock router
         (useRouter as jest.Mock).mockReturnValue({
@@ -554,7 +553,7 @@ describe('ClientCohortPage', () => {
             });
 
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/cohorts/1',
+                '/api/backend/cohorts/1',
                 expect.objectContaining({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -678,7 +677,7 @@ describe('ClientCohortPage', () => {
             }, { timeout: 3000 });
 
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/cohorts/1/courses',
+                '/api/backend/cohorts/1/courses',
                 expect.objectContaining({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -730,7 +729,7 @@ describe('ClientCohortPage', () => {
             });
 
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/cohorts/1/courses',
+                '/api/backend/cohorts/1/courses',
                 expect.objectContaining({
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
@@ -1586,7 +1585,7 @@ describe('ClientCohortPage', () => {
 
             // Ensure DELETE was called with correct endpoint
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://localhost:3001/batches/1',
+                '/api/backend/batches/1',
                 expect.objectContaining({ method: 'DELETE' })
             );
         });

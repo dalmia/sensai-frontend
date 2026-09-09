@@ -334,7 +334,7 @@ export default function LearnerQuizView({
 
             try {
                 // Make API call to fetch chat history using the provided taskId
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/user/${userId}/task/${taskId}`);
+                const response = await fetch(`/api/backend/chat/user/${userId}/task/${taskId}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch chat history: ${response.status}`);
@@ -360,7 +360,7 @@ export default function LearnerQuizView({
                         try {
                             // Get presigned URL
                             const file_uuid = message.content;
-                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
+                            const presignedResponse = await fetch(`/api/backend/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ export default function LearnerQuizView({
                             let audioResponse = null;
 
                             if (!presignedResponse.ok) {
-                                audioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${message.content}&file_extension=wav`);
+                                audioResponse = await fetch(`/api/backend/file/download-local/?uuid=${message.content}&file_extension=wav`);
                                 if (!audioResponse.ok) {
                                     throw new Error('Failed to fetch audio data from backend');
                                 }
@@ -696,7 +696,7 @@ export default function LearnerQuizView({
         };
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId || '')}&questionId=${encodeURIComponent(String(questionId))}`, {
+            const response = await fetch(`/api/backend/chat?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId || '')}&questionId=${encodeURIComponent(String(questionId))}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -890,7 +890,7 @@ export default function LearnerQuizView({
 
                 try {
                     // First, get a presigned URL for the audio file
-                    const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+                    const presignedUrlResponse = await fetch(`/api/backend/file/presigned-url/create`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -934,7 +934,7 @@ export default function LearnerQuizView({
                         formData.append('content_type', 'audio/wav');
 
                         // Upload directly to the backend
-                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                        const uploadResponse = await fetch(`/api/backend/file/upload-local`, {
                             method: 'POST',
                             body: formData
                         });
@@ -982,7 +982,7 @@ export default function LearnerQuizView({
             }
 
             // Call the API with the appropriate request body for streaming response
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}&questionId=${encodeURIComponent(String(currentQuestionId))}`, {
+            fetch(`/api/backend/ai/chat?userId=${encodeURIComponent(userId)}&taskId=${encodeURIComponent(taskId)}&questionId=${encodeURIComponent(String(currentQuestionId))}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1009,20 +1009,30 @@ export default function LearnerQuizView({
                             let completeScorecard: ScorecardItem[] = [];
                             // Add a flag to track if streaming is done
                             let streamingComplete = false;
+                            // Chunk boundaries fall anywhere, so a JSON line can arrive
+                            // split across two reads. Hold the incomplete tail here.
+                            const decoder = new TextDecoder();
+                            let buffer = "";
 
                             while (true) {
                                 const { done, value } = await reader.read();
 
+                                let jsonLines: string[];
+
                                 if (done) {
                                     streamingComplete = true;
-                                    break;
+                                    // Flush whatever is left: a final line need not end
+                                    // with a newline, and dropping it loses the last message.
+                                    buffer += decoder.decode();
+                                    jsonLines = buffer.trim() ? [buffer] : [];
+                                    buffer = "";
+                                } else {
+                                    buffer += decoder.decode(value, { stream: true });
+
+                                    const lines = buffer.split('\n');
+                                    buffer = lines.pop() ?? "";
+                                    jsonLines = lines.filter(line => line.trim());
                                 }
-
-                                // Convert the chunk to text
-                                const chunk = new TextDecoder().decode(value);
-
-                                // Split by newlines to handle multiple JSON objects in a single chunk
-                                const jsonLines = chunk.split('\n').filter(line => line.trim());
 
                                 for (const line of jsonLines) {
                                     try {
@@ -1105,6 +1115,10 @@ export default function LearnerQuizView({
                                     } catch (e) {
                                         console.error('Error parsing JSON chunk:', e);
                                     }
+                                }
+
+                                if (done) {
+                                    break;
                                 }
                             }
 

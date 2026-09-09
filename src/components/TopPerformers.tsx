@@ -44,7 +44,7 @@ export default function TopPerformers({
 
         setLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`);
+            const response = await fetch(`/api/backend/cohorts/${cohortId}/leaderboard`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch performers: ${response.status}`);

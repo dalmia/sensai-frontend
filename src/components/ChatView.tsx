@@ -233,7 +233,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
             try {
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`
+                    `/api/backend/code/user/${userId}/question/${currentQuestionId}`
                 );
 
                 if (response.ok) {
@@ -347,7 +347,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             // Delete any existing code for this question before submitting new code
             if (userId && currentQuestionId) {
                 try {
-                    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`, {
+                    await fetch(`/api/backend/code/user/${userId}/question/${currentQuestionId}`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -484,7 +484,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         };
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code/`, {
+            const response = await fetch(`/api/backend/code/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -45,7 +45,7 @@ export default function JoinCohortPage() {
 
         const joinCohort = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
+                const response = await fetch(`/api/backend/cohorts/${cohortId}/members`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

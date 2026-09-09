@@ -33,7 +33,7 @@ async function uploadFile(file: File) {
 
     try {
         // First, get a presigned URL for the file
-        const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+        const presignedUrlResponse = await fetch(`/api/backend/file/presigned-url/create`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ async function uploadFile(file: File) {
             formData.append('content_type', file.type);
 
             // Upload directly to the backend
-            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+            const uploadResponse = await fetch(`/api/backend/file/upload-local`, {
                 method: 'POST',
                 body: formData
             });
@@ -77,7 +77,7 @@ async function uploadFile(file: File) {
             const uploadData = await uploadResponse.json();
             const file_static_path = uploadData.static_url;
 
-            const static_url = `${process.env.NEXT_PUBLIC_BACKEND_URL}${file_static_path}`;
+            const static_url = `/api/backend${file_static_path}`;
 
             console.log('File uploaded successfully to backend');
 
@@ -119,7 +119,7 @@ async function resolveFileUrl(url: string) {
         return url;
     }
 
-    if (url.includes(`${process.env.NEXT_PUBLIC_BACKEND_URL}/`)) {
+    if (url.includes(`/api/backend/`)) {
         return url;
     }
 
@@ -128,7 +128,7 @@ async function resolveFileUrl(url: string) {
 
     try {
         // Get presigned URL
-        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`, {
+        const presignedResponse = await fetch(`/api/backend/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

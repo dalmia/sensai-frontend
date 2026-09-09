@@ -748,7 +748,7 @@ describe('QuizEditor Component', () => {
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledWith(
-                    expect.stringContaining('/scorecards/?org_id=1')
+                    expect.stringContaining('/scorecards?org_id=1')
                 );
                 expect(mockFetch).toHaveBeenCalledWith(
                     expect.stringContaining('/tasks/123')

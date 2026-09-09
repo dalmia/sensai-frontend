@@ -304,10 +304,10 @@ describe('ClientSchoolMemberView', () => {
 
             await waitFor(() => {
                 expect(fetch).toHaveBeenCalledWith(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/slug/test-school`
+                    `/api/backend/organizations/slug/test-school`
                 );
                 expect(fetch).toHaveBeenCalledWith(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/user-1/org/1/cohorts`
+                    `/api/backend/users/user-1/org/1/cohorts`
                 );
             });
         });
@@ -340,7 +340,7 @@ describe('ClientSchoolMemberView', () => {
 
             await waitFor(() => {
                 expect(fetch).toHaveBeenCalledWith(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=1`
+                    `/api/backend/cohorts?org_id=1`
                 );
             });
         });

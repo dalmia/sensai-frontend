@@ -12,6 +12,7 @@ import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner"
 import { Module, ModuleItem, LearningMaterial, Quiz, DripConfig } from "@/types/course";
 import { Milestone } from "@/types";
 import { transformMilestonesToModules } from "@/lib/course";
+import { getWsTicket, buildWsUrl } from "@/lib/wsTicket";
 import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
 import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
@@ -178,7 +179,7 @@ export default function CreateCourse() {
     const fetchCourseDetails = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}?only_published=false`);
+            const response = await fetch(`/api/backend/courses/${courseId}?only_published=false`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch course details: ${response.status}`);
@@ -208,7 +209,7 @@ export default function CreateCourse() {
 
                 // Set up WebSocket connection if any task is being generated
                 if (totalTasksToGenerate && totalTasksToGenerate != generatedTasksCount) {
-                    const ws = setupGenerationWebSocket();
+                    const ws = await setupGenerationWebSocket();
 
                     if (!ws) {
                         throw new Error('Failed to setup WebSocket connection');
@@ -247,7 +248,7 @@ export default function CreateCourse() {
         // Fetch school details to get the slug
         const fetchSchoolDetails = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${schoolId}`);
+                const response = await fetch(`/api/backend/organizations/${schoolId}`);
                 if (response.ok) {
                     const schoolData = await response.json();
                     setSchoolSlug(schoolData.slug);
@@ -501,7 +502,7 @@ export default function CreateCourse() {
     const addLearningMaterial = async (moduleId: string) => {
         try {
             // Make API request to create a new learning material
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/`, {
+            const response = await fetch(`/api/backend/tasks/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -535,7 +536,7 @@ export default function CreateCourse() {
     const addQuiz = async (moduleId: string) => {
         try {
             // Make API request to create a new quiz
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/`, {
+            const response = await fetch(`/api/backend/tasks/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -566,7 +567,7 @@ export default function CreateCourse() {
 
     const addAssignment = async (moduleId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/`, {
+            const response = await fetch(`/api/backend/tasks/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -850,7 +851,7 @@ export default function CreateCourse() {
 
             try {
                 // Make API call to update the milestone on the server
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/milestones/${moduleId}`, {
+                const response = await fetch(`/api/backend/milestones/${moduleId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -941,7 +942,7 @@ export default function CreateCourse() {
             const newTitle = titleRef.current.textContent || "";
 
             // Make a PUT request to update the course name
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}`, {
+            fetch(`/api/backend/courses/${courseId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1120,7 +1121,7 @@ export default function CreateCourse() {
             setCohortError(null);
 
             // First, fetch cohorts that are already assigned to this course
-            const courseCohortResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`);
+            const courseCohortResponse = await fetch(`/api/backend/courses/${courseId}/cohorts`);
             let assignedCohortIds: number[] = [];
 
             if (courseCohortResponse.ok) {
@@ -1130,7 +1131,7 @@ export default function CreateCourse() {
             }
 
             // Then, fetch all cohorts for the organization
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${schoolId}`);
+            const response = await fetch(`/api/backend/cohorts?org_id=${schoolId}`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch cohorts: ${response.status}`);
@@ -1196,7 +1197,7 @@ export default function CreateCourse() {
         dripConfig?: DripConfig
     ) => {
         // Make a single API call with all cohort IDs and drip config
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
+        const response = await fetch(`/api/backend/courses/${courseId}/cohorts`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1236,7 +1237,7 @@ export default function CreateCourse() {
     const fetchCourseCohorts = async () => {
         try {
             setIsLoadingCourseCohorts(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`);
+            const response = await fetch(`/api/backend/courses/${courseId}/cohorts`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch course cohorts: ${response.status}`);
@@ -1261,7 +1262,7 @@ export default function CreateCourse() {
     // Modify the existing removeCohortFromCourse function to handle the actual removal
     const removeCohortFromCourse = async (cohortId: number) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
+            const response = await fetch(`/api/backend/courses/${courseId}/cohorts`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1332,7 +1333,7 @@ export default function CreateCourse() {
         if (origin === 'publish') {
             try {
                 // First, fetch all cohorts for the organization to check if any exist
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${schoolId}`);
+                const response = await fetch(`/api/backend/cohorts?org_id=${schoolId}`);
 
                 if (response.ok) {
                     const allCohorts = await response.json();
@@ -1344,7 +1345,7 @@ export default function CreateCourse() {
                     }
 
                     // Check cohorts already assigned to this course
-                    const courseCohortResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`);
+                    const courseCohortResponse = await fetch(`/api/backend/courses/${courseId}/cohorts`);
                     let assignedCohortIds: number[] = [];
 
                     if (courseCohortResponse.ok) {
@@ -1479,10 +1480,18 @@ export default function CreateCourse() {
         setIsGenerationComplete(false);
     };
 
-    const setupGenerationWebSocket = () => {
+    const setupGenerationWebSocket = async () => {
         // Set up WebSocket connection for real-time updates
         try {
-            const websocketUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^http/, 'ws')}/ws/course/${courseId}/generation`;
+            // The backend rejects unticketed connections, so fetch a short-lived
+            // ticket first. An empty origin means the socket is same-origin.
+            const ticket = await getWsTicket(courseId);
+            if (!ticket) {
+                console.error('Could not obtain websocket ticket');
+                return null;
+            }
+
+            const websocketUrl = buildWsUrl(ticket, courseId);
 
             // Create new WebSocket and store in ref
             wsRef.current = new WebSocket(websocketUrl);
@@ -1533,7 +1542,7 @@ export default function CreateCourse() {
                         setGeneratedTasksCount(0); // Reset counter when starting task generation
 
                         // Now we can start the task generation
-                        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/tasks`, {
+                        fetch(`/api/backend/ai/generate/course/${courseId}/tasks`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1651,9 +1660,9 @@ export default function CreateCourse() {
 
                     console.log('Generation still in progress. Attempting to reconnect...');
                     // Add a small delay before attempting to reconnect
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         // Try to setup a new WebSocket connection
-                        const ws = setupGenerationWebSocket();
+                        const ws = await setupGenerationWebSocket();
                         if (ws) {
                             wsRef.current = ws;
                             console.log('WebSocket reconnection successful');
@@ -1706,7 +1715,7 @@ export default function CreateCourse() {
 
             try {
                 // First, get a presigned URL for the file
-                const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+                const presignedUrlResponse = await fetch(`/api/backend/file/presigned-url/create`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1741,7 +1750,7 @@ export default function CreateCourse() {
                     formData.append('content_type', 'application/pdf');
 
                     // Upload directly to the backend
-                    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                    const uploadResponse = await fetch(`/api/backend/file/upload-local`, {
                         method: 'POST',
                         body: formData
                     });
@@ -1788,7 +1797,7 @@ export default function CreateCourse() {
             setGenerationProgress(["Uploaded reference material", 'Generating course plan']);
 
             // Set up WebSocket connection for real-time updates
-            const ws = setupGenerationWebSocket()
+            const ws = await setupGenerationWebSocket()
 
             if (!ws) {
                 throw new Error('Failed to setup WebSocket connection');
@@ -1800,7 +1809,7 @@ export default function CreateCourse() {
 
             // Make API request to generate course structure
             try {
-                let response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/structure`, {
+                let response = await fetch(`/api/backend/ai/generate/course/${courseId}/structure`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

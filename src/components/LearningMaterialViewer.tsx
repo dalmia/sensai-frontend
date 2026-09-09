@@ -89,7 +89,7 @@ export default function LearningMaterialViewer({
             // Use AbortController to cancel any in-flight requests
             const controller = new AbortController();
 
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`, {
+            fetch(`/api/backend/tasks/${taskId}`, {
                 signal: controller.signal
             })
                 .then(response => {
@@ -258,7 +258,7 @@ export default function LearningMaterialViewer({
             let receivedAnyResponse = false;
 
             // Make the API call
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`, {
+            const response = await fetch(`/api/backend/ai/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -292,18 +292,29 @@ export default function LearningMaterialViewer({
             let accumulatedContent = '';
             const processStream = async () => {
                 try {
+                    // Chunk boundaries fall anywhere, so a JSON line can arrive split
+                    // across two reads. Hold the incomplete tail here.
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
                     while (true) {
                         const { done, value } = await reader.read();
 
+                        let chunks: string[];
+
                         if (done) {
-                            break;
+                            // Flush whatever is left: a final line need not end with a
+                            // newline, and dropping it loses the last message.
+                            buffer += decoder.decode();
+                            chunks = buffer.trim() ? [buffer] : [];
+                            buffer = '';
+                        } else {
+                            buffer += decoder.decode(value, { stream: true });
+
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop() ?? '';
+                            chunks = lines.filter(chunk => chunk.trim() !== '');
                         }
-
-                        // Decode the value to text
-                        const text = new TextDecoder().decode(value);
-
-                        // Split the text into chunks (assuming each chunk is a JSON object)
-                        const chunks = text.split('\n').filter(chunk => chunk.trim() !== '');
 
                         for (const chunk of chunks) {
                             try {
@@ -341,6 +352,10 @@ export default function LearningMaterialViewer({
                             } catch (e) {
                                 console.error('Error parsing JSON chunk:', e);
                             }
+                        }
+
+                        if (done) {
+                            break;
                         }
                     }
                 } catch (error) {

@@ -3,6 +3,10 @@ import { render, waitFor } from '@testing-library/react';
 import AdminLearnerViewPage, { generateMetadata } from '@/app/school/[id]/courses/[courseId]/learner-view/[learnerId]/page';
 
 // Mock Next.js navigation
+jest.mock('@/lib/server/backendFetch', () => ({
+    backendFetch: (path: string, init?: RequestInit) => (global.fetch as jest.Mock)(path, init),
+}));
+
 jest.mock('next/navigation', () => ({
     notFound: jest.fn(() => {
         throw new Error('NEXT_NOT_FOUND');
@@ -76,11 +80,11 @@ describe('AdminLearnerViewPage', () => {
 
             expect(mockFetch).toHaveBeenCalledTimes(2);
             expect(mockFetch).toHaveBeenNthCalledWith(1,
-                'https://test-backend.com/courses/course789',
+                '/courses/course789',
                 { cache: 'no-store' }
             );
             expect(mockFetch).toHaveBeenNthCalledWith(2,
-                'https://test-backend.com/users/learner101',
+                '/users/learner101',
                 { cache: 'no-store' }
             );
             expect(metadata).toEqual({
@@ -210,7 +214,7 @@ describe('AdminLearnerViewPage', () => {
 
             expect(getPublishedCourseModules).toHaveBeenCalledWith('course456');
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/users/learner789',
+                '/users/learner789',
                 { cache: 'no-store' }
             );
             expect(getByText((content, element) => {
@@ -351,7 +355,7 @@ describe('AdminLearnerViewPage', () => {
 
             expect(getPublishedCourseModules).toHaveBeenCalledWith('456');
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/users/789',
+                '/users/789',
                 { cache: 'no-store' }
             );
         });
@@ -380,14 +384,14 @@ describe('AdminLearnerViewPage', () => {
 
             expect(getPublishedCourseModules).toHaveBeenCalledWith('course-uuid-456');
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/users/learner-uuid-789',
+                '/users/learner-uuid-789',
                 { cache: 'no-store' }
             );
         });
     });
 
     describe('Environment variable usage', () => {
-        it('should use BACKEND_URL environment variable', async () => {
+        it('should request the backend path via backendFetch', async () => {
             process.env.BACKEND_URL = 'https://custom-backend.example.com';
 
             const mockCourseData = { name: 'Env Test Course' };
@@ -408,7 +412,7 @@ describe('AdminLearnerViewPage', () => {
             await AdminLearnerViewPage({ params, searchParams });
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://custom-backend.example.com/users/test-learner',
+                '/users/test-learner',
                 { cache: 'no-store' }
             );
         });

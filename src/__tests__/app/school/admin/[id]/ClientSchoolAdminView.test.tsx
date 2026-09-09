@@ -183,7 +183,6 @@ describe('ClientSchoolAdminView', () => {
         }
 
         // Mock environment variables
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
         process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 
         // Mock router
@@ -279,10 +278,10 @@ describe('ClientSchoolAdminView', () => {
                 expect(screen.getByText('Test School')).toBeInTheDocument();
             });
 
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/organizations/1');
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/organizations/1/members');
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/cohorts/?org_id=1');
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/courses/?org_id=1');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/organizations/1');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/organizations/1/members');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/cohorts?org_id=1');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/courses?org_id=1');
         });
 
         it('should display school URL with external link', async () => {
@@ -424,7 +423,7 @@ describe('ClientSchoolAdminView', () => {
                 fireEvent.click(deleteButton);
             });
 
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/courses/?org_id=1');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/courses?org_id=1');
         });
 
         it('should show placeholder when no courses exist', async () => {
@@ -520,7 +519,7 @@ describe('ClientSchoolAdminView', () => {
                 fireEvent.click(deleteButton);
             });
 
-            expect(fetch).toHaveBeenCalledWith('http://localhost:3001/cohorts/?org_id=1');
+            expect(fetch).toHaveBeenCalledWith('/api/backend/cohorts?org_id=1');
         });
     });
 
@@ -595,7 +594,7 @@ describe('ClientSchoolAdminView', () => {
             fireEvent.click(inviteDialogButton);
 
             await waitFor(() => {
-                expect(fetch).toHaveBeenCalledWith('http://localhost:3001/organizations/1/members', {
+                expect(fetch).toHaveBeenCalledWith('/api/backend/organizations/1/members', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1111,7 +1110,7 @@ describe('ClientSchoolAdminView', () => {
 
             await waitFor(() => {
                 expect(fetch).toHaveBeenCalledWith(
-                    'http://localhost:3001/organizations/1/members',
+                    '/api/backend/organizations/1/members',
                     expect.objectContaining({
                         method: 'DELETE',
                         headers: {
@@ -1420,10 +1419,8 @@ describe('ClientSchoolAdminView', () => {
     describe('Environment Variables', () => {
         it('should handle missing environment variables', async () => {
             // Temporarily remove environment variables
-            const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
             const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-            delete process.env.NEXT_PUBLIC_BACKEND_URL;
             delete process.env.NEXT_PUBLIC_APP_URL;
 
             render(<ClientSchoolAdminView id="1" />);
@@ -1432,7 +1429,6 @@ describe('ClientSchoolAdminView', () => {
             expect(screen.getByTestId('header')).toBeInTheDocument();
 
             // Restore environment variables
-            process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
             process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
         });
     });

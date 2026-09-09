@@ -41,7 +41,6 @@ describe('JoinCohortPage', () => {
         jest.clearAllMocks();
 
         // Reset environment variable
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.test.app';
 
         // Mock router
         (useRouter as jest.Mock).mockReturnValue({
@@ -169,7 +168,7 @@ describe('JoinCohortPage', () => {
 
             // Check API call was made correctly
             expect(global.fetch).toHaveBeenCalledWith(
-                'https://api.test.app/cohorts/cohort-123/members',
+                '/api/backend/cohorts/cohort-123/members',
                 {
                     method: 'POST',
                     headers: {

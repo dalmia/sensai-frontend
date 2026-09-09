@@ -76,7 +76,6 @@ describe('CreateSchool Page', () => {
 
         // Reset environment variable
         process.env.NEXT_PUBLIC_APP_URL = 'https://test.app';
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.test.app';
 
         // Mock router
         (useRouter as jest.Mock).mockReturnValue({
@@ -313,7 +312,7 @@ describe('CreateSchool Page', () => {
             // Wait for API call
             await waitFor(() => {
                 expect(global.fetch).toHaveBeenCalledWith(
-                    'https://api.test.app/organizations/',
+                    '/api/backend/organizations/',
                     {
                         method: 'POST',
                         headers: {

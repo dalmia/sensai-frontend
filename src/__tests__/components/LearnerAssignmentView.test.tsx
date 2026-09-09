@@ -1359,7 +1359,7 @@ describe('LearnerAssignmentView', () => {
             await waitFor(() => {
                 const calls = (global.fetch as any).mock.calls;
                 const storeHistoryCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 expect(storeHistoryCall).toBeDefined();
             }, { timeout: 5000 });
@@ -1387,7 +1387,7 @@ describe('LearnerAssignmentView', () => {
             await waitFor(() => {
                 const calls = (global.fetch as any).mock.calls;
                 const storeCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 if (storeCall) {
                     const body = JSON.parse(storeCall[1].body);
@@ -1429,7 +1429,7 @@ describe('LearnerAssignmentView', () => {
             await waitFor(() => {
                 const calls = (global.fetch as any).mock.calls;
                 const storeCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 if (storeCall) {
                     const body = JSON.parse(storeCall[1].body);
@@ -1491,7 +1491,7 @@ describe('LearnerAssignmentView', () => {
             await waitFor(() => {
                 const calls = (global.fetch as any).mock.calls;
                 const storeCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 if (storeCall) {
                     const body = JSON.parse(storeCall[1].body);
@@ -1529,7 +1529,7 @@ describe('LearnerAssignmentView', () => {
                 // Verify storeChatHistory was NOT called (should only have 3 calls: initial fetch, chat history, streaming)
                 const calls = (global.fetch as any).mock.calls;
                 const storeHistoryCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 expect(storeHistoryCall).toBeUndefined();
             }, { timeout: 5000 });
@@ -1565,7 +1565,7 @@ describe('LearnerAssignmentView', () => {
                 // Verify storeChatHistory was NOT called
                 const calls = (global.fetch as any).mock.calls;
                 const storeHistoryCall = calls.find((call: any) =>
-                    call[0]?.includes('/chat/?userId=')
+                    call[0]?.includes('/chat?userId=')
                 );
                 expect(storeHistoryCall).toBeUndefined();
             }, { timeout: 5000 });

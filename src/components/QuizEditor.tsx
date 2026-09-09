@@ -171,7 +171,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             if (schoolId) {
                 setIsLoadingScorecards(true);
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/?org_id=${schoolId}`);
+                    const response = await fetch(`/api/backend/scorecards?org_id=${schoolId}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch school scorecards');
                     }
@@ -219,7 +219,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Only fetch if we have a taskId, the status is published, and we haven't already fetched
             if (taskId && !hasFetchedData) {
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`);
+                    const response = await fetch(`/api/backend/tasks/${taskId}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch task details');
                     }
@@ -1085,7 +1085,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             });
 
             // Make POST request to update the quiz
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
+            const response = await fetch(`/api/backend/tasks/${taskId}/quiz`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1176,7 +1176,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             });
 
             // Make PUT request to update the quiz content, keeping the same status
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
+            const response = await fetch(`/api/backend/tasks/${taskId}/quiz`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -112,7 +112,6 @@ describe('AssignmentEditor', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (global.fetch as any) = jest.fn();
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:8001';
         // Reset useAuth mock to default
         const { useAuth } = require('@/lib/auth');
         (useAuth as jest.Mock).mockReturnValue({ user: { id: 'u1' } });

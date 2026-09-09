@@ -54,7 +54,6 @@ describe('ScorecardManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (global.fetch as any) = jest.fn();
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:8001';
     });
 
     it('revert and delete flow updates state and onScorecardChange', () => {

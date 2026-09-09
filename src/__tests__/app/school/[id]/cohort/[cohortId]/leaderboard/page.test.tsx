@@ -3,6 +3,10 @@ import { render, waitFor } from '@testing-library/react';
 import LeaderboardPage, { metadata } from '@/app/school/[id]/cohort/[cohortId]/leaderboard/page';
 
 // Mock Next.js cookies
+jest.mock('@/lib/server/backendFetch', () => ({
+    backendFetch: (path: string, init?: RequestInit) => (global.fetch as jest.Mock)(path, init),
+}));
+
 jest.mock('next/headers', () => ({
     cookies: jest.fn(() => ({
         toString: jest.fn(() => 'mock-cookie-string')
@@ -76,7 +80,7 @@ describe('LeaderboardPage', () => {
             const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/cohort456',
+                '/cohorts/cohort456',
                 {
                     headers: {
                         Cookie: 'mock-cookie-string'
@@ -105,7 +109,7 @@ describe('LeaderboardPage', () => {
             const { getByTestId } = render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/invalid-cohort',
+                '/cohorts/invalid-cohort',
                 {
                     headers: {
                         Cookie: 'mock-cookie-string'
@@ -242,7 +246,7 @@ describe('LeaderboardPage', () => {
             render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/456',
+                '/cohorts/456',
                 expect.any(Object)
             );
             expect(mockClientLeaderboardView).toHaveBeenCalledWith(
@@ -263,7 +267,7 @@ describe('LeaderboardPage', () => {
             render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/cohort-uuid-123-456',
+                '/cohorts/cohort-uuid-123-456',
                 expect.any(Object)
             );
             expect(mockClientLeaderboardView).toHaveBeenCalledWith(
@@ -284,7 +288,7 @@ describe('LeaderboardPage', () => {
             render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/cohort_123-abc',
+                '/cohorts/cohort_123-abc',
                 expect.any(Object)
             );
         });
@@ -342,7 +346,7 @@ describe('LeaderboardPage', () => {
             await LeaderboardPage({ params, searchParams: {} });
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://test-backend.com/cohorts/cohort456',
+                '/cohorts/cohort456',
                 {
                     headers: {
                         Cookie: mockCookieString
@@ -417,7 +421,7 @@ describe('LeaderboardPage', () => {
     });
 
     describe('Environment variable usage', () => {
-        it('should use BACKEND_URL environment variable', async () => {
+        it('should request the backend path via backendFetch', async () => {
             process.env.BACKEND_URL = 'https://custom-backend.example.com';
 
             mockFetch.mockResolvedValueOnce({
@@ -429,7 +433,7 @@ describe('LeaderboardPage', () => {
             render(await LeaderboardPage({ params, searchParams: {} }));
 
             expect(mockFetch).toHaveBeenCalledWith(
-                'https://custom-backend.example.com/cohorts/test-cohort',
+                '/cohorts/test-cohort',
                 expect.any(Object)
             );
         });

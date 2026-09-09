@@ -160,7 +160,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should create a batch successfully', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         const mockFetchResponse = { ok: true, json: jest.fn().mockResolvedValue({ success: true }) } as any;
         (global.fetch as jest.Mock).mockResolvedValueOnce(mockFetchResponse);
 
@@ -196,7 +195,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should enter edit mode, save changes, and call onBatchUpdated', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         const updatedName = 'Updated Batch Name';
         const mockUpdatedBatch = { ...batch, name: updatedName };
         const mockFetchResponse = { ok: true, json: jest.fn().mockResolvedValue(mockUpdatedBatch) } as any;
@@ -300,7 +298,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should create a batch when pressing Enter key in name input', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         const mockFetchResponse = { ok: true, json: jest.fn().mockResolvedValue({ success: true }) } as any;
         (global.fetch as jest.Mock).mockResolvedValueOnce(mockFetchResponse);
 
@@ -374,7 +371,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should log error when batch creation fails (response not ok)', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 });
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
@@ -401,7 +397,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should show validation errors and prevent save when name is empty and no learners selected in edit mode', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         render(
             <CreateBatchDialog
@@ -639,7 +634,6 @@ describe('CreateBatchDialog', () => {
     });
 
     it('should fallback to local batch update when API returns no JSON body', async () => {
-        process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost';
         const updatedName = 'Local Updated';
 
         const mockFetchResponse = {

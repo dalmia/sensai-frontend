@@ -7,7 +7,6 @@ import React from 'react';
 global.fetch = jest.fn();
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
 
 // Mock DripPublishingConfig with a controllable validation function
 let mockValidateDripConfig = jest.fn<string | null, []>(() => null);
@@ -153,7 +152,7 @@ describe('CreateCohortDialog Component', () => {
         // Verify API call
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://test-api.example.com/cohorts/',
+                '/api/backend/cohorts/',
                 {
                     method: 'POST',
                     headers: {
@@ -194,7 +193,7 @@ describe('CreateCohortDialog Component', () => {
         // Verify API call with null org_id
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith(
-                'http://test-api.example.com/cohorts/',
+                '/api/backend/cohorts/',
                 {
                     method: 'POST',
                     headers: {

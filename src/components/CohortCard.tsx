@@ -43,7 +43,7 @@ export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardPro
         setDeleteError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohort.id}`, {
+            const response = await fetch(`/api/backend/cohorts/${cohort.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

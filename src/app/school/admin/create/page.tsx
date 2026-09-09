@@ -119,7 +119,7 @@ export default function CreateSchool() {
 
         try {
             // Create the school via API
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/`, {
+            const response = await fetch(`/api/backend/organizations/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

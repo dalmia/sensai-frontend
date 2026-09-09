@@ -124,7 +124,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use AbortController to cancel any in-flight requests
             const controller = new AbortController();
 
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`, {
+            fetch(`/api/backend/tasks/${taskId}`, {
                 signal: controller.signal
             })
                 .then(response => {
@@ -212,7 +212,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             };
 
             // Make POST request to publish the learning material content
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
+            const response = await fetch(`/api/backend/tasks/${taskId}/learning_material`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const currentScheduledPublishAt = scheduledPublishAt !== undefined ? scheduledPublishAt : (taskData?.scheduled_publish_at || null);
 
             // Make POST request to update the learning material content, keeping the same status
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
+            const response = await fetch(`/api/backend/tasks/${taskId}/learning_material`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -399,6 +399,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 <div
                     data-testid="editor-loading-spinner"
                     className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"
+                    style={{ width: "3rem", height: "3rem", flexShrink: 0 }}
                     aria-label="Loading..."
                 >
                 </div>

@@ -15,7 +15,6 @@ jest.mock('@/lib/utils/indexedDB', () => ({
 
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_BACKEND_URL = 'https://api.example.com';
 
 // Add TextEncoder/TextDecoder polyfill
 const { TextEncoder, TextDecoder } = require('util');

@@ -79,28 +79,28 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             setLoading(true);
             try {
                 // Fetch basic school info
-                const schoolResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}`);
+                const schoolResponse = await fetch(`/api/backend/organizations/${id}`);
                 if (!schoolResponse.ok) {
                     throw new Error(`API error: ${schoolResponse.status}`);
                 }
                 const schoolData = await schoolResponse.json();
 
                 // Fetch members separately
-                const membersResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`);
+                const membersResponse = await fetch(`/api/backend/organizations/${id}/members`);
                 if (!membersResponse.ok) {
                     throw new Error(`API error: ${membersResponse.status}`);
                 }
                 const membersData = await membersResponse.json();
 
                 // Fetch cohorts separately
-                const cohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${id}`);
+                const cohortsResponse = await fetch(`/api/backend/cohorts?org_id=${id}`);
                 if (!cohortsResponse.ok) {
                     throw new Error(`API error: ${cohortsResponse.status}`);
                 }
                 const cohortsData = await cohortsResponse.json();
 
                 // Fetch courses separately
-                const coursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/?org_id=${id}`);
+                const coursesResponse = await fetch(`/api/backend/courses?org_id=${id}`);
                 if (!coursesResponse.ok) {
                     throw new Error(`API error: ${coursesResponse.status}`);
                 }
@@ -191,7 +191,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const handleInviteMembers = async (emails: string[]) => {
         try {
             // Make API call to invite members
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`, {
+            const response = await fetch(`/api/backend/organizations/${id}/members`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             }
 
             // Refresh school data to get updated members list
-            const membersResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`);
+            const membersResponse = await fetch(`/api/backend/organizations/${id}/members`);
             if (!membersResponse.ok) {
                 throw new Error('Failed to fetch updated members');
             }
@@ -287,7 +287,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
         try {
             // Make API call to delete member(s)
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`, {
+            const response = await fetch(`/api/backend/organizations/${id}/members`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -302,7 +302,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             }
 
             // Refresh school data to get updated members list
-            const membersResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`);
+            const membersResponse = await fetch(`/api/backend/organizations/${id}/members`);
             if (!membersResponse.ok) {
                 throw new Error('Failed to fetch updated members');
             }
@@ -422,7 +422,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const handleCohortDelete = async (cohortId: number) => {
         try {
             // Refresh school data to get updated cohorts list
-            const cohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${id}`);
+            const cohortsResponse = await fetch(`/api/backend/cohorts?org_id=${id}`);
             if (!cohortsResponse.ok) {
                 throw new Error('Failed to fetch updated cohorts');
             }
@@ -450,7 +450,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const handleCourseDelete = async (courseId: string | number) => {
         try {
             // Refresh school data to get updated courses list
-            const coursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/?org_id=${id}`);
+            const coursesResponse = await fetch(`/api/backend/courses?org_id=${id}`);
             if (!coursesResponse.ok) {
                 throw new Error('Failed to fetch updated courses');
             }
