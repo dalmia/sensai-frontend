@@ -64,8 +64,6 @@ describe("parseImportCsv", () => {
             input_type: "text",
             response_type: "chat",
             answer: null,
-            max_attempts: null,
-            is_feedback_shown: true,
         });
     });
 
@@ -143,7 +141,7 @@ describe("parseImportCsv", () => {
                 "Missing Module,quiz,Bad module,,Q,,,,,,",
                 "New Module,sometype,Bad type,,,,,,,,",
                 "New Module,quiz,,,Q,,,,,,",
-                "New Module,quiz,Bad attempts,,Q,,,,,0,"
+                "New Module,quiz,Bad input,,Q,objective,video"
             ),
             MODULES
         );
@@ -154,8 +152,17 @@ describe("parseImportCsv", () => {
             { line: 3, title: "Bad module", reason: 'Module "Missing Module" does not exist in this course' },
             { line: 4, title: "Bad type", reason: 'Type "sometype" is not learning material or quiz' },
             { line: 5, title: "(untitled)", reason: "Title is empty" },
-            { line: 6, title: "Bad attempts", reason: 'Max attempts "0" is not a whole number above zero' },
+            { line: 6, title: "Bad input", reason: 'Input type "video" is not text, code or audio' },
         ]);
+    });
+
+    it("does not send attempts or feedback - the server derives them", () => {
+        const question = parseImportCsv(
+            csv(header, "New Module,quiz,A,,Q,objective,text,exam"), MODULES
+        ).items[0].questions[0] as unknown as Record<string, unknown>;
+
+        expect("max_attempts" in question).toBe(false);
+        expect("is_feedback_shown" in question).toBe(false);
     });
 
     it("rejects an ambiguous module name rather than guessing", () => {

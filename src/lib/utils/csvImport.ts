@@ -13,8 +13,6 @@ export interface BulkQuestion {
     input_type: "text" | "code" | "audio";
     response_type: "chat" | "exam";
     coding_languages: string[] | null;
-    max_attempts: number | null;
-    is_feedback_shown: boolean;
 }
 
 export interface BulkTaskItem {
@@ -50,8 +48,6 @@ export const TEMPLATE_HEADERS = [
     "response_type",
     "answer",
     "coding_languages",
-    "max_attempts",
-    "is_feedback_shown",
 ];
 
 const TYPE_ALIASES: Record<string, "learning_material" | "quiz"> = {
@@ -68,8 +64,6 @@ const QUESTION_TYPES = ["objective", "subjective"];
 const INPUT_TYPES = ["text", "code", "audio"];
 const RESPONSE_TYPES = ["chat", "exam"];
 const CODING_LANGUAGES = ["html", "css", "javascript", "nodejs", "python", "react", "sql"];
-const TRUTHY = ["true", "yes", "y", "1"];
-const FALSY = ["false", "no", "n", "0"];
 
 
 export const parseCsv = (text: string): string[][] => {
@@ -131,19 +125,11 @@ const parseLanguages = (value: string): string[] =>
         .map((language) => language.trim().toLowerCase())
         .filter(Boolean);
 
-const parseBoolean = (value: string): boolean | null => {
-    const normalised = value.trim().toLowerCase();
-    if (!normalised) return true;
-    if (TRUTHY.includes(normalised)) return true;
-    if (FALSY.includes(normalised)) return false;
-    return null;
-};
-
 const buildQuestion = (row: Record<string, string>): BulkQuestion => {
     const questionText = row.question?.trim() ?? "";
     const answerText = row.answer?.trim() ?? "";
-    const maxAttempts = row.max_attempts?.trim() ?? "";
     const languages = parseLanguages(row.coding_languages ?? "");
+    const responseType = (row.response_type?.trim().toLowerCase() || "chat") as BulkQuestion["response_type"];
 
     const blocks = markdownToBlocks(questionText);
     // A table block's content is not inline content, so it has no title text.
@@ -157,10 +143,8 @@ const buildQuestion = (row: Record<string, string>): BulkQuestion => {
         answer: answerText ? markdownToBlocks(answerText) : null,
         type: (row.question_type?.trim().toLowerCase() || "objective") as BulkQuestion["type"],
         input_type: (row.input_type?.trim().toLowerCase() || "text") as BulkQuestion["input_type"],
-        response_type: (row.response_type?.trim().toLowerCase() || "chat") as BulkQuestion["response_type"],
+        response_type: responseType,
         coding_languages: languages.length > 0 ? languages : null,
-        max_attempts: maxAttempts ? Number(maxAttempts) : null,
-        is_feedback_shown: parseBoolean(row.is_feedback_shown ?? "") ?? true,
     };
 };
 
@@ -201,12 +185,6 @@ const rowError = (row: Record<string, string>, modulesByName: Map<string, Import
         );
         if (unknownLanguage) return `Language "${unknownLanguage}" is not one of ${CODING_LANGUAGES.join(", ")}`;
 
-        const maxAttempts = row.max_attempts?.trim() ?? "";
-        if (maxAttempts && (!/^\d+$/.test(maxAttempts) || Number(maxAttempts) < 1))
-            return `Max attempts "${maxAttempts}" is not a whole number above zero`;
-
-        if (parseBoolean(row.is_feedback_shown ?? "") === null)
-            return `Show feedback "${row.is_feedback_shown.trim()}" is not true or false`;
     }
 
     return null;
@@ -291,11 +269,9 @@ const GUIDE = [
     "- `question` - the question text, written in Markdown",
     "- `question_type` - `objective` or `subjective`, defaults to `objective`",
     "- `input_type` - `text`, `code` or `audio`, defaults to `text`",
-    "- `response_type` - `chat` for practice with feedback, or `exam`, defaults to `chat`",
+    "- `response_type` - `chat` for practice with feedback, or `exam`, defaults to `chat`. Attempt limits and feedback follow from this, exactly as they do in the editor",
     "- `answer` - the correct answer, also Markdown",
     "- `coding_languages` - only for `code` questions, separated by `|`",
-    "- `max_attempts` - a whole number above zero, or leave it empty",
-    "- `is_feedback_shown` - `true` or `false`, defaults to `true`",
     "",
     "## Two rules worth knowing",
     "",
@@ -347,13 +323,13 @@ export const buildTemplateCsv = (modules: ImportModule[]): string => {
 
     const rows = [
         TEMPLATE_HEADERS,
-        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", "", "", ""],
+        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", ""],
         [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", "", "", ""],
-        [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", "", "2", "true"],
-        [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", "", "", ""],
-        [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", "", "", "true"],
-        [example, "quiz", "A coding question", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript", "3", "false"],
-        [example, "quiz", "A spoken question", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", "", "", "true"],
+        [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", ""],
+        [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", ""],
+        [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", ""],
+        [example, "quiz", "A coding question", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript"],
+        [example, "quiz", "A spoken question", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", ""],
     ];
 
     return rows.map((cells) => cells.map(escape).join(",")).join("\n");
