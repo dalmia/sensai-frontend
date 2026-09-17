@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import BulkImportDialog from "@/components/BulkImportDialog";
@@ -152,8 +154,24 @@ describe("BulkImportDialog", () => {
     });
 
     it("matches the cohort invite dialog's primary button styling", () => {
+        // Read out of the component this dialog is meant to match, so a restyle
+        // there fails here instead of letting the two drift apart silently.
+        const source = fs.readFileSync(
+            path.join(process.cwd(), "src/components/CohortMemberManagement.tsx"),
+            "utf8"
+        );
+        const cohortButton = source
+            .split("\n")
+            .find((line) => line.includes("bg-[#e5e7eb]"))!
+            .trim()
+            .replace(/^className="/, "")
+            .replace(/"$/, "");
+
         renderDialog();
-        expect(importButton().className).toContain("dark:bg-[#ffffff]");
-        expect(importButton().className).toContain("rounded-full");
+        const ours = importButton().className;
+        cohortButton
+            .split(/\s+/)
+            .filter((c) => c && !c.startsWith("disabled:"))
+            .forEach((cls) => expect(ours).toContain(cls));
     });
 });

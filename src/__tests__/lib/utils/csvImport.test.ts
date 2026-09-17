@@ -148,12 +148,11 @@ describe("parseImportCsv", () => {
         );
 
         expect(result.items).toHaveLength(1);
-        expect(result.totalRows).toBe(5);
         expect(result.skipped).toEqual([
-            { line: 3, title: "Bad module", reason: 'Module "Missing Module" does not exist in this course' },
-            { line: 4, title: "Bad type", reason: 'Type "sometype" is not learning material or quiz' },
-            { line: 5, title: "(untitled)", reason: "Title is empty" },
-            { line: 6, title: "Bad input", reason: 'Input type "video" is not text, code or audio' },
+            { line: 3, reason: 'Module "Missing Module" does not exist in this course' },
+            { line: 4, reason: 'Type "sometype" is not learning material or quiz' },
+            { line: 5, reason: "Title is empty" },
+            { line: 6, reason: 'Input type "video" is not text, code or audio' },
         ]);
     });
 
@@ -181,7 +180,7 @@ describe("parseImportCsv", () => {
     });
 
     it("returns nothing for an empty file", () => {
-        expect(parseImportCsv("", MODULES)).toEqual({ items: [], skipped: [], totalRows: 0 });
+        expect(parseImportCsv("", MODULES)).toEqual({ items: [], skipped: [] });
     });
 
     it("skips a quiz row with no question rather than importing an empty quiz", () => {
@@ -191,7 +190,7 @@ describe("parseImportCsv", () => {
         );
 
         expect(result.items).toEqual([]);
-        expect(result.skipped).toEqual([{ line: 2, title: "Empty", reason: "Question is empty" }]);
+        expect(result.skipped).toEqual([{ line: 2, reason: "Question is empty" }]);
     });
 
     it("reads columns by header name, not position", () => {
@@ -240,6 +239,12 @@ describe("buildTemplateCsv", () => {
         expect(guide.some((b: any) => b.children?.length > 0)).toBe(true);
     });
 
+    it("is rectangular, so a spreadsheet shows no phantom columns", () => {
+        parseCsv(buildTemplateCsv(MODULES)).forEach((row) =>
+            expect(row).toHaveLength(TEMPLATE_HEADERS.length)
+        );
+    });
+
     it("falls back to a placeholder module when the course has none", () => {
         expect(buildTemplateCsv([])).toContain("Module 1");
     });
@@ -249,10 +254,10 @@ describe("groupSkipped", () => {
     it("collapses identical reasons, most frequent first", () => {
         expect(
             groupSkipped([
-                { line: 9, title: "a", reason: "Title is empty" },
-                { line: 3, title: "b", reason: "Module is empty" },
-                { line: 5, title: "c", reason: "Module is empty" },
-                { line: 4, title: "d", reason: "Module is empty" },
+                { line: 9, reason: "Title is empty" },
+                { line: 3, reason: "Module is empty" },
+                { line: 5, reason: "Module is empty" },
+                { line: 4, reason: "Module is empty" },
             ])
         ).toEqual([
             { reason: "Module is empty", lines: [3, 5, 4] },
@@ -263,8 +268,8 @@ describe("groupSkipped", () => {
     it("breaks ties by first row so the order is stable", () => {
         expect(
             groupSkipped([
-                { line: 8, title: "a", reason: "B" },
-                { line: 2, title: "b", reason: "A" },
+                { line: 8, reason: "B" },
+                { line: 2, reason: "A" },
             ]).map((g) => g.reason)
         ).toEqual(["A", "B"]);
     });

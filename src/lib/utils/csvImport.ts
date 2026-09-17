@@ -25,14 +25,12 @@ export interface BulkTaskItem {
 
 export interface SkippedRow {
     line: number;
-    title: string;
     reason: string;
 }
 
 export interface ParsedImport {
     items: BulkTaskItem[];
     skipped: SkippedRow[];
-    totalRows: number;
 }
 
 export const MAX_IMPORT_TASKS = 500;
@@ -207,7 +205,7 @@ export const groupSkipped = (
 export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImport => {
     const rows = parseCsv(text);
 
-    if (rows.length === 0) return { items: [], skipped: [], totalRows: 0 };
+    if (rows.length === 0) return { items: [], skipped: [] };
 
     const headers = rows[0].map((header) => header.trim().toLowerCase());
     const missing = ["module", "type", "title"].filter((header) => !headers.includes(header));
@@ -239,7 +237,7 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
         const reason = rowError(row, modulesByName);
 
         if (reason) {
-            skipped.push({ line, title: title || "(untitled)", reason });
+            skipped.push({ line, reason });
             return;
         }
 
@@ -266,7 +264,7 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
         previous = { key, item };
     });
 
-    return { items, skipped, totalRows: rows.length - 1 };
+    return { items, skipped };
 };
 
 const GUIDE = [
@@ -338,7 +336,7 @@ export const buildTemplateCsv = (modules: ImportModule[]): string => {
     const rows = [
         TEMPLATE_HEADERS,
         [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", ""],
-        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", "", "", ""],
+        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", ""],
         [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", ""],
         [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", ""],
         [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", ""],
