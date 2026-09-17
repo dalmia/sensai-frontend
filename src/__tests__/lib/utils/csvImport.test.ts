@@ -2,6 +2,7 @@ import {
     parseCsv,
     parseImportCsv,
     buildTemplateCsv,
+    groupSkipped,
     TEMPLATE_HEADERS,
 } from "@/lib/utils/csvImport";
 import { markdownToBlocks } from "@/lib/utils/markdownToBlocks";
@@ -241,5 +242,34 @@ describe("buildTemplateCsv", () => {
 
     it("falls back to a placeholder module when the course has none", () => {
         expect(buildTemplateCsv([])).toContain("Module 1");
+    });
+});
+
+describe("groupSkipped", () => {
+    it("collapses identical reasons, most frequent first", () => {
+        expect(
+            groupSkipped([
+                { line: 9, title: "a", reason: "Title is empty" },
+                { line: 3, title: "b", reason: "Module is empty" },
+                { line: 5, title: "c", reason: "Module is empty" },
+                { line: 4, title: "d", reason: "Module is empty" },
+            ])
+        ).toEqual([
+            { reason: "Module is empty", lines: [3, 5, 4] },
+            { reason: "Title is empty", lines: [9] },
+        ]);
+    });
+
+    it("breaks ties by first row so the order is stable", () => {
+        expect(
+            groupSkipped([
+                { line: 8, title: "a", reason: "B" },
+                { line: 2, title: "b", reason: "A" },
+            ]).map((g) => g.reason)
+        ).toEqual(["A", "B"]);
+    });
+
+    it("returns nothing for nothing", () => {
+        expect(groupSkipped([])).toEqual([]);
     });
 });

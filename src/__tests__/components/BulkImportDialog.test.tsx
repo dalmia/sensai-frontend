@@ -3,30 +3,25 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import BulkImportDialog from "@/components/BulkImportDialog";
 
 const MODULES = [{ id: "42", title: "New Module" }];
-const HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,max_attempts,is_feedback_shown";
+const HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,coding_languages";
 
 const renderDialog = (props = {}) => {
     const onImported = jest.fn();
     const onClose = jest.fn();
     const utils = render(
-        <BulkImportDialog
-            open
-            onClose={onClose}
-            courseId="388"
-            modules={MODULES}
-            onImported={onImported}
-            {...props}
-        />
+        <BulkImportDialog open onClose={onClose} courseId="388" modules={MODULES} onImported={onImported} {...props} />
     );
     return { ...utils, onImported, onClose };
 };
 
-const upload = async (content: string) => {
+const choose = (content: string) => {
     const file = new File([content], "tasks.csv", { type: "text/csv" });
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    fireEvent.change(input, { target: { files: [file] } });
-    await screen.findByText(/ready to import/);
+    fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
+        target: { files: [file] },
+    });
 };
+
+const importButton = () => screen.getByRole("button", { name: "Import tasks" });
 
 beforeEach(() => {
     global.fetch = jest.fn();
@@ -44,44 +39,62 @@ describe("BulkImportDialog", () => {
 
     it("disables import until a usable file is chosen", () => {
         renderDialog();
-        expect(screen.getByRole("button", { name: /^Import$/ })).toBeDisabled();
+        expect(importButton()).toBeDisabled();
     });
 
-    it("counts importable rows and lists the skipped ones with a reason", async () => {
+    it("leads with what will be imported, not with what failed", async () => {
         renderDialog();
-        await upload(
-            [HEADER, "New Module,learning_material,Good,Body,,,,,,,", "Nope,quiz,Bad,,Q,,,,,,"].join("\n")
-        );
+        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,Q"].join("\n"));
 
-        expect(screen.getByText(/1 of 2 rows ready to import, 1 will be skipped/)).toBeInTheDocument();
-        expect(screen.getByText(/does not exist in this course/)).toBeInTheDocument();
+        expect(await screen.findByText("1 task ready to import")).toBeInTheDocument();
+        expect(screen.getByText("1 row skipped")).toBeInTheDocument();
+        expect(screen.getByText('Module "Nope" does not exist in this course')).toBeInTheDocument();
         expect(screen.getByText("Row 3")).toBeInTheDocument();
     });
 
-    it("reports how many were imported and what was skipped", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            json: async () => ({ created: [{ index: 0, task_id: 1, milestone_id: 42, ordering: 0 }] }),
-        });
-
-        const { onImported } = renderDialog();
-        await upload(
-            [HEADER, "New Module,learning_material,Good,Body,,,,,,,", "Nope,quiz,Bad,,Q,,,,,,"].join("\n")
+    it("groups repeated reasons instead of repeating them per row", async () => {
+        renderDialog();
+        choose(
+            [
+                HEADER,
+                "New Module,learning_material,Good,Body",
+                "Nope,quiz,A,,Q",
+                "Nope,quiz,B,,Q",
+                "Nope,quiz,C,,Q",
+                "New Module,quiz,,,Q",
+            ].join("\n")
         );
 
-        fireEvent.click(screen.getByRole("button", { name: /Import 1 task/ }));
+        expect(await screen.findByText("4 rows skipped")).toBeInTheDocument();
+        // one entry for the three identical reasons, with a count and the row list
+        expect(screen.getAllByText('Module "Nope" does not exist in this course')).toHaveLength(1);
+        expect(screen.getByText("×3")).toBeInTheDocument();
+        expect(screen.getByText("Rows 3, 4, 5")).toBeInTheDocument();
+        expect(screen.getByText("Title is empty")).toBeInTheDocument();
+    });
 
-        await screen.findByText(/1 task added as a draft/);
-        expect(screen.getByText(/1 row was skipped/)).toBeInTheDocument();
+    it("reports how many were imported and what was skipped", async () => {
+        (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ created: [1] }) });
+
+        const { onImported } = renderDialog();
+        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,Q"].join("\n"));
+        await screen.findByText("1 task ready to import");
+
+        fireEvent.click(importButton());
+
+        expect(await screen.findByText("1 task added as a draft")).toBeInTheDocument();
+        expect(screen.getByText("1 row skipped")).toBeInTheDocument();
         expect(onImported).toHaveBeenCalled();
+        expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
     });
 
     it("posts only the valid rows to the bulk endpoint", async () => {
         (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ created: [] }) });
 
         renderDialog();
-        await upload([HEADER, "New Module,quiz,Check,,Q1,,,,,,", "Nope,quiz,Bad,,Q,,,,,,"].join("\n"));
-        fireEvent.click(screen.getByRole("button", { name: /Import 1 task/ }));
+        choose([HEADER, "New Module,quiz,Check,,Q1", "Nope,quiz,Bad,,Q"].join("\n"));
+        await screen.findByText("1 task ready to import");
+        fireEvent.click(importButton());
 
         await waitFor(() => expect(global.fetch).toHaveBeenCalled());
         const [url, options] = (global.fetch as jest.Mock).mock.calls[0];
@@ -98,38 +111,38 @@ describe("BulkImportDialog", () => {
         });
 
         const { onImported } = renderDialog();
-        await upload([HEADER, "New Module,quiz,Check,,Q1,,,,,,"].join("\n"));
-        fireEvent.click(screen.getByRole("button", { name: /Import 1 task/ }));
+        choose([HEADER, "New Module,quiz,Check,,Q1"].join("\n"));
+        await screen.findByText("1 task ready to import");
+        fireEvent.click(importButton());
 
-        await screen.findByText(/no longer part of this course/);
+        expect(await screen.findByText(/no longer part of this course/)).toBeInTheDocument();
         expect(onImported).not.toHaveBeenCalled();
     });
 
     it("explains a file with the wrong columns instead of importing it", async () => {
         renderDialog();
-        const file = new File(["name,notes\na,b"], "wrong.csv", { type: "text/csv" });
-        fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
-            target: { files: [file] },
-        });
+        choose("name,notes\na,b");
 
-        await screen.findByText(/missing the module, type, title columns/);
-        expect(screen.getByRole("button", { name: /^Import$/ })).toBeDisabled();
+        expect(await screen.findByText(/missing the module, type, title columns/)).toBeInTheDocument();
+        expect(importButton()).toBeDisabled();
     });
 
     it("says so when no row can be imported", async () => {
         renderDialog();
-        await upload([HEADER, "Nope,quiz,Bad,,Q,,,,,,"].join("\n"));
-        expect(screen.getByText("No row in this file can be imported")).toBeInTheDocument();
+        choose([HEADER, "Nope,quiz,Bad,,Q"].join("\n"));
+
+        expect(await screen.findByText("No row in this file can be imported")).toBeInTheDocument();
+        expect(importButton()).toBeDisabled();
     });
 
-    it("truncates a very long title but keeps it reachable on hover", async () => {
-        const long = "x".repeat(256);
+    it("refuses a file above the per-import cap before sending it", async () => {
+        const rows = Array.from({ length: 501 }, (_, i) => `New Module,learning_material,T${i},body`);
         renderDialog();
-        await upload([HEADER, `New Module,quiz,${long},,Q`].join("\n"));
+        choose([HEADER, ...rows].join("\n"));
 
-        const cell = screen.getByTitle(long);
-        expect(cell).toHaveClass("truncate");
-        expect(screen.getByText("Title is longer than 255 characters")).toBeInTheDocument();
+        expect(await screen.findByText(/Import at most 500 at a time/)).toBeInTheDocument();
+        expect(global.fetch).not.toHaveBeenCalled();
+        expect(importButton()).toBeDisabled();
     });
 
     it("offers a template download", () => {
@@ -137,21 +150,10 @@ describe("BulkImportDialog", () => {
         fireEvent.click(screen.getByRole("button", { name: /Download template/ }));
         expect(global.URL.createObjectURL).toHaveBeenCalled();
     });
-});
 
-describe("BulkImportDialog limits", () => {
-    it("refuses a file above the per-import cap before sending it", async () => {
-        const header = "module,type,title,content";
-        const rows = Array.from({ length: 501 }, (_, i) => `New Module,learning_material,T${i},body`);
+    it("matches the cohort invite dialog's primary button styling", () => {
         renderDialog();
-
-        const file = new File([[header, ...rows].join("\n")], "big.csv", { type: "text/csv" });
-        fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
-            target: { files: [file] },
-        });
-
-        await screen.findByText(/Import at most 500 at a time/);
-        expect(global.fetch).not.toHaveBeenCalled();
-        expect(screen.getByRole("button", { name: /^Import$/ })).toBeDisabled();
+        expect(importButton().className).toContain("dark:bg-[#ffffff]");
+        expect(importButton().className).toContain("rounded-full");
     });
 });

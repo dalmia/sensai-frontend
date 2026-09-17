@@ -190,6 +190,20 @@ const rowError = (row: Record<string, string>, modulesByName: Map<string, Import
     return null;
 };
 
+export const groupSkipped = (
+    skipped: SkippedRow[]
+): { reason: string; lines: number[] }[] => {
+    const byReason = new Map<string, number[]>();
+
+    skipped.forEach(({ reason, line }) => {
+        byReason.set(reason, [...(byReason.get(reason) ?? []), line]);
+    });
+
+    return [...byReason.entries()]
+        .map(([reason, lines]) => ({ reason, lines }))
+        .sort((a, b) => b.lines.length - a.lines.length || a.lines[0] - b.lines[0]);
+};
+
 export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImport => {
     const rows = parseCsv(text);
 
