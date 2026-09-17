@@ -182,6 +182,8 @@ const rowError = (row: Record<string, string>, modulesByName: Map<string, Import
     if (title.length > 255) return "Title is longer than 255 characters";
 
     if (TYPE_ALIASES[typeValue] === "quiz") {
+        if (!row.question?.trim()) return "Question is empty";
+
         const questionType = row.question_type?.trim().toLowerCase() ?? "";
         if (questionType && !QUESTION_TYPES.includes(questionType))
             return `Question type "${row.question_type.trim()}" is not objective or subjective`;
@@ -246,7 +248,6 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
 
         if (reason) {
             skipped.push({ line, title: title || "(untitled)", reason });
-            previous = null;
             return;
         }
 
@@ -313,6 +314,8 @@ const MARKDOWN_GUIDE = [
     "between them become one paragraph, exactly like a .md file.",
     "",
     "Inline you can use **bold**, *italic*, ~~strikethrough~~, `inline code` and [a link](https://example.com).",
+    "",
+    "Underscores are left alone, so `MAX_RETRY_COUNT` and snake_case survive. Use * for emphasis, not _.",
     "",
     "- A bullet",
     "- Another bullet",

@@ -110,7 +110,7 @@ describe("parseImportCsv", () => {
         expect(result.items.map((i) => i.milestone_id)).toEqual([42, 43]);
     });
 
-    it("does not group across a skipped row", () => {
+    it("keeps one quiz together across a skipped row", () => {
         const result = parseImportCsv(
             csv(
                 header,
@@ -121,7 +121,8 @@ describe("parseImportCsv", () => {
             MODULES
         );
 
-        expect(result.items).toHaveLength(2);
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].questions.map((q) => q.title)).toEqual(["Q1", "Q3"]);
         expect(result.skipped).toHaveLength(1);
     });
 
@@ -175,9 +176,14 @@ describe("parseImportCsv", () => {
         expect(parseImportCsv("", MODULES)).toEqual({ items: [], skipped: [], totalRows: 0 });
     });
 
-    it("allows a quiz row with no question text", () => {
-        const result = parseImportCsv(csv(header, "New Module,quiz,Empty,,,,,,,,"), MODULES);
-        expect(result.items[0].questions).toEqual([]);
+    it("skips a quiz row with no question rather than importing an empty quiz", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,Empty,the question went in the wrong column,,,,,,"),
+            MODULES
+        );
+
+        expect(result.items).toEqual([]);
+        expect(result.skipped).toEqual([{ line: 2, title: "Empty", reason: "Question is empty" }]);
     });
 
     it("reads columns by header name, not position", () => {

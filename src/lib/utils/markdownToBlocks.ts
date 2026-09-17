@@ -103,10 +103,8 @@ const withStyle = (nodes: InlineNode[], style: string): InlineNode[] =>
 
 const STYLE_RULES: { pattern: RegExp; style: string }[] = [
     { pattern: /^\*\*([\s\S]+?)\*\*/, style: "bold" },
-    { pattern: /^__([\s\S]+?)__/, style: "bold" },
     { pattern: /^~~([\s\S]+?)~~/, style: "strike" },
     { pattern: /^\*([\s\S]+?)\*/, style: "italic" },
-    { pattern: /^_([\s\S]+?)_/, style: "italic" },
 ];
 
 const CODE_SPAN = /^`([^`]+)`/;

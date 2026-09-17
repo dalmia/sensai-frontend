@@ -1,4 +1,5 @@
 import { markdownToBlocks, parseInline } from "@/lib/utils/markdownToBlocks";
+import { DISABLED_BLOCKS, DISABLED_MEDIA_BLOCKS } from "@/components/BlockNoteEditor";
 
 const TEXT_PROPS = { textColor: "default", backgroundColor: "default", textAlignment: "left" };
 const text = (t: string, styles = {}) => ({ type: "text", text: t, styles });
@@ -159,7 +160,8 @@ describe("quotes, rules and tables", () => {
         expect(blocks.map((b) => b.type)).toEqual(["table", "paragraph", "table"]);
     });
 
-    it("never emits a block type outside the app schema", () => {
+    it("never emits a block type the editor has disabled", () => {
+        const banned = new Set<string>([...DISABLED_BLOCKS, ...DISABLED_MEDIA_BLOCKS]);
         const allowed = new Set([
             "paragraph",
             "heading",
@@ -172,13 +174,16 @@ describe("quotes, rules and tables", () => {
         ]);
         const everything =
             "# H1\n## H2\n### H3\n#### H4\n\npara\n\n- a\n1. b\n- [x] c\n\n> q\n\n---\n\n| a | b |\n| - | - |\n\n```js\ncode\n```\n\n![img](http://x/y.png)";
-        markdownToBlocks(everything).forEach((b) => expect(allowed.has(b.type)).toBe(true));
+        markdownToBlocks(everything).forEach((b) => {
+            expect(banned.has(b.type)).toBe(false);
+            expect(allowed.has(b.type)).toBe(true);
+        });
     });
 });
 
 describe("inline formatting", () => {
     it("handles bold, italic, strike and code", () => {
-        expect(parseInline("a **b** _c_ ~~d~~ `e`")).toEqual([
+        expect(parseInline("a **b** *c* ~~d~~ `e`")).toEqual([
             text("a "),
             text("b", { bold: true }),
             text(" "),
@@ -191,7 +196,7 @@ describe("inline formatting", () => {
     });
 
     it("combines nested styles", () => {
-        expect(parseInline("**_both_**")).toEqual([text("both", { italic: true, bold: true })]);
+        expect(parseInline("~~**both**~~")).toEqual([text("both", { bold: true, strike: true })]);
     });
 
     it("builds link nodes and falls back to the url as the label", () => {
@@ -222,6 +227,28 @@ describe("inline formatting", () => {
     it("styles link text when the link sits inside bold", () => {
         expect(parseInline("**[x](http://y)**")).toEqual([
             { type: "link", href: "http://y", content: [text("x", { bold: true })] },
+        ]);
+    });
+});
+
+describe("underscores in code-like text", () => {
+    const flat = (s: string) => parseInline(s).map((n: any) => n.text ?? "").join("");
+
+    it.each([
+        "Set MAX_RETRY_COUNT before you start",
+        "use snake_case_names here",
+        "__init__ is a dunder method",
+        "the user_id column",
+    ])("leaves %p untouched", (input) => {
+        expect(flat(input)).toBe(input);
+        expect(parseInline(input).every((n: any) => !n.styles?.italic && !n.styles?.bold)).toBe(true);
+    });
+
+    it("still supports * and ** for emphasis", () => {
+        expect(parseInline("*i* and **b**")).toEqual([
+            { type: "text", text: "i", styles: { italic: true } },
+            { type: "text", text: " and ", styles: {} },
+            { type: "text", text: "b", styles: { bold: true } },
         ]);
     });
 });
