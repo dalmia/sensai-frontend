@@ -7,23 +7,31 @@ import {
     buildTemplateCsv,
     groupSkipped,
     ImportModule,
+    ImportScorecard,
     ParsedImport,
     SkippedRow,
     MAX_IMPORT_TASKS,
+    MAX_IMPORT_QUESTIONS,
 } from "@/lib/utils/csvImport";
 
 interface BulkImportDialogProps {
     open: boolean;
     onClose: () => void;
     courseId: string;
+    schoolId: string;
     modules: ImportModule[];
     onImported: () => void;
 }
 
-export default function BulkImportDialog({
+export default function BulkImportDialog(props: BulkImportDialogProps) {
+    return props.open ? <BulkImportSession key={`${props.schoolId}:${props.courseId}`} {...props} /> : null;
+}
+
+function BulkImportSession({
     open,
     onClose,
     courseId,
+    schoolId,
     modules,
     onImported,
 }: BulkImportDialogProps) {
@@ -32,17 +40,77 @@ export default function BulkImportDialog({
     const [error, setError] = useState("");
     const [isImporting, setIsImporting] = useState(false);
     const [imported, setImported] = useState<number | null>(null);
+    const [scorecards, setScorecards] = useState<ImportScorecard[] | null>(null);
+    const [scorecardError, setScorecardError] = useState("");
+    const [scorecardRetry, setScorecardRetry] = useState(0);
+    const [csvText, setCsvText] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileReadVersion = useRef(0);
+
+    const closeDialog = () => {
+        if (isImporting) return;
+        // Clear the source as well as the preview, so a later lookup or render
+        // cannot rebuild the previous file's status while the parent closes.
+        fileReadVersion.current++;
+        setCsvText(null);
+        setParsed(null);
+        setFileName("");
+        setError("");
+        setImported(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        onClose();
+    };
 
     useEffect(() => {
-        if (open) {
-            setParsed(null);
-            setFileName("");
+        return () => { fileReadVersion.current++; };
+    }, []);
+
+    // Fetched once per open: a CSV references a scorecard by title, and the
+    // titles have to be resolved against this school's scorecards.
+    useEffect(() => {
+        if (!open || !schoolId) return;
+
+        let cancelled = false;
+        setScorecards(null);
+        setScorecardError("");
+        fetch(`/api/backend/scorecards?org_id=${schoolId}`)
+            .then((response) => {
+                if (!response.ok) throw new Error("Scorecard lookup failed");
+                return response.json();
+            })
+            .then((data) => {
+                if (!Array.isArray(data)) throw new Error("Invalid scorecard response");
+                if (!cancelled) {
+                    setScorecards(data.map((s: any) => ({ id: s.id, title: s.title })));
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setScorecardError("Could not load scorecards. Retry before importing.");
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [open, schoolId, scorecardRetry]);
+
+    useEffect(() => {
+        if (!open || csvText === null || scorecards === null) return;
+        try {
+            const next = parseImportCsv(csvText, modules, scorecards);
+            if (next.items.length > MAX_IMPORT_TASKS) {
+                throw new Error(`This file has ${next.items.length} tasks. Import at most ${MAX_IMPORT_TASKS} at a time`);
+            }
+            const questions = next.items.reduce((total, item) => total + item.questions.length, 0);
+            if (questions > MAX_IMPORT_QUESTIONS) {
+                throw new Error(`This file has ${questions} questions. Import at most ${MAX_IMPORT_QUESTIONS} at a time`);
+            }
+            setParsed(next);
             setError("");
-            setIsImporting(false);
-            setImported(null);
+        } catch (parseError) {
+            setParsed(null);
+            setError(parseError instanceof Error ? parseError.message : "Could not read this file");
         }
-    }, [open]);
+    }, [open, csvText, modules, scorecards]);
 
     if (!open) return null;
 
@@ -60,28 +128,22 @@ export default function BulkImportDialog({
         setError("");
         setImported(null);
         setFileName(file.name);
+        setParsed(null);
+        setCsvText(null);
+        const version = ++fileReadVersion.current;
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            try {
-                const next = parseImportCsv((event.target?.result as string) ?? "", modules);
-                if (next.items.length > MAX_IMPORT_TASKS) {
-                    setParsed(null);
-                    setError(`This file has ${next.items.length} tasks. Import at most ${MAX_IMPORT_TASKS} at a time`);
-                    return;
-                }
-                setParsed(next);
-            } catch (parseError) {
-                setParsed(null);
-                setError(parseError instanceof Error ? parseError.message : "Could not read this file");
-            }
+            if (version === fileReadVersion.current) setCsvText((event.target?.result as string) ?? "");
         };
-        reader.onerror = () => setError("Could not read this file");
+        reader.onerror = () => {
+            if (version === fileReadVersion.current) setError("Could not read this file");
+        };
         reader.readAsText(file);
     };
 
     const handleImport = async () => {
-        if (!parsed || parsed.items.length === 0) return;
+        if (isImporting || scorecards === null || !parsed || parsed.items.length === 0) return;
 
         setIsImporting(true);
         setError("");
@@ -221,6 +283,12 @@ export default function BulkImportDialog({
                     </div>
                 )}
 
+                {scorecardError ? (
+                    <p className="text-sm text-red-500">
+                        {scorecardError}{" "}
+                        <button className="underline" onClick={() => setScorecardRetry(value => value + 1)}>Retry</button>
+                    </p>
+                ) : scorecards === null && <p className="text-sm text-gray-500">Loading scorecards…</p>}
                 {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
         );
@@ -229,7 +297,7 @@ export default function BulkImportDialog({
     return (
         <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={isImporting ? undefined : onClose}
+            onClick={closeDialog}
         >
             <div
                 className="w-full max-w-lg bg-white dark:bg-[#1A1A1A] text-black dark:text-white rounded-lg shadow-2xl py-2"
@@ -252,7 +320,7 @@ export default function BulkImportDialog({
 
                 <div className="flex justify-end gap-4 px-6 py-4">
                     <button
-                        onClick={onClose}
+                        onClick={closeDialog}
                         disabled={isImporting}
                         className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors font-light cursor-pointer focus:outline-none disabled:opacity-50"
                     >
@@ -261,7 +329,7 @@ export default function BulkImportDialog({
                     {imported === null && (
                         <button
                             onClick={handleImport}
-                            disabled={isImporting || !parsed || parsed.items.length === 0}
+                            disabled={isImporting || scorecards === null || !parsed || parsed.items.length === 0}
                             className="px-6 py-3 bg-[#e5e7eb] text-[#000000] dark:bg-[#ffffff] dark:text-[#000000] text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {isImporting ? "Importing..." : "Import tasks"}

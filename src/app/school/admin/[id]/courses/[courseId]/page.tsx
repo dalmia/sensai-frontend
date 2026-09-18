@@ -2314,13 +2314,14 @@ export default function CreateCourse() {
                 showDripPublishSettings={true}
             />
 
-            <BulkImportDialog
+            {isBulkImportOpen && <BulkImportDialog
                 open={isBulkImportOpen}
                 onClose={() => setIsBulkImportOpen(false)}
                 courseId={courseId}
+                schoolId={schoolId}
                 modules={modules.map(module => ({ id: module.id, title: module.title }))}
                 onImported={() => fetchCourseDetails(false)}
-            />
+            />}
 
             {/* Generate with AI Dialog */}
             <GenerateWithAIDialog

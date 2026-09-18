@@ -5,6 +5,11 @@ export interface ImportModule {
     title: string;
 }
 
+export interface ImportScorecard {
+    id: number;
+    title: string;
+}
+
 export interface BulkQuestion {
     title: string;
     blocks: any[];
@@ -13,6 +18,7 @@ export interface BulkQuestion {
     input_type: "text" | "code" | "audio";
     response_type: "chat" | "exam";
     coding_languages: string[] | null;
+    scorecard_id: number | null;
 }
 
 export interface BulkTaskItem {
@@ -34,6 +40,7 @@ export interface ParsedImport {
 }
 
 export const MAX_IMPORT_TASKS = 500;
+export const MAX_IMPORT_QUESTIONS = 2000;
 
 export const TEMPLATE_HEADERS = [
     "module",
@@ -46,6 +53,7 @@ export const TEMPLATE_HEADERS = [
     "response_type",
     "answer",
     "coding_languages",
+    "scorecard",
 ];
 
 const TYPE_ALIASES: Record<string, "learning_material" | "quiz"> = {
@@ -69,11 +77,13 @@ export const parseCsv = (text: string): string[][] => {
     let row: string[] = [];
     let field = "";
     let quoted = false;
+    let closedQuote = false;
     let i = text.charCodeAt(0) === 0xfeff ? 1 : 0;
 
     const endField = () => {
         row.push(field);
         field = "";
+        closedQuote = false;
     };
     const endRow = () => {
         endField();
@@ -92,6 +102,7 @@ export const parseCsv = (text: string): string[][] => {
                     continue;
                 }
                 quoted = false;
+                closedQuote = true;
                 i++;
                 continue;
             }
@@ -100,21 +111,37 @@ export const parseCsv = (text: string): string[][] => {
             continue;
         }
 
-        if (char === '"' && field === "") {
+        if (closedQuote && char !== "," && char !== "\n" && char !== "\r") {
+            throw new Error("Invalid CSV: unexpected text after a closing quote. Export the file as CSV again.");
+        }
+        if (char === '"' && field === "" && !closedQuote) {
             quoted = true;
+        } else if (char === '"') {
+            throw new Error("Invalid CSV: a quote inside a field must be escaped. Export the file as CSV again.");
         } else if (char === ",") {
             endField();
-        } else if (char === "\n") {
+        } else if (char === "\n" || char === "\r") {
             endRow();
-        } else if (char !== "\r") {
+            if (char === "\r" && text[i + 1] === "\n") i++;
+        } else {
             field += char;
         }
         i++;
     }
 
-    if (field !== "" || row.length > 0) endRow();
+    if (quoted) throw new Error("Invalid CSV: a quoted field is missing its closing quote. Export the file as CSV again.");
+    if (field !== "" || row.length > 0 || closedQuote) endRow();
 
     return rows.filter((cells) => cells.some((cell) => cell.trim() !== ""));
+};
+
+const byTitle = <T extends { title: string }>(items: T[]): Map<string, T[]> => {
+    const index = new Map<string, T[]>();
+    items.forEach((item) => {
+        const key = item.title.trim().toLowerCase();
+        index.set(key, [...(index.get(key) ?? []), item]);
+    });
+    return index;
 };
 
 const parseLanguages = (value: string): string[] =>
@@ -123,7 +150,10 @@ const parseLanguages = (value: string): string[] =>
         .map((language) => language.trim().toLowerCase())
         .filter(Boolean);
 
-const buildQuestion = (row: Record<string, string>): BulkQuestion => {
+const buildQuestion = (
+    row: Record<string, string>,
+    scorecards: Map<string, ImportScorecard[]>
+): BulkQuestion => {
     const questionText = row.question?.trim() ?? "";
     const answerText = row.answer?.trim() ?? "";
     const languages = parseLanguages(row.coding_languages ?? "");
@@ -143,10 +173,15 @@ const buildQuestion = (row: Record<string, string>): BulkQuestion => {
         input_type: (row.input_type?.trim().toLowerCase() || "text") as BulkQuestion["input_type"],
         response_type: responseType,
         coding_languages: languages.length > 0 ? languages : null,
+        scorecard_id: scorecards.get(row.scorecard?.trim().toLowerCase() ?? "")?.[0]?.id ?? null,
     };
 };
 
-const rowError = (row: Record<string, string>, modulesByName: Map<string, ImportModule[]>): string | null => {
+const rowError = (
+    row: Record<string, string>,
+    modulesByName: Map<string, ImportModule[]>,
+    scorecardsByName: Map<string, ImportScorecard[]>
+): string | null => {
     const moduleName = row.module?.trim() ?? "";
     const typeValue = row.type?.trim().toLowerCase() ?? "";
     const title = row.title?.trim() ?? "";
@@ -165,6 +200,13 @@ const rowError = (row: Record<string, string>, modulesByName: Map<string, Import
 
     if (TYPE_ALIASES[typeValue] === "quiz") {
         if (!row.question?.trim()) return "Question is empty";
+
+        const scorecardName = row.scorecard?.trim() ?? "";
+        if (scorecardName) {
+            const found = scorecardsByName.get(scorecardName.toLowerCase());
+            if (!found) return `Scorecard "${scorecardName}" does not exist in this school`;
+            if (found.length > 1) return `More than one scorecard is named "${scorecardName}"`;
+        }
 
         const questionType = row.question_type?.trim().toLowerCase() ?? "";
         if (questionType && !QUESTION_TYPES.includes(questionType))
@@ -202,7 +244,11 @@ export const groupSkipped = (
         .sort((a, b) => b.lines.length - a.lines.length || a.lines[0] - b.lines[0]);
 };
 
-export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImport => {
+export const parseImportCsv = (
+    text: string,
+    modules: ImportModule[],
+    scorecards: ImportScorecard[] = []
+): ParsedImport => {
     const rows = parseCsv(text);
 
     if (rows.length === 0) return { items: [], skipped: [] };
@@ -216,11 +262,8 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
         );
     }
 
-    const modulesByName = new Map<string, ImportModule[]>();
-    modules.forEach((module) => {
-        const key = module.title.trim().toLowerCase();
-        modulesByName.set(key, [...(modulesByName.get(key) ?? []), module]);
-    });
+    const modulesByName = byTitle(modules);
+    const scorecardsByName = byTitle(scorecards);
 
     const items: BulkTaskItem[] = [];
     const skipped: SkippedRow[] = [];
@@ -234,7 +277,7 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
         });
 
         const title = row.title?.trim() ?? "";
-        const reason = rowError(row, modulesByName);
+        const reason = rowError(row, modulesByName, scorecardsByName);
 
         if (reason) {
             skipped.push({ line, reason });
@@ -248,7 +291,7 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
 
         // Consecutive quiz rows sharing a module and title are one quiz.
         if (type === "quiz" && previous?.key === key) {
-            if (row.question?.trim()) previous.item.questions.push(buildQuestion(row));
+            if (row.question?.trim()) previous.item.questions.push(buildQuestion(row, scorecardsByName));
             return;
         }
 
@@ -257,7 +300,7 @@ export const parseImportCsv = (text: string, modules: ImportModule[]): ParsedImp
             type,
             title,
             blocks: type === "learning_material" ? markdownToBlocks(row.content ?? "") : [],
-            questions: type === "quiz" && row.question?.trim() ? [buildQuestion(row)] : [],
+            questions: type === "quiz" && row.question?.trim() ? [buildQuestion(row, scorecardsByName)] : [],
         };
 
         items.push(item);
@@ -284,6 +327,7 @@ const GUIDE = [
     "- `response_type` - `chat` for practice with feedback, or `exam`, defaults to `chat`. Attempt limits and feedback follow from this, exactly as they do in the editor",
     "- `answer` - the correct answer, also Markdown",
     "- `coding_languages` - only for `code` questions, separated by `|`",
+    "- `scorecard` - the title of an existing scorecard in this school (ignores case and surrounding spaces). Exactly one match links it to the question; missing or duplicate names skip that row with a reason. Import never creates scorecards. Leave empty for no scorecard",
     "",
     "## Two rules worth knowing",
     "",
@@ -335,13 +379,13 @@ export const buildTemplateCsv = (modules: ImportModule[]): string => {
 
     const rows = [
         TEMPLATE_HEADERS,
-        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", ""],
-        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", ""],
-        [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", ""],
-        [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", ""],
-        [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", ""],
-        [example, "quiz", "A coding question", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript"],
-        [example, "quiz", "A spoken question", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", ""],
+        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", "", ""],
+        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", "", ""],
+        [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", "", ""],
+        [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", "", ""],
+        [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", "", ""],
+        [example, "quiz", "A coding question", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript", ""],
+        [example, "quiz", "A spoken question", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", "", ""],
     ];
 
     return rows.map((cells) => cells.map(escape).join(",")).join("\n");

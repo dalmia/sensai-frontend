@@ -1,17 +1,18 @@
 import fs from "fs";
 import path from "path";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import BulkImportDialog from "@/components/BulkImportDialog";
 
 const MODULES = [{ id: "42", title: "New Module" }];
+const SCORECARDS = [{ id: 7, title: "Comms Rubric" }];
 const HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,coding_languages";
 
 const renderDialog = (props = {}) => {
     const onImported = jest.fn();
     const onClose = jest.fn();
     const utils = render(
-        <BulkImportDialog open onClose={onClose} courseId="388" modules={MODULES} onImported={onImported} {...props} />
+        <BulkImportDialog open onClose={onClose} courseId="388" schoolId="8" modules={MODULES} onImported={onImported} {...props} />
     );
     return { ...utils, onImported, onClose };
 };
@@ -25,8 +26,23 @@ const choose = (content: string) => {
 
 const importButton = () => screen.getByRole("button", { name: "Import tasks" });
 
+// The dialog fetches this school's scorecards on open, so every mock has to
+// answer that call as well as the bulk POST.
+const mockBackend = (bulk: { ok: boolean; body: unknown } = { ok: true, body: { created: [] } }) => {
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+        Promise.resolve(
+            url.includes("/scorecards")
+                ? { ok: true, json: async () => SCORECARDS }
+                : { ok: bulk.ok, json: async () => bulk.body }
+        )
+    );
+};
+
+const bulkCalls = () =>
+    (global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).includes("/tasks/bulk"));
+
 beforeEach(() => {
-    global.fetch = jest.fn();
+    mockBackend();
     Object.defineProperty(global.URL, "createObjectURL", { value: jest.fn(() => "blob:x"), writable: true });
     Object.defineProperty(global.URL, "revokeObjectURL", { value: jest.fn(), writable: true });
 });
@@ -34,6 +50,98 @@ beforeEach(() => {
 afterEach(() => jest.resetAllMocks());
 
 describe("BulkImportDialog", () => {
+    it.each(["cancel", "backdrop", "success"])("clears the file and status immediately on %s, before parent unmount", async (method) => {
+        mockBackend({ ok: true, body: { created: [1] } });
+        const { onClose } = renderDialog();
+        choose([HEADER, "New Module,quiz,Check,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
+        await screen.findByText("1 task ready to import");
+        if (method === "success") {
+            fireEvent.click(importButton());
+            await screen.findByText("1 task added as a draft");
+        }
+        if (method === "backdrop") {
+            fireEvent.click(screen.getByRole("heading", { name: "Import tasks" }).closest(".fixed")!);
+        } else {
+            fireEvent.click(screen.getByRole("button", { name: method === "success" ? "Close" : "Cancel" }));
+        }
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(importButton()).toBeDisabled();
+        expect(screen.queryByText(/ready to import|added as a draft|row skipped/)).not.toBeInTheDocument();
+        expect(screen.queryByText("tasks.csv")).not.toBeInTheDocument();
+    });
+
+    it.each([false, true])("reopens with no previous file or status after success=%s", async (success) => {
+        mockBackend({ ok: true, body: { created: [1] } });
+        function Harness() {
+            const [open, setOpen] = React.useState(true);
+            return <>
+                <button onClick={() => setOpen(true)}>Open importer</button>
+                <BulkImportDialog open={open} onClose={() => setOpen(false)} courseId="388" schoolId="8"
+                    modules={MODULES.map(m => ({ ...m }))} onImported={() => undefined} />
+            </>;
+        }
+        render(<Harness />);
+        choose([HEADER, "New Module,quiz,Check,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
+        await screen.findByText("1 task ready to import");
+        if (success) {
+            fireEvent.click(importButton());
+            await screen.findByText("1 task added as a draft");
+        }
+        fireEvent.click(screen.getByRole("button", { name: success ? "Close" : "Cancel" }));
+        fireEvent.click(screen.getByRole("button", { name: "Open importer" }));
+        await waitFor(() => expect(screen.queryByText("Loading scorecards…")).not.toBeInTheDocument());
+        expect(importButton()).toBeDisabled();
+        expect(screen.queryByText(/ready to import|added as a draft|row skipped/)).not.toBeInTheDocument();
+        expect(screen.queryByText("tasks.csv")).not.toBeInTheDocument();
+    });
+
+    it("rejects more than 2000 questions even when grouped into one task", async () => {
+        renderDialog();
+        choose([HEADER, ...Array.from({ length: 2001 }, () => "New Module,quiz,Check,,Q")].join("\n"));
+        await screen.findByText(/Import at most 2000/);
+        expect(importButton()).toBeDisabled();
+        expect(bulkCalls()).toHaveLength(0);
+    });
+
+    it("blocks malformed CSV instead of silently merging tasks", async () => {
+        renderDialog();
+        choose('module,type,title,content\nNew Module,learning_material,First,"Unclosed\nNew Module,learning_material,Second,Body');
+        await screen.findByText(/missing its closing quote/);
+        expect(importButton()).toBeDisabled();
+    });
+    it("waits for scorecards before resolving and posting a chosen CSV", async () => {
+        let resolveLookup!: (response: unknown) => void;
+        global.fetch = jest.fn().mockImplementation((url: string) =>
+            url.includes("/scorecards")
+                ? new Promise(resolve => { resolveLookup = resolve; })
+                : Promise.resolve({ ok: true, json: async () => ({ created: [1] }) })
+        );
+        renderDialog();
+        choose("module,type,title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
+        expect(importButton()).toBeDisabled();
+        expect(screen.getByText("Loading scorecards…")).toBeInTheDocument();
+        await act(async () => {
+            resolveLookup({ ok: true, json: async () => SCORECARDS });
+        });
+        await screen.findByText("1 task ready to import");
+        fireEvent.click(importButton());
+        await screen.findByText("1 task added as a draft");
+        expect(JSON.parse(bulkCalls()[0][1].body).items[0].questions[0].scorecard_id).toBe(7);
+    });
+
+    it("blocks import when scorecard lookup fails and reparses after retry", async () => {
+        global.fetch = jest.fn().mockResolvedValue({ ok: false });
+        renderDialog();
+        choose("module,type,title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
+        await screen.findByText(/Could not load scorecards/);
+        expect(importButton()).toBeDisabled();
+        expect(screen.queryByText(/does not exist in this school/)).not.toBeInTheDocument();
+        mockBackend();
+        fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+        await screen.findByText("1 task ready to import");
+        expect(importButton()).toBeEnabled();
+    });
+
     it("renders nothing when closed", () => {
         const { container } = renderDialog({ open: false });
         expect(container).toBeEmptyDOMElement();
@@ -76,7 +184,7 @@ describe("BulkImportDialog", () => {
     });
 
     it("reports how many were imported and what was skipped", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ created: [1] }) });
+        mockBackend({ ok: true, body: { created: [1] } });
 
         const { onImported } = renderDialog();
         choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,Q"].join("\n"));
@@ -91,15 +199,15 @@ describe("BulkImportDialog", () => {
     });
 
     it("posts only the valid rows to the bulk endpoint", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ created: [] }) });
+        mockBackend();
 
         renderDialog();
         choose([HEADER, "New Module,quiz,Check,,Q1", "Nope,quiz,Bad,,Q"].join("\n"));
         await screen.findByText("1 task ready to import");
         fireEvent.click(importButton());
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-        const [url, options] = (global.fetch as jest.Mock).mock.calls[0];
+        await waitFor(() => expect(bulkCalls()).toHaveLength(1));
+        const [url, options] = bulkCalls()[0];
         expect(url).toBe("/api/backend/courses/388/tasks/bulk");
         const body = JSON.parse(options.body);
         expect(body.items).toHaveLength(1);
@@ -107,9 +215,9 @@ describe("BulkImportDialog", () => {
     });
 
     it("surfaces the server message when the import is rejected", async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
+        mockBackend({
             ok: false,
-            json: async () => ({ detail: "Some modules are no longer part of this course. Refresh and try again." }),
+            body: { detail: "Some modules are no longer part of this course. Refresh and try again." },
         });
 
         const { onImported } = renderDialog();
@@ -143,7 +251,7 @@ describe("BulkImportDialog", () => {
         choose([HEADER, ...rows].join("\n"));
 
         expect(await screen.findByText(/Import at most 500 at a time/)).toBeInTheDocument();
-        expect(global.fetch).not.toHaveBeenCalled();
+        expect(bulkCalls()).toHaveLength(0);
         expect(importButton()).toBeDisabled();
     });
 

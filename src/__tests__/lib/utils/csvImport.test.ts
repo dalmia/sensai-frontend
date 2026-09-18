@@ -12,10 +12,22 @@ const MODULES = [
     { id: "43", title: "Week 2" },
 ];
 
+const SCORECARDS = [
+    { id: 7, title: "Comms Rubric" },
+    { id: 8, title: "Code Quality" },
+];
+
 const csv = (...lines: string[]) => lines.join("\n");
-const header = "module,type,title,content,question,question_type,input_type,response_type,answer,max_attempts,is_feedback_shown";
+const header = TEMPLATE_HEADERS.join(",");
 
 describe("parseCsv", () => {
+    it.each(['a,"unclosed\nb,c', 'a,"closed"junk', 'a,b"c'])('rejects malformed quoting: %s', (value) => {
+        expect(() => parseCsv(value)).toThrow(/Invalid CSV/);
+    });
+
+    it("supports bare CR row separators and a quoted empty final field", () => {
+        expect(parseCsv('a,b\rc,""')).toEqual([["a", "b"], ["c", ""]]);
+    });
     it("handles quoted commas, escaped quotes and embedded newlines", () => {
         const rows = parseCsv('a,"b,c","say ""hi""","line1\nline2"');
         expect(rows).toEqual([["a", "b,c", 'say "hi"', "line1\nline2"]]);
@@ -163,6 +175,68 @@ describe("parseImportCsv", () => {
 
         expect("max_attempts" in question).toBe(false);
         expect("is_feedback_shown" in question).toBe(false);
+    });
+
+    it("links a question to an existing scorecard by title", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,T,,Q,subjective,text,chat,,,Comms Rubric"),
+            MODULES,
+            SCORECARDS
+        );
+
+        expect(result.skipped).toEqual([]);
+        expect(result.items[0].questions[0].scorecard_id).toBe(7);
+    });
+
+    it("matches the scorecard title case-insensitively and trimmed", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,T,,Q,subjective,text,chat,,,  comms RUBRIC  "),
+            MODULES,
+            SCORECARDS
+        );
+        expect(result.items[0].questions[0].scorecard_id).toBe(7);
+    });
+
+    it("leaves scorecard_id null when the column is empty", () => {
+        const result = parseImportCsv(csv(header, "New Module,quiz,T,,Q"), MODULES, SCORECARDS);
+        expect(result.items[0].questions[0].scorecard_id).toBeNull();
+    });
+
+    it("skips a row naming a scorecard that does not exist", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,T,,Q,,,,,,No Such Rubric"),
+            MODULES,
+            SCORECARDS
+        );
+
+        expect(result.items).toEqual([]);
+        expect(result.skipped).toEqual([
+            { line: 2, reason: 'Scorecard "No Such Rubric" does not exist in this school' },
+        ]);
+    });
+
+    it("refuses to guess between same-named scorecards", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,T,,Q,,,,,,Duplicate"),
+            MODULES,
+            [
+                { id: 1, title: "Duplicate" },
+                { id: 2, title: "Duplicate" },
+            ]
+        );
+
+        expect(result.items).toEqual([]);
+        expect(result.skipped[0].reason).toBe('More than one scorecard is named "Duplicate"');
+    });
+
+    it("does not look for scorecards on a learning material row", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,learning_material,Intro,Body,,,,,,,No Such Rubric"),
+            MODULES,
+            SCORECARDS
+        );
+        expect(result.skipped).toEqual([]);
+        expect(result.items).toHaveLength(1);
     });
 
     it("rejects an ambiguous module name rather than guessing", () => {
