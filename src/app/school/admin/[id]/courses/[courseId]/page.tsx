@@ -26,6 +26,7 @@ import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
 
 // Import the CreateCohortDialog
 import CreateCohortDialog from '@/components/CreateCohortDialog';
+import BulkImportDialog from '@/components/BulkImportDialog';
 
 interface CourseDetails {
     id: number;
@@ -82,6 +83,7 @@ export default function CreateCourse() {
     // Add state to track which button opened the dialog
     const [dialogOrigin, setDialogOrigin] = useState<'publish' | 'add' | null>(null);
     // Add state for toast notifications
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [toast, setToast] = useState({
         show: false,
         title: '',
@@ -176,9 +178,9 @@ export default function CreateCourse() {
     }, [taskId, questionId, modules.length]);
 
     // Extract fetchCourseDetails as a standalone function
-    const fetchCourseDetails = async () => {
+    const fetchCourseDetails = async (showSpinner = true) => {
         try {
-            setIsLoading(true);
+            if (showSpinner) setIsLoading(true);
             const response = await fetch(`/api/backend/courses/${courseId}?only_published=false`);
 
             if (!response.ok) {
@@ -2043,12 +2045,22 @@ export default function CreateCourse() {
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => addModule(courseId, schoolId, modules, setModules, setActiveModuleId, lastUsedColorIndex, setLastUsedColorIndex)}
-                            className="mb-6 px-6 py-2 bg-purple-600 dark:bg-white text-white dark:text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-100 cursor-pointer"
-                        >
-                            Add module
-                        </button>
+                        <div className="mb-6 flex items-center gap-3">
+                            <button
+                                onClick={() => addModule(courseId, schoolId, modules, setModules, setActiveModuleId, lastUsedColorIndex, setLastUsedColorIndex)}
+                                className="px-6 py-2 bg-purple-600 dark:bg-white text-white dark:text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-100 cursor-pointer"
+                            >
+                                Add module
+                            </button>
+                            {modules.length > 0 && (
+                                <button
+                                    onClick={() => setIsBulkImportOpen(true)}
+                                    className="px-6 py-2 text-sm font-medium rounded-full border border-gray-300 dark:border-[#333] text-black dark:text-white hover:bg-gray-100 dark:hover:bg-[#222] transition-colors focus:outline-none cursor-pointer"
+                                >
+                                    Import tasks
+                                </button>
+                            )}
+                        </div>
 
                         <CourseModuleList
                             data-testid="course-module-list"
@@ -2301,6 +2313,15 @@ export default function CreateCourse() {
                 schoolId={schoolId}
                 showDripPublishSettings={true}
             />
+
+            {isBulkImportOpen && <BulkImportDialog
+                open={isBulkImportOpen}
+                onClose={() => setIsBulkImportOpen(false)}
+                courseId={courseId}
+                schoolId={schoolId}
+                modules={modules.map(module => ({ id: module.id, title: module.title }))}
+                onImported={() => fetchCourseDetails(false)}
+            />}
 
             {/* Generate with AI Dialog */}
             <GenerateWithAIDialog

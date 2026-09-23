@@ -151,6 +151,24 @@ function isYouTubeLink(url: string): boolean {
     return url.includes('youtube.com') || url.includes('youtu.be');
 }
 
+/**
+ * Block types this app turns off, by name rather than by destructuring, so
+ * changing the set is a one-line edit here and stays in step with the exporter
+ * in lib/utils/markdownToBlocks.ts.
+ */
+export const DISABLED_BLOCKS = ["file"] as const;
+export const DISABLED_MEDIA_BLOCKS = ["video", "audio", "image"] as const;
+
+export function getEnabledBlockSpecs(allowMedia: boolean) {
+    const disabled: readonly string[] = allowMedia
+        ? DISABLED_BLOCKS
+        : [...DISABLED_BLOCKS, ...DISABLED_MEDIA_BLOCKS];
+
+    return Object.fromEntries(
+        Object.entries(defaultBlockSpecs).filter(([type]) => !disabled.includes(type)),
+    ) as Omit<typeof defaultBlockSpecs, "file">;
+}
+
 export function dropUnknownBlocks(blocks: any[], enabledBlocks: Record<string, unknown>): any[] {
     if (!Array.isArray(blocks) || blocks.length === 0) {
         return [];
@@ -199,17 +217,7 @@ export default function BlockNoteEditor({
     // Add a timeout ref to store the timeout ID
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Extract blocks we don't want based on configuration
-    let enabledBlocks;
-    if (allowMedia) {
-        // If media is allowed, exclude only these blocks
-        const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = allowedBlockSpecs;
-    } else {
-        // If media is not allowed, also exclude all media blocks
-        const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
-        enabledBlocks = allowedBlockSpecs;
-    }
+    const enabledBlocks = getEnabledBlockSpecs(allowMedia);
 
     // Create a schema with only the allowed blocks
     const schema = BlockNoteSchema.create({
