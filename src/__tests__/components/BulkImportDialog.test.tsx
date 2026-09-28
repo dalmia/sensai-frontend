@@ -6,7 +6,7 @@ import BulkImportDialog from "@/components/BulkImportDialog";
 
 const MODULES = [{ id: "42", title: "New Module" }];
 const SCORECARDS = [{ id: 7, title: "Comms Rubric" }];
-const HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,coding_languages";
+const HEADER = "module,type,task_title,content,question_title,question,question_type,input_type,response_type,answer,coding_languages";
 
 const renderDialog = (props = {}) => {
     const onImported = jest.fn();
@@ -53,7 +53,7 @@ describe("BulkImportDialog", () => {
     it.each(["cancel", "backdrop", "success"])("clears the file and status immediately on %s, before parent unmount", async (method) => {
         mockBackend({ ok: true, body: { created: [1] } });
         const { onClose } = renderDialog();
-        choose([HEADER, "New Module,quiz,Check,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "New Module,quiz,Check,,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
         await screen.findByText("1 task ready to import");
         if (method === "success") {
             fireEvent.click(importButton());
@@ -81,7 +81,7 @@ describe("BulkImportDialog", () => {
             </>;
         }
         render(<Harness />);
-        choose([HEADER, "New Module,quiz,Check,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "New Module,quiz,Check,,,Q", "Missing,quiz,Bad,,Q"].join("\n"));
         await screen.findByText("1 task ready to import");
         if (success) {
             fireEvent.click(importButton());
@@ -97,7 +97,7 @@ describe("BulkImportDialog", () => {
 
     it("rejects more than 2000 questions even when grouped into one task", async () => {
         renderDialog();
-        choose([HEADER, ...Array.from({ length: 2001 }, () => "New Module,quiz,Check,,Q")].join("\n"));
+        choose([HEADER, ...Array.from({ length: 2001 }, () => "New Module,quiz,Check,,,Q")].join("\n"));
         await screen.findByText(/Import at most 2000/);
         expect(importButton()).toBeDisabled();
         expect(bulkCalls()).toHaveLength(0);
@@ -117,7 +117,7 @@ describe("BulkImportDialog", () => {
                 : Promise.resolve({ ok: true, json: async () => ({ created: [1] }) })
         );
         renderDialog();
-        choose("module,type,title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
+        choose("module,type,task_title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
         expect(importButton()).toBeDisabled();
         expect(screen.getByText("Loading scorecards…")).toBeInTheDocument();
         await act(async () => {
@@ -132,7 +132,7 @@ describe("BulkImportDialog", () => {
     it("blocks import when scorecard lookup fails and reparses after retry", async () => {
         global.fetch = jest.fn().mockResolvedValue({ ok: false });
         renderDialog();
-        choose("module,type,title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
+        choose("module,type,task_title,question,scorecard\nNew Module,quiz,Check,Q,Comms Rubric");
         await screen.findByText(/Could not load scorecards/);
         expect(importButton()).toBeDisabled();
         expect(screen.queryByText(/does not exist in this school/)).not.toBeInTheDocument();
@@ -154,7 +154,7 @@ describe("BulkImportDialog", () => {
 
     it("leads with what will be imported, not with what failed", async () => {
         renderDialog();
-        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,,Q"].join("\n"));
 
         expect(await screen.findByText("1 task ready to import")).toBeInTheDocument();
         expect(screen.getByText("1 row skipped")).toBeInTheDocument();
@@ -168,10 +168,10 @@ describe("BulkImportDialog", () => {
             [
                 HEADER,
                 "New Module,learning_material,Good,Body",
-                "Nope,quiz,A,,Q",
-                "Nope,quiz,B,,Q",
-                "Nope,quiz,C,,Q",
-                "New Module,quiz,,,Q",
+                "Nope,quiz,A,,,Q",
+                "Nope,quiz,B,,,Q",
+                "Nope,quiz,C,,,Q",
+                "New Module,quiz,,,,Q",
             ].join("\n")
         );
 
@@ -180,14 +180,14 @@ describe("BulkImportDialog", () => {
         expect(screen.getAllByText('Module "Nope" does not exist in this course')).toHaveLength(1);
         expect(screen.getByText("×3")).toBeInTheDocument();
         expect(screen.getByText("Rows 3, 4, 5")).toBeInTheDocument();
-        expect(screen.getByText("Title is empty")).toBeInTheDocument();
+        expect(screen.getByText("Task title is empty")).toBeInTheDocument();
     });
 
     it("reports how many were imported and what was skipped", async () => {
         mockBackend({ ok: true, body: { created: [1] } });
 
         const { onImported } = renderDialog();
-        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "New Module,learning_material,Good,Body", "Nope,quiz,Bad,,,Q"].join("\n"));
         await screen.findByText("1 task ready to import");
 
         fireEvent.click(importButton());
@@ -202,7 +202,7 @@ describe("BulkImportDialog", () => {
         mockBackend();
 
         renderDialog();
-        choose([HEADER, "New Module,quiz,Check,,Q1", "Nope,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "New Module,quiz,Check,,,Q1", "Nope,quiz,Bad,,,Q"].join("\n"));
         await screen.findByText("1 task ready to import");
         fireEvent.click(importButton());
 
@@ -221,7 +221,7 @@ describe("BulkImportDialog", () => {
         });
 
         const { onImported } = renderDialog();
-        choose([HEADER, "New Module,quiz,Check,,Q1"].join("\n"));
+        choose([HEADER, "New Module,quiz,Check,,,Q1"].join("\n"));
         await screen.findByText("1 task ready to import");
         fireEvent.click(importButton());
 
@@ -233,13 +233,13 @@ describe("BulkImportDialog", () => {
         renderDialog();
         choose("name,notes\na,b");
 
-        expect(await screen.findByText(/missing the module, type, title columns/)).toBeInTheDocument();
+        expect(await screen.findByText(/missing the module, type, task_title columns/)).toBeInTheDocument();
         expect(importButton()).toBeDisabled();
     });
 
     it("says so when no row can be imported", async () => {
         renderDialog();
-        choose([HEADER, "Nope,quiz,Bad,,Q"].join("\n"));
+        choose([HEADER, "Nope,quiz,Bad,,,Q"].join("\n"));
 
         expect(await screen.findByText("No row in this file can be imported")).toBeInTheDocument();
         expect(importButton()).toBeDisabled();

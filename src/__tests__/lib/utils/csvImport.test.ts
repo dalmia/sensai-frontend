@@ -49,7 +49,7 @@ describe("parseCsv", () => {
 describe("parseImportCsv", () => {
     it("maps a learning material row", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,learning_material,Intro,Some body text,,,,,,,"),
+            csv(header, "New Module,learning_material,Intro,Some body text,,,,,,,,"),
             MODULES
         );
 
@@ -67,7 +67,7 @@ describe("parseImportCsv", () => {
 
     it("applies defaults to a sparse quiz row", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,Check,,What is REST?,,,,,,"),
+            csv(header, "New Module,quiz,Check,,,What is REST?,,,,,,"),
             MODULES
         );
 
@@ -82,7 +82,7 @@ describe("parseImportCsv", () => {
 
     it("uses a plain text question title but keeps markup in the blocks", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,T,,What does **REST** stand for?"),
+            csv(header, "New Module,quiz,T,,,What does **REST** stand for?"),
             MODULES
         );
         const question = result.items[0].questions[0];
@@ -99,9 +99,9 @@ describe("parseImportCsv", () => {
         const result = parseImportCsv(
             csv(
                 header,
-                "New Module,quiz,Check,,Q1,,,,,,",
-                "New Module,quiz,Check,,Q2,,,,,,",
-                "New Module,quiz,Other,,Q3,,,,,,"
+                "New Module,quiz,Check,,,Q1,,,,,,",
+                "New Module,quiz,Check,,,Q2,,,,,,",
+                "New Module,quiz,Other,,,Q3,,,,,,"
             ),
             MODULES
         );
@@ -113,7 +113,7 @@ describe("parseImportCsv", () => {
 
     it("does not group the same title across different modules", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,Check,,Q1,,,,,,", "Week 2,quiz,Check,,Q2,,,,,,"),
+            csv(header, "New Module,quiz,Check,,,Q1,,,,,,", "Week 2,quiz,Check,,,Q2,,,,,,"),
             MODULES
         );
 
@@ -125,9 +125,9 @@ describe("parseImportCsv", () => {
         const result = parseImportCsv(
             csv(
                 header,
-                "New Module,quiz,Check,,Q1,,,,,,",
-                "Nope,quiz,Check,,Q2,,,,,,",
-                "New Module,quiz,Check,,Q3,,,,,,"
+                "New Module,quiz,Check,,,Q1,,,,,,",
+                "Nope,quiz,Check,,,Q2,,,,,,",
+                "New Module,quiz,Check,,,Q3,,,,,,"
             ),
             MODULES
         );
@@ -139,7 +139,7 @@ describe("parseImportCsv", () => {
 
     it("accepts type aliases and is case insensitive on module names", () => {
         const result = parseImportCsv(
-            csv(header, "new module,Question,Check,,Q1,,,,,,", "NEW MODULE,Material,Intro,Body,,,,,,,"),
+            csv(header, "new module,Question,Check,,,Q1,,,,,,", "NEW MODULE,Material,Intro,Body,,,,,,,,"),
             MODULES
         );
 
@@ -150,11 +150,11 @@ describe("parseImportCsv", () => {
         const result = parseImportCsv(
             csv(
                 header,
-                "New Module,learning_material,Good,Body,,,,,,,",
-                "Missing Module,quiz,Bad module,,Q,,,,,,",
-                "New Module,sometype,Bad type,,,,,,,,",
-                "New Module,quiz,,,Q,,,,,,",
-                "New Module,quiz,Bad input,,Q,objective,video"
+                "New Module,learning_material,Good,Body,,,,,,,,",
+                "Missing Module,quiz,Bad module,,,Q,,,,,,",
+                "New Module,sometype,Bad type,,,,,,,,,",
+                "New Module,quiz,,,,Q,,,,,,",
+                "New Module,quiz,Bad input,,,Q,objective,video"
             ),
             MODULES
         );
@@ -163,23 +163,70 @@ describe("parseImportCsv", () => {
         expect(result.skipped).toEqual([
             { line: 3, reason: 'Module "Missing Module" does not exist in this course' },
             { line: 4, reason: 'Type "sometype" is not learning material or quiz' },
-            { line: 5, reason: "Title is empty" },
+            { line: 5, reason: "Task title is empty" },
             { line: 6, reason: 'Input type "video" is not text, code or audio' },
         ]);
     });
 
     it("does not send attempts or feedback - the server derives them", () => {
         const question = parseImportCsv(
-            csv(header, "New Module,quiz,A,,Q,objective,text,exam"), MODULES
+            csv(header, "New Module,quiz,A,,,Q,objective,text,exam"), MODULES
         ).items[0].questions[0] as unknown as Record<string, unknown>;
 
         expect("max_attempts" in question).toBe(false);
         expect("is_feedback_shown" in question).toBe(false);
     });
 
+    it("uses an authored question_title when the CSV gives one", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,Quiz,,REST basics,What does **REST** stand for?"),
+            MODULES
+        );
+
+        const question = result.items[0].questions[0];
+        expect(question.title).toBe("REST basics");
+        // the label is separate from the content, which keeps its markup
+        expect(question.blocks[0].content).toEqual([
+            { type: "text", text: "What does ", styles: {} },
+            { type: "text", text: "REST", styles: { bold: true } },
+            { type: "text", text: " stand for?", styles: {} },
+        ]);
+    });
+
+    it("falls back to the question text when question_title is empty", () => {
+        const result = parseImportCsv(
+            csv(header, "New Module,quiz,Quiz,,,What does **REST** stand for?"),
+            MODULES
+        );
+        expect(result.items[0].questions[0].title).toBe("What does REST stand for?");
+    });
+
+    it("keeps a per-question title distinct from the shared task title", () => {
+        const result = parseImportCsv(
+            csv(
+                header,
+                "New Module,quiz,API basics,,First,Q one,objective",
+                "New Module,quiz,API basics,,Second,Q two,objective"
+            ),
+            MODULES
+        );
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].title).toBe("API basics");
+        expect(result.items[0].questions.map((q) => q.title)).toEqual(["First", "Second"]);
+    });
+
+    it("skips a row whose question title is too long", () => {
+        const result = parseImportCsv(
+            csv(header, `New Module,quiz,Quiz,,${"x".repeat(256)},Q`),
+            MODULES
+        );
+        expect(result.skipped[0].reason).toBe("Question title is longer than 255 characters");
+    });
+
     it("links a question to an existing scorecard by title", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,T,,Q,subjective,text,chat,,,Comms Rubric"),
+            csv(header, "New Module,quiz,T,,,Q,subjective,text,chat,,,Comms Rubric"),
             MODULES,
             SCORECARDS
         );
@@ -190,7 +237,7 @@ describe("parseImportCsv", () => {
 
     it("matches the scorecard title case-insensitively and trimmed", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,T,,Q,subjective,text,chat,,,  comms RUBRIC  "),
+            csv(header, "New Module,quiz,T,,,Q,subjective,text,chat,,,  comms RUBRIC  "),
             MODULES,
             SCORECARDS
         );
@@ -198,13 +245,13 @@ describe("parseImportCsv", () => {
     });
 
     it("leaves scorecard_id null when the column is empty", () => {
-        const result = parseImportCsv(csv(header, "New Module,quiz,T,,Q"), MODULES, SCORECARDS);
+        const result = parseImportCsv(csv(header, "New Module,quiz,T,,,Q"), MODULES, SCORECARDS);
         expect(result.items[0].questions[0].scorecard_id).toBeNull();
     });
 
     it("skips a row naming a scorecard that does not exist", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,T,,Q,,,,,,No Such Rubric"),
+            csv(header, "New Module,quiz,T,,,Q,,,,,,No Such Rubric"),
             MODULES,
             SCORECARDS
         );
@@ -217,7 +264,7 @@ describe("parseImportCsv", () => {
 
     it("refuses to guess between same-named scorecards", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,T,,Q,,,,,,Duplicate"),
+            csv(header, "New Module,quiz,T,,,Q,,,,,,Duplicate"),
             MODULES,
             [
                 { id: 1, title: "Duplicate" },
@@ -231,7 +278,7 @@ describe("parseImportCsv", () => {
 
     it("does not look for scorecards on a learning material row", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,learning_material,Intro,Body,,,,,,,No Such Rubric"),
+            csv(header, "New Module,learning_material,Intro,Body,,,,,,,,No Such Rubric"),
             MODULES,
             SCORECARDS
         );
@@ -240,7 +287,7 @@ describe("parseImportCsv", () => {
     });
 
     it("rejects an ambiguous module name rather than guessing", () => {
-        const result = parseImportCsv(csv(header, "Dup,quiz,Check,,Q,,,,,,"), [
+        const result = parseImportCsv(csv(header, "Dup,quiz,Check,,,Q,,,,,,"), [
             { id: "1", title: "Dup" },
             { id: "2", title: "Dup" },
         ]);
@@ -259,7 +306,7 @@ describe("parseImportCsv", () => {
 
     it("skips a quiz row with no question rather than importing an empty quiz", () => {
         const result = parseImportCsv(
-            csv(header, "New Module,quiz,Empty,the question went in the wrong column,,,,,,"),
+            csv(header, "New Module,quiz,Empty,the question went in the wrong column,,,,,,,"),
             MODULES
         );
 
@@ -268,7 +315,7 @@ describe("parseImportCsv", () => {
     });
 
     it("reads columns by header name, not position", () => {
-        const result = parseImportCsv(csv("title,type,module", "Intro,learning_material,New Module"), MODULES);
+        const result = parseImportCsv(csv("task_title,type,module", "Intro,learning_material,New Module"), MODULES);
         expect(result.items[0]).toMatchObject({ title: "Intro", milestone_id: 42 });
     });
 });
@@ -328,14 +375,14 @@ describe("groupSkipped", () => {
     it("collapses identical reasons, most frequent first", () => {
         expect(
             groupSkipped([
-                { line: 9, reason: "Title is empty" },
+                { line: 9, reason: "Task title is empty" },
                 { line: 3, reason: "Module is empty" },
                 { line: 5, reason: "Module is empty" },
                 { line: 4, reason: "Module is empty" },
             ])
         ).toEqual([
             { reason: "Module is empty", lines: [3, 5, 4] },
-            { reason: "Title is empty", lines: [9] },
+            { reason: "Task title is empty", lines: [9] },
         ]);
     });
 
@@ -350,5 +397,38 @@ describe("groupSkipped", () => {
 
     it("returns nothing for nothing", () => {
         expect(groupSkipped([])).toEqual([]);
+    });
+});
+
+describe("compatibility with the first shipped template", () => {
+    // v0.0.40 shipped a template whose task column was `title`. Those files are
+    // already on people's laptops, so they have to keep importing.
+    const OLD_HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,coding_languages,scorecard";
+
+    it("still imports a file using the old title column", () => {
+        const result = parseImportCsv(
+            [OLD_HEADER, "New Module,learning_material,Intro,Some body"].join("\n"),
+            MODULES
+        );
+
+        expect(result.skipped).toEqual([]);
+        expect(result.items[0]).toMatchObject({ title: "Intro", milestone_id: 42 });
+    });
+
+    it("still reports an empty old-style title", () => {
+        const result = parseImportCsv([OLD_HEADER, "New Module,quiz,,,Q"].join("\n"), MODULES);
+        expect(result.skipped[0].reason).toBe("Task title is empty");
+    });
+
+    it("prefers task_title when a file somehow carries both", () => {
+        const result = parseImportCsv(
+            ["module,type,title,task_title,question", "New Module,quiz,Old,New,Q"].join("\n"),
+            MODULES
+        );
+        expect(result.items[0].title).toBe("New");
+    });
+
+    it("names task_title, not title, when the column is missing entirely", () => {
+        expect(() => parseImportCsv("module,type\nNew Module,quiz", MODULES)).toThrow(/task_title/);
     });
 });

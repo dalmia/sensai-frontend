@@ -45,8 +45,9 @@ export const MAX_IMPORT_QUESTIONS = 2000;
 export const TEMPLATE_HEADERS = [
     "module",
     "type",
-    "title",
+    "task_title",
     "content",
+    "question_title",
     "question",
     "question_type",
     "input_type",
@@ -144,6 +145,9 @@ const byTitle = <T extends { title: string }>(items: T[]): Map<string, T[]> => {
     return index;
 };
 
+const taskTitle = (row: Record<string, string>): string =>
+    (row.task_title ?? row.title ?? "").trim();
+
 const parseLanguages = (value: string): string[] =>
     value
         .split(/[|,]/)
@@ -164,9 +168,15 @@ const buildQuestion = (
     const first = blocks[0]?.content;
     const titleSource = Array.isArray(first) ? first : [];
 
+    // The editor treats a question title as a human-authored label - it defaults
+    // to "Question N", is editable, and publishing is blocked when it is empty.
+    // So take it from the CSV when given, and fall back to the question text,
+    // which is more useful to scan than "Question 1".
+    const authored = row.question_title?.trim() ?? "";
+
     return {
-        // The title is a plain label in the editor, so it cannot carry markup.
-        title: (inlineText(titleSource) || questionText).slice(0, 255),
+        // A plain label in the editor, so it cannot carry markup.
+        title: (authored || inlineText(titleSource) || questionText).slice(0, 255),
         blocks,
         answer: answerText ? markdownToBlocks(answerText) : null,
         type: (row.question_type?.trim().toLowerCase() || "objective") as BulkQuestion["type"],
@@ -184,7 +194,7 @@ const rowError = (
 ): string | null => {
     const moduleName = row.module?.trim() ?? "";
     const typeValue = row.type?.trim().toLowerCase() ?? "";
-    const title = row.title?.trim() ?? "";
+    const title = taskTitle(row);
 
     if (!moduleName) return "Module is empty";
 
@@ -195,11 +205,14 @@ const rowError = (
     if (!typeValue) return "Type is empty";
     if (!TYPE_ALIASES[typeValue]) return `Type "${row.type.trim()}" is not learning material or quiz`;
 
-    if (!title) return "Title is empty";
-    if (title.length > 255) return "Title is longer than 255 characters";
+    if (!title) return "Task title is empty";
+    if (title.length > 255) return "Task title is longer than 255 characters";
 
     if (TYPE_ALIASES[typeValue] === "quiz") {
         if (!row.question?.trim()) return "Question is empty";
+
+        if ((row.question_title?.trim().length ?? 0) > 255)
+            return "Question title is longer than 255 characters";
 
         const scorecardName = row.scorecard?.trim() ?? "";
         if (scorecardName) {
@@ -254,7 +267,13 @@ export const parseImportCsv = (
     if (rows.length === 0) return { items: [], skipped: [] };
 
     const headers = rows[0].map((header) => header.trim().toLowerCase());
-    const missing = ["module", "type", "title"].filter((header) => !headers.includes(header));
+    // `title` was the column name in the first shipped template (v0.0.40), so files
+    // downloaded before the rename still carry it. Accepted as a synonym rather
+    // than breaking every CSV already sitting on someone's laptop.
+    const required = [["module"], ["type"], ["task_title", "title"]];
+    const missing = required
+        .filter((names) => !names.some((name) => headers.includes(name)))
+        .map((names) => names[0]);
 
     if (missing.length > 0) {
         throw new Error(
@@ -276,7 +295,7 @@ export const parseImportCsv = (
             row[header] = cells[column] ?? "";
         });
 
-        const title = row.title?.trim() ?? "";
+        const title = taskTitle(row);
         const reason = rowError(row, modulesByName, scorecardsByName);
 
         if (reason) {
@@ -319,9 +338,10 @@ const GUIDE = [
     "",
     "- `module` - must match a module that already exists in this course",
     "- `type` - `learning_material` or `quiz`",
-    "- `title` - the name of the task",
-    "- `content` - the body of a learning material, written in Markdown",
-    "- `question` - the question text, written in Markdown",
+    "- `task_title` - the name of the task. Rows of a multi-question quiz repeat it",
+    "- `content` - the body of a **learning material**, written in Markdown. Leave empty on quiz rows",
+    "- `question_title` - a short label for that one question, shown in the editor sidebar. Defaults to the start of the question text",
+    "- `question` - the text of a **quiz** question, written in Markdown. Leave empty on learning material rows",
     "- `question_type` - `objective` or `subjective`, defaults to `objective`",
     "- `input_type` - `text`, `code` or `audio`, defaults to `text`",
     "- `response_type` - `chat` for practice with feedback, or `exam`, defaults to `chat`. Attempt limits and feedback follow from this, exactly as they do in the editor",
@@ -329,9 +349,11 @@ const GUIDE = [
     "- `coding_languages` - only for `code` questions, separated by `|`",
     "- `scorecard` - the title of an existing scorecard in this school (ignores case and surrounding spaces). Exactly one match links it to the question; missing or duplicate names skip that row with a reason. Import never creates scorecards. Leave empty for no scorecard",
     "",
+    "Each row fills one of `content` or `question`, whichever its `type` calls for. The other stays empty.",
+    "",
     "## Two rules worth knowing",
     "",
-    "1. A quiz with several questions uses **one row per question**, repeating the same `module` and `title` on rows next to each other. The two *Sample quiz* rows below become a single quiz with two questions.",
+    "1. A quiz with several questions uses **one row per question**, repeating the same `module` and `task_title` on rows next to each other. The two *Sample quiz* rows below become a single quiz with two questions.",
     "2. Modules are never created by an import. A row naming a module that does not exist is reported back to you and skipped, and the rest still import.",
 ].join("\n");
 
@@ -379,13 +401,13 @@ export const buildTemplateCsv = (modules: ImportModule[]): string => {
 
     const rows = [
         TEMPLATE_HEADERS,
-        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", "", ""],
-        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", "", ""],
-        [example, "quiz", "Sample quiz", "", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", "", ""],
-        [example, "quiz", "Sample quiz", "", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", "", ""],
-        [example, "quiz", "An open ended question", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", "", ""],
-        [example, "quiz", "A coding question", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript", ""],
-        [example, "quiz", "A spoken question", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", "", ""],
+        [example, "learning_material", "Read me first", GUIDE, "", "", "", "", "", "", "", ""],
+        [example, "learning_material", "Markdown you can use", MARKDOWN_GUIDE, "", "", "", "", "", "", "", ""],
+        [example, "quiz", "Sample quiz", "", "REST basics", "What does **REST** stand for?", "objective", "text", "chat", "Representational State Transfer", "", ""],
+        [example, "quiz", "Sample quiz", "", "HTTP verbs", "Name one HTTP verb.", "objective", "text", "chat", "`GET`", "", ""],
+        [example, "quiz", "An open ended question", "", "", "Why is `PUT` idempotent but `POST` is not?", "subjective", "text", "chat", "", "", ""],
+        [example, "quiz", "A coding question", "", "", "Write a function that reverses a string", "objective", "code", "exam", "", "python|javascript", ""],
+        [example, "quiz", "A spoken question", "", "", "Explain dependency injection out loud", "subjective", "audio", "chat", "", "", ""],
     ];
 
     return rows.map((cells) => cells.map(escape).join(",")).join("\n");
