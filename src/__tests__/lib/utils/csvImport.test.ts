@@ -399,3 +399,36 @@ describe("groupSkipped", () => {
         expect(groupSkipped([])).toEqual([]);
     });
 });
+
+describe("compatibility with the first shipped template", () => {
+    // v0.0.40 shipped a template whose task column was `title`. Those files are
+    // already on people's laptops, so they have to keep importing.
+    const OLD_HEADER = "module,type,title,content,question,question_type,input_type,response_type,answer,coding_languages,scorecard";
+
+    it("still imports a file using the old title column", () => {
+        const result = parseImportCsv(
+            [OLD_HEADER, "New Module,learning_material,Intro,Some body"].join("\n"),
+            MODULES
+        );
+
+        expect(result.skipped).toEqual([]);
+        expect(result.items[0]).toMatchObject({ title: "Intro", milestone_id: 42 });
+    });
+
+    it("still reports an empty old-style title", () => {
+        const result = parseImportCsv([OLD_HEADER, "New Module,quiz,,,Q"].join("\n"), MODULES);
+        expect(result.skipped[0].reason).toBe("Task title is empty");
+    });
+
+    it("prefers task_title when a file somehow carries both", () => {
+        const result = parseImportCsv(
+            ["module,type,title,task_title,question", "New Module,quiz,Old,New,Q"].join("\n"),
+            MODULES
+        );
+        expect(result.items[0].title).toBe("New");
+    });
+
+    it("names task_title, not title, when the column is missing entirely", () => {
+        expect(() => parseImportCsv("module,type\nNew Module,quiz", MODULES)).toThrow(/task_title/);
+    });
+});

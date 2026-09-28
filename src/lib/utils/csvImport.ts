@@ -145,6 +145,9 @@ const byTitle = <T extends { title: string }>(items: T[]): Map<string, T[]> => {
     return index;
 };
 
+const taskTitle = (row: Record<string, string>): string =>
+    (row.task_title ?? row.title ?? "").trim();
+
 const parseLanguages = (value: string): string[] =>
     value
         .split(/[|,]/)
@@ -191,7 +194,7 @@ const rowError = (
 ): string | null => {
     const moduleName = row.module?.trim() ?? "";
     const typeValue = row.type?.trim().toLowerCase() ?? "";
-    const title = row.task_title?.trim() ?? "";
+    const title = taskTitle(row);
 
     if (!moduleName) return "Module is empty";
 
@@ -264,7 +267,13 @@ export const parseImportCsv = (
     if (rows.length === 0) return { items: [], skipped: [] };
 
     const headers = rows[0].map((header) => header.trim().toLowerCase());
-    const missing = ["module", "type", "task_title"].filter((header) => !headers.includes(header));
+    // `title` was the column name in the first shipped template (v0.0.40), so files
+    // downloaded before the rename still carry it. Accepted as a synonym rather
+    // than breaking every CSV already sitting on someone's laptop.
+    const required = [["module"], ["type"], ["task_title", "title"]];
+    const missing = required
+        .filter((names) => !names.some((name) => headers.includes(name)))
+        .map((names) => names[0]);
 
     if (missing.length > 0) {
         throw new Error(
@@ -286,7 +295,7 @@ export const parseImportCsv = (
             row[header] = cells[column] ?? "";
         });
 
-        const title = row.task_title?.trim() ?? "";
+        const title = taskTitle(row);
         const reason = rowError(row, modulesByName, scorecardsByName);
 
         if (reason) {
